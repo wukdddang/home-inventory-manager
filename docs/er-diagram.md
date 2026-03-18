@@ -1,24 +1,24 @@
 # ER 다이어그램 & 엔티티 명세 (Home Inventory Manager)
 
-v1에서 구현할 엔티티 목록과 관계를 정리한 문서입니다.  
+구현 대상 엔티티 목록과 관계를 정리한 문서입니다.  
 README의 **「4. 도메인 & 엔티티 설계」**와 동기화해 두었습니다.
 
 ---
 
-## 1. V1 엔티티 목록 (약 20~25개 목표)
+## 1. 엔티티 목록
 
 | 순번 | 엔티티 | 핵심 역할 | 주요 관계 | 우선순위 |
 |------|--------|-----------|-----------|----------|
 | 1 | User | 사용자 계정 | — (Household과 N:N) | ★★★★★ |
-| 2 | Household | 가족/공유 그룹 | User ↔ ManyToMany | ★★★★ |
-| 3 | Category | 대분류 (식료품/생활용품/의약품…) | — (계층형 가능) | ★★★★★ |
+| 2 | Household | 가족·공유 그룹 | User ↔ ManyToMany | ★★★★ |
+| 3 | Category | 대분류 (식료품, 생활용품, 의약품, 전자제품, 식기류, 가구류…) | — (계층형 가능) | ★★★★★ |
 | 4 | StorageLocation | 보관 장소 | Household | ★★★★ |
 | 5 | Unit | 단위 마스터 (ml, g, 개…) | — | ★★★ |
-| 6 | Product | 상품 마스터 | Category | ★★★★★ |
+| 6 | Product | 상품 마스터 (소모품·비소모품: 식료품, 전자제품, 가구 등) | Category | ★★★★★ |
 | 7 | ProductVariant | 용량/포장 단위별 정보 | Product | ★★★★ |
 | 8 | InventoryItem | 실제 보유 재고 | ProductVariant, StorageLocation | ★★★★★ |
 | 9 | Purchase | 구매 기록 | InventoryItem | ★★★★ |
-| 10 | PurchaseBatch | 로트별 유통기한 | Purchase | ★★★★ |
+| 10 | PurchaseBatch | 로트별 유통기한 (로트=한 번에 구매한 같은 품목·같은 유통기한 묶음) | Purchase | ★★★★ |
 | 11 | Consumption | 소비/사용 기록 | InventoryItem | ★★★★ |
 | 12 | InventoryLog | 재고 변경 이력 | InventoryItem | ★★★ |
 | 13 | WasteRecord | 폐기 기록 | InventoryItem | ★★★ |
@@ -28,10 +28,12 @@ README의 **「4. 도메인 & 엔티티 설계」**와 동기화해 두었습니
 | 17 | ExpirationAlertRule | 만료 알림 설정 | User 또는 Household | ★★★ |
 | 18 | Tag | 태그 | — (Product 등과 N:N은 설계 시 확정) | ★★ |
 | 19 | ReportPreset | 리포트 설정 저장 | User | ★★ |
+| 20 | Account | 잔고 (현금, 통장 등) | User 또는 Household | ★★★ |
+| 21 | RecurringIncome | 예정 수입 (월급날, 금액 등) | User 또는 Household | ★★★ |
 
 ### User ↔ Household (다대다)
 
-- 중간 테이블(예: `HouseholdMember`, `UserHousehold`)로 멤버십·역할(소유자/멤버) 관리 권장.
+- 중간 테이블(예: `HouseholdMember`, `UserHousehold`)로 가족/공유 그룹 멤버십·역할(소유자/멤버) 관리 권장.
 
 ### ShoppingListItem
 
@@ -42,16 +44,20 @@ README의 **「4. 도메인 & 엔티티 설계」**와 동기화해 두었습니
 ## 2. 관계 요약 (텍스트)
 
 ```
-Household
+Household (가족·공유 그룹)
   ├── StorageLocation (1:N)
   ├── ShoppingList (1:N)
-  └── ExpirationAlertRule (1:N, 선택)
+  ├── ExpirationAlertRule (1:N, 선택)
+  ├── Account (1:N, 선택)
+  └── RecurringIncome (1:N, 선택)
 
 User
   ├── Household (N:N)
   ├── Notification (1:N)
   ├── ExpirationAlertRule (1:N, 선택)
-  └── ReportPreset (1:N)
+  ├── ReportPreset (1:N)
+  ├── Account (1:N, 선택)
+  └── RecurringIncome (1:N, 선택)
 
 Category
   └── Product (1:N)  ※ Category 자기 참조(계층) 가능
@@ -75,6 +81,12 @@ Purchase
 
 ShoppingList
   └── ShoppingListItem (1:N)
+
+Account (잔고)
+  └── AccountTransaction 또는 BalanceLog (1:N, 입출금 이력)
+
+RecurringIncome (예정 수입)
+  └── (월급날·금액 등 단일 엔티티로 관리 가능)
 ```
 
 ---
@@ -94,6 +106,10 @@ erDiagram
     User ||--o{ Notification : receives
     User ||--o{ ExpirationAlertRule : "optional"
     User ||--o{ ReportPreset : saves
+    User ||--o{ Account : "optional"
+    User ||--o{ RecurringIncome : "optional"
+    Household ||--o{ Account : "optional"
+    Household ||--o{ RecurringIncome : "optional"
 
     Category ||--o{ Product : classifies
 
@@ -114,21 +130,11 @@ erDiagram
 ```
 
 - **Category** 계층(부모–자식)은 필요 시 동일 엔티티 자기 참조로 확장.
-- **Tag**는 Product 등과 N:N 테이블로 연결하는 방식이 일반적 (v1 스키마 확정 시 반영).
+- **Tag**는 Product 등과 N:N 테이블로 연결하는 방식이 일반적.
 
 ---
 
-## 4. V2에서 고려할 엔티티·기능
-
-README와 동일하게 추후 검토:
-
-- Recipe, Brand, Supplier  
-- Photo (영수증/제품 사진)  
-- Integration (카카오톡 알림 등)
-
----
-
-## 5. 유지보수
+## 4. 유지보수
 
 - 엔티티 추가·변경 시 **이 파일**과 README **「4. 도메인 & 엔티티 설계」** 표를 함께 수정하는 것을 권장합니다.
 - 상세 ERD(draw.io 등)는 이 폴더(`docs/`)에 함께 두면 됩니다.

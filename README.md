@@ -11,13 +11,15 @@ NestJS + TypeORM 기반의 개인/가족 재고 관리 백엔드 프로젝트
 
 ### 핵심 가치
 - 식료품, 세제, 화장품, 의약품 등 **소모성 품목**의 잔량·유통기한 관리
+- **전자제품, 식기류, 침대·책상 등 가구** 등 비소모 품목도 등록·관리
+- **현재 잔고**(현금, 통장)와 **예정된 월급날** 등 수입 데이터 등록·관리
 - 구매 이력 추적 → 단가 변동 파악
 - 소비 패턴 분석 → 낭비 줄이기
 - 유통기한 임박 자동 알림
 - 장보기 리스트 자동/수동 생성 지원
 
 ### 타겟 사용자
-- 1인 가구 ~ 4인 가족
+- 1인 또는 소규모 **가족/공유 그룹** ~ 4인 가족
 - 재료 낭비를 줄이고 싶거나, 예산 관리를 조금 더 체계적으로 하고 싶은 사람
 
 ## 2. 아키텍처
@@ -138,18 +140,18 @@ Interface → Business → Context → Domain → Infrastructure
 | 테스트            | Jest                             | e2e 테스트 최소 40% 목표                  |
 | 배포              | Docker + Railway / Render / Fly.io | —                                      |
 
-## 4. 도메인 & 엔티티 설계 (v1 목표: 약 20~25개)
+## 4. 도메인 & 엔티티 설계
 
 **상세 ER·관계도·Mermaid 다이어그램:** [docs/er-diagram.md](./docs/er-diagram.md)
 
 | 순번 | 엔티티                  | 핵심 역할                                      | 주요 관계                       | 우선순위 |
 |------|-------------------------|------------------------------------------------|----------------------------------|----------|
 | 1    | User                    | 사용자 계정                                    | —                                | ★★★★★    |
-| 2    | Household               | 가족/공유 그룹                                 | User ↔ ManyToMany                | ★★★★     |
-| 3    | Category                | 대분류 (식료품/생활용품/의약품...)             | — (계층형 가능)                  | ★★★★★    |
+| 2    | Household               | 가족·공유 그룹                                 | User ↔ ManyToMany                | ★★★★     |
+| 3    | Category                | 대분류 (식료품, 생활용품, 의약품, 전자제품, 식기류, 가구류…) | — (계층형 가능)                  | ★★★★★    |
 | 4    | StorageLocation         | 보관 장소 (냉장고 문쪽, 선반 2단, 욕실장...)   | Household                        | ★★★★     |
 | 5    | Unit                    | 단위 마스터 (ml, g, 개, 병, 팩...)             | —                                | ★★★      |
-| 6    | Product                 | 상품 마스터 (계란, 삼겹살, 샴푸 등)            | Category                         | ★★★★★    |
+| 6    | Product                 | 상품 마스터 (소모품·비소모품: 식료품, 전자제품, 가구 등)    | Category                         | ★★★★★    |
 | 7    | ProductVariant          | 용량/포장 단위별 정보                          | Product                          | ★★★★     |
 | 8    | InventoryItem           | 실제 보유 재고                                 | ProductVariant, StorageLocation  | ★★★★★    |
 | 9    | Purchase                | 구매 기록                                      | InventoryItem                    | ★★★★     |
@@ -163,9 +165,11 @@ Interface → Business → Context → Domain → Infrastructure
 | 17   | ExpirationAlertRule     | 만료 알림 설정 (며칠 전 알림 등)              | User or Household                | ★★★      |
 | 18   | Tag                     | 태그 (유기농, 저염, 매운맛...)                 | —                                | ★★       |
 | 19   | ReportPreset            | 자주 보는 리포트 설정 저장                     | User                             | ★★       |
+| 20   | Account                 | 잔고 (현금, 통장 등)                           | User 또는 Household              | ★★★      |
+| 21   | RecurringIncome         | 예정 수입 (월급날, 금액 등)                    | User 또는 Household              | ★★★      |
 
-**v2에서 고려**  
-Recipe, Brand, Supplier, Photo(영수증/제품사진), Integration(카카오톡 알림 등)
+**추가 구현 대상**  
+Recipe, Brand, Supplier, Photo(영수증/제품사진), Integration(카카오톡 알림 등) — [추가로 고려할 기능](./docs/considerations.md) 참고.
 
 ## 5. 기능 로드맵 (단계별)
 
@@ -202,7 +206,7 @@ Recipe, Brand, Supplier, Photo(영수증/제품사진), Integration(카카오톡
 - [ ] 모듈 분리 (domain-driven 느낌으로)
 - [ ] TypeORM 관계 매핑 (cascade, eager/lazy)
 - [ ] 트랜잭션 처리 (@Transaction() 또는 QueryRunner)
-- [ ] Custom Guard (소유권 체크 – Household 멤버만 접근)
+- [ ] Custom Guard (소유권 체크 – 가족/공유 그룹 멤버만 접근)
 - [ ] ValidationPipe global + custom pipe
 - [ ] @Cron + @nestjs/schedule
 - [ ] Interceptor (로깅, 응답 포맷 통일)
