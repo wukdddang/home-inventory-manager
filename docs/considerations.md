@@ -30,13 +30,15 @@
 
 ---
 
-## 3. 재무·예산 쪽
+## 3. 재무·예산·가계부·구독 쪽
 
 | 구분 | 내용 | 비고 |
 |------|------|------|
 | **고정 지출** | 월세, 관리비, 통신비, 보험 등 반복 지출 등록 | RecurringExpense 엔티티 (RecurringIncome과 대칭) |
 | **예정 지출** | 공과금 납부일, 대출 상환일, 카드 결제일 | 일정 + 예상 금액 |
 | **예산 설정** | 월별 총예산, 카테고리별 예산 (식비, 교통비 등) | Budget 엔티티, 지출 대비 알림 |
+| **가계부** | 수입/지출·잔액·예산을 한 화면에 | Account + Transaction + RecurringIncome/Expense + Budget 조합. [가계부·구독 연동 방안](./ledger-and-subscription.md) 참고. |
+| **구독 내역** | 넷플릭스, 멤버십 등 반복 결제 등록·알림 | Subscription 또는 RecurringExpense 확장. 수동 입력 외 **오픈뱅킹·이메일 파싱** 등으로 입력 부담 줄이기 → [가계부·구독 연동 방안](./ledger-and-subscription.md) 참고. |
 | **대출·부채** | 빌린 돈, 갚을 날, 이자 | Liability/Debt 엔티티, Account와 연동 |
 | **보증금·적금** | 미래에 돌려받을 돈, 만기일 | Account 타입 확장 또는 별도 엔티티 |
 | **수입/지출 카테고리** | 급여, 부수입, 식비, 교통비 등 (재무용) | Category와 분리하거나 type으로 구분 |
@@ -95,4 +97,4 @@
 - **재무 확장**: 대출·부채, 보증금·적금, 수입/지출 카테고리, 다중 통화.
 - **운영·편의**: 초대 링크, 활동 로그, 내보내기/가져오기, 백업.
 
-필요한 것부터 엔티티·기능 목록(예: [feature-checklist.md](./feature-checklist.md), [entity-spec-by-entity.md](./entity-spec-by-entity.md))에 반영해 가면 됩니다.
+필요한 것부터 엔티티·기능 목록(예: [feature-checklist.md](./feature-checklist.md), [entity-logical-design.md](./entity-logical-design.md))에 반영해 가면 됩니다.

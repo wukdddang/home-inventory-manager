@@ -142,7 +142,9 @@ Interface → Business → Context → Domain → Infrastructure
 
 ## 4. 도메인 & 엔티티 설계
 
-**상세 ER·관계도·Mermaid 다이어그램:** [docs/er-diagram.md](./docs/er-diagram.md)
+**상세 ER·관계도·Mermaid 다이어그램:** [docs/er-diagram.md](./docs/er-diagram.md)  
+**개념적 설계(엔티티·속성만):** [docs/entity-conceptual-design.md](./docs/entity-conceptual-design.md)  
+**논리적 설계(PK·FK·타입):** [docs/entity-logical-design.md](./docs/entity-logical-design.md)
 
 | 순번 | 엔티티                  | 핵심 역할                                      | 주요 관계                       | 우선순위 |
 |------|-------------------------|------------------------------------------------|----------------------------------|----------|

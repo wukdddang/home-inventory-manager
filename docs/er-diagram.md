@@ -1,7 +1,8 @@
 # ER 다이어그램 & 엔티티 명세 (Home Inventory Manager)
 
 구현 대상 엔티티 목록과 관계를 정리한 문서입니다.  
-README의 **「4. 도메인 & 엔티티 설계」**와 동기화해 두었습니다.
+README의 **「4. 도메인 & 엔티티 설계」**와 동기화해 두었습니다.  
+상세 필드는 [엔티티 논리적 설계](./entity-logical-design.md), 개념만 보려면 [개념적 설계](./entity-conceptual-design.md)를 참고하세요.
 
 ---
 
