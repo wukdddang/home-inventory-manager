@@ -20,7 +20,109 @@ NestJS + TypeORM 기반의 개인/가족 재고 관리 백엔드 프로젝트
 - 1인 가구 ~ 4인 가족
 - 재료 낭비를 줄이고 싶거나, 예산 관리를 조금 더 체계적으로 하고 싶은 사람
 
-## 2. 기술 스택 (2026년 기준 추천)
+## 2. 아키텍처
+
+### 레이어드 아키텍처
+
+```mermaid
+graph TB
+    subgraph "Interface Layer"
+        API[REST API Controllers]
+        DTO[DTOs & Decorators]
+    end
+
+    subgraph "Business Layer"
+        BIZ[Business Services]
+    end
+
+    subgraph "Context Layer (CQRS)"
+        CTX[Context Services]
+        CMD[Command Handlers]
+        QRY[Query Handlers]
+    end
+
+    subgraph "Domain Layer"
+        COMMON[Common Domain<br/>외부 연동 엔티티]
+        CORE[Core Domain<br/>핵심 비즈니스]
+        SUB[Sub Domain<br/>부가 기능]
+    end
+
+    subgraph "Infrastructure Layer"
+        DB[(Database<br/>PostgreSQL)]
+        LIBS[Libs<br/>Database, Config]
+    end
+
+    API --> BIZ
+    API --> CTX
+    BIZ --> CTX
+    CTX --> CMD
+    CTX --> QRY
+    CMD --> CORE
+    CMD --> COMMON
+    CMD --> SUB
+    QRY --> CORE
+    QRY --> COMMON
+    QRY --> SUB
+    CORE --> COMMON
+    SUB --> CORE
+    SUB --> COMMON
+    CORE --> LIBS
+    COMMON --> LIBS
+    SUB --> LIBS
+    LIBS --> DB
+
+    style API fill:#e1f5ff
+    style BIZ fill:#fff3e0
+    style CTX fill:#f3e5f5
+    style COMMON fill:#e8f5e9
+    style CORE fill:#fff9c4
+    style SUB fill:#ffe0b2
+    style LIBS fill:#f5f5f5
+```
+
+### 의존성 규칙
+
+```
+Interface → Business → Context → Domain → Infrastructure
+    ↓          ↓          ↓          ↓
+   DTO      조합 로직   CQRS      엔티티      Database
+```
+
+**도메인 간 의존성:**
+
+- ✅ Core Domain → Common Domain
+- ✅ Sub Domain → Core Domain, Common Domain
+- ❌ Common Domain → Core/Sub Domain
+
+### 레이어별 책임
+
+#### Domain Layer (`src/domain/`)
+- 비즈니스 엔티티 및 도메인 로직
+- TypeORM 엔티티 정의
+- Domain Service (Repository 패턴)
+- **도메인 분류**: Common → Core → Sub (단방향 의존성)
+
+#### Context Layer (`src/context/`)
+- CQRS 패턴 구현 (Command/Query 분리)
+- Command Handlers: 상태 변경 (Create, Update, Delete)
+- Query Handlers: 조회 (Get, List, Search)
+- Job Handlers: 배치 작업 및 스케줄러
+- 트랜잭션 관리
+
+#### Business Layer (`src/business/`)
+- 여러 Context 오케스트레이션
+- 외부 시스템 연동 (SSO, DART 등)
+- 복잡한 비즈니스 로직 조합
+- 보상 트랜잭션 처리
+
+#### Interface Layer (`src/interface/`)
+- REST API Controllers
+- DTO 정의 및 검증 (class-validator)
+- Swagger 문서화
+- Auth Guards 및 Decorators
+- Exception Filters
+
+## 3. 기술 스택 (2026년 기준 추천)
 
 | 항목              | 선택 기술                        | 비고                                      |
 |-------------------|----------------------------------|-------------------------------------------|
@@ -36,7 +138,7 @@ NestJS + TypeORM 기반의 개인/가족 재고 관리 백엔드 프로젝트
 | 테스트            | Jest                             | e2e 테스트 최소 40% 목표                  |
 | 배포              | Docker + Railway / Render / Fly.io | —                                      |
 
-## 3. 도메인 & 엔티티 설계 (v1 목표: 약 20~25개)
+## 4. 도메인 & 엔티티 설계 (v1 목표: 약 20~25개)
 
 | 순번 | 엔티티                  | 핵심 역할                                      | 주요 관계                       | 우선순위 |
 |------|-------------------------|------------------------------------------------|----------------------------------|----------|
@@ -63,7 +165,7 @@ NestJS + TypeORM 기반의 개인/가족 재고 관리 백엔드 프로젝트
 **v2에서 고려**  
 Recipe, Brand, Supplier, Photo(영수증/제품사진), Integration(카카오톡 알림 등)
 
-## 4. 기능 로드맵 (단계별)
+## 5. 기능 로드맵 (단계별)
 
 ### Phase 1 – 기반 다지기 (1~3주)
 - 프로젝트 생성 & 환경설정
@@ -93,7 +195,7 @@ Recipe, Brand, Supplier, Photo(영수증/제품사진), Integration(카카오톡
 - Docker + CI/CD 기본 세팅
 - 실제 데이터 입력 후 1개월 사용 피드백 반영
 
-## 5. 중요 구현 포인트 & NestJS 학습 체크리스트
+## 6. 중요 구현 포인트 & NestJS 학습 체크리스트
 
 - [ ] 모듈 분리 (domain-driven 느낌으로)
 - [ ] TypeORM 관계 매핑 (cascade, eager/lazy)
@@ -106,7 +208,7 @@ Recipe, Brand, Supplier, Photo(영수증/제품사진), Integration(카카오톡
 - [ ] Pagination + Filtering + Searching (Query builder 활용)
 - [ ] File upload (영수증 사진) – Multer + local/S3
 
-## 6. 개발 규칙 (자기 약속)
+## 7. 개발 규칙 (자기 약속)
 
 1. 엔티티 하나 추가할 때마다 **ERD 그림** 업데이트 (draw.io 추천)
 2. API 하나 만들 때마다 **Swagger 설명 + 예시** 작성
@@ -114,7 +216,7 @@ Recipe, Brand, Supplier, Photo(영수증/제품사진), Integration(카카오톡
 4. 매주 금요일 → 그 주에 구현한 기능 실제 데이터로 테스트
 5. README.md 또는 docs 폴더에 진행 상황 기록
 
-## 7. 다음 액션 아이템 (바로 할 수 있는 것)
+## 8. 다음 액션 아이템 (바로 할 수 있는 것)
 
 - [ ] nest new home-inventory --package-manager npm
 - [ ] .env.example + .gitignore 세팅
