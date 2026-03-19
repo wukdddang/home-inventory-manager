@@ -8,27 +8,27 @@ README의 **「4. 도메인 & 엔티티 설계」**와 동기화해 두었습니
 
 ## 1. 엔티티 목록
 
-| 순번 | 엔티티 | 핵심 역할 | 주요 관계 | 우선순위 |
-|------|--------|-----------|-----------|----------|
-| 1 | User | 사용자 계정 | — (Household과 N:N) | ★★★★★ |
-| 2 | Household | 가족·공유 그룹 | User ↔ ManyToMany | ★★★★ |
-| 3 | Category | 대분류 (식료품, 생활용품, 의약품, 전자제품, 식기류, 가구류…) — 플랫(1단계) | — | ★★★★★ |
-| 4 | StorageLocation | 보관 장소 | Household | ★★★★ |
-| 5 | Unit | 단위 마스터 (ml, g, 개…) | — | ★★★ |
-| 6 | Product | 상품 마스터 (소모품·비소모품: 식료품, 전자제품, 가구 등) | Category | ★★★★★ |
-| 7 | ProductVariant | 용량/포장 단위별 정보 | Product | ★★★★ |
-| 8 | InventoryItem | 실제 보유 재고 | ProductVariant, StorageLocation | ★★★★★ |
-| 9 | Purchase | 구매 기록 | InventoryItem | ★★★★ |
-| 10 | PurchaseBatch | 로트별 유통기한 (로트=한 번에 구매한 같은 품목·같은 유통기한 묶음) | Purchase | ★★★★ |
-| 11 | Consumption | 소비/사용 기록 | InventoryItem | ★★★★ |
-| 12 | InventoryLog | 재고 변경 이력 | InventoryItem | ★★★ |
-| 13 | WasteRecord | 폐기 기록 | InventoryItem | ★★★ |
-| 14 | ShoppingList | 장보기 리스트 | Household | ★★★★ |
-| 15 | ShoppingListItem | 리스트 항목 | ShoppingList, Product/ProductVariant | ★★★★ |
-| 16 | Notification | 알림 | User | ★★★★ |
-| 17 | ExpirationAlertRule | 만료 알림 설정(품목별 일수) | User 또는 Household, Product | ★★★ |
-| 18 | ReportPreset | 리포트 설정 저장 | User | ★★ |
-| 19 | HouseStructure | 집 구조(2D/3D) 한 채 — 방·슬롯 정의(JSONB) | Household 1:1 | ★★★ |
+| 순번 | 엔티티              | 핵심 역할                                                                  | 주요 관계                            | 우선순위 |
+| ---- | ------------------- | -------------------------------------------------------------------------- | ------------------------------------ | -------- |
+| 1    | User                | 사용자 계정                                                                | — (Household과 N:N)                  | ★★★★★    |
+| 2    | Household           | 가족·공유 그룹                                                             | User ↔ ManyToMany                    | ★★★★     |
+| 3    | Category            | 대분류 (식료품, 생활용품, 의약품, 전자제품, 식기류, 가구류…) — 플랫(1단계) | —                                    | ★★★★★    |
+| 4    | StorageLocation     | 보관 장소                                                                  | Household                            | ★★★★     |
+| 5    | Unit                | 단위 마스터 (ml, g, 개…)                                                   | —                                    | ★★★      |
+| 6    | Product             | 상품 마스터 (소모품·비소모품: 식료품, 전자제품, 가구 등)                   | Category                             | ★★★★★    |
+| 7    | ProductVariant      | 용량/포장 단위별 정보                                                      | Product                              | ★★★★     |
+| 8    | InventoryItem       | 실제 보유 재고                                                             | ProductVariant, StorageLocation      | ★★★★★    |
+| 9    | Purchase            | 구매 기록                                                                  | InventoryItem                        | ★★★★     |
+| 10   | PurchaseBatch       | 로트별 유통기한 (로트=한 번에 구매한 같은 품목·같은 유통기한 묶음)         | Purchase                             | ★★★★     |
+| 11   | Consumption         | 소비/사용 기록                                                             | InventoryItem                        | ★★★★     |
+| 12   | InventoryLog        | 재고 변경 이력                                                             | InventoryItem                        | ★★★      |
+| 13   | WasteRecord         | 폐기 기록                                                                  | InventoryItem                        | ★★★      |
+| 14   | ShoppingList        | 장보기 리스트                                                              | Household                            | ★★★★     |
+| 15   | ShoppingListItem    | 리스트 항목                                                                | ShoppingList, Product/ProductVariant | ★★★★     |
+| 16   | Notification        | 알림                                                                       | User                                 | ★★★★     |
+| 17   | ExpirationAlertRule | 만료 알림 설정(품목별 일수)                                                | User 또는 Household, Product         | ★★★      |
+| 18   | ReportPreset        | 리포트 설정 저장                                                           | User                                 | ★★       |
+| 19   | HouseStructure      | 집 구조(2D/3D) 한 채 — 방·슬롯 정의(JSONB)                                 | Household 1:1                        | ★★★      |
 
 ### User ↔ Household (다대다)
 
