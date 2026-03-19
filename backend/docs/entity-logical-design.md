@@ -45,8 +45,10 @@ erDiagram
 
     ShoppingList }o--o| User : "createdBy"
     ShoppingList ||--o{ ShoppingListItem : "shoppingListId"
+    Category ||--o{ ShoppingListItem : "categoryId"
     ShoppingListItem }o--o| Product : "productId"
     ShoppingListItem }o--o| ProductVariant : "productVariantId"
+    ShoppingListItem }o--o| InventoryItem : "sourceInventoryItemId"
 
     User ||--o{ Notification : "userId"
     User ||--o{ ExpirationAlertRule : "userId"
@@ -56,6 +58,8 @@ erDiagram
 ---
 
 ## 논리적 ERD — 주요 엔티티 속성 (PK·FK)
+
+> Mermaid 블록은 **다이어그램용 속성 요약**입니다. **정본(필수/선택·비고·제약)** 은 아래 §1~§19 표를 따릅니다.
 
 ### 인증·가족·공유 그룹
 
@@ -67,10 +71,15 @@ erDiagram
         string passwordHash
         string displayName
         timestamp emailVerifiedAt
+        timestamp lastLoginAt
+        timestamp createdAt
+        timestamp updatedAt
     }
     Household {
         bigint id PK
         string name
+        timestamp createdAt
+        timestamp updatedAt
     }
     HouseholdMember {
         bigint id PK
@@ -81,7 +90,34 @@ erDiagram
     }
 ```
 
-### 마스터·재고
+### 집 구조·보관 장소
+
+```mermaid
+erDiagram
+    HouseStructure {
+        bigint id PK
+        bigint householdId FK
+        string name
+        jsonb structurePayload
+        int version
+        timestamp createdAt
+        timestamp updatedAt
+    }
+    StorageLocation {
+        bigint id PK
+        bigint householdId FK
+        string name
+        bigint houseStructureId FK
+        string roomId
+        int sortOrder
+        timestamp createdAt
+        timestamp updatedAt
+    }
+```
+
+- **HouseStructure**: `householdId`는 **Household당 1건**(unique, 1:1).
+
+### 카테고리·단위·상품 마스터
 
 ```mermaid
 erDiagram
@@ -89,27 +125,51 @@ erDiagram
         bigint id PK
         string name
         int sortOrder
+        timestamp createdAt
+        timestamp updatedAt
+    }
+    Unit {
+        bigint id PK
+        string symbol UK
+        string name
+        int sortOrder
     }
     Product {
         bigint id PK
         bigint categoryId FK
         string name
-        string imageUrl
         boolean isConsumable
+        string imageUrl
+        string description
+        timestamp createdAt
+        timestamp updatedAt
     }
     ProductVariant {
         bigint id PK
         bigint productId FK
         bigint unitId FK
         decimal quantityPerUnit
+        string name
         decimal price
+        string sku
+        boolean isDefault
+        timestamp createdAt
+        timestamp updatedAt
     }
+```
+
+### 재고·구매·소비·이력·폐기
+
+```mermaid
+erDiagram
     InventoryItem {
         bigint id PK
         bigint productVariantId FK
         bigint storageLocationId FK
         decimal quantity
         decimal minStockLevel
+        timestamp createdAt
+        timestamp updatedAt
     }
     Purchase {
         bigint id PK
@@ -117,17 +177,51 @@ erDiagram
         decimal quantity
         decimal unitPrice
         decimal totalPrice
+        timestamp purchasedAt
+        string memo
         bigint userId FK
+        timestamp createdAt
     }
     PurchaseBatch {
         bigint id PK
         bigint purchaseId FK
         decimal quantity
         date expirationDate
+        timestamp createdAt
+    }
+    Consumption {
+        bigint id PK
+        bigint inventoryItemId FK
+        decimal quantity
+        timestamp consumedAt
+        string memo
+        timestamp createdAt
+    }
+    InventoryLog {
+        bigint id PK
+        bigint inventoryItemId FK
+        string type
+        decimal quantityDelta
+        decimal quantityAfter
+        bigint userId FK
+        string memo
+        string refType
+        string refId
+        timestamp createdAt
+    }
+    WasteRecord {
+        bigint id PK
+        bigint inventoryItemId FK
+        decimal quantity
+        bigint userId FK
+        string reason
+        timestamp wastedAt
+        string memo
+        timestamp createdAt
     }
 ```
 
-### 장보기·알림
+### 장보기
 
 ```mermaid
 erDiagram
@@ -137,25 +231,64 @@ erDiagram
         string name
         bigint createdBy FK
         string status
+        date dueDate
+        timestamp createdAt
+        timestamp updatedAt
     }
     ShoppingListItem {
         bigint id PK
         bigint shoppingListId FK
+        bigint categoryId FK
         bigint productId FK
         bigint productVariantId FK
+        bigint sourceInventoryItemId FK
+        decimal quantity
+        int sortOrder
         boolean checked
+        string memo
+        timestamp createdAt
+        timestamp updatedAt
     }
+```
+
+### 알림·만료 규칙·리포트
+
+```mermaid
+erDiagram
     Notification {
         bigint id PK
         bigint userId FK
         string type
         string title
+        string body
         timestamp readAt
+        string refType
+        string refId
+        timestamp createdAt
+    }
+    ExpirationAlertRule {
+        bigint id PK
+        bigint productId FK
+        bigint userId FK
+        bigint householdId FK
+        int daysBefore
+        boolean isActive
+        timestamp createdAt
+        timestamp updatedAt
+    }
+    ReportPreset {
+        bigint id PK
+        bigint userId FK
+        string name
+        jsonb config
+        int sortOrder
+        timestamp createdAt
+        timestamp updatedAt
     }
 ```
 
-- **ExpirationAlertRule**: `productId`는 **필수**(품목별 일수). `userId`와 `householdId`는 **둘 중 하나만** 채우는 정책(개인 vs 가족·공유 그룹 소유). **동일 소유 주체·동일 품목**에 규칙은 **한 행만** (아래 중복 방지 제약).
-- **ShoppingListItem**: `productId`와 `productVariantId`는 정책에 따라 **하나만** 필수로 둘 수 있음.
+- **ExpirationAlertRule**: `productId` **필수**. `userId`와 `householdId`는 **택1**(정확히 하나만 NOT NULL). **동일 소유·동일 품목** 중복 방지는 §18.
+- **ShoppingListItem**: **`categoryId` 필수**; `productId`·`productVariantId`·`sourceInventoryItemId`는 **힌트**. 상세·재고 반영 플로우는 §16.
 
 ---
 
@@ -207,7 +340,7 @@ erDiagram
 | **선택** | sortOrder            | int       | 표시 순서                                                         |
 | **선택** | createdAt, updatedAt | timestamp | —                                                                 |
 
-**관계**: Product (1:N) — **플랫(1단계) 카테고리만** 사용, 계층(parent) 없음.
+**관계**: Product (1:N), ShoppingListItem (1:N) — **플랫(1단계) 카테고리만** 사용, 계층(parent) 없음.
 
 ---
 
@@ -269,7 +402,7 @@ erDiagram
 | **선택** | description          | text, nullable   | —                                                                                                         |
 | **선택** | createdAt, updatedAt | timestamp        | —                                                                                                         |
 
-**관계**: Category (N:1), ProductVariant (1:N), ExpirationAlertRule (1:N), ShoppingListItem (참조 가능)
+**관계**: Category (N:1), ProductVariant (1:N), ExpirationAlertRule (1:N), ShoppingListItem (선택 `productId`·`productVariantId` 힌트로 참조 가능)
 
 **비고**: 바코드는 수집하지 않음.
 
@@ -277,19 +410,19 @@ erDiagram
 
 ## 8. ProductVariant (용량/포장 단위별 정보)
 
-| 구분     | 항목                 | 타입/비고         | 검토                         |
-| -------- | -------------------- | ----------------- | ---------------------------- | ------------------ | ---------------- |
-| **필수** | id                   | PK                | —                            |
-| **필수** | productId            | FK → Product      | —                            |
-| **필수** | unitId               | FK → Unit         | —                            |
-| **필수** | quantityPerUnit      | decimal           | 1팩=6개 → 6, 1병=500ml → 500 |
-| **선택** | name                 | string            | "500ml", "1팩(6개)" (표시용) |
-| **선택** | price                | decimal, nullable | 참고 단가(표시·장보기 등)    |
-| **선택** | sku                  | string, nullable  | —                            | Stock Keeping Unit | (재고 관리 단위) |
-| **선택** | isDefault            | boolean           | 대표 용량 여부               |
-| **선택** | createdAt, updatedAt | timestamp         | —                            |
+| 구분     | 항목                 | 타입/비고         | 검토                                                 |
+| -------- | -------------------- | ----------------- | ---------------------------------------------------- |
+| **필수** | id                   | PK                | —                                                    |
+| **필수** | productId            | FK → Product      | —                                                    |
+| **필수** | unitId               | FK → Unit         | —                                                    |
+| **필수** | quantityPerUnit      | decimal           | 1팩=6개 → 6, 1병=500ml → 500                         |
+| **선택** | name                 | string            | "500ml", "1팩(6개)" (표시용)                         |
+| **선택** | price                | decimal, nullable | 참고 단가(표시·장보기 등)                            |
+| **선택** | sku                  | string, nullable  | Stock Keeping Unit(재고 관리 단위 코드), 없으면 NULL |
+| **선택** | isDefault            | boolean           | 대표 용량 여부                                       |
+| **선택** | createdAt, updatedAt | timestamp         | —                                                    |
 
-**관계**: Product (N:1), Unit (N:1), InventoryItem (1:N), ShoppingListItem (참조 가능)
+**관계**: Product (N:1), Unit (N:1), InventoryItem (1:N), ShoppingListItem (선택 `productVariantId` 힌트)
 
 **비고**: 바코드는 사용하지 않음.
 
@@ -306,7 +439,7 @@ erDiagram
 | **선택** | minStockLevel        | decimal, nullable    | **잔량 부족 알림** 기준; NULL이면 해당 알림 미사용 |
 | **선택** | createdAt, updatedAt | timestamp            | —                                                  |
 
-**관계**: ProductVariant (N:1), StorageLocation (N:1), Purchase (1:N), Consumption (1:N), InventoryLog (1:N), WasteRecord (1:N)
+**관계**: ProductVariant (N:1), StorageLocation (N:1), Purchase (1:N), Consumption (1:N), InventoryLog (1:N), WasteRecord (1:N), ShoppingListItem (선택 `sourceInventoryItemId`로 참조 가능)
 
 **추가 검토**: `householdId`(조회 편의용 중복), `unitId`(variant에서 가져올 수 있음)
 
@@ -421,21 +554,38 @@ erDiagram
 
 ## 16. ShoppingListItem (리스트 항목)
 
-| 구분          | 항목                                | 타입/비고         | 검토           |
-| ------------- | ----------------------------------- | ----------------- | -------------- |
-| **필수**      | id                                  | PK                | —              |
-| **필수**      | shoppingListId                      | FK → ShoppingList | —              |
-| **필수(택1)** | productId **또는** productVariantId | FK                | 정책 확정 필요 |
-| **선택**      | quantity                            | decimal           | 1 이상         |
-| **선택**      | sortOrder                           | int               | —              |
-| **선택**      | checked                             | boolean           | 체크 여부      |
-| **선택**      | memo                                | string, nullable  | —              |
-| **선택**      | createdAt, updatedAt                | timestamp         | —              |
+> **역할**: 마트 가기 전 **“살 것 목록(의도)”** — 유통기한·재고 부족 알림을 눌러 넣을 때는 **카테고리 단위**로 쌓이기 쉽고, **동원 참치 몇 g·스팸 브랜드·로트·금액** 같은 것은 **재고에 올릴 때(구매 반영)** 확정한다.
 
-**관계**: ShoppingList (N:1), Product 또는 ProductVariant (N:1, 택1)
+| 구분     | 항목                  | 타입/비고                    | 검토                                                                                                                                 |
+| -------- | --------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| **필수** | id                    | PK                           | —                                                                                                                                    |
+| **필수** | shoppingListId        | FK → ShoppingList            | —                                                                                                                                    |
+| **필수** | categoryId            | FK → Category                | **장보기 줄의 분류·그룹**(알림에서 자동 추가 시 해당 재고 품목의 상품 카테고리 등으로 채움). 리스트 UI에서 코너/카테고리별 정렬 기준 |
+| **선택** | productId             | FK → Product                 | 대략적인 품목 힌트(직접 추가 시). 없어도 됨                                                                                          |
+| **선택** | productVariantId      | FK → ProductVariant          | 알림·재고와 연동할 때 **기본 제안**(예: 지금 부족한 그 용량). 사용자가 마트에서 다른 용량을 살 수 있으므로 **등록 전까지 확정 아님** |
+| **선택** | sourceInventoryItemId | FK → InventoryItem, nullable | 알림이 **특정 재고 줄**을 가리킬 때, “이 줄에서 온 장보기 항목” 추적·등록 시 폼 프리필용                                             |
+| **선택** | quantity              | decimal                      | 사야 할 대략 수량                                                                                                                    |
+| **선택** | sortOrder             | int                          | —                                                                                                                                    |
+| **선택** | checked               | boolean                      | 체크 여부                                                                                                                            |
+| **선택** | memo                  | string, nullable             | 예: "참치", "스팸" 등 카테고리만 같을 때 구분하는 짧은 메모                                                                          |
+| **선택** | createdAt, updatedAt  | timestamp                    | —                                                                                                                                    |
 
-**추가 검토**: productId만 쓰고 수량/단위는 텍스트(memo)로 → 구조 단순화  
-**줄일 것**: Product만 참조하고 "수량/단위"는 memo로 처리하면 ProductVariant 불필요
+**관계**: ShoppingList (N:1), Category (N:1), Product·ProductVariant·InventoryItem (선택 N:1)
+
+### 재고 등록(구매 반영) 플로우
+
+- 사용자가 리스트 항목에서 **「재고에 반영」**(또는 구매 확정) 시: **Product**·**ProductVariant**(브랜드·용량)·**수량**·**Purchase**·**PurchaseBatch(유통기한)**·**unitPrice/totalPrice**·**purchasedAt** 등을 **한 번에 선택·입력**해 `InventoryItem`을 늘리거나 새로 만들고, 필요 시 `Purchase`/`Consumption`/`InventoryLog`와 맞춘다.
+- 장보기 줄의 `productVariantId`는 **초기값 제안**으로만 쓰고, 최종 스키마는 **등록 API/화면 입력**이 우선한다.
+
+### 제약·검증 (권장)
+
+- `productVariantId`가 있으면, 해당 Variant가 속한 **Product의 `categoryId`**와 본 행의 **`categoryId`가 일치**해야 함 (앱 또는 DB CHECK).
+- `sourceInventoryItemId`가 있으면, 해당 `InventoryItem`이 속한 **Product→Category**가 **`categoryId`와 일치**하는지 검증 권장(가구 스코프도 동일 Household인지 API에서 확인).
+
+### 유의사항
+
+- **카테고리만** 있으면 "식료품 살 것"처럼 **거칠게** 보일 수 있음 → `memo`·알림 기반 `productVariantId`로 구체화를 돕는다.
+- **참치 vs 스팸**은 같은 대분류일 수 있으므로, 자동 추가 시 **가능하면 `sourceInventoryItemId` 또는 `productVariantId`**를 채워 구분을 살린다.
 
 ---
 
@@ -473,23 +623,23 @@ erDiagram
 
 ### 중복 규칙 방지 (필수 수준으로 구현 권장)
 
-1. **소유 주체 정합성 (CHECK)**  
+1. **소유 주체 정합성 (CHECK)**
    - `userId`와 `householdId`는 **정확히 하나만** NOT NULL이어야 함 (둘 다 NULL 또는 둘 다 NOT NULL 금지).
 
-2. **가족·공유 그룹 단위 규칙**  
-   - `householdId`가 채워진 행에 대해 **`(productId, householdId)` 조합은 유일**해야 함.  
+2. **가족·공유 그룹 단위 규칙**
+   - `householdId`가 채워진 행에 대해 **`(productId, householdId)` 조합은 유일**해야 함.
    - 구현 예(PostgreSQL 등): 부분 유니크 인덱스  
-     `UNIQUE (product_id, household_id) WHERE household_id IS NOT NULL AND user_id IS NULL`  
+     `UNIQUE (product_id, household_id) WHERE household_id IS NOT NULL AND user_id IS NULL`
    - 의미: 같은 Household 안에서 **동일 Product**에 대한 만료 알림 규칙은 **최대 1건** (`daysBefore`는 그 한 행으로만 표현).
 
-3. **개인 단위 규칙**  
-   - `userId`가 채워진 행에 대해 **`(productId, userId)` 조합은 유일**해야 함.  
+3. **개인 단위 규칙**
+   - `userId`가 채워진 행에 대해 **`(productId, userId)` 조합은 유일**해야 함.
    - 구현 예:  
-     `UNIQUE (product_id, user_id) WHERE user_id IS NOT NULL AND household_id IS NULL`  
+     `UNIQUE (product_id, user_id) WHERE user_id IS NOT NULL AND household_id IS NULL`
    - 의미: 같은 사용자(개인 맥락)에 대해 **동일 Product** 규칙은 **최대 1건**.
 
-4. **API·앱**  
-   - 위 유니크 제약 위반 시 **409 Conflict**(또는 도메인 에러)로 거절.  
+4. **API·앱**
+   - 위 유니크 제약 위반 시 **409 Conflict**(또는 도메인 에러)로 거절.
    - 또는 **같은 조합이면 UPDATE**만 허용하는 UPSERT(일수·활성만 갱신)를 택할 수 있음.
 
 **비고**: 한 품목에 대해 Household 규칙과 동일 멤버의 User 규칙을 **동시에** 두면 알림이 이중일 수 있으므로, UI에서는 **가족 공유 vs 개인** 중 한 축만 쓰도록 안내하는 것을 권장.
@@ -516,11 +666,11 @@ erDiagram
 
 ## 요약: ERD 그릴 때 체크 포인트
 
-| 구분              | 내용                                                                                                                                                                                                                  |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **추가 검토**     | HouseholdMember 역할(owner/member), Purchase의 userId(구매자), InventoryLog의 userId·memo, ShoppingListItem의 Product vs ProductVariant 정책, Notification refType/refId, ExpirationAlertRule 품목별 일수·unique 정책 |
-| **줄이기/미루기** | ReportPreset 단순화, ProductVariant sku 등은 선택                                                                                                                                                                     |
-| **정책 결정**     | ShoppingListItem은 Product만 참조할지 ProductVariant까지 쓸지, ExpirationAlertRule은 User vs Household 소유 구역                                                                                                      |
+| 구분              | 내용                                                                                                                                                                                     |
+| ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **추가 검토**     | HouseholdMember 역할(owner/member), Purchase의 userId(구매자), InventoryLog의 userId·memo, Notification refType/refId·장보기 자동 추가 연동, ExpirationAlertRule 품목별 일수·unique 정책 |
+| **줄이기/미루기** | ReportPreset 단순화, ProductVariant sku 등은 선택                                                                                                                                        |
+| **정책 결정**     | ExpirationAlertRule User vs Household 소유 구역, 장보기 줄 중복(동일 sourceInventoryItemId) 병합 여부                                                                                    |
 
 **기타 추가 예정(참고)**: [policy/considerations.md](./policy/considerations.md) — Recipe, Brand, Supplier, Photo, Integration, AuditLog 등. 필요 시 순차 반영. (가계부·구독·예산은 본 프로젝트 범위 외, 별도 프로젝트 권장.)
 

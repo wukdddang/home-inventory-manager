@@ -56,22 +56,24 @@ User
   └── ReportPreset (1:N)
 
 Category
-  └── Product (1:N)  ※ 플랫 카테고리(계층 없음)
+  ├── Product (1:N)  ※ 플랫 카테고리(계층 없음)
+  └── ShoppingListItem (1:N, 장보기 줄 분류 기준)
 
 Product
   ├── ProductVariant (1:N)
   ├── ExpirationAlertRule (1:N, 선택, 품목별 일수)
-  └── ShoppingListItem (참조 가능)
+  └── ShoppingListItem (선택 힌트)
 
 ProductVariant
   ├── InventoryItem (1:N)
-  └── ShoppingListItem (참조 가능)
+  └── ShoppingListItem (선택 힌트)
 
 InventoryItem
   ├── Purchase (1:N)
   ├── Consumption (1:N)
   ├── InventoryLog (1:N)
-  └── WasteRecord (1:N)
+  ├── WasteRecord (1:N)
+  └── ShoppingListItem (선택: 알림 출처 ref)
 
 Purchase
   └── PurchaseBatch (1:N)
@@ -114,12 +116,14 @@ erDiagram
     InventoryItem ||--o{ InventoryLog : logs
     InventoryItem ||--o{ WasteRecord : wasted
 
+    Category ||--o{ ShoppingListItem : "category required"
     ShoppingList ||--o{ ShoppingListItem : lines
-    ShoppingListItem }o--o| Product : "ref optional"
-    ShoppingListItem }o--o| ProductVariant : "ref optional"
+    ShoppingListItem }o--o| Product : "hint optional"
+    ShoppingListItem }o--o| ProductVariant : "hint optional"
+    ShoppingListItem }o--o| InventoryItem : "from alert optional"
 ```
 
-- **Category**는 플랫(1단계)만 사용; `parentId`·계층 없음.
+- **Category**는 플랫(1단계)만 사용; `parentId`·계층 없음. **ShoppingListItem**은 카테고리를 필수로 두고, 품목/변형/재고 출처는 알림·UX에 따라 선택.
 - **ExpirationAlertRule**은 품목(Product)마다 유통기한 **며칠 전** 알림 일수를 다르게 둘 수 있음.
 - **HouseStructure**: 상세는 [집 구조도 백엔드 명세](./house-structure-3d-feature.md) 참고. StorageLocation에 `houseStructureId`, `roomId` 등으로 "방"과 연결 가능.
 

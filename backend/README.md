@@ -162,7 +162,7 @@ Interface → Business → Context → Domain → Infrastructure
 | 12   | InventoryLog            | 재고 변경 이력 (입고/소비/조정/폐기)           | InventoryItem                    | ★★★      |
 | 13   | WasteRecord             | 폐기 기록 (유통기한 만료, 변질 등)             | InventoryItem                    | ★★★      |
 | 14   | ShoppingList            | 장보기 리스트                                  | Household                        | ★★★★     |
-| 15   | ShoppingListItem        | 리스트 항목                                    | ShoppingList, Product/ProductVariant | ★★★★ |
+| 15   | ShoppingListItem        | 리스트 항목(카테고리 필수, 품목·Variant·재고 출처는 힌트) | ShoppingList, Category, (선택) Product/Variant/InventoryItem | ★★★★ |
 | 16   | Notification            | 알림 (만료 임박, 잔량 부족 등)                | User                             | ★★★★     |
 | 17   | ExpirationAlertRule     | 만료 알림 설정 (품목별 며칠 전 알림)           | User or Household, Product       | ★★★      |
 | 18   | ReportPreset            | 자주 보는 리포트 설정 저장                     | User                             | ★★       |
