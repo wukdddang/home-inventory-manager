@@ -4,14 +4,29 @@
 
 ### 파일 위치
 
-- Context 파일은 해당 페이지 폴더 내 `_context/` 디렉토리에 위치
+- Context 파일은 **페이지 구현 폴더** 기준 `_context/` 에 둔다. 본 프로젝트에서는 **`app/(mock)/mock/{페이지}/_context/`** 가 해당한다.
 - 파일명: `{PageName}Context.tsx` 형식
-- 예시: `ProjectManagementContext.tsx`, `MyAttendanceContext.tsx`
+- 예시: `DashboardContext.tsx`, `LoginContext.tsx`, `ProjectManagementContext.tsx`
 
-### 폴더 구조
+### 라우트 그룹: `app/(current)` · `app/(mock)` (본 프로젝트)
+
+Next.js **Route Group** `(괄호)`는 URL에 포함되지 않습니다. 이 저장소는 **얇은 공개 라우트**와 **구현 본문**을 나눕니다.
+
+| 그룹 | 역할 | URL 예 |
+|------|------|--------|
+| **`app/(current)/`** | 사용자에게 노출되는 **정식 경로**만 둠. `page.tsx`는 **`(mock)/mock/...` 구현을 re-export**하는 것이 원칙. 인증·셸이 필요한 세그먼트는 여기서 `layout.tsx`로 감쌈. | `/`, `/login`, `/signup`, `/dashboard`, `/settings` |
+| **`app/(mock)/mock/`** | Provider·`_context`·`_ui`·`_hooks`·`_lib` 등 **실제 화면 구현**. 동일 화면을 **`/mock/...` 접두로도** 노출(기획·데모·비교용). | `/mock`, `/mock/login`, `/mock/dashboard`, … |
+
+- **`(current)/_ui/`**: 라우트 그룹 단위 공용 UI만 둠 (예: `AppShell.component.tsx`, `AuthGuard.component.tsx`). 페이지별 `_ui`는 **`(mock)/mock/{페이지}/_ui/`** 에 둠.
+- **`(current)/dashboard/layout.tsx`**, **`settings/layout.tsx`**: `AuthGuard` + `AppShell` 등 (로그인·가입·루트는 가드 없음 — `(current)/layout.tsx` 주석과 동일 정책).
+- 상세: `app/(mock)/mock/README.md`.
+
+### 폴더 구조 (일반 템플릿)
+
+페이지 **구현 본문**은 아래처럼 `_context` / `_ui` / `_hooks` 를 **페이지 폴더 기준**으로 둡니다 (`(mock)/mock/{page-name}/` 가 이에 해당).
 
 ```
-src/app/(planning)/plan/(user)/user/{page-name}/
+app/(mock)/mock/{page-name}/
 ├── _context/
 │   └── {PageName}Context.tsx
 ├── _ui/
@@ -19,9 +34,31 @@ src/app/(planning)/plan/(user)/user/{page-name}/
 │   ├── {ComponentName}.section/
 │   ├── {ComponentName}.module.tsx
 │   └── {ComponentName}.component.tsx
-├── _hooks/ (선택적)
+├── _hooks/ (선택)
 │   └── use{HookName}.ts
+├── _lib/ (선택)
+│   └── {page}-helpers.ts
 └── page.tsx
+```
+
+### 폴더 구조 — `(current)` 쪽 (re-export 전용 예시)
+
+```
+app/(current)/
+├── layout.tsx
+├── _ui/
+│   ├── AppShell.component.tsx
+│   └── AuthGuard.component.tsx
+├── login/
+│   └── page.tsx          # export { default } from "@/app/(mock)/mock/login/page"
+├── signup/
+│   └── page.tsx
+├── dashboard/
+│   ├── layout.tsx        # AuthGuard + AppShell
+│   └── page.tsx          # mock 구현 page re-export
+└── settings/
+    ├── layout.tsx
+    └── page.tsx
 ```
 
 ### 인터페이스 네이밍
@@ -49,17 +86,28 @@ src/app/(planning)/plan/(user)/user/{page-name}/
 
 ### Context와 Route Handler 연결
 
-Context는 Route Handler에 연결하여 데이터를 받아오고, 이를 value로 반환합니다:
+Context는 **데이터 소스**(Route Handler·`fetch`·로컬 스토리지 등)를 호출해 `value`로 반환합니다:
 
-1. **Context**: Route Handler API를 호출하여 데이터를 가져옴
-2. **Route Handler**: 데이터베이스 조회/수정 로직 처리
-3. **컴포넌트**: Context의 커스텀 훅을 호출하여 데이터 사용
+1. **Context**: 데이터 소스를 호출·상태에 반영
+2. **Route Handler** (또는 서비스 계층): 조회/수정 로직
+3. **컴포넌트**: Context 커스텀 훅으로 데이터 사용
 
 ### 데이터 흐름
 
 ```
-Route Handler (/api/...) ← Context (API 호출) → 컴포넌트 (훅 사용)
+Route Handler (/api/...) ← Context (API·서비스 호출) → 컴포넌트 (훅 사용)
 ```
+
+### Port / Service 분리 (선택 — `dashboard` 등)
+
+`app/(mock)/mock/dashboard/_context/` 예시처럼 Context가 직접 `fetch` 하지 않고 **포트(인터페이스)** 와 **구현체**를 둘 수 있습니다.
+
+- `{domain}.port.ts` — 목록·저장 등 메서드 시그니처
+- `{domain}-api.service.ts` — 실제 API 또는 클라이언트 저장소
+- `{domain}-mock.service.ts` — 목 데이터·데모용
+- `Provider`에 `dataMode: "mock" | "api"` 등을 넘겨 구현체 선택 (`page.tsx`에서 `usePathname()`으로 `/mock` 접두 여부를 보내 `DashboardScreen`에 주입하는 패턴)
+
+화면 조합만 담당하는 **`DashboardScreen.tsx`** 를 `_context` 옆에 두고, `page.tsx`는 `dataMode`만 넘기는 구성도 가능합니다.
 
 ### 상태 그룹화
 
@@ -235,6 +283,8 @@ function MyComponent() {
   - 예시: `StatusSelect.component.tsx`, `SimpleStatusSelect.component.tsx`
 
 ### 컴포넌트 파일 구조
+
+페이지별 UI는 **`(mock)/mock/{페이지}/_ui/`** 에 둔다. 라우트 그룹 전역(셸·가드)만 **`(current)/_ui/*.component.tsx`** 에 둔다.
 
 ```
 _ui/
@@ -458,23 +508,65 @@ export async function DELETE(
 
 ## 11. 파일 구조 예시
 
-### 프론트엔드 구조 (실제 구조 반영)
+### 프론트엔드 구조 (본 저장소 — `(current)` / `(mock)`)
+
+**공개 URL (얇은 레이어)**
+
+```
+app/(current)/
+├── layout.tsx
+├── _ui/
+│   ├── AppShell.component.tsx
+│   └── AuthGuard.component.tsx
+├── login/page.tsx              # → (mock)/mock/login/page re-export
+├── signup/page.tsx
+├── dashboard/
+│   ├── layout.tsx              # AuthGuard + AppShell
+│   └── page.tsx
+└── settings/
+    ├── layout.tsx
+    └── page.tsx
+```
+
+- 루트 경로 `/`만 `app/page.tsx`에 두고 `export { default } from "@/app/(mock)/mock/page"` 하는 구성도 가능하다(`(current)` 그룹 밖).
+
+**구현 본문 (`/mock/...` 동시 노출)**
+
+```
+app/(mock)/mock/
+├── README.md
+├── layout.tsx
+├── page.tsx
+├── login/
+│   ├── _context/LoginContext.tsx
+│   ├── _hooks/useLogin.ts
+│   ├── _ui/
+│   │   ├── LoginPage.panel/index.tsx
+│   │   ├── LoginForm.section/index.tsx
+│   │   └── LoginShowcase.section/index.tsx
+│   └── page.tsx
+├── signup/ … (동일 패턴)
+├── dashboard/
+│   ├── DashboardScreen.tsx
+│   ├── page.tsx                # dataMode 분기 → DashboardScreen
+│   ├── layout.tsx              # AppShell만 (/mock 전역은 AuthGuard 없음)
+│   ├── _context/
+│   │   ├── DashboardContext.tsx
+│   │   ├── dashboard-households.port.ts
+│   │   ├── dashboard-api.service.ts
+│   │   └── dashboard-mock.service.ts
+│   ├── _hooks/useDashboard.ts
+│   ├── _lib/dashboard-helpers.ts
+│   └── _ui/ … (DashboardPage.panel, *.section, *.module.tsx)
+└── settings/ …
+```
+
+**레거시·타 프로젝트 예시 (참고용)**
 
 ```
 src/app/(planning)/plan/(user)/user/all-projects/
-├── _context/
-│   └── ProjectManagementContext.tsx
-├── _ui/
-│   ├── ProjectTable.panel/
-│   ├── ProjectGantt.panel/
-│   ├── ProjectDetail.section/
-│   ├── FloatingViewSelector.tsx
-│   ├── ProjectTypeFilter.module.tsx
-│   ├── SimpleStatusSelect.component.tsx
-│   ├── StatusSelect.component.tsx
-│   ├── ProjectTree.module.tsx
-│   ├── ProjectLegend.module.tsx
-│   └── ProjectTable.module.tsx
+├── _context/ProjectManagementContext.tsx
+├── _ui/ …
 └── page.tsx
 ```
 
@@ -591,6 +683,37 @@ export default function AllProjectsPage() {
 }
 ```
 
+### `(current)` re-export · `dataMode` 분기 (본 저장소)
+
+```typescript
+// app/(current)/login/page.tsx — 구현은 (mock)에만 둠
+export { default } from "@/app/(mock)/mock/login/page";
+```
+
+```typescript
+// app/(mock)/mock/dashboard/page.tsx — 동일 구현이 /dashboard 와 /mock/dashboard 에서 공유
+"use client";
+import { usePathname } from "next/navigation";
+import { DashboardScreen } from "./DashboardScreen";
+
+export default function DashboardPage() {
+  const pathname = usePathname();
+  const dataMode = pathname.startsWith("/mock") ? "mock" : "api";
+  return <DashboardScreen dataMode={dataMode} />;
+}
+```
+
+```typescript
+// app/(mock)/mock/dashboard/DashboardScreen.tsx
+export function DashboardScreen({ dataMode }: { dataMode: "mock" | "api" }) {
+  return (
+    <DashboardProvider dataMode={dataMode}>
+      <DashboardPanel />
+    </DashboardProvider>
+  );
+}
+```
+
 ## 13. 핵심 원칙
 
 1. **관심사 분리**: Context는 데이터, Page는 UI 상태
@@ -603,4 +726,7 @@ export default function AllProjectsPage() {
 8. **폴더 구조**: `_context/`, `_ui/`, `_hooks/` 명명 규칙 준수
 9. **컴포넌트 분류**: `.panel/`, `.section/`, `.module.tsx`, `.component.tsx` 구분 사용
 10. **경로 일관성**: 페이지 경로와 API 경로 매핑 규칙 준수 (`/plan/{module}/{page}` ↔ `/api/{module}/{page}`)
-11. **데이터 흐름**: Context → Route Handler → 컴포넌트 훅 사용 패턴 준수
+11. **데이터 흐름**: Context → 데이터 소스(Route Handler·서비스) → 컴포넌트 훅 사용 패턴 준수
+12. **라우트 그룹**: 정식 URL은 `app/(current)/`에 두고, 구현·Provider·`_ui`는 `app/(mock)/mock/`에 둔다. `(current)`의 `page.tsx`는 원칙적으로 **mock 쪽 `page`를 re-export**만 한다.
+13. **셸·가드 위치**: `AppShell`·`AuthGuard` 등 라우트 그룹 공용 UI는 `(current)/_ui/*.component.tsx`에 두고, 필요한 세그먼트만 `(current)/{segment}/layout.tsx`로 감싼다 (`(mock)/mock` 정책은 `mock/README.md` 참고).
+14. **선택 아키텍처**: 복잡한 도메인은 `_context`에 Port·`api`/`mock` 서비스 파일을 두고 Provider에서 `dataMode` 등으로 바꿔 끼운다.
