@@ -1,6 +1,7 @@
 # 엔티티 명세 (Home Inventory Manager)
 
 실제 **엔티티**와 연결된 기능만 정리한 명세입니다.  
+엔티티 목록·관계는 [er-diagram.md](./er-diagram.md), 필드 상세는 [entity-logical-design.md](./entity-logical-design.md)와 동기화합니다.  
 완료한 항목은 `- [x]`로 표시해 관리하세요.
 
 ---
@@ -39,6 +40,17 @@
 - [ ] 사용자는_보관_장소_목록을_조회한다
 - [ ] 사용자는_보관_장소를_수정한다
 - [ ] 사용자는_보관_장소를_삭제한다
+- [ ] 사용자는_보관_장소를_집_구조_내_방과_연결한다 (houseStructureId, roomId)
+
+---
+
+## HouseStructure (집 구조)
+
+- [ ] 사용자는_가족·공유_그룹의_집_구조를_등록·수정한다 (structurePayload 저장)
+- [ ] 사용자는_가족·공유_그룹의_집_구조를_조회한다
+- [ ] (클라이언트) 방_기준_물품_목록_조회는_StorageLocation roomId + InventoryItem 조합으로 제공
+
+→ 백엔드 상세: [house-structure-3d-feature.md](./house-structure-3d-feature.md)
 
 ---
 
@@ -162,25 +174,6 @@
 
 ---
 
-## Account (잔고)
-
-- [ ] 사용자는_잔고_계정을_등록한다 (현금, 통장 등)
-- [ ] 사용자는_잔고_목록을_조회한다
-- [ ] 사용자는_잔고_금액을_수정한다 (입금·출금 반영)
-- [ ] 사용자는_잔고_계정을_삭제한다
-- [ ] 사용자는_잔고_입출금_이력을_조회한다
-
----
-
-## RecurringIncome (예정 수입 / 월급)
-
-- [ ] 사용자는_예정_수입을_등록한다 (월급날, 금액 등)
-- [ ] 사용자는_예정_수입_목록을_조회한다
-- [ ] 사용자는_예정_수입을_수정·삭제한다
-- [ ] 사용자는_예정된_월급날_데이터를_조회한다
-
----
-
 **사용법**: 완료한 기능은 `- [ ]`를 `- [x]`로 바꿔서 진행 상황을 표시하세요.
 
-**더 많은 기능 후보**: [추가로 고려할 만한 기능](./considerations.md) 참고.
+**더 많은 기능 후보**: [policy/considerations.md](./policy/considerations.md) 참고. (Recipe, Brand, Supplier, Photo, Integration, AuditLog 등. 가계부·구독·예산은 별도 프로젝트 권장.)

@@ -29,8 +29,7 @@ README의 **「4. 도메인 & 엔티티 설계」**와 동기화해 두었습니
 | 17 | ExpirationAlertRule | 만료 알림 설정 | User 또는 Household | ★★★ |
 | 18 | Tag | 태그 | — (Product 등과 N:N은 설계 시 확정) | ★★ |
 | 19 | ReportPreset | 리포트 설정 저장 | User | ★★ |
-| 20 | Account | 잔고 (현금, 통장 등) | User 또는 Household | ★★★ |
-| 21 | RecurringIncome | 예정 수입 (월급날, 금액 등) | User 또는 Household | ★★★ |
+| 20 | HouseStructure | 집 구조(2D/3D) 한 채 — 방·슬롯 정의(JSONB) | Household 1:1 | ★★★ |
 
 ### User ↔ Household (다대다)
 
@@ -46,19 +45,16 @@ README의 **「4. 도메인 & 엔티티 설계」**와 동기화해 두었습니
 
 ```
 Household (가족·공유 그룹)
-  ├── StorageLocation (1:N)
+  ├── HouseStructure (1:1, 선택) — 집 구조(방·슬롯 JSON)
+  ├── StorageLocation (1:N) — roomId 등으로 HouseStructure와 연동 가능
   ├── ShoppingList (1:N)
-  ├── ExpirationAlertRule (1:N, 선택)
-  ├── Account (1:N, 선택)
-  └── RecurringIncome (1:N, 선택)
+  └── ExpirationAlertRule (1:N, 선택)
 
 User
   ├── Household (N:N)
   ├── Notification (1:N)
   ├── ExpirationAlertRule (1:N, 선택)
-  ├── ReportPreset (1:N)
-  ├── Account (1:N, 선택)
-  └── RecurringIncome (1:N, 선택)
+  └── ReportPreset (1:N)
 
 Category
   └── Product (1:N)  ※ Category 자기 참조(계층) 가능
@@ -82,12 +78,6 @@ Purchase
 
 ShoppingList
   └── ShoppingListItem (1:N)
-
-Account (잔고)
-  └── AccountTransaction 또는 BalanceLog (1:N, 입출금 이력)
-
-RecurringIncome (예정 수입)
-  └── (월급날·금액 등 단일 엔티티로 관리 가능)
 ```
 
 ---
@@ -100,6 +90,7 @@ RecurringIncome (예정 수입)
 erDiagram
     User }o--o{ Household : "members (N:N)"
 
+    Household ||--o| HouseStructure : "optional 1:1"
     Household ||--o{ StorageLocation : has
     Household ||--o{ ShoppingList : has
     Household ||--o{ ExpirationAlertRule : "optional"
@@ -107,10 +98,6 @@ erDiagram
     User ||--o{ Notification : receives
     User ||--o{ ExpirationAlertRule : "optional"
     User ||--o{ ReportPreset : saves
-    User ||--o{ Account : "optional"
-    User ||--o{ RecurringIncome : "optional"
-    Household ||--o{ Account : "optional"
-    Household ||--o{ RecurringIncome : "optional"
 
     Category ||--o{ Product : classifies
 
@@ -118,6 +105,7 @@ erDiagram
     Product ||--o{ ProductVariant : variants
     ProductVariant ||--o{ InventoryItem : stocked_as
     StorageLocation ||--o{ InventoryItem : stores
+    StorageLocation }o--o| HouseStructure : "optional room"
 
     InventoryItem ||--o{ Purchase : purchases
     Purchase ||--o{ PurchaseBatch : batches
@@ -132,6 +120,7 @@ erDiagram
 
 - **Category** 계층(부모–자식)은 필요 시 동일 엔티티 자기 참조로 확장.
 - **Tag**는 Product 등과 N:N 테이블로 연결하는 방식이 일반적.
+- **HouseStructure**: 상세는 [집 구조도 백엔드 명세](./house-structure-3d-feature.md) 참고. StorageLocation에 `houseStructureId`, `roomId` 등으로 "방"과 연결 가능.
 
 ---
 

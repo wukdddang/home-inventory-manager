@@ -19,11 +19,11 @@ erDiagram
     Category ||--o{ Category : "상위-하위"
     Category ||--o{ Product : "분류"
 
+    Household ||--o| HouseStructure : "집 구조(1:1)"
     Household ||--o{ StorageLocation : "보관 장소"
+    StorageLocation }o--o| HouseStructure : "방/슬롯(선택)"
     Household ||--o{ ShoppingList : "장보기"
     Household ||--o{ ExpirationAlertRule : "만료 알림 설정"
-    Household ||--o{ Account : "잔고"
-    Household ||--o{ RecurringIncome : "예정 수입"
     Household ||--o{ Tag : "그룹 태그"
 
     Product ||--o{ ProductVariant : "용량·단위"
@@ -49,13 +49,9 @@ erDiagram
     User ||--o{ Notification : "알림"
     User ||--o{ ExpirationAlertRule : "개인 만료 설정"
     User ||--o{ ReportPreset : "리포트 설정"
-    User ||--o{ Account : "개인 잔고"
-    User ||--o{ RecurringIncome : "개인 예정 수입"
 
     Product ||--o{ ProductTag : ""
     Tag ||--o{ ProductTag : ""
-
-    Account ||--o{ AccountTransaction : "입출금"
 ```
 
 ---
@@ -93,11 +89,23 @@ erDiagram
 
 ---
 
+## HouseStructure (집 구조)
+
+- 소속 가족·공유 그룹 (Household 1:1)
+- 구조 이름 (예: "우리 집")
+- 구조 데이터 (방·슬롯 정의, JSONB)
+- (선택) 스키마 버전
+
+→ 상세: [집 구조도 백엔드 명세](./house-structure-3d-feature.md)
+
+---
+
 ## StorageLocation (보관 장소)
 
 - 소속 가족·공유 그룹
 - 장소 이름
 - 정렬 순서
+- (선택) 집 구조 내 방/슬롯 연결 — HouseStructure + roomId 또는 slotId
 
 ---
 
@@ -259,38 +267,10 @@ erDiagram
 
 ---
 
-## Account (잔고 계정)
-
-- 소유 주체(사용자 또는 가족·공유 그룹)
-- 계정 이름
-- 현재 잔고 금액
-- 통화
-- 계정 유형(현금, 예금 등, 선택)
-
----
-
-## AccountTransaction (입출금 이력)
-
-- 잔고 계정
-- 유형(입금, 출금)
-- 금액
-- 일시
-- 메모
-
----
-
-## RecurringIncome (예정 수입·월급)
-
-- 소유 주체(사용자 또는 가족·공유 그룹)
-- 항목 이름
-- 예정 금액
-- 매월 지정일(몇 일)
-- 다음 예정일
-- 반복 주기(매월 등, 선택)
-
----
-
 ## 개념적 설계 메모
 
 - **로트**: 한 번에 구매한 같은 품목 묶음, 같은 유통기한 단위. PurchaseBatch가 이를 표현합니다.
 - **가족·공유 그룹(Household)** 과 **가구(침대·책상)** 는 다릅니다. 후자는 Product·Category(가구류)로 관리합니다.
+### 기타 추가 예정(참고)
+
+[policy/considerations.md](./policy/considerations.md)에 정리된 기능·엔티티 후보: **Recipe**, **Brand**, **Supplier**, **Photo**, **Integration**(알림 채널), **AuditLog**(활동 로그) 등. 필요 시 개념/논리 설계에 순차 반영. (가계부·구독·예산은 별도 프로젝트 권장.)

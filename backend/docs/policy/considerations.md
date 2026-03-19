@@ -30,19 +30,9 @@
 
 ---
 
-## 3. 재무·예산·가계부·구독 쪽
+## 3. 가계부·구독·예산 (범위 외)
 
-| 구분 | 내용 | 비고 |
-|------|------|------|
-| **고정 지출** | 월세, 관리비, 통신비, 보험 등 반복 지출 등록 | RecurringExpense 엔티티 (RecurringIncome과 대칭) |
-| **예정 지출** | 공과금 납부일, 대출 상환일, 카드 결제일 | 일정 + 예상 금액 |
-| **예산 설정** | 월별 총예산, 카테고리별 예산 (식비, 교통비 등) | Budget 엔티티, 지출 대비 알림 |
-| **가계부** | 수입/지출·잔액·예산을 한 화면에 | Account + Transaction + RecurringIncome/Expense + Budget 조합. [가계부·구독 연동 방안](./ledger-and-subscription.md) 참고. |
-| **구독 내역** | 넷플릭스, 멤버십 등 반복 결제 등록·알림 | Subscription 또는 RecurringExpense 확장. 수동 입력 외 **오픈뱅킹·이메일 파싱** 등으로 입력 부담 줄이기 → [가계부·구독 연동 방안](./ledger-and-subscription.md) 참고. |
-| **대출·부채** | 빌린 돈, 갚을 날, 이자 | Liability/Debt 엔티티, Account와 연동 |
-| **보증금·적금** | 미래에 돌려받을 돈, 만기일 | Account 타입 확장 또는 별도 엔티티 |
-| **수입/지출 카테고리** | 급여, 부수입, 식비, 교통비 등 (재무용) | Category와 분리하거나 type으로 구분 |
-| **다중 통화** | 원화 외 달러, 유로 등 | Account·Purchase에 currency, 환율(선택) |
+본 프로젝트는 **재고·물품 관리**에 집중합니다. 가계부(잔고, 입출금, 수입/지출), 구독(반복 결제·알림), 예산 기능은 **별도 프로젝트**로 두는 것을 권장합니다. → [ledger-and-subscription.md](./ledger-and-subscription.md)
 
 ---
 
@@ -62,8 +52,7 @@
 | 구분 | 내용 | 비고 |
 |------|------|------|
 | **알림 채널 설정** | 앱/이메일/카카오 중 선택, 품목/알림 유형별 설정 | Notification + Integration |
-| **주간/월간 요약 리포트** | 지난 N일 재고 변동, 지출, 만료 예정 요약 | ReportPreset + 집계 API |
-| **목표 설정** | “이번 달 식비 50만 원 이하” 등 | Budget + 알림 |
+| **주간/월간 요약 리포트** | 지난 N일 재고 변동, 만료 예정 요약 | ReportPreset + 집계 API |
 | **만료 알림 다단계** | 7일 전, 3일 전, 당일 등 여러 시점 | ExpirationAlertRule을 여러 개 허용 (이미 가능) |
 
 ---
@@ -93,8 +82,7 @@
 
 ## 정리
 
-- **우선 넣기 좋은 것**: Recipe, Brand, Supplier, Photo, 고정/예정 지출, 예산 설정, 반복 구매 알림, 장보기 템플릿·예상 금액.
-- **재무 확장**: 대출·부채, 보증금·적금, 수입/지출 카테고리, 다중 통화.
+- **우선 넣기 좋은 것**: Recipe, Brand, Supplier, Photo, 반복 구매 알림, 장보기 템플릿·예상 금액.
 - **운영·편의**: 초대 링크, 활동 로그, 내보내기/가져오기, 백업.
 
 필요한 것부터 엔티티·기능 목록(예: [feature-checklist.md](./feature-checklist.md), [entity-logical-design.md](./entity-logical-design.md))에 반영해 가면 됩니다.

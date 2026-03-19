@@ -21,11 +21,10 @@ erDiagram
     Category ||--o{ Category : "parentId"
     Category ||--o{ Product : "categoryId"
 
+    Household ||--o| HouseStructure : "householdId"
     Household ||--o{ StorageLocation : "householdId"
-    Household ||--o{ ShoppingList : "householdId"
+    StorageLocation }o--o| HouseStructure : "houseStructureId, roomId"
     Household ||--o{ ExpirationAlertRule : "householdId"
-    Household ||--o{ Account : "householdId"
-    Household ||--o{ RecurringIncome : "householdId"
     Household ||--o{ Tag : "householdId"
 
     Product ||--o{ ProductVariant : "productId"
@@ -51,13 +50,9 @@ erDiagram
     User ||--o{ Notification : "userId"
     User ||--o{ ExpirationAlertRule : "userId"
     User ||--o{ ReportPreset : "userId"
-    User ||--o{ Account : "userId"
-    User ||--o{ RecurringIncome : "userId"
 
     Product ||--o{ ProductTag : "productId"
     Tag ||--o{ ProductTag : "tagId"
-
-    Account ||--o{ AccountTransaction : "accountId"
 ```
 
 ---
@@ -162,35 +157,7 @@ erDiagram
     }
 ```
 
-### 재무
-
-```mermaid
-erDiagram
-    Account {
-        bigint id PK
-        bigint userId FK
-        bigint householdId FK
-        string name
-        decimal balance
-        string currency
-    }
-    AccountTransaction {
-        bigint id PK
-        bigint accountId FK
-        string type
-        decimal amount
-    }
-    RecurringIncome {
-        bigint id PK
-        bigint userId FK
-        bigint householdId FK
-        string name
-        decimal amount
-        int scheduledDayOfMonth
-    }
-```
-
-- **Account**, **RecurringIncome**, **ExpirationAlertRule**: `userId`와 `householdId`는 **둘 중 하나만** 채우는 정책(개인 vs 가족·공유 그룹 소유).
+- **ExpirationAlertRule**: `userId`와 `householdId`는 **둘 중 하나만** 채우는 정책(개인 vs 가족·공유 그룹 소유).
 - **ShoppingListItem**: `productId`와 `productVariantId`는 정책에 따라 **하나만** 필수로 둘 수 있음.
 
 ---
@@ -253,24 +220,43 @@ erDiagram
 
 ---
 
-## 4. StorageLocation (보관 장소)
+## 4. HouseStructure (집 구조)
+
+| 구분 | 항목 | 타입/비고 | 검토 |
+|------|------|-----------|------|
+| **필수** | id | PK | — |
+| **필수** | householdId | FK → Household, unique | Household당 1개 |
+| **필수** | name | string | "우리 집" 등 |
+| **필수** | structurePayload | jsonb | 방·슬롯 정의(rooms, slots 등) |
+| **선택** | version | int | 스키마 버전 |
+| **선택** | createdAt, updatedAt | timestamp | — |
+
+**관계**: Household (1:1), StorageLocation(선택: roomId로 방 연결)
+
+→ API·스키마 상세: [house-structure-3d-feature.md](./house-structure-3d-feature.md)
+
+---
+
+## 5. StorageLocation (보관 장소)
 
 | 구분 | 항목 | 타입/비고 | 검토 |
 |------|------|-----------|------|
 | **필수** | id | PK | — |
 | **필수** | householdId | FK → Household | — |
 | **필수** | name | string | "냉장고 문쪽", "선반 2단", "욕실장" |
+| **선택** | houseStructureId | FK → HouseStructure, nullable | 집 구조 내 방과 연결 시 |
+| **선택** | roomId | string, nullable | structurePayload 내 room id |
 | **선택** | sortOrder | int | — |
 | **선택** | createdAt, updatedAt | timestamp | — |
 
-**관계**: Household (N:1), InventoryItem (1:N)
+**관계**: Household (N:1), HouseStructure (선택 N:1), InventoryItem (1:N)
 
 **추가 검토**: `type`(냉장/냉동/실온), `description`  
 **줄일 것**: name만으로 충분
 
 ---
 
-## 5. Unit (단위 마스터)
+## 6. Unit (단위 마스터)
 
 | 구분 | 항목 | 타입/비고 | 검토 |
 |------|------|-----------|------|
@@ -286,7 +272,7 @@ erDiagram
 
 ---
 
-## 6. Product (상품 마스터)
+## 7. Product (상품 마스터)
 
 | 구분 | 항목 | 타입/비고 | 검토 |
 |------|------|-----------|------|
@@ -304,7 +290,7 @@ erDiagram
 
 ---
 
-## 7. ProductVariant (용량/포장 단위별 정보)
+## 8. ProductVariant (용량/포장 단위별 정보)
 
 | 구분 | 항목 | 타입/비고 | 검토 |
 |------|------|-----------|------|
@@ -324,7 +310,7 @@ erDiagram
 
 ---
 
-## 8. InventoryItem (실제 보유 재고)
+## 9. InventoryItem (실제 보유 재고)
 
 | 구분 | 항목 | 타입/비고 | 검토 |
 |------|------|-----------|------|
@@ -342,7 +328,7 @@ erDiagram
 
 ---
 
-## 9. Purchase (구매 기록)
+## 10. Purchase (구매 기록)
 
 | 구분 | 항목 | 타입/비고 | 검토 |
 |------|------|-----------|------|
@@ -362,7 +348,7 @@ erDiagram
 
 ---
 
-## 10. PurchaseBatch (유통기한 로트)
+## 11. PurchaseBatch (유통기한 로트)
 
 > **로트(lot)**: 한 번에 구매한 같은 품목 묶음. 같은 유통기한을 공유하는 단위.  
 > 예: 우유 2팩을 3월 1일에 구매하고 유통기한이 3월 10일이면, 그 2팩이 한 로트.
@@ -382,7 +368,7 @@ erDiagram
 
 ---
 
-## 11. Consumption (소비/사용 기록)
+## 12. Consumption (소비/사용 기록)
 
 | 구분 | 항목 | 타입/비고 | 검토 |
 |------|------|-----------|------|
@@ -400,7 +386,7 @@ erDiagram
 
 ---
 
-## 12. InventoryLog (재고 변경 이력)
+## 13. InventoryLog (재고 변경 이력)
 
 | 구분 | 항목 | 타입/비고 | 검토 |
 |------|------|-----------|------|
@@ -419,7 +405,7 @@ erDiagram
 
 ---
 
-## 13. WasteRecord (폐기 기록)
+## 14. WasteRecord (폐기 기록)
 
 | 구분 | 항목 | 타입/비고 | 검토 |
 |------|------|-----------|------|
@@ -438,7 +424,7 @@ erDiagram
 
 ---
 
-## 14. ShoppingList (장보기 리스트)
+## 15. ShoppingList (장보기 리스트)
 
 | 구분 | 항목 | 타입/비고 | 검토 |
 |------|------|-----------|------|
@@ -456,7 +442,7 @@ erDiagram
 
 ---
 
-## 15. ShoppingListItem (리스트 항목)
+## 16. ShoppingListItem (리스트 항목)
 
 | 구분 | 항목 | 타입/비고 | 검토 |
 |------|------|-----------|------|
@@ -476,7 +462,7 @@ erDiagram
 
 ---
 
-## 16. Notification (알림)
+## 17. Notification (알림)
 
 | 구분 | 항목 | 타입/비고 | 검토 |
 |------|------|-----------|------|
@@ -496,7 +482,7 @@ erDiagram
 
 ---
 
-## 17. ExpirationAlertRule (만료 알림 설정)
+## 18. ExpirationAlertRule (만료 알림 설정)
 
 | 구분 | 항목 | 타입/비고 | 검토 |
 |------|------|-----------|------|
@@ -513,7 +499,7 @@ erDiagram
 
 ---
 
-## 18. Tag (태그)
+## 19. Tag (태그)
 
 | 구분 | 항목 | 타입/비고 | 검토 |
 |------|------|-----------|------|
@@ -528,7 +514,7 @@ erDiagram
 
 ---
 
-## 19. ReportPreset (리포트 설정 저장)
+## 20. ReportPreset (리포트 설정 저장)
 
 | 구분 | 항목 | 타입/비고 | 검토 |
 |------|------|-----------|------|
@@ -546,59 +532,7 @@ erDiagram
 
 ---
 
-## 20. Account (잔고)
-
-| 구분 | 항목 | 타입/비고 | 검토 |
-|------|------|-----------|------|
-| **필수** | id | PK | — |
-| **필수(택1)** | userId **또는** householdId | FK | 개인/가족·공유 그룹 단위 |
-| **필수** | name | string | "현금", "주거래 통장" 등 |
-| **필수** | balance | decimal | 현재 잔고 금액 |
-| **선택** | currency | string | 통화 (KRW 등) |
-| **선택** | createdAt, updatedAt | timestamp | — |
-
-**관계**: User (N:1) 또는 Household (N:1), 입출금 이력(AccountTransaction 등) 1:N
-
-**추가 검토**: 입출금 이력 엔티티(AccountTransaction), type(현금/예금/저축 등)  
-**줄일 것**: name + balance만으로 시작 가능
-
----
-
-## 21. RecurringIncome (예정 수입 / 월급)
-
-| 구분 | 항목 | 타입/비고 | 검토 |
-|------|------|-----------|------|
-| **필수** | id | PK | — |
-| **필수(택1)** | userId **또는** householdId | FK | 개인/가족·공유 그룹 단위 |
-| **필수** | name | string | "월급", "부수입" 등 |
-| **필수** | amount | decimal | 예정 금액 |
-| **필수** | scheduledDayOfMonth | int (1–31) | 매월 몇 일에 수입 예정 |
-| **선택** | nextExpectedAt | date, nullable | 다음 예정일 (계산 또는 수동) |
-| **선택** | createdAt, updatedAt | timestamp | — |
-
-**관계**: User (N:1) 또는 Household (N:1)
-
-**추가 검토**: 반복 주기(매월/매주), 자동 잔고 반영  
-**줄일 것**: name + amount + scheduledDayOfMonth만으로도 가능
-
----
-
-## 22. AccountTransaction (입출금 이력)
-
-| 구분 | 항목 | 타입/비고 | 검토 |
-|------|------|-----------|------|
-| **필수** | id | PK | — |
-| **필수** | accountId | FK → Account | — |
-| **필수** | type | enum | 'deposit' \| 'withdraw' |
-| **필수** | amount | decimal | — |
-| **선택** | memo | string, nullable | — |
-| **선택** | createdAt | timestamp | — |
-
-**관계**: Account (N:1)
-
----
-
-## 23. ProductTag (상품–태그 연결, N:N 중간)
+## 21. ProductTag (상품–태그 연결, N:N 중간)
 
 | 구분 | 항목 | 타입/비고 | 검토 |
 |------|------|-----------|------|
@@ -613,8 +547,10 @@ erDiagram
 
 | 구분 | 내용 |
 |------|------|
-| **추가 검토** | HouseholdMember 역할(owner/member), Purchase/Consumption의 userId, ShoppingListItem의 Product vs ProductVariant 정책, Category 계층(parentId), Notification refType/refId, Account/RecurringIncome 소유 주체(User vs Household) |
+| **추가 검토** | HouseholdMember 역할(owner/member), Purchase/Consumption의 userId, ShoppingListItem의 Product vs ProductVariant 정책, Category 계층(parentId), Notification refType/refId, ExpirationAlertRule 소유 주체(User vs Household) |
 | **줄이기/미루기** | Tag·ReportPreset·ExpirationAlertRule 단순화, barcode/sku 등은 선택 |
-| **정책 결정** | ShoppingListItem은 Product만 참조할지 ProductVariant까지 쓸지, ExpirationAlertRule·Account·RecurringIncome은 User vs Household 중 어디에 둘지 |
+| **정책 결정** | ShoppingListItem은 Product만 참조할지 ProductVariant까지 쓸지, ExpirationAlertRule은 User vs Household 중 어디에 둘지 |
+
+**기타 추가 예정(참고)**: [policy/considerations.md](./policy/considerations.md) — Recipe, Brand, Supplier, Photo, Integration, AuditLog 등. 필요 시 순차 반영. (가계부·구독·예산은 본 프로젝트 범위 외, 별도 프로젝트 권장.)
 
 이 문서를 ERD 옆에 두고, 엔티티별로 "지금 넣을 필드"와 "나중에 넣을 필드"를 구분해 가며 그리면 됩니다.
