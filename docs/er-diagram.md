@@ -1,7 +1,7 @@
 # ER 다이어그램 & 엔티티 명세 (Home Inventory Manager)
 
 구현 대상 엔티티 목록과 관계를 정리한 문서입니다.  
-README의 **「4. 도메인 & 엔티티 설계」**와 동기화해 두었습니다.  
+[backend/README.md](../backend/README.md) **「4. 도메인 & 엔티티 설계」** 표와 동기화해 두었습니다.  
 상세 필드는 [엔티티 논리적 설계](./entity-logical-design.md), 개념만 보려면 [개념적 설계](./entity-conceptual-design.md)를 참고하세요.
 
 ---
@@ -131,5 +131,5 @@ erDiagram
 
 ## 4. 유지보수
 
-- 엔티티 추가·변경 시 **이 파일**과 README **「4. 도메인 & 엔티티 설계」** 표를 함께 수정하는 것을 권장합니다.
-- 상세 ERD(draw.io 등)는 이 폴더(`docs/`)에 함께 두면 됩니다.
+- 엔티티 추가·변경 시 **이 파일**과 [backend/README.md](../backend/README.md) **「4. 도메인 & 엔티티 설계」** 표를 함께 수정하는 것을 권장합니다.
+- 상세 ERD(draw.io 등)는 저장소 루트 `docs/` 또는 `backend/drawio/` 등에 두면 됩니다.

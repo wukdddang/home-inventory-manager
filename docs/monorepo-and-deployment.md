@@ -2,6 +2,8 @@
 
 frontend / backend 두 폴더로 구성된 모노레포 기준입니다.
 
+→ 도메인·ERD 등 **공통 문서 목차**: [docs/README.md](./README.md)
+
 ---
 
 ## 1. 현재 정리된 것

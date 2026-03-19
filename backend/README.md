@@ -149,9 +149,9 @@ Interface → Business → Context → Domain → Infrastructure
 
 ## 4. 도메인 & 엔티티 설계
 
-**상세 ER·관계도·Mermaid 다이어그램:** [docs/er-diagram.md](./docs/er-diagram.md)  
-**개념적 설계(엔티티·속성만):** [docs/entity-conceptual-design.md](./docs/entity-conceptual-design.md)  
-**논리적 설계(PK·FK·타입):** [docs/entity-logical-design.md](./docs/entity-logical-design.md)
+**상세 ER·관계도·Mermaid 다이어그램:** [docs/er-diagram.md](../docs/er-diagram.md)  
+**개념적 설계(엔티티·속성만):** [docs/entity-conceptual-design.md](../docs/entity-conceptual-design.md)  
+**논리적 설계(PK·FK·타입):** [docs/entity-logical-design.md](../docs/entity-logical-design.md)
 
 | 순번 | 엔티티              | 핵심 역할                                                    | 주요 관계                                                    | 우선순위 |
 | ---- | ------------------- | ------------------------------------------------------------ | ------------------------------------------------------------ | -------- |
@@ -177,7 +177,7 @@ Interface → Business → Context → Domain → Infrastructure
 | 20   | RecurringIncome     | 예정 수입 (월급날, 금액 등)                                  | User 또는 Household                                          | ★★★      |
 
 **추가 구현 대상**  
-Recipe, Brand, Supplier, Photo(영수증/제품사진), Integration(카카오톡 알림 등) — [추가로 고려할 기능](./docs/considerations.md) 참고.
+Recipe, Brand, Supplier, Photo(영수증/제품사진), Integration(카카오톡 알림 등) — [추가로 고려할 기능](../docs/policy/considerations.md) 참고.
 
 ## 5. 기능 로드맵 (단계별)
 

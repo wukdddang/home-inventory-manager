@@ -85,4 +85,4 @@
 - **우선 넣기 좋은 것**: Recipe, Brand, Supplier, Photo, 반복 구매 알림, 장보기 템플릿·예상 금액.
 - **운영·편의**: 활동 로그, 내보내기/가져오기, 백업.
 
-필요한 것부터 엔티티·기능 목록(예: [feature-checklist.md](./feature-checklist.md), [entity-logical-design.md](./entity-logical-design.md))에 반영해 가면 됩니다.
+필요한 것부터 엔티티·기능 목록(예: [feature-checklist.md](../feature-checklist.md), [entity-logical-design.md](../entity-logical-design.md))에 반영해 가면 됩니다.
