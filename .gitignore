@@ -1,7 +1,20 @@
-# compiled output
-/dist
-/node_modules
-/build
+# Dependencies (monorepo: frontend, backend)
+node_modules
+.pnp
+.pnp.*
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+
+# Compiled / build output
+dist
+build
+.next
+out
+*.tsbuildinfo
+next-env.d.ts
 
 # Logs
 logs
@@ -12,45 +25,45 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
+# Tests
+coverage
+.nyc_output
+
+# Environment (frontend, backend)
+.env
+.env.*
+!.env.example
+
 # OS
 .DS_Store
 
-# Tests
-/coverage
-/.nyc_output
-
 # IDEs and editors
-/.idea
+.idea
 .project
 .classpath
 .c9/
 *.launch
-.settings/
+.settings
 *.sublime-workspace
-
-# IDE - VSCode
 .vscode/*
 !.vscode/settings.json
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
 
-# dotenv environment variable files
-.env
-.env.development.local
-.env.test.local
-.env.production.local
-.env.local
-
-# temp directory
+# Temp
 .temp
 .tmp
 
-# Runtime data
+# Runtime / diagnostic
 pids
 *.pid
 *.seed
 *.pid.lock
-
-# Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+# Certs (do not commit)
+*.pem
+
+# Vercel (frontend)
+.vercel

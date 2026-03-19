@@ -1,0 +1,2 @@
+# Monorepo: common patterns are in repo root .gitignore.
+# Frontend-only (Next.js / Vercel) are already covered there.
