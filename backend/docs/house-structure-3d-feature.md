@@ -7,10 +7,10 @@
 
 ## 1. 요구사항 요약 (백엔드 관점)
 
-| 구분 | 내용 |
-|------|------|
-| **저장** | Household당 “집 구조” 한 건을 JSON(방·슬롯 정의)으로 저장 |
-| **조회** | 구조 조회 API로 클라이언트에 structurePayload 전달 |
+| 구분     | 내용                                                                                       |
+| -------- | ------------------------------------------------------------------------------------------ |
+| **저장** | Household당 “집 구조” 한 건을 JSON(방·슬롯 정의)으로 저장                                  |
+| **조회** | 구조 조회 API로 클라이언트에 structurePayload 전달                                         |
 | **연동** | StorageLocation을 “집 구조 내 방/슬롯”과 연결해, 방 기준으로 물품(InventoryItem) 조회 가능 |
 
 ---
@@ -29,11 +29,11 @@
 
 ### 3.1 추가/변경 엔티티
 
-| 엔티티 | 역할 |
-|--------|------|
-| **HouseStructure** (또는 FloorPlan) | Household당 1개. 집 구조 한 채. `structurePayload`(JSONB) 보관. |
-| **HouseStructureRoom** | (선택) 방 단위를 별도 테이블로 두는 경우. HouseStructure 1:N. |
-| **StorageLocation 확장** | 기존 엔티티에 `houseStructureId` + `roomId`(또는 `slotId`) 추가 → “어느 집 구조의 어느 방/슬롯”과 연결. |
+| 엔티티                              | 역할                                                                                                    |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| **HouseStructure** (또는 FloorPlan) | Household당 1개. 집 구조 한 채. `structurePayload`(JSONB) 보관.                                         |
+| **HouseStructureRoom**              | (선택) 방 단위를 별도 테이블로 두는 경우. HouseStructure 1:N.                                           |
+| **StorageLocation 확장**            | 기존 엔티티에 `houseStructureId` + `roomId`(또는 `slotId`) 추가 → “어느 집 구조의 어느 방/슬롯”과 연결. |
 
 **HouseStructure 예시 필드**
 

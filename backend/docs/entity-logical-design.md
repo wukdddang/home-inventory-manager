@@ -72,7 +72,6 @@ erDiagram
     Household {
         bigint id PK
         string name
-        string invitedCode
     }
     HouseholdMember {
         bigint id PK
@@ -187,19 +186,17 @@ erDiagram
 | **필수** | id | PK | — |
 | **필수** | name | string | "우리 가족", "1인" 등 (가족·공유 그룹 이름) |
 | **선택** | createdAt, updatedAt | timestamp | — |
-| **선택** | invitedCode | string, unique, nullable | 초대 링크용 코드 |
 
-**관계**: User (N:N, 중간테이블), StorageLocation (1:N), ShoppingList (1:N), ExpirationAlertRule (1:N, 선택)
+**관계**: User (N:N, 연관 테이블 HouseholdMember), StorageLocation (1:N), ShoppingList (1:N), ExpirationAlertRule (1:N, 선택)
 
-**중간 테이블 (HouseholdMember / UserHousehold)**  
+**연관 테이블 HouseholdMember** (User–Household N:N)  
 | 구분 | 항목 | 비고 |
 |------|------|------|
 | 필수 | userId, householdId | 복합 PK 또는 PK + unique |
 | 선택 | role | 'owner' \| 'member' |
 | 선택 | joinedAt | timestamp |
 
-**추가 검토**: `currency`(통화), `timezone`, `maxMembers`  
-**줄일 것**: 초대 코드 없이 수동 멤버 추가만 해도 됨
+**추가 검토**: `currency`(통화), `timezone`, `maxMembers`
 
 ---
 

@@ -68,16 +68,17 @@ erDiagram
 ## Household (가족·공유 그룹)
 
 - 그룹 이름
-- 초대 코드
 
 ---
 
-## HouseholdMember (가족·공유 그룹 멤버십)
+## HouseholdMember (가족·공유 그룹 멤버십, 연관 테이블)
 
-- 사용자
-- 가족·공유 그룹
+User와 Household의 **다대다(N:N)** 관계를 위한 **연관 테이블**(중간 테이블)입니다. 미리 두고, “그룹에 멤버 추가” 시 이 테이블에 (userId, householdId) 행을 넣는 방식으로 사용합니다.
+
+- 사용자 (userId)
+- 가족·공유 그룹 (householdId)
 - 역할(소유자, 멤버 등)
-- 가입 시각
+- 가입 시각 (joinedAt)
 
 ---
 
