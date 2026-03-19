@@ -18,14 +18,13 @@ erDiagram
     User ||--o{ HouseholdMember : "userId"
     Household ||--o{ HouseholdMember : "householdId"
 
-    Category ||--o{ Category : "parentId"
     Category ||--o{ Product : "categoryId"
 
     Household ||--o| HouseStructure : "householdId"
     Household ||--o{ StorageLocation : "householdId"
     StorageLocation }o--o| HouseStructure : "houseStructureId, roomId"
     Household ||--o{ ExpirationAlertRule : "householdId"
-    Household ||--o{ Tag : "householdId"
+    Product ||--o{ ExpirationAlertRule : "productId"
 
     Product ||--o{ ProductVariant : "productId"
     Unit ||--o{ ProductVariant : "unitId"
@@ -39,8 +38,10 @@ erDiagram
     InventoryItem ||--o{ InventoryLog : "inventoryItemId"
     InventoryItem ||--o{ WasteRecord : "inventoryItemId"
 
+    WasteRecord }o--o| User : "userId"
+
     Purchase }o--o| User : "userId"
-    Consumption }o--o| User : "userId"
+    InventoryLog }o--o| User : "userId"
 
     ShoppingList }o--o| User : "createdBy"
     ShoppingList ||--o{ ShoppingListItem : "shoppingListId"
@@ -50,9 +51,6 @@ erDiagram
     User ||--o{ Notification : "userId"
     User ||--o{ ExpirationAlertRule : "userId"
     User ||--o{ ReportPreset : "userId"
-
-    Product ||--o{ ProductTag : "productId"
-    Tag ||--o{ ProductTag : "tagId"
 ```
 
 ---
@@ -68,6 +66,7 @@ erDiagram
         string email UK
         string passwordHash
         string displayName
+        timestamp emailVerifiedAt
     }
     Household {
         bigint id PK
@@ -89,14 +88,13 @@ erDiagram
     Category {
         bigint id PK
         string name
-        bigint parentId FK
         int sortOrder
     }
     Product {
         bigint id PK
         bigint categoryId FK
         string name
-        string barcode
+        string imageUrl
         boolean isConsumable
     }
     ProductVariant {
@@ -104,6 +102,7 @@ erDiagram
         bigint productId FK
         bigint unitId FK
         decimal quantityPerUnit
+        decimal price
     }
     InventoryItem {
         bigint id PK
@@ -116,6 +115,8 @@ erDiagram
         bigint id PK
         bigint inventoryItemId FK
         decimal quantity
+        decimal unitPrice
+        decimal totalPrice
         bigint userId FK
     }
     PurchaseBatch {
@@ -126,7 +127,7 @@ erDiagram
     }
 ```
 
-### 장보기·알림·태그
+### 장보기·알림
 
 ```mermaid
 erDiagram
@@ -135,6 +136,7 @@ erDiagram
         bigint householdId FK
         string name
         bigint createdBy FK
+        string status
     }
     ShoppingListItem {
         bigint id PK
@@ -150,42 +152,38 @@ erDiagram
         string title
         timestamp readAt
     }
-    ProductTag {
-        bigint productId FK
-        bigint tagId FK
-    }
 ```
 
-- **ExpirationAlertRule**: `userId`와 `householdId`는 **둘 중 하나만** 채우는 정책(개인 vs 가족·공유 그룹 소유).
+- **ExpirationAlertRule**: `productId`는 **필수**(품목별 일수). `userId`와 `householdId`는 **둘 중 하나만** 채우는 정책(개인 vs 가족·공유 그룹 소유). **동일 소유 주체·동일 품목**에 규칙은 **한 행만** (아래 중복 방지 제약).
 - **ShoppingListItem**: `productId`와 `productVariantId`는 정책에 따라 **하나만** 필수로 둘 수 있음.
 
 ---
 
 ## 1. User (사용자)
 
-| 구분 | 항목 | 타입/비고 | 검토 |
-|------|------|-----------|------|
-| **필수** | id | PK, UUID 또는 bigint | — |
-| **필수** | email | string, unique | — |
-| **필수** | passwordHash | string (bcrypt 등) | — |
-| **선택** | displayName | string | 닉네임/표시 이름 |
-| **선택** | createdAt, updatedAt | timestamp | 감사용 |
-| **선택** | lastLoginAt | timestamp | — |
+| 구분     | 항목                 | 타입/비고            | 검토                                       |
+| -------- | -------------------- | -------------------- | ------------------------------------------ |
+| **필수** | id                   | PK, UUID 또는 bigint | —                                          |
+| **필수** | email                | string, unique       | —                                          |
+| **필수** | passwordHash         | string (bcrypt 등)   | —                                          |
+| **선택** | displayName          | string               | 닉네임/표시 이름                           |
+| **선택** | emailVerifiedAt      | timestamp, nullable  | 이메일 인증 완료 시각; **NULL이면 미인증** |
+| **선택** | createdAt, updatedAt | timestamp            | 감사용                                     |
+| **선택** | lastLoginAt          | timestamp            | —                                          |
 
-**관계**: Household (N:N), Notification (1:N), ExpirationAlertRule (1:N), ReportPreset (1:N)
+**관계**: Household (N:N), Notification (1:N), ExpirationAlertRule (1:N), ReportPreset (1:N), ShoppingList (1:N, `createdBy`), Purchase·InventoryLog·WasteRecord (선택 `userId`)
 
-**추가 검토**: `role`(전역 역할), `avatarUrl`, `emailVerifiedAt`  
-**줄일 것**: 초기에는 email + passwordHash + displayName만으로 시작 가능
+**이메일 검증**: 가입 시 인증 메일 발송 → 토큰(또는 링크) 검증 후 `emailVerifiedAt` 설정. 토큰 저장·만료는 별도 테이블 또는 캐시로 구현 가능.
 
 ---
 
 ## 2. Household (가족/공유 그룹)
 
-| 구분 | 항목 | 타입/비고 | 검토 |
-|------|------|-----------|------|
-| **필수** | id | PK | — |
-| **필수** | name | string | "우리 가족", "1인" 등 (가족·공유 그룹 이름) |
-| **선택** | createdAt, updatedAt | timestamp | — |
+| 구분     | 항목                 | 타입/비고 | 검토                                        |
+| -------- | -------------------- | --------- | ------------------------------------------- |
+| **필수** | id                   | PK        | —                                           |
+| **필수** | name                 | string    | "우리 가족", "1인" 등 (가족·공유 그룹 이름) |
+| **선택** | createdAt, updatedAt | timestamp | —                                           |
 
 **관계**: User (N:N, 연관 테이블 HouseholdMember), StorageLocation (1:N), ShoppingList (1:N), ExpirationAlertRule (1:N, 선택)
 
@@ -202,31 +200,27 @@ erDiagram
 
 ## 3. Category (대분류)
 
-| 구분 | 항목 | 타입/비고 | 검토 |
-|------|------|-----------|------|
-| **필수** | id | PK | — |
-| **필수** | name | string | "식료품", "생활용품", "의약품", "전자제품", "식기류", "가구류" 등 |
-| **선택** | parentId | FK → Category, nullable | 계층형(부모-자식) |
-| **선택** | sortOrder | int | 표시 순서 |
-| **선택** | createdAt, updatedAt | timestamp | — |
+| 구분     | 항목                 | 타입/비고 | 검토                                                              |
+| -------- | -------------------- | --------- | ----------------------------------------------------------------- |
+| **필수** | id                   | PK        | —                                                                 |
+| **필수** | name                 | string    | "식료품", "생활용품", "의약품", "전자제품", "식기류", "가구류" 등 |
+| **선택** | sortOrder            | int       | 표시 순서                                                         |
+| **선택** | createdAt, updatedAt | timestamp | —                                                                 |
 
-**관계**: Product (1:N), Category (자기참조 1:N, 선택)
-
-**추가 검토**: `icon`, `color`, `description`  
-**줄일 것**: 계층 없이 플랫한 1단계만 써도 됨 → `parentId`는 나중에
+**관계**: Product (1:N) — **플랫(1단계) 카테고리만** 사용, 계층(parent) 없음.
 
 ---
 
 ## 4. HouseStructure (집 구조)
 
-| 구분 | 항목 | 타입/비고 | 검토 |
-|------|------|-----------|------|
-| **필수** | id | PK | — |
-| **필수** | householdId | FK → Household, unique | Household당 1개 |
-| **필수** | name | string | "우리 집" 등 |
-| **필수** | structurePayload | jsonb | 방·슬롯 정의(rooms, slots 등) |
-| **선택** | version | int | 스키마 버전 |
-| **선택** | createdAt, updatedAt | timestamp | — |
+| 구분     | 항목                 | 타입/비고              | 검토                          |
+| -------- | -------------------- | ---------------------- | ----------------------------- |
+| **필수** | id                   | PK                     | —                             |
+| **필수** | householdId          | FK → Household, unique | Household당 1개               |
+| **필수** | name                 | string                 | "우리 집" 등                  |
+| **필수** | structurePayload     | jsonb                  | 방·슬롯 정의(rooms, slots 등) |
+| **선택** | version              | int                    | 스키마 버전                   |
+| **선택** | createdAt, updatedAt | timestamp              | —                             |
 
 **관계**: Household (1:1), StorageLocation(선택: roomId로 방 연결)
 
@@ -236,112 +230,105 @@ erDiagram
 
 ## 5. StorageLocation (보관 장소)
 
-| 구분 | 항목 | 타입/비고 | 검토 |
-|------|------|-----------|------|
-| **필수** | id | PK | — |
-| **필수** | householdId | FK → Household | — |
-| **필수** | name | string | "냉장고 문쪽", "선반 2단", "욕실장" |
-| **선택** | houseStructureId | FK → HouseStructure, nullable | 집 구조 내 방과 연결 시 |
-| **선택** | roomId | string, nullable | structurePayload 내 room id |
-| **선택** | sortOrder | int | — |
-| **선택** | createdAt, updatedAt | timestamp | — |
+| 구분     | 항목                 | 타입/비고                     | 검토                                |
+| -------- | -------------------- | ----------------------------- | ----------------------------------- |
+| **필수** | id                   | PK                            | —                                   |
+| **필수** | householdId          | FK → Household                | —                                   |
+| **필수** | name                 | string                        | "냉장고 문쪽", "선반 2단", "욕실장" |
+| **선택** | houseStructureId     | FK → HouseStructure, nullable | 집 구조 내 방과 연결 시             |
+| **선택** | roomId               | string, nullable              | structurePayload 내 room id         |
+| **선택** | sortOrder            | int                           | —                                   |
+| **선택** | createdAt, updatedAt | timestamp                     | —                                   |
 
 **관계**: Household (N:1), HouseStructure (선택 N:1), InventoryItem (1:N)
-
-**추가 검토**: `type`(냉장/냉동/실온), `description`  
-**줄일 것**: name만으로 충분
 
 ---
 
 ## 6. Unit (단위 마스터)
 
-| 구분 | 항목 | 타입/비고 | 검토 |
-|------|------|-----------|------|
-| **필수** | id | PK | — |
-| **필수** | symbol | string, unique | "ml", "g", "개", "병", "팩" |
-| **선택** | name | string | "밀리리터", "그램" |
-| **선택** | sortOrder | int | — |
+| 구분     | 항목      | 타입/비고      | 검토                        |
+| -------- | --------- | -------------- | --------------------------- |
+| **필수** | id        | PK             | —                           |
+| **필수** | symbol    | string, unique | "ml", "g", "개", "병", "팩" |
+| **선택** | name      | string         | "밀리리터", "그램"          |
+| **선택** | sortOrder | int            | —                           |
 
 **관계**: ProductVariant (N:1, 단위 참조)
-
-**추가 검토**: `baseUnitId` + `conversionFactor` (단위 환산용)  
-**줄일 것**: symbol(+ name)만으로 시작 가능
 
 ---
 
 ## 7. Product (상품 마스터)
 
-| 구분 | 항목 | 타입/비고 | 검토 |
-|------|------|-----------|------|
-| **필수** | id | PK | — |
-| **필수** | categoryId | FK → Category | — |
-| **필수** | name | string | "계란", "삼겹살", "샴푸", "노트북", "침대", "책상" 등 (소모품·비소모품) |
-| **선택** | barcode | string, nullable, unique | — |
-| **선택** | description | text, nullable | — |
-| **선택** | createdAt, updatedAt | timestamp | — |
+| 구분     | 항목                 | 타입/비고        | 검토                                                                                                      |
+| -------- | -------------------- | ---------------- | --------------------------------------------------------------------------------------------------------- |
+| **필수** | id                   | PK               | —                                                                                                         |
+| **필수** | categoryId           | FK → Category    | —                                                                                                         |
+| **필수** | name                 | string           | 상품명                                                                                                    |
+| **필수** | isConsumable         | boolean          | **true**: 소비형(음식, 생필품 등 소모·소비) / **false**: 사용형(후라이팬, 식기세척기 등 비소모·장기 사용) |
+| **선택** | imageUrl             | string, nullable | 상품 이미지 URL(또는 스토리지 키)                                                                         |
+| **선택** | description          | text, nullable   | —                                                                                                         |
+| **선택** | createdAt, updatedAt | timestamp        | —                                                                                                         |
 
-**관계**: Category (N:1), ProductVariant (1:N), Tag (N:N, 선택), ShoppingListItem (참조 가능)
+**관계**: Category (N:1), ProductVariant (1:N), ExpirationAlertRule (1:N), ShoppingListItem (참조 가능)
 
-**추가 검토**: `brandId`, `defaultUnitId`, `imageUrl`, `isConsumable`(소모품 여부 — 전자제품·식기류·가구는 비소모품)  
-**줄일 것**: description은 선택
+**비고**: 바코드는 수집하지 않음.
 
 ---
 
 ## 8. ProductVariant (용량/포장 단위별 정보)
 
-| 구분 | 항목 | 타입/비고 | 검토 |
-|------|------|-----------|------|
-| **필수** | id | PK | — |
-| **필수** | productId | FK → Product | — |
-| **필수** | unitId | FK → Unit | — |
-| **필수** | quantityPerUnit | decimal | 1팩=6개 → 6, 1병=500ml → 500 |
-| **선택** | name | string | "500ml", "1팩(6개)" (표시용) |
-| **선택** | sku | string, nullable | — |
-| **선택** | isDefault | boolean | 대표 용량 여부 |
-| **선택** | createdAt, updatedAt | timestamp | — |
+| 구분     | 항목                 | 타입/비고         | 검토                         |
+| -------- | -------------------- | ----------------- | ---------------------------- | ------------------ | ---------------- |
+| **필수** | id                   | PK                | —                            |
+| **필수** | productId            | FK → Product      | —                            |
+| **필수** | unitId               | FK → Unit         | —                            |
+| **필수** | quantityPerUnit      | decimal           | 1팩=6개 → 6, 1병=500ml → 500 |
+| **선택** | name                 | string            | "500ml", "1팩(6개)" (표시용) |
+| **선택** | price                | decimal, nullable | 참고 단가(표시·장보기 등)    |
+| **선택** | sku                  | string, nullable  | —                            | Stock Keeping Unit | (재고 관리 단위) |
+| **선택** | isDefault            | boolean           | 대표 용량 여부               |
+| **선택** | createdAt, updatedAt | timestamp         | —                            |
 
 **관계**: Product (N:1), Unit (N:1), InventoryItem (1:N), ShoppingListItem (참조 가능)
 
-**추가 검토**: `price`(참고 단가), `barcode`(variant별)  
-**줄일 것**: sku, isDefault 없이 quantityPerUnit + unitId만으로도 가능
+**비고**: 바코드는 사용하지 않음.
 
 ---
 
 ## 9. InventoryItem (실제 보유 재고)
 
-| 구분 | 항목 | 타입/비고 | 검토 |
-|------|------|-----------|------|
-| **필수** | id | PK | — |
-| **필수** | productVariantId | FK → ProductVariant | — |
-| **필수** | storageLocationId | FK → StorageLocation | — |
-| **필수** | quantity | decimal | 현재 수량 |
-| **선택** | minStockLevel | decimal, nullable | 잔량 부족 알림 기준 |
-| **선택** | createdAt, updatedAt | timestamp | — |
+| 구분     | 항목                 | 타입/비고            | 검토                                               |
+| -------- | -------------------- | -------------------- | -------------------------------------------------- |
+| **필수** | id                   | PK                   | —                                                  |
+| **필수** | productVariantId     | FK → ProductVariant  | —                                                  |
+| **필수** | storageLocationId    | FK → StorageLocation | —                                                  |
+| **필수** | quantity             | decimal              | 현재 수량                                          |
+| **선택** | minStockLevel        | decimal, nullable    | **잔량 부족 알림** 기준; NULL이면 해당 알림 미사용 |
+| **선택** | createdAt, updatedAt | timestamp            | —                                                  |
 
 **관계**: ProductVariant (N:1), StorageLocation (N:1), Purchase (1:N), Consumption (1:N), InventoryLog (1:N), WasteRecord (1:N)
 
-**추가 검토**: `householdId`(조회 편의용 중복), `unitId`(variant에서 가져올 수 있음)  
-**줄일 것**: minStockLevel은 잔량 부족 알림 구현 시 사용
+**추가 검토**: `householdId`(조회 편의용 중복), `unitId`(variant에서 가져올 수 있음)
 
 ---
 
 ## 10. Purchase (구매 기록)
 
-| 구분 | 항목 | 타입/비고 | 검토 |
-|------|------|-----------|------|
-| **필수** | id | PK | — |
-| **필수** | inventoryItemId | FK → InventoryItem | — |
-| **필수** | quantity | decimal | 구매 수량 |
-| **선택** | purchasedAt | timestamp | 구매일 (기본 now) |
-| **선택** | unitPrice | decimal, nullable | 단가 (단가 변동 분석용) |
-| **선택** | totalPrice | decimal, nullable | — |
-| **선택** | memo | string, nullable | — |
-| **선택** | createdAt | timestamp | — |
+| 구분     | 항목            | 타입/비고           | 검토                                      |
+| -------- | --------------- | ------------------- | ----------------------------------------- |
+| **필수** | id              | PK                  | —                                         |
+| **필수** | inventoryItemId | FK → InventoryItem  | —                                         |
+| **필수** | quantity        | decimal             | 구매 수량                                 |
+| **필수** | unitPrice       | decimal             | **구매 시점 단가** (통계·가격 이력용)     |
+| **필수** | totalPrice      | decimal             | **구매 시점 총액** (통계·가격 이력용)     |
+| **선택** | purchasedAt     | timestamp           | 구매일 (기본 now)                         |
+| **선택** | memo            | string, nullable    | —                                         |
+| **선택** | userId          | FK → User, nullable | **누가 구매했는지** (가구 내 구매자 기록) |
+| **선택** | createdAt       | timestamp           | —                                         |
 
-**관계**: InventoryItem (N:1), PurchaseBatch (1:N)
+**관계**: InventoryItem (N:1), PurchaseBatch (1:N), User (선택 N:1)
 
-**추가 검토**: `storeName`, `paymentMethod`, `userId`(구매 수행자)  
-**줄일 것**: unitPrice/totalPrice 없이 수량만으로도 가능
+**추가 검토**: 매장명·결제수단 등은 본 설계 범위에서 제외
 
 ---
 
@@ -350,107 +337,100 @@ erDiagram
 > **로트(lot)**: 한 번에 구매한 같은 품목 묶음. 같은 유통기한을 공유하는 단위.  
 > 예: 우유 2팩을 3월 1일에 구매하고 유통기한이 3월 10일이면, 그 2팩이 한 로트.
 
-| 구분 | 항목 | 타입/비고 | 검토 |
-|------|------|-----------|------|
-| **필수** | id | PK | — |
-| **필수** | purchaseId | FK → Purchase | — |
-| **필수** | quantity | decimal | 이 로트 수량 |
-| **필수** | expirationDate | date | 유통기한 |
-| **선택** | createdAt | timestamp | — |
+| 구분     | 항목           | 타입/비고     | 검토         |
+| -------- | -------------- | ------------- | ------------ |
+| **필수** | id             | PK            | —            |
+| **필수** | purchaseId     | FK → Purchase | —            |
+| **필수** | quantity       | decimal       | 이 로트 수량 |
+| **필수** | expirationDate | date          | 유통기한     |
+| **선택** | createdAt      | timestamp     | —            |
 
 **관계**: Purchase (N:1)
-
-**추가 검토**: `batchCode`(제조로트 등)  
-**줄일 것**: quantity + expirationDate만 있으면 됨
 
 ---
 
 ## 12. Consumption (소비/사용 기록)
 
-| 구분 | 항목 | 타입/비고 | 검토 |
-|------|------|-----------|------|
-| **필수** | id | PK | — |
-| **필수** | inventoryItemId | FK → InventoryItem | — |
-| **필수** | quantity | decimal | 소비 수량 |
-| **선택** | consumedAt | timestamp | 사용일 (기본 now) |
-| **선택** | memo | string, nullable | — |
-| **선택** | createdAt | timestamp | — |
+| 구분     | 항목            | 타입/비고          | 검토              |
+| -------- | --------------- | ------------------ | ----------------- |
+| **필수** | id              | PK                 | —                 |
+| **필수** | inventoryItemId | FK → InventoryItem | —                 |
+| **필수** | quantity        | decimal            | 소비 수량         |
+| **선택** | consumedAt      | timestamp          | 사용일 (기본 now) |
+| **선택** | memo            | string, nullable   | —                 |
+| **선택** | createdAt       | timestamp          | —                 |
 
 **관계**: InventoryItem (N:1)
-
-**추가 검토**: `recipeId`, `userId`(누가 사용했는지)  
-**줄일 것**: quantity + consumedAt만으로도 가능
 
 ---
 
 ## 13. InventoryLog (재고 변경 이력)
 
-| 구분 | 항목 | 타입/비고 | 검토 |
-|------|------|-----------|------|
-| **필수** | id | PK | — |
-| **필수** | inventoryItemId | FK → InventoryItem | — |
-| **필수** | type | enum | 'in' \| 'out' \| 'adjust' \| 'waste' |
-| **필수** | quantityDelta | decimal | + 증가, - 감소 |
-| **필수** | quantityAfter | decimal | 변경 후 수량 (스냅샷) |
-| **선택** | refType, refId | string, nullable | Purchase/Consumption/WasteRecord 등 참조 |
-| **선택** | createdAt | timestamp | — |
+| 구분     | 항목            | 타입/비고           | 검토                                         |
+| -------- | --------------- | ------------------- | -------------------------------------------- |
+| **필수** | id              | PK                  | —                                            |
+| **필수** | inventoryItemId | FK → InventoryItem  | —                                            |
+| **필수** | type            | enum                | 'in' \| 'out' \| 'adjust' \| 'waste'         |
+| **필수** | quantityDelta   | decimal             | + 증가, - 감소                               |
+| **필수** | quantityAfter   | decimal             | 변경 후 수량 (스냅샷)                        |
+| **선택** | userId          | FK → User, nullable | **누가 변경했는지** (수동 조정·직접 입력 등) |
+| **선택** | memo            | string, nullable    | 변경 사유·메모                               |
+| **선택** | refType, refId  | string, nullable    | Purchase/Consumption/WasteRecord 등 참조     |
+| **선택** | createdAt       | timestamp           | —                                            |
 
-**관계**: InventoryItem (N:1)
+**관계**: InventoryItem (N:1), User (선택 N:1)
 
-**추가 검토**: `userId`, `memo`  
-**줄일 것**: refType/refId 없이 type + quantityDelta만으로도 추적 가능 (나중에 보강)
+**비고**: **재고 자동 변경(배치·트리거 동기화 등)는 없음.** 이력은 사용자가 앱에서 수행한 구매·소비·폐기·수량 수정 등에 대해 **명시적으로 기록**합니다.
 
 ---
 
 ## 14. WasteRecord (폐기 기록)
 
-| 구분 | 항목 | 타입/비고 | 검토 |
-|------|------|-----------|------|
-| **필수** | id | PK | — |
-| **필수** | inventoryItemId | FK → InventoryItem | — |
-| **필수** | quantity | decimal | 폐기 수량 |
-| **선택** | reason | enum/string | 'expired' \| 'damaged' \| 'other' |
-| **선택** | wastedAt | timestamp | — |
-| **선택** | memo | string, nullable | — |
-| **선택** | createdAt | timestamp | — |
+| 구분     | 항목            | 타입/비고           | 검토                                                                                                      |
+| -------- | --------------- | ------------------- | --------------------------------------------------------------------------------------------------------- |
+| **필수** | id              | PK                  | —                                                                                                         |
+| **필수** | inventoryItemId | FK → InventoryItem  | —                                                                                                         |
+| **필수** | quantity        | decimal             | 폐기 수량                                                                                                 |
+| **선택** | userId          | FK → User, nullable | **누가 폐기했는지**                                                                                       |
+| **선택** | reason          | string, nullable    | **자유 입력**. 앱에서는 `expired` / `damaged` / `other`를 선택해 넣거나, 필요 시 추가 문구를 붙일 수 있음 |
+| **선택** | wastedAt        | timestamp           | —                                                                                                         |
+| **선택** | memo            | string, nullable    | —                                                                                                         |
+| **선택** | createdAt       | timestamp           | —                                                                                                         |
 
-**관계**: InventoryItem (N:1)
-
-**추가 검토**: `userId`  
-**줄일 것**: reason을 free text로 해도 됨
+**관계**: InventoryItem (N:1), User (선택 N:1)
 
 ---
 
 ## 15. ShoppingList (장보기 리스트)
 
-| 구분 | 항목 | 타입/비고 | 검토 |
-|------|------|-----------|------|
-| **필수** | id | PK | — |
-| **필수** | householdId | FK → Household | — |
-| **필수** | name | string | "이번 주 장보기", "주말 마트" |
-| **선택** | status | enum | 'draft' \| 'active' \| 'done' |
-| **선택** | dueDate | date, nullable | — |
-| **선택** | createdAt, updatedAt | timestamp | — |
+| 구분     | 항목                 | 타입/비고           | 검토                                                                   |
+| -------- | -------------------- | ------------------- | ---------------------------------------------------------------------- |
+| **필수** | id                   | PK                  | —                                                                      |
+| **필수** | householdId          | FK → Household      | —                                                                      |
+| **필수** | name                 | string              | "이번 주 장보기", "주말 마트"                                          |
+| **선택** | createdBy            | FK → User, nullable | **리스트 생성자**                                                      |
+| **선택** | status               | string, nullable    | **자유 문자열**. 앱에서는 `draft` / `active` / `done` 등으로 선택·저장 |
+| **선택** | dueDate              | date, nullable      | —                                                                      |
+| **선택** | createdAt, updatedAt | timestamp           | —                                                                      |
 
-**관계**: Household (N:1), ShoppingListItem (1:N)
+**관계**: Household (N:1), ShoppingListItem (1:N), User (선택 N:1, createdBy)
 
-**추가 검토**: `createdBy`(userId)  
 **줄일 것**: status 없이 단일 "현재 리스트"만 써도 됨
 
 ---
 
 ## 16. ShoppingListItem (리스트 항목)
 
-| 구분 | 항목 | 타입/비고 | 검토 |
-|------|------|-----------|------|
-| **필수** | id | PK | — |
-| **필수** | shoppingListId | FK → ShoppingList | — |
-| **필수(택1)** | productId **또는** productVariantId | FK | 정책 확정 필요 |
-| **선택** | quantity | decimal | 1 이상 |
-| **선택** | sortOrder | int | — |
-| **선택** | checked | boolean | 체크 여부 |
-| **선택** | memo | string, nullable | — |
-| **선택** | createdAt, updatedAt | timestamp | — |
+| 구분          | 항목                                | 타입/비고         | 검토           |
+| ------------- | ----------------------------------- | ----------------- | -------------- |
+| **필수**      | id                                  | PK                | —              |
+| **필수**      | shoppingListId                      | FK → ShoppingList | —              |
+| **필수(택1)** | productId **또는** productVariantId | FK                | 정책 확정 필요 |
+| **선택**      | quantity                            | decimal           | 1 이상         |
+| **선택**      | sortOrder                           | int               | —              |
+| **선택**      | checked                             | boolean           | 체크 여부      |
+| **선택**      | memo                                | string, nullable  | —              |
+| **선택**      | createdAt, updatedAt                | timestamp         | —              |
 
 **관계**: ShoppingList (N:1), Product 또는 ProductVariant (N:1, 택1)
 
@@ -461,66 +441,71 @@ erDiagram
 
 ## 17. Notification (알림)
 
-| 구분 | 항목 | 타입/비고 | 검토 |
-|------|------|-----------|------|
-| **필수** | id | PK | — |
-| **필수** | userId | FK → User | — |
-| **필수** | type | enum | 'expiration_soon' \| 'low_stock' \| 'expired' 등 |
-| **필수** | title | string | — |
-| **선택** | body | text, nullable | — |
-| **선택** | readAt | timestamp, nullable | 읽음 여부 |
-| **선택** | refType, refId | string, nullable | InventoryItem, PurchaseBatch 등 |
-| **선택** | createdAt | timestamp | — |
+| 구분     | 항목           | 타입/비고           | 검토                                             |
+| -------- | -------------- | ------------------- | ------------------------------------------------ |
+| **필수** | id             | PK                  | —                                                |
+| **필수** | userId         | FK → User           | —                                                |
+| **필수** | type           | enum                | 'expiration_soon' \| 'low_stock' \| 'expired' 등 |
+| **필수** | title          | string              | —                                                |
+| **선택** | body           | text, nullable      | —                                                |
+| **선택** | readAt         | timestamp, nullable | 읽음 여부                                        |
+| **선택** | refType, refId | string, nullable    | InventoryItem, PurchaseBatch 등                  |
+| **선택** | createdAt      | timestamp           | —                                                |
 
 **관계**: User (N:1)
 
-**추가 검토**: `channel`(push/email/in-app)  
-**줄일 것**: type + title + readAt만으로도 가능
+**비고**: 기본 채널은 **모바일 앱 푸시(로컬/FCM 등)** 로 가정; 별도 `channel` 컬럼은 두지 않음.
 
 ---
 
 ## 18. ExpirationAlertRule (만료 알림 설정)
 
-| 구분 | 항목 | 타입/비고 | 검토 |
-|------|------|-----------|------|
-| **필수** | id | PK | — |
-| **필수(택1)** | userId **또는** householdId | FK | 개인/가족·공유 그룹 단위 |
-| **필수** | daysBefore | int | 유통기한 N일 전 알림 |
-| **선택** | isActive | boolean | 기본 true |
-| **선택** | createdAt, updatedAt | timestamp | — |
+| 구분          | 항목                        | 타입/비고      | 검토                                                |
+| ------------- | --------------------------- | -------------- | --------------------------------------------------- |
+| **필수**      | id                          | PK             | —                                                   |
+| **필수**      | productId                   | FK → Product   | **품목(마스터)별**로 며칠 전에 알릴지 구분          |
+| **필수(택1)** | userId **또는** householdId | FK 점유 한쪽만 | 개인·가족·공유 그룹 소유 구역(어느 맥락의 설정인지) |
+| **필수**      | daysBefore                  | int            | 해당 품목: 유통기한 **N일 전** 알림                 |
+| **선택**      | isActive                    | boolean        | 기본 true                                           |
+| **선택**      | createdAt, updatedAt        | timestamp      | —                                                   |
 
-**관계**: User (N:1) 또는 Household (N:1)
+**관계**: Product (N:1), User (N:1, 선택) 또는 Household (N:1, 선택)
 
-**추가 검토**: 카테고리별/품목별 다른 일수  
-**줄일 것**: 전역 1개 규칙(예: 3일 전)만 있어도 됨
+### 중복 규칙 방지 (필수 수준으로 구현 권장)
+
+1. **소유 주체 정합성 (CHECK)**  
+   - `userId`와 `householdId`는 **정확히 하나만** NOT NULL이어야 함 (둘 다 NULL 또는 둘 다 NOT NULL 금지).
+
+2. **가족·공유 그룹 단위 규칙**  
+   - `householdId`가 채워진 행에 대해 **`(productId, householdId)` 조합은 유일**해야 함.  
+   - 구현 예(PostgreSQL 등): 부분 유니크 인덱스  
+     `UNIQUE (product_id, household_id) WHERE household_id IS NOT NULL AND user_id IS NULL`  
+   - 의미: 같은 Household 안에서 **동일 Product**에 대한 만료 알림 규칙은 **최대 1건** (`daysBefore`는 그 한 행으로만 표현).
+
+3. **개인 단위 규칙**  
+   - `userId`가 채워진 행에 대해 **`(productId, userId)` 조합은 유일**해야 함.  
+   - 구현 예:  
+     `UNIQUE (product_id, user_id) WHERE user_id IS NOT NULL AND household_id IS NULL`  
+   - 의미: 같은 사용자(개인 맥락)에 대해 **동일 Product** 규칙은 **최대 1건**.
+
+4. **API·앱**  
+   - 위 유니크 제약 위반 시 **409 Conflict**(또는 도메인 에러)로 거절.  
+   - 또는 **같은 조합이면 UPDATE**만 허용하는 UPSERT(일수·활성만 갱신)를 택할 수 있음.
+
+**비고**: 한 품목에 대해 Household 규칙과 동일 멤버의 User 규칙을 **동시에** 두면 알림이 이중일 수 있으므로, UI에서는 **가족 공유 vs 개인** 중 한 축만 쓰도록 안내하는 것을 권장.
 
 ---
 
-## 19. Tag (태그)
+## 19. ReportPreset (리포트 설정 저장)
 
-| 구분 | 항목 | 타입/비고 | 검토 |
-|------|------|-----------|------|
-| **필수** | id | PK | — |
-| **필수** | name | string | "유기농", "저염", "매운맛" |
-| **선택** | createdAt | timestamp | — |
-
-**관계**: Product (N:N, 중간테이블 ProductTag)
-
-**추가 검토**: `color`, `householdId`(가족·공유 그룹별 태그)  
-**줄일 것**: Tag는 필요 시 추가 (우선순위 낮음)
-
----
-
-## 20. ReportPreset (리포트 설정 저장)
-
-| 구분 | 항목 | 타입/비고 | 검토 |
-|------|------|-----------|------|
-| **필수** | id | PK | — |
-| **필수** | userId | FK → User | — |
-| **필수** | name | string | "지난 30일 TOP10" |
-| **선택** | config | jsonb | 필터, 기간, 정렬 등 |
-| **선택** | sortOrder | int | — |
-| **선택** | createdAt, updatedAt | timestamp | — |
+| 구분     | 항목                 | 타입/비고 | 검토                |
+| -------- | -------------------- | --------- | ------------------- |
+| **필수** | id                   | PK        | —                   |
+| **필수** | userId               | FK → User | —                   |
+| **필수** | name                 | string    | "지난 30일 TOP10"   |
+| **선택** | config               | jsonb     | 필터, 기간, 정렬 등 |
+| **선택** | sortOrder            | int       | —                   |
+| **선택** | createdAt, updatedAt | timestamp | —                   |
 
 **관계**: User (N:1)
 
@@ -529,24 +514,13 @@ erDiagram
 
 ---
 
-## 21. ProductTag (상품–태그 연결, N:N 중간)
-
-| 구분 | 항목 | 타입/비고 | 검토 |
-|------|------|-----------|------|
-| **필수** | productId | FK → Product | 복합 PK 또는 PK + unique |
-| **필수** | tagId | FK → Tag | — |
-
-**관계**: Product (N:1), Tag (N:1)
-
----
-
 ## 요약: ERD 그릴 때 체크 포인트
 
-| 구분 | 내용 |
-|------|------|
-| **추가 검토** | HouseholdMember 역할(owner/member), Purchase/Consumption의 userId, ShoppingListItem의 Product vs ProductVariant 정책, Category 계층(parentId), Notification refType/refId, ExpirationAlertRule 소유 주체(User vs Household) |
-| **줄이기/미루기** | Tag·ReportPreset·ExpirationAlertRule 단순화, barcode/sku 등은 선택 |
-| **정책 결정** | ShoppingListItem은 Product만 참조할지 ProductVariant까지 쓸지, ExpirationAlertRule은 User vs Household 중 어디에 둘지 |
+| 구분              | 내용                                                                                                                                                                                                                  |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **추가 검토**     | HouseholdMember 역할(owner/member), Purchase의 userId(구매자), InventoryLog의 userId·memo, ShoppingListItem의 Product vs ProductVariant 정책, Notification refType/refId, ExpirationAlertRule 품목별 일수·unique 정책 |
+| **줄이기/미루기** | ReportPreset 단순화, ProductVariant sku 등은 선택                                                                                                                                                                     |
+| **정책 결정**     | ShoppingListItem은 Product만 참조할지 ProductVariant까지 쓸지, ExpirationAlertRule은 User vs Household 소유 구역                                                                                                      |
 
 **기타 추가 예정(참고)**: [policy/considerations.md](./policy/considerations.md) — Recipe, Brand, Supplier, Photo, Integration, AuditLog 등. 필요 시 순차 반영. (가계부·구독·예산은 본 프로젝트 범위 외, 별도 프로젝트 권장.)
 

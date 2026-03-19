@@ -164,11 +164,10 @@ Interface → Business → Context → Domain → Infrastructure
 | 14   | ShoppingList            | 장보기 리스트                                  | Household                        | ★★★★     |
 | 15   | ShoppingListItem        | 리스트 항목                                    | ShoppingList, Product/ProductVariant | ★★★★ |
 | 16   | Notification            | 알림 (만료 임박, 잔량 부족 등)                | User                             | ★★★★     |
-| 17   | ExpirationAlertRule     | 만료 알림 설정 (며칠 전 알림 등)              | User or Household                | ★★★      |
-| 18   | Tag                     | 태그 (유기농, 저염, 매운맛...)                 | —                                | ★★       |
-| 19   | ReportPreset            | 자주 보는 리포트 설정 저장                     | User                             | ★★       |
-| 20   | Account                 | 잔고 (현금, 통장 등)                           | User 또는 Household              | ★★★      |
-| 21   | RecurringIncome         | 예정 수입 (월급날, 금액 등)                    | User 또는 Household              | ★★★      |
+| 17   | ExpirationAlertRule     | 만료 알림 설정 (품목별 며칠 전 알림)           | User or Household, Product       | ★★★      |
+| 18   | ReportPreset            | 자주 보는 리포트 설정 저장                     | User                             | ★★       |
+| 19   | Account                 | 잔고 (현금, 통장 등)                           | User 또는 Household              | ★★★      |
+| 20   | RecurringIncome         | 예정 수입 (월급날, 금액 등)                    | User 또는 Household              | ★★★      |
 
 **추가 구현 대상**  
 Recipe, Brand, Supplier, Photo(영수증/제품사진), Integration(카카오톡 알림 등) — [추가로 고려할 기능](./docs/considerations.md) 참고.
@@ -185,7 +184,7 @@ Recipe, Brand, Supplier, Photo(영수증/제품사진), Integration(카카오톡
 - InventoryItem 생성/조회/수정
 - Purchase → 재고 증가 (+ 트랜잭션)
 - Consumption → 재고 감소 (+ 트랜잭션)
-- InventoryLog 자동 기록
+- InventoryLog 기록(구매·소비·폐기·조정 시 트랜잭션과 함께 명시적 기록; 별도 배치 자동 동기화 없음)
 
 ### Phase 3 – 유통기한 & 알림 (6~9주)
 - PurchaseBatch + expirationDate 관리

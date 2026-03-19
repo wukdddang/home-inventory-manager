@@ -12,7 +12,7 @@ README의 **「4. 도메인 & 엔티티 설계」**와 동기화해 두었습니
 |------|--------|-----------|-----------|----------|
 | 1 | User | 사용자 계정 | — (Household과 N:N) | ★★★★★ |
 | 2 | Household | 가족·공유 그룹 | User ↔ ManyToMany | ★★★★ |
-| 3 | Category | 대분류 (식료품, 생활용품, 의약품, 전자제품, 식기류, 가구류…) | — (계층형 가능) | ★★★★★ |
+| 3 | Category | 대분류 (식료품, 생활용품, 의약품, 전자제품, 식기류, 가구류…) — 플랫(1단계) | — | ★★★★★ |
 | 4 | StorageLocation | 보관 장소 | Household | ★★★★ |
 | 5 | Unit | 단위 마스터 (ml, g, 개…) | — | ★★★ |
 | 6 | Product | 상품 마스터 (소모품·비소모품: 식료품, 전자제품, 가구 등) | Category | ★★★★★ |
@@ -26,10 +26,9 @@ README의 **「4. 도메인 & 엔티티 설계」**와 동기화해 두었습니
 | 14 | ShoppingList | 장보기 리스트 | Household | ★★★★ |
 | 15 | ShoppingListItem | 리스트 항목 | ShoppingList, Product/ProductVariant | ★★★★ |
 | 16 | Notification | 알림 | User | ★★★★ |
-| 17 | ExpirationAlertRule | 만료 알림 설정 | User 또는 Household | ★★★ |
-| 18 | Tag | 태그 | — (Product 등과 N:N은 설계 시 확정) | ★★ |
-| 19 | ReportPreset | 리포트 설정 저장 | User | ★★ |
-| 20 | HouseStructure | 집 구조(2D/3D) 한 채 — 방·슬롯 정의(JSONB) | Household 1:1 | ★★★ |
+| 17 | ExpirationAlertRule | 만료 알림 설정(품목별 일수) | User 또는 Household, Product | ★★★ |
+| 18 | ReportPreset | 리포트 설정 저장 | User | ★★ |
+| 19 | HouseStructure | 집 구조(2D/3D) 한 채 — 방·슬롯 정의(JSONB) | Household 1:1 | ★★★ |
 
 ### User ↔ Household (다대다)
 
@@ -53,14 +52,15 @@ Household (가족·공유 그룹)
 User
   ├── Household (N:N)
   ├── Notification (1:N)
-  ├── ExpirationAlertRule (1:N, 선택)
+  ├── ExpirationAlertRule (1:N, 선택, 품목별)
   └── ReportPreset (1:N)
 
 Category
-  └── Product (1:N)  ※ Category 자기 참조(계층) 가능
+  └── Product (1:N)  ※ 플랫 카테고리(계층 없음)
 
 Product
   ├── ProductVariant (1:N)
+  ├── ExpirationAlertRule (1:N, 선택, 품목별 일수)
   └── ShoppingListItem (참조 가능)
 
 ProductVariant
@@ -103,6 +103,7 @@ erDiagram
 
     Unit ||--o{ ProductVariant : unit
     Product ||--o{ ProductVariant : variants
+    Product ||--o{ ExpirationAlertRule : "per product"
     ProductVariant ||--o{ InventoryItem : stocked_as
     StorageLocation ||--o{ InventoryItem : stores
     StorageLocation }o--o| HouseStructure : "optional room"
@@ -118,8 +119,8 @@ erDiagram
     ShoppingListItem }o--o| ProductVariant : "ref optional"
 ```
 
-- **Category** 계층(부모–자식)은 필요 시 동일 엔티티 자기 참조로 확장.
-- **Tag**는 Product 등과 N:N 테이블로 연결하는 방식이 일반적.
+- **Category**는 플랫(1단계)만 사용; `parentId`·계층 없음.
+- **ExpirationAlertRule**은 품목(Product)마다 유통기한 **며칠 전** 알림 일수를 다르게 둘 수 있음.
 - **HouseStructure**: 상세는 [집 구조도 백엔드 명세](./house-structure-3d-feature.md) 참고. StorageLocation에 `houseStructureId`, `roomId` 등으로 "방"과 연결 가능.
 
 ---
