@@ -9,7 +9,9 @@ import {
   ViewModeToggle,
   type ViewMode,
 } from "../ViewModeToggle.module";
+import { resolveItemRoomId } from "@/lib/household-location";
 import type { Household } from "@/types/domain";
+import { RoomItemAddPanel } from "../RoomItemAddFloatingPanel.module";
 
 type DashboardInventorySectionProps = {
   selected: Household | null;
@@ -17,6 +19,9 @@ type DashboardInventorySectionProps = {
   onViewModeChange: (mode: ViewMode) => void;
   selectedRoomId: string | null;
   onRoomSelect: (roomId: string | null) => void;
+  itemAddPanelExpanded: boolean;
+  onItemAddPanelExpandedChange: (expanded: boolean) => void;
+  itemAddPanelAnchorId?: string;
 };
 
 export function DashboardInventorySection({
@@ -25,12 +30,17 @@ export function DashboardInventorySection({
   onViewModeChange,
   selectedRoomId,
   onRoomSelect,
+  itemAddPanelExpanded,
+  onItemAddPanelExpandedChange,
+  itemAddPanelAnchorId,
 }: DashboardInventorySectionProps) {
-  const { 거점을_갱신_한다 } = useDashboard();
+  const { 거점을_갱신_한다, productCatalog } = useDashboard();
 
   const roomItems = useMemo(() => {
     if (!selected || !selectedRoomId) return [];
-    return selected.items.filter((i) => i.roomId === selectedRoomId);
+    return selected.items.filter(
+      (i) => resolveItemRoomId(selected, i) === selectedRoomId,
+    );
   }, [selected, selectedRoomId]);
 
   if (!selected) return null;
@@ -68,13 +78,13 @@ export function DashboardInventorySection({
     <p className="shrink-0 rounded-xl border border-dashed border-zinc-700 bg-zinc-950/50 px-4 py-3 text-center text-sm text-zinc-500">
       {viewMode === "structure" ? (
         <>
-          물품을 추가하려면 구조도에서 방을 선택하세요. 화면 오른쪽 고정 패널에서
-          등록합니다.
+          물품을 추가하려면 구조도에서 방을 선택하세요. 보관 칸은 왼쪽「가구
+          배치·보관 장소」에서 정한 뒤, 아래「물품 추가」에서 재고를 넣습니다.
         </>
       ) : (
         <>
-          표에서 방을 참고한 뒤 왼쪽 목록에서 방을 선택하면, 오른쪽 고정 패널에서
-          물품을 등록할 수 있습니다.
+          표에서 방을 참고한 뒤 왼쪽에서 방을 선택하면, 이 섹션 아래「물품
+          추가」에서 등록할 수 있습니다.
         </>
       )}
     </p>
@@ -108,6 +118,7 @@ export function DashboardInventorySection({
               />
             </div>
             <RoomItemsPanel
+              household={selected}
               selectedRoomId={selectedRoomId}
               roomItems={roomItems}
             />
@@ -119,6 +130,7 @@ export function DashboardInventorySection({
           <div className="min-h-0 flex-1 overflow-auto">
             <ItemsSpreadsheet
               household={selected}
+              catalog={productCatalog}
               onDeleteItem={handleDeleteItem}
               onSelectRoomId={(id) => onRoomSelect(id)}
             />
@@ -126,6 +138,23 @@ export function DashboardInventorySection({
           {!selectedRoomId ? noRoomHint : null}
         </div>
       )}
+
+      {selectedRoomId ? (
+        <div className="mt-6 shrink-0 border-t border-zinc-800 pt-5">
+          <p className="mb-3 text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+            이어서 · 물품 등록
+          </p>
+          <RoomItemAddPanel
+            key={selectedRoomId}
+            selected={selected}
+            roomId={selectedRoomId}
+            onDismissRoom={() => onRoomSelect(null)}
+            expanded={itemAddPanelExpanded}
+            onExpandedChange={onItemAddPanelExpandedChange}
+            anchorId={itemAddPanelAnchorId}
+          />
+        </div>
+      ) : null}
     </div>
   );
 }

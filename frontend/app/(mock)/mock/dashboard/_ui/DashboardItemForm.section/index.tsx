@@ -1,19 +1,20 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useCallback, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { CatalogModalsControls } from "@/app/(current)/dashboard/_ui/CatalogModals.controls";
 import { useDashboard } from "../../_hooks/useDashboard";
 import { newEntityId } from "../../_lib/dashboard-helpers";
 import { toast } from "@/hooks/use-toast";
+import { useAppRoutePrefix } from "@/lib/use-app-route-prefix";
 import { cn } from "@/lib/utils";
+import {
+  listStorageOptionsForRoom,
+  resolveRoomIdForStorageLocation,
+} from "@/lib/household-location";
 import { inventoryDisplayLine } from "@/lib/product-catalog-defaults";
-import type {
-  CatalogProduct,
-  CatalogProductVariant,
-  Household,
-  InventoryRow,
-  ProductCatalog,
-} from "@/types/domain";
+import type { Household, InventoryRow } from "@/types/domain";
 
 export type RoomItemAddWidgetProps = {
   selected: Household;
@@ -30,9 +31,6 @@ function sortByOrder<T extends { sortOrder?: number }>(list: T[]): T[] {
 
 const inputClass =
   "w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none transition-[border-color,box-shadow] focus:border-teal-500 focus:ring-1 focus:ring-teal-500/30";
-
-const btnGhost =
-  "cursor-pointer rounded-xl border border-zinc-600 px-3 py-2 text-xs font-medium text-zinc-200 transition-colors hover:border-zinc-500 hover:bg-zinc-800 disabled:pointer-events-none disabled:opacity-40";
 
 function StepShell({
   step,
@@ -66,52 +64,59 @@ function StepShell({
   );
 }
 
-function CatalogExpandBox({
-  label,
-  children,
-}: {
-  label: string;
-  children: ReactNode;
-}) {
+function CatalogHintLink() {
+  const prefix = useAppRoutePrefix();
   return (
-    <div className="rounded-xl border border-zinc-800/90 bg-zinc-950/70 p-3 ring-1 ring-zinc-800/50">
-      <p className="mb-2.5 text-[11px] font-medium uppercase tracking-wider text-zinc-500">
-        {label}
-      </p>
-      {children}
-    </div>
+    <p className="text-[11px] leading-snug text-zinc-600">
+      목록에 없으면 위 버튼·대시보드 상단「공통 상품 카탈로그」또는{" "}
+      <Link
+        href={`${prefix}/settings`}
+        className="font-medium text-teal-400/90 underline-offset-2 hover:underline"
+      >
+        설정 → 상품 카탈로그
+      </Link>
+      에서 모달로 추가하세요.
+    </p>
   );
 }
 
-/** 방 선택 후 — Category → Product → ProductVariant → 보유 수량 */
+/** 방 선택 후 — 보관 칸 → Category → Product → Variant → 수량 (카탈로그는 패널·상단·설정) */
 export function RoomItemAddWidget({
   selected,
   roomId,
   embedInFloatingPanel = false,
 }: RoomItemAddWidgetProps) {
-  const { 거점을_갱신_한다 } = useDashboard();
-  const catalog = selected.catalog;
+  const {
+    거점을_갱신_한다,
+    productCatalog: catalog,
+    카탈로그를_갱신_한다,
+    catalogHydrated,
+  } = useDashboard();
+  const routePrefix = useAppRoutePrefix();
 
+  const [pickedStorageId, setPickedStorageId] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [productId, setProductId] = useState("");
   const [variantId, setVariantId] = useState("");
   const [stockQty, setStockQty] = useState("1");
 
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [newProductName, setNewProductName] = useState("");
-  const [newProductConsumable, setNewProductConsumable] = useState(true);
-  const [newVariantUnitId, setNewVariantUnitId] = useState("");
-  const [newVariantQtyPer, setNewVariantQtyPer] = useState("500");
-  const [newVariantLabel, setNewVariantLabel] = useState("");
-
   const room = selected.rooms.find((r) => r.id === roomId);
+
+  const storageOptions = useMemo(
+    () => listStorageOptionsForRoom(selected, roomId),
+    [selected, roomId],
+  );
+
+  useEffect(() => {
+    setPickedStorageId((cur) =>
+      storageOptions.some((o) => o.id === cur)
+        ? cur
+        : (storageOptions[0]?.id ?? ""),
+    );
+  }, [storageOptions]);
 
   const categories = useMemo(
     () => (catalog ? sortByOrder(catalog.categories) : []),
-    [catalog],
-  );
-  const units = useMemo(
-    () => (catalog ? sortByOrder(catalog.units) : []),
     [catalog],
   );
 
@@ -150,94 +155,6 @@ export function RoomItemAddWidget({
     return def?.id ?? "";
   }, [variantId, variantsInProduct]);
 
-  const newVariantUnitIdResolved = useMemo(() => {
-    if (
-      newVariantUnitId &&
-      units.some((u) => u.id === newVariantUnitId)
-    ) {
-      return newVariantUnitId;
-    }
-    return units[0]?.id ?? "";
-  }, [newVariantUnitId, units]);
-
-  const updateCatalog = useCallback(
-    (fn: (c: ProductCatalog) => ProductCatalog) => {
-      거점을_갱신_한다(selected.id, (h) => {
-        if (!h.catalog) return h;
-        return { ...h, catalog: fn(h.catalog) };
-      });
-    },
-    [거점을_갱신_한다, selected.id],
-  );
-
-  const handleAddCategory = () => {
-    const name = newCategoryName.trim();
-    if (!name || !catalog) return;
-    const id = newEntityId();
-    const nextSort =
-      Math.max(0, ...catalog.categories.map((c) => c.sortOrder ?? 0)) + 1;
-    updateCatalog((c) => ({
-      ...c,
-      categories: [...c.categories, { id, name, sortOrder: nextSort }],
-    }));
-    setCategoryId(id);
-    setNewCategoryName("");
-    toast({ title: "카테고리 추가됨", description: name });
-  };
-
-  const handleAddProduct = () => {
-    const name = newProductName.trim();
-    if (!name || !catalog || !categoryIdResolved) return;
-    const id = newEntityId();
-    const p: CatalogProduct = {
-      id,
-      categoryId: categoryIdResolved,
-      name,
-      isConsumable: newProductConsumable,
-    };
-    updateCatalog((c) => ({
-      ...c,
-      products: [...c.products, p],
-    }));
-    setProductId(id);
-    setNewProductName("");
-    toast({ title: "품목 추가됨", description: name });
-  };
-
-  const handleAddVariant = () => {
-    if (!catalog || !productIdResolved || !newVariantUnitIdResolved) return;
-    const q = Number(newVariantQtyPer);
-    if (!Number.isFinite(q) || q <= 0) {
-      toast({
-        title: "용량/수량을 확인하세요",
-        description: "quantityPerUnit은 0보다 큰 숫자여야 합니다.",
-        variant: "warning",
-      });
-      return;
-    }
-    const id = newEntityId();
-    const unit = catalog.units.find((u) => u.id === newVariantUnitIdResolved);
-    const label =
-      newVariantLabel.trim() ||
-      (unit ? `${q}${unit.symbol}` : String(q));
-    const v: CatalogProductVariant = {
-      id,
-      productId: productIdResolved,
-      unitId: newVariantUnitIdResolved,
-      quantityPerUnit: q,
-      name: label,
-      isDefault: variantsInProduct.length === 0,
-    };
-    updateCatalog((c) => ({
-      ...c,
-      variants: [...c.variants, v],
-    }));
-    setVariantId(id);
-    setNewVariantLabel("");
-    setNewVariantQtyPer("500");
-    toast({ title: "용량·포장 단위 추가됨", description: label });
-  };
-
   const handleAddItem = () => {
     if (!room || !catalog) return;
     const variant = catalog.variants.find((v) => v.id === variantIdResolved);
@@ -258,6 +175,31 @@ export function RoomItemAddWidget({
       return;
     }
 
+    if (storageOptions.length === 0) {
+      toast({
+        title: "보관 칸이 없습니다",
+        description:
+          "왼쪽「가구 배치·보관 장소」에서 이 방에 보관 칸을 먼저 추가하세요.",
+        variant: "warning",
+      });
+      return;
+    }
+
+    const slotId =
+      pickedStorageId && storageOptions.some((o) => o.id === pickedStorageId)
+        ? pickedStorageId
+        : (storageOptions[0]?.id ?? "");
+    if (!slotId) {
+      toast({
+        title: "보관 위치를 선택하세요",
+        variant: "warning",
+      });
+      return;
+    }
+
+    const resolvedRoomId =
+      resolveRoomIdForStorageLocation(selected, slotId) ?? roomId;
+
     const qty = Math.max(0, Number(stockQty) || 0);
     const variantCaption =
       variant.name ?? `${variant.quantityPerUnit}${unit.symbol}`;
@@ -267,7 +209,8 @@ export function RoomItemAddWidget({
       name: "",
       quantity: qty,
       unit: unit.symbol,
-      roomId,
+      roomId: resolvedRoomId,
+      storageLocationId: slotId,
       categoryId: category.id,
       productId: product.id,
       productVariantId: variant.id,
@@ -281,9 +224,11 @@ export function RoomItemAddWidget({
       items: [...h.items, row],
     }));
     setStockQty("1");
+    const locLabel =
+      storageOptions.find((o) => o.id === slotId)?.label ?? room.name;
     toast({
       title: "물품 추가됨",
-      description: `${row.name} → ${room.name}`,
+      description: `${row.name} → ${locLabel}`,
       variant: "success",
     });
   };
@@ -292,15 +237,6 @@ export function RoomItemAddWidget({
     return (
       <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200/90">
         선택한 방을 찾을 수 없습니다. 목록을 확인해 주세요.
-      </p>
-    );
-  }
-
-  if (!catalog) {
-    return (
-      <p className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200/90">
-        카탈로그 데이터가 없습니다. 페이지를 새로고침하거나 거점을 다시 만들어
-        주세요.
       </p>
     );
   }
@@ -320,66 +256,117 @@ export function RoomItemAddWidget({
             물품 등록 · {room.name}
           </h2>
           <p className="mt-1 max-w-prose text-xs leading-relaxed text-zinc-500">
-            카테고리 → 품목 → 용량·포장(Variant) 순으로 고른 뒤, 이 방에 재고를
-            넣습니다.
+            보관 칸을 고른 뒤 카탈로그에서 품목을 고릅니다. 아래 버튼·대시보드
+            상단·설정에서 카테고리·품목·용량(Variant)을 모달로 추가할 수 있습니다.
           </p>
         </header>
       ) : (
         <p className="mb-3 text-[11px] leading-relaxed text-zinc-500">
-          카테고리 → 품목 → 용량·포장(Variant) 순으로 고른 뒤 재고를 넣습니다.
+          보관 칸 → 카테고리 → 품목 → Variant → 수량. 목록이 없으면 아래 버튼으로
+          추가하거나{" "}
+          <Link
+            href={`${routePrefix}/settings`}
+            className="text-teal-400/90 underline-offset-2 hover:underline"
+          >
+            설정 → 상품 카탈로그
+          </Link>
+          를 이용하세요.
         </p>
       )}
 
+      {catalogHydrated ? (
+        <div
+          className={cn(
+            "rounded-xl border border-zinc-800/90 bg-zinc-900/35 p-3 ring-1 ring-zinc-800/50",
+            embedInFloatingPanel ? "mb-3" : "mb-4",
+          )}
+          role="region"
+          aria-label="카탈로그 빠른 추가"
+        >
+          <p className="mb-2 text-[11px] font-medium text-zinc-500">
+            카탈로그에 없으면 여기서 추가
+          </p>
+          <CatalogModalsControls
+            catalog={catalog}
+            onCatalogUpdate={카탈로그를_갱신_한다}
+            layout="panel"
+          />
+        </div>
+      ) : null}
+
       <ol
         className={cn(
-          "list-none space-y-6 p-0",
+          "list-none space-y-5 p-0",
           embedInFloatingPanel ? "mt-0" : "mt-4",
         )}
       >
         <StepShell
           step={1}
-          title="카테고리"
-          subtitle="대분류를 고르거나 새로 만듭니다."
+          title="보관 위치"
+          subtitle="이 방 안의 직속 칸 또는 가구 아래 칸을 고릅니다."
         >
-          <select
-            aria-label="카테고리 선택"
-            value={categoryIdResolved}
-            onChange={(e) => {
-              setCategoryId(e.target.value);
-              setProductId("");
-              setVariantId("");
-            }}
-            className={inputClass}
-          >
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-          <CatalogExpandBox label="카탈로그에 카테고리 추가">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
-              <input
-                value={newCategoryName}
-                onChange={(e) => setNewCategoryName(e.target.value)}
-                placeholder="이름 (예: 식료품)"
-                className={`${inputClass} sm:min-w-0 sm:flex-1`}
-              />
-              <button
-                type="button"
-                onClick={handleAddCategory}
-                className={`${btnGhost} sm:w-28`}
-              >
-                추가
-              </button>
-            </div>
-          </CatalogExpandBox>
+          {storageOptions.length === 0 ? (
+            <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200/90">
+              이 방에 등록된 보관 칸이 없습니다.「가구 배치·보관 장소」에서 방
+              직속 칸 또는 가구·칸을 추가하세요.
+            </p>
+          ) : (
+            <select
+              aria-label="보관 칸 선택"
+              value={
+                storageOptions.some((o) => o.id === pickedStorageId)
+                  ? pickedStorageId
+                  : (storageOptions[0]?.id ?? "")
+              }
+              onChange={(e) => setPickedStorageId(e.target.value)}
+              className={inputClass}
+            >
+              {storageOptions.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          )}
         </StepShell>
 
         <StepShell
           step={2}
+          title="카테고리"
+          subtitle="위에서 추가하거나 설정에 등록한 대분류 중에서 고릅니다."
+        >
+          {categories.length === 0 ? (
+            <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200/90">
+              등록된 카테고리가 없습니다.
+              <CatalogHintLink />
+            </p>
+          ) : (
+            <>
+              <select
+                aria-label="카테고리 선택"
+                value={categoryIdResolved}
+                onChange={(e) => {
+                  setCategoryId(e.target.value);
+                  setProductId("");
+                  setVariantId("");
+                }}
+                className={inputClass}
+              >
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+              <CatalogHintLink />
+            </>
+          )}
+        </StepShell>
+
+        <StepShell
+          step={3}
           title="품목"
-          subtitle="카테고리 안의 품목을 고르거나 새로 등록합니다."
+          subtitle="선택한 카테고리 안의 품목을 고릅니다."
         >
           <select
             aria-label="품목 선택"
@@ -402,41 +389,13 @@ export function RoomItemAddWidget({
               ))
             )}
           </select>
-          <CatalogExpandBox label="카탈로그에 품목 추가">
-            <div className="flex flex-col gap-3">
-              <input
-                value={newProductName}
-                onChange={(e) => setNewProductName(e.target.value)}
-                placeholder="품목명 (예: 라면)"
-                className={inputClass}
-              />
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                <label className="flex cursor-pointer items-center gap-2 text-xs text-zinc-400">
-                  <input
-                    type="checkbox"
-                    checked={newProductConsumable}
-                    onChange={(e) => setNewProductConsumable(e.target.checked)}
-                    className="rounded border-zinc-600"
-                  />
-                  소비형 품목
-                </label>
-                <button
-                  type="button"
-                  onClick={handleAddProduct}
-                  disabled={!categoryIdResolved}
-                  className={`${btnGhost} w-full sm:w-auto sm:shrink-0`}
-                >
-                  품목 추가
-                </button>
-              </div>
-            </div>
-          </CatalogExpandBox>
+          <CatalogHintLink />
         </StepShell>
 
         <StepShell
-          step={3}
+          step={4}
           title="용량 · 포장 (Variant)"
-          subtitle="기존 단위를 고르거나, 단위·수량으로 새 Variant를 만듭니다."
+          subtitle="등록된 단위·용량을 고릅니다."
         >
           <select
             aria-label="등록된 용량·포장 선택"
@@ -446,7 +405,7 @@ export function RoomItemAddWidget({
             className={`${inputClass} disabled:opacity-50`}
           >
             {variantsInProduct.length === 0 ? (
-              <option value="">등록된 Variant 없음 — 아래에서 추가</option>
+              <option value="">등록된 Variant 없음</option>
             ) : (
               variantsInProduct.map((v) => {
                 const u = catalog.units.find((x) => x.id === v.unitId);
@@ -460,71 +419,11 @@ export function RoomItemAddWidget({
               })
             )}
           </select>
-          <p className="text-[11px] leading-snug text-zinc-600">
-            예: 500ml → 단위 <span className="text-zinc-500">ml</span>, 수량{" "}
-            <span className="text-zinc-500">500</span> · 5개입 팩 → 단위{" "}
-            <span className="text-zinc-500">팩</span>, 수량{" "}
-            <span className="text-zinc-500">5</span>
-          </p>
-          <CatalogExpandBox label="새 용량·포장 단위">
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="space-y-1">
-                <label className="text-[11px] font-medium text-zinc-500">
-                  단위
-                </label>
-                <select
-                  value={newVariantUnitIdResolved}
-                  onChange={(e) => setNewVariantUnitId(e.target.value)}
-                  className={inputClass}
-                >
-                  {units.map((u) => (
-                    <option key={u.id} value={u.id}>
-                      {u.symbol}
-                      {u.name ? ` (${u.name})` : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-[11px] font-medium text-zinc-500">
-                  용량 / 개수 (한 단위당)
-                </label>
-                <input
-                  type="number"
-                  min={0.01}
-                  step="any"
-                  value={newVariantQtyPer}
-                  onChange={(e) => setNewVariantQtyPer(e.target.value)}
-                  className={inputClass}
-                />
-              </div>
-              <div className="space-y-1 sm:col-span-2">
-                <label className="text-[11px] font-medium text-zinc-500">
-                  표시 이름 (선택)
-                </label>
-                <input
-                  value={newVariantLabel}
-                  onChange={(e) => setNewVariantLabel(e.target.value)}
-                  placeholder="비우면 단위·수량으로 자동 생성"
-                  className={inputClass}
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <button
-                  type="button"
-                  onClick={handleAddVariant}
-                  disabled={!productIdResolved}
-                  className={`${btnGhost} w-full`}
-                >
-                  Variant 추가
-                </button>
-              </div>
-            </div>
-          </CatalogExpandBox>
+          <CatalogHintLink />
         </StepShell>
       </ol>
 
-      <footer className="mt-6 flex flex-col gap-4 rounded-xl border border-teal-500/25 bg-zinc-950/50 p-4 ring-1 ring-teal-500/10 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
+      <footer className="mt-5 flex flex-col gap-4 rounded-xl border border-teal-500/25 bg-zinc-950/50 p-4 ring-1 ring-teal-500/10 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
         <div className="w-full space-y-1 sm:max-w-48">
           <label
             htmlFor={`stock-qty-${roomId}`}
@@ -546,7 +445,7 @@ export function RoomItemAddWidget({
           onClick={handleAddItem}
           className="w-full shrink-0 cursor-pointer rounded-xl bg-teal-500 px-6 py-3 text-sm font-semibold text-zinc-950 shadow-lg shadow-teal-500/15 transition hover:bg-teal-400 sm:w-auto"
         >
-          이 방에 물품 추가
+          선택한 칸에 물품 추가
         </button>
       </footer>
     </div>

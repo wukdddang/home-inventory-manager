@@ -1,3 +1,4 @@
+import { stripHouseholdCatalogForPersist } from "@/lib/household-persist";
 import type { Household } from "@/types/domain";
 import type { DashboardHouseholdsPort } from "./dashboard-households.port";
 
@@ -36,6 +37,44 @@ const MOCK_SEED_HOUSEHOLDS: Household[] = [
         height: 110,
       },
     ],
+    furniturePlacements: [
+      {
+        id: "fp-mock-kitchen-shelf",
+        roomId: "mock-room-kitchen",
+        label: "주방 선반",
+        sortOrder: 1,
+      },
+    ],
+    storageLocations: [
+      {
+        id: "sl-mock-kitchen-fridge",
+        name: "냉장고",
+        roomId: "mock-room-kitchen",
+        furniturePlacementId: null,
+        sortOrder: 1,
+      },
+      {
+        id: "sl-mock-kitchen-shelf-top",
+        name: "윗칸",
+        roomId: null,
+        furniturePlacementId: "fp-mock-kitchen-shelf",
+        sortOrder: 1,
+      },
+      {
+        id: "sl-mock-storage-rack",
+        name: "선반",
+        roomId: "mock-room-storage",
+        furniturePlacementId: null,
+        sortOrder: 1,
+      },
+      {
+        id: "sl-mock-living-tv",
+        name: "TV 장 서랍",
+        roomId: "mock-room-living",
+        furniturePlacementId: null,
+        sortOrder: 1,
+      },
+    ],
     items: [
       {
         id: "mock-item-ramen",
@@ -43,6 +82,7 @@ const MOCK_SEED_HOUSEHOLDS: Household[] = [
         quantity: 12,
         unit: "개",
         roomId: "mock-room-kitchen",
+        storageLocationId: "sl-mock-kitchen-fridge",
         notes: "비상 식량",
         categoryId: "c-food",
         productId: "p-ramen",
@@ -56,6 +96,7 @@ const MOCK_SEED_HOUSEHOLDS: Household[] = [
         quantity: 3,
         unit: "박스",
         roomId: "mock-room-storage",
+        storageLocationId: "sl-mock-storage-rack",
         categoryId: "c-life",
         productId: "p-tissue",
         productVariantId: "v-tissue-box",
@@ -68,6 +109,7 @@ const MOCK_SEED_HOUSEHOLDS: Household[] = [
         quantity: 2,
         unit: "팩",
         roomId: "mock-room-living",
+        storageLocationId: "sl-mock-living-tv",
         notes: "AAA",
         categoryId: "c-electronics",
         productId: "p-battery",
@@ -92,6 +134,16 @@ const MOCK_SEED_HOUSEHOLDS: Household[] = [
         height: 120,
       },
     ],
+    furniturePlacements: [],
+    storageLocations: [
+      {
+        id: "sl-mock-office-shelf",
+        name: "책상 옆 선반",
+        roomId: "mock-room-office-shelf",
+        furniturePlacementId: null,
+        sortOrder: 1,
+      },
+    ],
     items: [
       {
         id: "mock-item-paper",
@@ -99,6 +151,7 @@ const MOCK_SEED_HOUSEHOLDS: Household[] = [
         quantity: 5,
         unit: "권",
         roomId: "mock-room-office-shelf",
+        storageLocationId: "sl-mock-office-shelf",
         categoryId: "c-office",
         productId: "p-a4",
         productVariantId: "v-a4-ream",
@@ -137,7 +190,7 @@ export function createDashboardMockHouseholdsService(): DashboardHouseholdsPort 
 
     async saveAll(households) {
       await delay(Math.min(80, MOCK_LATENCY_MS));
-      cache = cloneHouseholds(households);
+      cache = cloneHouseholds(households).map(stripHouseholdCatalogForPersist);
     },
   };
 }

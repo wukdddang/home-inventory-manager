@@ -14,6 +14,26 @@ export type StructureRoom = {
   height: number;
 };
 
+/** 논리 설계 §6 FurniturePlacement — 방 안 가구 인스턴스 */
+export type FurniturePlacement = {
+  id: string;
+  roomId: string;
+  label: string;
+  sortOrder?: number;
+};
+
+/**
+ * 논리 설계 §7 StorageLocation — 방 직속 또는 가구 아래 보관 슬롯
+ * `furniturePlacementId`가 있으면 방 직속이 아님(roomId는 비워 두는 것을 권장, 해석은 가구→방).
+ */
+export type StorageLocationRow = {
+  id: string;
+  name: string;
+  roomId: string | null;
+  furniturePlacementId: string | null;
+  sortOrder?: number;
+};
+
 /** 논리 설계 §6 Unit */
 export type CatalogUnit = {
   id: string;
@@ -71,6 +91,8 @@ export type InventoryRow = {
   /** 재고 수량의 단위 심볼 — Variant의 Unit.symbol 과 정합 */
   unit: string;
   roomId: string;
+  /** 보관 장소(슬롯) — 있으면 방·가구 경로 표시에 사용 */
+  storageLocationId?: string;
   notes?: string;
   categoryId?: string;
   productId?: string;
@@ -86,9 +108,11 @@ export type Household = {
   kind: HouseholdKind;
   rooms: StructureRoom[];
   items: InventoryRow[];
+  /** 방별 가구 배치 — 없으면 UI에서 빈 배열로 취급 */
+  furniturePlacements?: FurniturePlacement[];
+  /** 보관 슬롯(방 직속 또는 가구 하위) */
+  storageLocations?: StorageLocationRow[];
   createdAt: string;
-  /** 거점 단위 상품 마스터 (mock·로컬); 없으면 ensure 시 기본 시드 */
-  catalog?: ProductCatalog;
 };
 
 export type AuthUser = {

@@ -8,11 +8,13 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { ensureHouseholdShape } from "@/lib/household-location";
 import {
-  cloneDefaultCatalog,
-  ensureHouseholdCatalog,
-} from "@/lib/product-catalog-defaults";
-import type { Household, HouseholdKind } from "@/types/domain";
+  getSharedProductCatalog,
+  setSharedProductCatalog,
+} from "@/lib/local-store";
+import { cloneDefaultCatalog } from "@/lib/product-catalog-defaults";
+import type { Household, HouseholdKind, ProductCatalog } from "@/types/domain";
 import { newEntityId } from "../_lib/dashboard-helpers";
 import { dashboardApiHouseholdsClient } from "./dashboard-api.service";
 import type { DashboardHouseholdsPort } from "./dashboard-households.port";
@@ -26,6 +28,10 @@ export type DashboardContextType = {
   dataMode: DashboardHouseholdsDataMode;
   /** 데이터 소스에서 읽은 거점 목록 */
   households: Household[];
+  /** 전역 공통 상품 카탈로그 (거점과 무관) */
+  productCatalog: ProductCatalog;
+  /** 공통 카탈로그가 로컬에서 하이드레이션됐는지 */
+  catalogHydrated: boolean;
   /** 최초 하이드레이션·재조회 중 */
   loading: boolean;
   error: string | null;
@@ -39,6 +45,10 @@ export type DashboardContextType = {
   거점을_갱신_한다: (
     householdId: string,
     updater: (h: Household) => Household,
+  ) => void;
+  /** 공통 카탈로그 갱신 (저장소 동기화는 effect에서 처리) */
+  카탈로그를_갱신_한다: (
+    updater: (c: ProductCatalog) => ProductCatalog,
   ) => void;
 };
 
@@ -63,9 +73,23 @@ export function DashboardProvider({
   }, [dataMode]);
 
   const [households, setHouseholds] = useState<Household[]>([]);
+  const [productCatalog, setProductCatalog] = useState<ProductCatalog>(() =>
+    cloneDefaultCatalog(),
+  );
+  const [catalogHydrated, setCatalogHydrated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    setProductCatalog(getSharedProductCatalog());
+    setCatalogHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (!catalogHydrated) return;
+    setSharedProductCatalog(productCatalog);
+  }, [productCatalog, catalogHydrated]);
 
   const 거점_목록을_불러온다 = useCallback(() => {
     setLoading(true);
@@ -73,7 +97,7 @@ export function DashboardProvider({
     void (async () => {
       try {
         const list = await householdsPort.list();
-        setHouseholds(list.map((h) => ensureHouseholdCatalog(h)));
+        setHouseholds(list.map((h) => ensureHouseholdShape(h)));
       } catch (err) {
         console.error("거점 목록 로드 오류:", err);
         setError(
@@ -111,7 +135,8 @@ export function DashboardProvider({
       kind,
       rooms: [],
       items: [],
-      catalog: cloneDefaultCatalog(),
+      furniturePlacements: [],
+      storageLocations: [],
       createdAt: new Date().toISOString(),
     };
     setHouseholds((prev) => [...prev, h]);
@@ -131,26 +156,39 @@ export function DashboardProvider({
     [],
   );
 
+  const 카탈로그를_갱신_한다 = useCallback(
+    (updater: (c: ProductCatalog) => ProductCatalog) => {
+      setProductCatalog((c) => updater(structuredClone(c)));
+    },
+    [],
+  );
+
   const value = useMemo<DashboardContextType>(
     () => ({
       dataMode,
       households,
+      productCatalog,
+      catalogHydrated,
       loading,
       error,
       거점_목록을_불러온다,
       거점을_추가_한다,
       거점을_삭제_한다,
       거점을_갱신_한다,
+      카탈로그를_갱신_한다,
     }),
     [
       dataMode,
       households,
+      productCatalog,
+      catalogHydrated,
       loading,
       error,
       거점_목록을_불러온다,
       거점을_추가_한다,
       거점을_삭제_한다,
       거점을_갱신_한다,
+      카탈로그를_갱신_한다,
     ],
   );
 

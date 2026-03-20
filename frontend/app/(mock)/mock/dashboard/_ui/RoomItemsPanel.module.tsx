@@ -1,13 +1,16 @@
 "use client";
 
-import type { InventoryRow } from "@/types/domain";
+import { formatLocationBreadcrumb } from "@/lib/household-location";
+import type { Household, InventoryRow } from "@/types/domain";
 
 type RoomItemsPanelProps = {
+  household: Household;
   selectedRoomId: string | null;
   roomItems: InventoryRow[];
 };
 
 export function RoomItemsPanel({
+  household,
   selectedRoomId,
   roomItems,
 }: RoomItemsPanelProps) {
@@ -26,8 +29,13 @@ export function RoomItemsPanel({
                 key={it.id}
                 className="flex justify-between gap-2 rounded-lg bg-zinc-900 px-2 py-1.5 text-zinc-300"
               >
-                <span className="truncate">{it.name}</span>
-                <span className="shrink-0 text-zinc-500">
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate">{it.name}</span>
+                  <span className="mt-0.5 block truncate text-[10px] text-zinc-500">
+                    {formatLocationBreadcrumb(household, it)}
+                  </span>
+                </span>
+                <span className="shrink-0 self-start text-zinc-500">
                   {it.quantity}
                   {it.unit}
                 </span>

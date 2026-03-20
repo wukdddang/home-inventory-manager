@@ -1,21 +1,33 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDashboard } from "../../_hooks/useDashboard";
 import { DashboardHouseholdsSection } from "../DashboardHouseholds.section";
 import { DashboardInventorySection } from "../DashboardInventory.section";
+import { DashboardPlacementsSection } from "../DashboardPlacements.section";
 import { DashboardRoomsSection } from "../DashboardRooms.section";
-import { RoomItemAddFloatingPanel } from "../RoomItemAddFloatingPanel.module";
+import { CatalogModalsControls } from "@/app/(current)/dashboard/_ui/CatalogModals.controls";
 import type { ViewMode } from "../ViewModeToggle.module";
 
+const ITEM_ADD_PANEL_ANCHOR_ID = "dashboard-item-add-panel";
+
 export function DashboardPanel() {
-  const { dataMode, households, loading, error, 거점을_삭제_한다 } =
-    useDashboard();
+  const {
+    dataMode,
+    households,
+    loading,
+    error,
+    거점을_삭제_한다,
+    productCatalog,
+    카탈로그를_갱신_한다,
+    catalogHydrated,
+  } = useDashboard();
   const [selectedHouseholdId, setSelectedHouseholdId] = useState<string | null>(
     null,
   );
   const [viewMode, setViewMode] = useState<ViewMode>("structure");
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+  const [itemAddPanelExpanded, setItemAddPanelExpanded] = useState(true);
 
   /** 목록 변경 시에도 유효한 거점만 보이도록 (effect 없이 파생) */
   const viewingHouseholdId = useMemo(() => {
@@ -33,6 +45,19 @@ export function DashboardPanel() {
     () => households.find((h) => h.id === viewingHouseholdId) ?? null,
     [households, viewingHouseholdId],
   );
+
+  useEffect(() => {
+    setItemAddPanelExpanded(true);
+  }, [selectedRoomId]);
+
+  const handleFocusItemAddPanel = () => {
+    setItemAddPanelExpanded(true);
+    requestAnimationFrame(() => {
+      document
+        .getElementById(ITEM_ADD_PANEL_ANCHOR_ID)
+        ?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    });
+  };
 
   const handleSelectHousehold = (id: string) => {
     setSelectedHouseholdId(id);
@@ -81,6 +106,26 @@ export function DashboardPanel() {
           </span>
         </div>
       ) : null}
+      {catalogHydrated ? (
+        <div
+          className="shrink-0 rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 ring-1 ring-zinc-800/80"
+          role="region"
+          aria-label="공통 상품 카탈로그 빠른 편집"
+        >
+          <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-zinc-500">
+            공통 상품 카탈로그
+          </p>
+          <p className="mb-3 text-xs text-zinc-600">
+            모든 거점이 같은 목록을 씁니다. 설정 화면에서도 동일하게 편집할 수
+            있습니다.
+          </p>
+          <CatalogModalsControls
+            catalog={productCatalog}
+            onCatalogUpdate={카탈로그를_갱신_한다}
+            layout="toolbar"
+          />
+        </div>
+      ) : null}
       {/*
         데스크톱(lg+): 좌·우 컬럼 각각 세로 스크롤 (뷰포트 높이 고정)
         모바일: 1열, 문서 스크롤
@@ -99,6 +144,10 @@ export function DashboardPanel() {
               selectedRoomId={selectedRoomId}
               onRoomSelect={setSelectedRoomId}
             />
+            <DashboardPlacementsSection
+              selected={selected}
+              onFocusItemAddPanel={handleFocusItemAddPanel}
+            />
           </div>
         </div>
         <div className="min-h-0 min-w-0 overflow-y-auto overscroll-y-contain lg:pl-1">
@@ -109,19 +158,13 @@ export function DashboardPanel() {
               onViewModeChange={setViewMode}
               selectedRoomId={selectedRoomId}
               onRoomSelect={setSelectedRoomId}
+              itemAddPanelExpanded={itemAddPanelExpanded}
+              onItemAddPanelExpandedChange={setItemAddPanelExpanded}
+              itemAddPanelAnchorId={ITEM_ADD_PANEL_ANCHOR_ID}
             />
           </div>
         </div>
       </div>
-
-      {selected && selectedRoomId ? (
-        <RoomItemAddFloatingPanel
-          key={selectedRoomId}
-          selected={selected}
-          roomId={selectedRoomId}
-          onDismissRoom={() => setSelectedRoomId(null)}
-        />
-      ) : null}
     </div>
   );
 }

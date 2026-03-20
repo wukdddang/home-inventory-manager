@@ -1,5 +1,6 @@
 "use client";
 
+import { CatalogSettingsSection } from "../CatalogSettings.section";
 import { GroupSettingsSection } from "../GroupSettings.section";
 import { NotificationSettingsSection } from "../NotificationSettings.section";
 import { PasswordSettingsSection } from "../PasswordSettings.section";
@@ -21,13 +22,14 @@ export function SettingsPanel() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-10">
+    <div className="mx-auto max-w-2xl space-y-10 pb-16">
       <div>
         <h1 className="text-2xl font-semibold text-white">사용자 설정</h1>
         <p className="mt-1 text-sm text-zinc-500">
           HouseholdMember·알림 정책 등은 API 연동 후 서버와 동기화합니다.
         </p>
       </div>
+      <CatalogSettingsSection />
       <GroupSettingsSection />
       <PasswordSettingsSection />
       <NotificationSettingsSection />

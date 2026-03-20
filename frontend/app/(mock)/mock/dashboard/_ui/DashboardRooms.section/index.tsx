@@ -4,7 +4,7 @@ import { AlertModal } from "@/app/_ui/alert-modal";
 import { useState } from "react";
 import { useDashboard } from "../../_hooks/useDashboard";
 import { defaultRoomGrid, newEntityId } from "../../_lib/dashboard-helpers";
-import type { Household, StructureRoom } from "@/types/domain";
+import type { Household, StorageLocationRow, StructureRoom } from "@/types/domain";
 
 type DashboardRoomsSectionProps = {
   selected: Household | null;
@@ -35,9 +35,17 @@ export function DashboardRoomsSection({
       name: label,
       ...grid,
     };
+    const defaultSlot: StorageLocationRow = {
+      id: `sl-default-${room.id}`,
+      name: "방(기본)",
+      roomId: room.id,
+      furniturePlacementId: null,
+      sortOrder: 0,
+    };
     거점을_갱신_한다(selected.id, (h) => ({
       ...h,
       rooms: [...h.rooms, room],
+      storageLocations: [...(h.storageLocations ?? []), defaultSlot],
     }));
     setRoomDraftName("");
     onRoomSelect(room.id);
@@ -54,10 +62,40 @@ export function DashboardRoomsSection({
   };
 
   const confirmDeleteRoom = (roomId: string) => {
+    const fpIdsInRoom = new Set(
+      (selected.furniturePlacements ?? [])
+        .filter((f) => f.roomId === roomId)
+        .map((f) => f.id),
+    );
+    const storageIdsToRemove = new Set(
+      (selected.storageLocations ?? [])
+        .filter(
+          (s) =>
+            s.roomId === roomId ||
+            (s.furniturePlacementId != null &&
+              fpIdsInRoom.has(s.furniturePlacementId)),
+        )
+        .map((s) => s.id),
+    );
     거점을_갱신_한다(selected.id, (h) => ({
       ...h,
       rooms: h.rooms.filter((r) => r.id !== roomId),
-      items: h.items.filter((i) => i.roomId !== roomId),
+      furniturePlacements: (h.furniturePlacements ?? []).filter(
+        (f) => f.roomId !== roomId,
+      ),
+      storageLocations: (h.storageLocations ?? []).filter(
+        (s) => !storageIdsToRemove.has(s.id),
+      ),
+      items: h.items.filter((i) => {
+        if (i.roomId === roomId) return false;
+        if (
+          i.storageLocationId &&
+          storageIdsToRemove.has(i.storageLocationId)
+        ) {
+          return false;
+        }
+        return true;
+      }),
     }));
     if (selectedRoomId === roomId) onRoomSelect(null);
     setEditingRoomId(null);
@@ -160,7 +198,7 @@ export function DashboardRoomsSection({
         title="방 삭제"
         description={
           pendingDeleteRoom
-            ? `삭제하시겠습니까? 「${pendingDeleteRoom.name}」에 묶인 물품도 함께 제거됩니다.`
+            ? `삭제하시겠습니까? 「${pendingDeleteRoom.name}」과(와) 그 방의 가구·보관 칸·물품도 함께 제거됩니다.`
             : "삭제하시겠습니까?"
         }
         confirmLabel="삭제"

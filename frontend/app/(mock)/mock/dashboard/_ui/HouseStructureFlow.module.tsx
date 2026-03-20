@@ -1,7 +1,7 @@
 "use client";
 
 import { PromptModal } from "@/app/_ui/prompt-modal";
-import type { Household, StructureRoom } from "@/types/domain";
+import type { Household } from "@/types/domain";
 import {
   Background,
   BackgroundVariant,
@@ -17,18 +17,100 @@ import {
 import "@xyflow/react/dist/style.css";
 import { memo, useCallback, useEffect, useState } from "react";
 
-type RoomNodeData = { label: string; active: boolean };
+type StructureDiagramSlot = { id: string; name: string };
+
+type StructureDiagramFurniture = {
+  id: string;
+  label: string;
+  slots: StructureDiagramSlot[];
+};
+
+type RoomNodeData = {
+  label: string;
+  active: boolean;
+  directSlots: StructureDiagramSlot[];
+  furnitures: StructureDiagramFurniture[];
+};
 
 const RoomNode = memo(function RoomNode({ data }: NodeProps<Node<RoomNodeData>>) {
+  const hasInner =
+    data.directSlots.length > 0 || data.furnitures.length > 0;
+
   return (
     <div
-      className={`flex h-full w-full items-center justify-center rounded-lg border-2 px-2 text-center text-xs font-medium leading-tight ${
+      className={`flex h-full w-full flex-col overflow-hidden rounded-lg border-2 text-left ${
         data.active
-          ? "border-teal-400 bg-teal-500/25 text-teal-50"
-          : "border-zinc-600 bg-zinc-800/80 text-zinc-200"
+          ? "border-teal-400 bg-teal-500/20 text-teal-50"
+          : "border-zinc-600 bg-zinc-800/85 text-zinc-200"
       }`}
     >
-      {data.label}
+      <div className="shrink-0 border-b border-zinc-600/40 px-1 py-0.5 text-center text-[11px] font-semibold leading-tight tracking-tight">
+        <span className="line-clamp-2">{data.label}</span>
+      </div>
+      <div
+        className={`nodrag nopan min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-1 ${
+          hasInner ? "" : "flex items-center justify-center"
+        }`}
+      >
+        {hasInner ? (
+          <div className="space-y-1.5">
+            {data.directSlots.length > 0 ? (
+              <div>
+                <p className="mb-0.5 text-[8px] font-semibold uppercase tracking-wide text-zinc-500">
+                  방 직속
+                </p>
+                <ul className="space-y-0.5">
+                  {data.directSlots.map((s) => (
+                    <li
+                      key={s.id}
+                      className="truncate rounded border border-zinc-600/50 bg-zinc-950/60 px-1 py-px text-[9px] text-zinc-300"
+                      title={s.name}
+                    >
+                      {s.name}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {data.furnitures.map((fp) => (
+              <div
+                key={fp.id}
+                className="rounded border border-teal-600/25 bg-zinc-950/35 pl-1.5 pr-0.5 pt-0.5 pb-1"
+              >
+                <p
+                  className="truncate text-[9px] font-semibold text-teal-200/95"
+                  title={fp.label}
+                >
+                  가구 · {fp.label}
+                </p>
+                {fp.slots.length > 0 ? (
+                  <ul className="mt-0.5 space-y-0.5 border-l border-teal-500/20 pl-1.5">
+                    {fp.slots.map((s) => (
+                      <li
+                        key={s.id}
+                        className="truncate text-[8px] text-zinc-400"
+                        title={s.name}
+                      >
+                        {s.name}
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="mt-0.5 pl-0.5 text-[8px] text-zinc-600">
+                    보관 칸 없음
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="px-1 text-center text-[8px] leading-snug text-zinc-500">
+            가구·보관
+            <br />
+            미등록
+          </p>
+        )}
+      </div>
     </div>
   );
 });
@@ -36,18 +118,53 @@ const RoomNode = memo(function RoomNode({ data }: NodeProps<Node<RoomNodeData>>)
 const nodeTypes = { room: RoomNode } satisfies NodeTypes;
 
 function roomsToNodes(
-  rooms: StructureRoom[],
+  household: Household,
   selectedRoomId: string | null,
 ): Node<RoomNodeData>[] {
-  return rooms.map((r) => ({
-    id: r.id,
-    type: "room",
-    position: { x: r.x, y: r.y },
-    data: { label: r.name, active: r.id === selectedRoomId },
-    style: { width: r.width, height: r.height },
-    draggable: true,
-    selectable: true,
-  }));
+  const placements = household.furniturePlacements ?? [];
+  const storage = household.storageLocations ?? [];
+
+  return household.rooms.map((r) => {
+    const directSlots = storage
+      .filter(
+        (s) =>
+          s.roomId === r.id &&
+          (s.furniturePlacementId == null || s.furniturePlacementId === ""),
+      )
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+      .map((s) => ({ id: s.id, name: s.name }));
+
+    const furnitures: StructureDiagramFurniture[] = placements
+      .filter((f) => f.roomId === r.id)
+      .sort(
+        (a, b) =>
+          (a.sortOrder ?? 0) - (b.sortOrder ?? 0) ||
+          a.label.localeCompare(b.label, "ko"),
+      )
+      .map((fp) => ({
+        id: fp.id,
+        label: fp.label,
+        slots: storage
+          .filter((s) => s.furniturePlacementId === fp.id)
+          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+          .map((s) => ({ id: s.id, name: s.name })),
+      }));
+
+    return {
+      id: r.id,
+      type: "room",
+      position: { x: r.x, y: r.y },
+      data: {
+        label: r.name,
+        active: r.id === selectedRoomId,
+        directSlots,
+        furnitures,
+      },
+      style: { width: r.width, height: r.height },
+      draggable: true,
+      selectable: true,
+    };
+  });
 }
 
 export type HouseStructureFlowProps = {
@@ -73,8 +190,8 @@ function HouseStructureFlowInner({
   );
 
   useEffect(() => {
-    setNodes(roomsToNodes(household.rooms, selectedRoomId));
-  }, [household.rooms, selectedRoomId, setNodes]);
+    setNodes(roomsToNodes(household, selectedRoomId));
+  }, [household, selectedRoomId, setNodes]);
 
   const onNodeClick = useCallback(
     (_: React.MouseEvent, node: Node<RoomNodeData>) => {
@@ -170,7 +287,9 @@ function HouseStructureFlowInner({
         }}
       />
       <p className="border-t border-zinc-800 px-1 py-2 text-[11px] text-zinc-500">
-        팁: 드래그로 위치 이동 · 클릭해 선택 · 더블클릭으로 이름 편집
+        팁: 드래그로 방 이동 · 클릭해 선택 · 더블클릭으로 방 이름 편집 · 각 방
+        안에 방 직속 보관 칸·가구·가구 아래 칸이 표시됩니다(내부는 스크롤,
+        방은 제목 줄에서 드래그).
       </p>
     </>
   );

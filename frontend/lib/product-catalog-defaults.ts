@@ -1,8 +1,8 @@
 /**
  * 논리 설계 Category / Product / ProductVariant / Unit 에 맞춘 로컬 카탈로그 기본값.
- * 거점(Household) 단위로 복제되어 저장됩니다.
+ * 앱 전역 공통 카탈로그(`him-product-catalog` 등)의 시드로 사용합니다.
  */
-import type { Household, InventoryRow, ProductCatalog } from "@/types/domain";
+import type { InventoryRow, ProductCatalog } from "@/types/domain";
 
 /** 시드·신규 거점에 붙이는 기본 마스터 데이터 */
 export const DEFAULT_PRODUCT_CATALOG: ProductCatalog = {
@@ -114,12 +114,6 @@ export const DEFAULT_PRODUCT_CATALOG: ProductCatalog = {
 
 export function cloneDefaultCatalog(): ProductCatalog {
   return structuredClone(DEFAULT_PRODUCT_CATALOG);
-}
-
-/** 거점에 catalog가 없으면 기본값을 붙인다 (로컬·mock 호환). */
-export function ensureHouseholdCatalog(h: Household): Household {
-  if (h.catalog) return h;
-  return { ...h, catalog: cloneDefaultCatalog() };
 }
 
 export function inventoryDisplayLine(

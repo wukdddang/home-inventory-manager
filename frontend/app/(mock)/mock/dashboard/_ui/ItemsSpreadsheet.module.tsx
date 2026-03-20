@@ -1,12 +1,14 @@
 "use client";
 
 import { AlertModal } from "@/app/_ui/alert-modal";
+import { formatLocationBreadcrumb } from "@/lib/household-location";
 import { resolveInventoryRowColumns } from "@/lib/product-catalog-defaults";
 import { useState } from "react";
-import type { Household } from "@/types/domain";
+import type { Household, ProductCatalog } from "@/types/domain";
 
 type ItemsSpreadsheetProps = {
   household: Household;
+  catalog: ProductCatalog;
   onDeleteItem: (itemId: string) => void;
   /** 표에서 방 셀 클릭 시 조회 영역의 선택 방·등록 위젯과 동기 */
   onSelectRoomId?: (roomId: string) => void;
@@ -14,6 +16,7 @@ type ItemsSpreadsheetProps = {
 
 export function ItemsSpreadsheet({
   household,
+  catalog,
   onDeleteItem,
   onSelectRoomId,
 }: ItemsSpreadsheetProps) {
@@ -22,8 +25,6 @@ export function ItemsSpreadsheet({
   const pendingItem = pendingDeleteId
     ? household.items.find((i) => i.id === pendingDeleteId)
     : null;
-
-  const catalog = household.catalog;
 
   return (
     <>
@@ -37,6 +38,7 @@ export function ItemsSpreadsheet({
               <th className="px-3 py-3 font-medium">수량</th>
               <th className="px-3 py-3 font-medium">단위</th>
               <th className="px-3 py-3 font-medium">방</th>
+              <th className="min-w-44 px-3 py-3 font-medium">보관 위치</th>
               <th className="w-24 px-3 py-3 font-medium">작업</th>
             </tr>
           </thead>
@@ -44,7 +46,7 @@ export function ItemsSpreadsheet({
             {household.items.length === 0 ? (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={8}
                   className="px-3 py-10 text-center text-zinc-500"
                 >
                   물품이 없습니다. 방을 선택한 뒤 아래에서 등록하세요.
@@ -53,13 +55,7 @@ export function ItemsSpreadsheet({
             ) : (
               household.items.map((it) => {
                 const room = household.rooms.find((r) => r.id === it.roomId);
-                const cols = catalog
-                  ? resolveInventoryRowColumns(catalog, it)
-                  : {
-                      category: "—",
-                      product: "—",
-                      spec: it.name,
-                    };
+                const cols = resolveInventoryRowColumns(catalog, it);
                 return (
                   <tr
                     key={it.id}
@@ -86,6 +82,9 @@ export function ItemsSpreadsheet({
                       ) : (
                         (room?.name ?? "(삭제된 방)")
                       )}
+                    </td>
+                    <td className="max-w-56 px-3 py-2.5 text-xs leading-snug text-zinc-500">
+                      {formatLocationBreadcrumb(household, it)}
                     </td>
                     <td className="px-3 py-2.5">
                       <button
