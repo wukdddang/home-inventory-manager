@@ -9,6 +9,7 @@ import type {
   ProductCatalog,
 } from "@/types/domain";
 import { useCallback, useMemo, useState } from "react";
+import { cn } from "@/lib/utils";
 
 const inputClass =
   "w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/30";
@@ -16,8 +17,9 @@ const inputClass =
 const btnOutline =
   "cursor-pointer rounded-xl border border-zinc-600 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800";
 
+/** 물품 추가 패널 헤더 등 —「접기」와 동일 높이·타이포 */
 const btnPanel =
-  "cursor-pointer rounded-lg border border-zinc-600 px-2.5 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-800";
+  "cursor-pointer rounded-lg border border-zinc-600 px-2 py-1 text-[11px] font-medium whitespace-nowrap text-zinc-300 hover:bg-zinc-800 sm:px-2.5";
 
 function sortByOrder<T extends { sortOrder?: number }>(list: T[]): T[] {
   return [...list].sort(
@@ -30,6 +32,8 @@ export type CatalogModalsControlsProps = {
   onCatalogUpdate: (fn: (c: ProductCatalog) => ProductCatalog) => void;
   /** 설정 카드 / 대시보드 상단 / 물품 추가 패널 */
   layout: "settings" | "toolbar" | "panel";
+  /** 버튼 줄에 추가 클래스 (예: `justify-end`) */
+  buttonRowClassName?: string;
 };
 
 /**
@@ -39,6 +43,7 @@ export function CatalogModalsControls({
   catalog,
   onCatalogUpdate,
   layout,
+  buttonRowClassName,
 }: CatalogModalsControlsProps) {
   const [catOpen, setCatOpen] = useState(false);
   const [catName, setCatName] = useState("");
@@ -189,10 +194,12 @@ export function CatalogModalsControls({
     toast({ title: "용량·포장 단위 추가됨", description: label });
   };
 
-  const buttonRowClass =
+  const buttonRowClass = cn(
     layout === "settings"
       ? "mt-5 flex flex-col gap-3 sm:flex-row sm:flex-wrap"
-      : "flex flex-wrap items-center gap-2";
+      : "flex flex-wrap items-center gap-2",
+    buttonRowClassName,
+  );
 
   const btnClass = layout === "panel" ? btnPanel : btnOutline;
 

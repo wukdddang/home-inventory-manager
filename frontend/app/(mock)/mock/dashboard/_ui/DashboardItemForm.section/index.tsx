@@ -37,14 +37,17 @@ function StepShell({
   title,
   subtitle,
   children,
+  listItemClassName,
 }: {
   step: number;
   title: string;
   subtitle?: string;
   children: ReactNode;
+  /** 임베드 2열 레이아웃 등 — `li`에 추가 클래스 */
+  listItemClassName?: string;
 }) {
   return (
-    <li className="flex gap-3 sm:gap-4">
+    <li className={cn("flex gap-3 sm:gap-4", listItemClassName)}>
       <div
         className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-teal-500/15 text-sm font-bold tabular-nums text-teal-300 ring-1 ring-teal-500/20"
         aria-hidden
@@ -64,11 +67,16 @@ function StepShell({
   );
 }
 
-function CatalogHintLink() {
+function CatalogHintLink({ embedInFloatingPanel = false }: { embedInFloatingPanel?: boolean }) {
   const prefix = useAppRoutePrefix();
   return (
     <p className="text-[11px] leading-snug text-zinc-600">
-      목록에 없으면 위 버튼·대시보드 상단「공통 상품 카탈로그」또는{" "}
+      목록에 없으면{" "}
+      {embedInFloatingPanel ? (
+        <>패널 헤더의 추가 버튼·</>
+      ) : (
+        <>위 버튼·대시보드 상단「공통 상품 카탈로그」·</>
+      )}
       <Link
         href={`${prefix}/settings`}
         className="font-medium text-teal-400/90 underline-offset-2 hover:underline"
@@ -241,12 +249,154 @@ export function RoomItemAddWidget({
     );
   }
 
+  const steps12 = (
+    <>
+      <StepShell
+        step={1}
+        title="보관 위치"
+        subtitle="이 방 안의 직속 칸 또는 가구 아래 칸을 고릅니다."
+        listItemClassName={
+          embedInFloatingPanel ? "break-inside-avoid pb-1" : undefined
+        }
+      >
+        {storageOptions.length === 0 ? (
+          <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200/90">
+            이 방에 등록된 보관 칸이 없습니다.「가구 배치·보관 장소」에서 방
+            직속 칸 또는 가구·칸을 추가하세요.
+          </p>
+        ) : (
+          <select
+            aria-label="보관 칸 선택"
+            value={
+              storageOptions.some((o) => o.id === pickedStorageId)
+                ? pickedStorageId
+                : (storageOptions[0]?.id ?? "")
+            }
+            onChange={(e) => setPickedStorageId(e.target.value)}
+            className={inputClass}
+          >
+            {storageOptions.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        )}
+      </StepShell>
+
+      <StepShell
+        step={2}
+        title="카테고리"
+        subtitle="위에서 추가하거나 설정에 등록한 대분류 중에서 고릅니다."
+        listItemClassName={
+          embedInFloatingPanel ? "break-inside-avoid pb-1" : undefined
+        }
+      >
+        {categories.length === 0 ? (
+          <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200/90">
+            등록된 카테고리가 없습니다.
+            <CatalogHintLink embedInFloatingPanel={embedInFloatingPanel} />
+          </p>
+        ) : (
+          <>
+            <select
+              aria-label="카테고리 선택"
+              value={categoryIdResolved}
+              onChange={(e) => {
+                setCategoryId(e.target.value);
+                setProductId("");
+                setVariantId("");
+              }}
+              className={inputClass}
+            >
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <CatalogHintLink embedInFloatingPanel={embedInFloatingPanel} />
+          </>
+        )}
+      </StepShell>
+    </>
+  );
+
+  const steps34 = (
+    <>
+      <StepShell
+        step={3}
+        title="품목"
+        subtitle="선택한 카테고리 안의 품목을 고릅니다."
+        listItemClassName={
+          embedInFloatingPanel ? "break-inside-avoid pb-1" : undefined
+        }
+      >
+        <select
+          aria-label="품목 선택"
+          value={productIdResolved}
+          onChange={(e) => {
+            setProductId(e.target.value);
+            setVariantId("");
+          }}
+          disabled={!categoryIdResolved || productsInCategory.length === 0}
+          className={`${inputClass} disabled:opacity-50`}
+        >
+          {productsInCategory.length === 0 ? (
+            <option value="">이 카테고리에 품목이 없습니다</option>
+          ) : (
+            productsInCategory.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+                {p.isConsumable ? "" : " (비소모)"}
+              </option>
+            ))
+          )}
+        </select>
+        <CatalogHintLink embedInFloatingPanel={embedInFloatingPanel} />
+      </StepShell>
+
+      <StepShell
+        step={4}
+        title="용량 · 포장 (Variant)"
+        subtitle="등록된 단위·용량을 고릅니다."
+        listItemClassName={
+          embedInFloatingPanel ? "break-inside-avoid pb-1" : undefined
+        }
+      >
+        <select
+          aria-label="등록된 용량·포장 선택"
+          value={variantIdResolved}
+          onChange={(e) => setVariantId(e.target.value)}
+          disabled={!productIdResolved || variantsInProduct.length === 0}
+          className={`${inputClass} disabled:opacity-50`}
+        >
+          {variantsInProduct.length === 0 ? (
+            <option value="">등록된 Variant 없음</option>
+          ) : (
+            variantsInProduct.map((v) => {
+              const u = catalog.units.find((x) => x.id === v.unitId);
+              const label =
+                v.name ?? `${v.quantityPerUnit}${u?.symbol ?? ""}`;
+              return (
+                <option key={v.id} value={v.id}>
+                  {label}
+                </option>
+              );
+            })
+          )}
+        </select>
+        <CatalogHintLink embedInFloatingPanel={embedInFloatingPanel} />
+      </StepShell>
+    </>
+  );
+
   return (
     <div
       className={cn(
         "shrink-0",
         embedInFloatingPanel
-          ? "rounded-xl border border-zinc-800/90 bg-zinc-950/50 p-3 ring-1 ring-zinc-800/60"
+          ? "rounded-xl border border-zinc-800/90 bg-zinc-950/50 p-3 ring-1 ring-zinc-800/60 sm:p-4"
           : "rounded-2xl border border-teal-500/20 bg-linear-to-b from-teal-500/[0.07] to-zinc-950/40 p-4 ring-1 ring-teal-500/10 sm:p-5",
       )}
     >
@@ -261,170 +411,65 @@ export function RoomItemAddWidget({
           </p>
         </header>
       ) : (
-        <p className="mb-3 text-[11px] leading-relaxed text-zinc-500">
-          보관 칸 → 카테고리 → 품목 → Variant → 수량. 목록이 없으면 아래 버튼으로
+        <p className="mb-3 text-[11px] leading-snug text-zinc-500">
+          왼쪽: 보관·카테고리 — 오른쪽: 품목·용량·수량. 카탈로그는 상단 헤더에서
           추가하거나{" "}
           <Link
             href={`${routePrefix}/settings`}
             className="text-teal-400/90 underline-offset-2 hover:underline"
           >
-            설정 → 상품 카탈로그
+            설정
           </Link>
-          를 이용하세요.
+          을 이용하세요.
         </p>
       )}
 
-      {catalogHydrated ? (
-        <div
-          className={cn(
-            "rounded-xl border border-zinc-800/90 bg-zinc-900/35 p-3 ring-1 ring-zinc-800/50",
-            embedInFloatingPanel ? "mb-3" : "mb-4",
-          )}
-          role="region"
-          aria-label="카탈로그 빠른 추가"
-        >
-          <p className="mb-2 text-[11px] font-medium text-zinc-500">
-            카탈로그에 없으면 여기서 추가
-          </p>
-          <CatalogModalsControls
-            catalog={catalog}
-            onCatalogUpdate={카탈로그를_갱신_한다}
-            layout="panel"
-          />
+      {embedInFloatingPanel ? (
+        <div className="grid grid-cols-1 gap-3 min-[480px]:grid-cols-2 min-[480px]:gap-4">
+          <div className="min-w-0 rounded-xl border border-zinc-800/55 bg-zinc-900/30 p-3 ring-1 ring-zinc-800/40 sm:p-4">
+            <ol className="list-none space-y-4 p-0">{steps12}</ol>
+          </div>
+          <div className="min-w-0 rounded-xl border border-zinc-800/55 bg-zinc-900/30 p-3 ring-1 ring-zinc-800/40 sm:p-4">
+            <ol className="list-none space-y-4 p-0">{steps34}</ol>
+          </div>
         </div>
-      ) : null}
+      ) : (
+        <>
+          {catalogHydrated ? (
+            <div
+              className="mb-4 rounded-xl border border-zinc-800/90 bg-zinc-900/35 p-3 ring-1 ring-zinc-800/50"
+              role="region"
+              aria-label="카탈로그 빠른 추가"
+            >
+              <p className="mb-2 text-[11px] font-medium text-zinc-500">
+                카탈로그에 없으면 여기서 추가
+              </p>
+              <CatalogModalsControls
+                catalog={catalog}
+                onCatalogUpdate={카탈로그를_갱신_한다}
+                layout="panel"
+              />
+            </div>
+          ) : null}
+          <ol className="mt-4 list-none space-y-5 p-0">
+            {steps12}
+            {steps34}
+          </ol>
+        </>
+      )}
 
-      <ol
+      <footer
         className={cn(
-          "list-none space-y-5 p-0",
-          embedInFloatingPanel ? "mt-0" : "mt-4",
+          "flex flex-col gap-4 rounded-xl border border-teal-500/25 bg-zinc-950/50 p-4 ring-1 ring-teal-500/10 sm:flex-row sm:items-end sm:justify-between sm:gap-6",
+          embedInFloatingPanel ? "mt-3" : "mt-5",
         )}
       >
-        <StepShell
-          step={1}
-          title="보관 위치"
-          subtitle="이 방 안의 직속 칸 또는 가구 아래 칸을 고릅니다."
-        >
-          {storageOptions.length === 0 ? (
-            <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200/90">
-              이 방에 등록된 보관 칸이 없습니다.「가구 배치·보관 장소」에서 방
-              직속 칸 또는 가구·칸을 추가하세요.
-            </p>
-          ) : (
-            <select
-              aria-label="보관 칸 선택"
-              value={
-                storageOptions.some((o) => o.id === pickedStorageId)
-                  ? pickedStorageId
-                  : (storageOptions[0]?.id ?? "")
-              }
-              onChange={(e) => setPickedStorageId(e.target.value)}
-              className={inputClass}
-            >
-              {storageOptions.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.label}
-                </option>
-              ))}
-            </select>
+        <div
+          className={cn(
+            "w-full space-y-1",
+            embedInFloatingPanel ? "max-w-full sm:max-w-40" : "sm:max-w-48",
           )}
-        </StepShell>
-
-        <StepShell
-          step={2}
-          title="카테고리"
-          subtitle="위에서 추가하거나 설정에 등록한 대분류 중에서 고릅니다."
         >
-          {categories.length === 0 ? (
-            <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200/90">
-              등록된 카테고리가 없습니다.
-              <CatalogHintLink />
-            </p>
-          ) : (
-            <>
-              <select
-                aria-label="카테고리 선택"
-                value={categoryIdResolved}
-                onChange={(e) => {
-                  setCategoryId(e.target.value);
-                  setProductId("");
-                  setVariantId("");
-                }}
-                className={inputClass}
-              >
-                {categories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
-              <CatalogHintLink />
-            </>
-          )}
-        </StepShell>
-
-        <StepShell
-          step={3}
-          title="품목"
-          subtitle="선택한 카테고리 안의 품목을 고릅니다."
-        >
-          <select
-            aria-label="품목 선택"
-            value={productIdResolved}
-            onChange={(e) => {
-              setProductId(e.target.value);
-              setVariantId("");
-            }}
-            disabled={!categoryIdResolved || productsInCategory.length === 0}
-            className={`${inputClass} disabled:opacity-50`}
-          >
-            {productsInCategory.length === 0 ? (
-              <option value="">이 카테고리에 품목이 없습니다</option>
-            ) : (
-              productsInCategory.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                  {p.isConsumable ? "" : " (비소모)"}
-                </option>
-              ))
-            )}
-          </select>
-          <CatalogHintLink />
-        </StepShell>
-
-        <StepShell
-          step={4}
-          title="용량 · 포장 (Variant)"
-          subtitle="등록된 단위·용량을 고릅니다."
-        >
-          <select
-            aria-label="등록된 용량·포장 선택"
-            value={variantIdResolved}
-            onChange={(e) => setVariantId(e.target.value)}
-            disabled={!productIdResolved || variantsInProduct.length === 0}
-            className={`${inputClass} disabled:opacity-50`}
-          >
-            {variantsInProduct.length === 0 ? (
-              <option value="">등록된 Variant 없음</option>
-            ) : (
-              variantsInProduct.map((v) => {
-                const u = catalog.units.find((x) => x.id === v.unitId);
-                const label =
-                  v.name ?? `${v.quantityPerUnit}${u?.symbol ?? ""}`;
-                return (
-                  <option key={v.id} value={v.id}>
-                    {label}
-                  </option>
-                );
-              })
-            )}
-          </select>
-          <CatalogHintLink />
-        </StepShell>
-      </ol>
-
-      <footer className="mt-5 flex flex-col gap-4 rounded-xl border border-teal-500/25 bg-zinc-950/50 p-4 ring-1 ring-teal-500/10 sm:flex-row sm:items-end sm:justify-between sm:gap-6">
-        <div className="w-full space-y-1 sm:max-w-48">
           <label
             htmlFor={`stock-qty-${roomId}`}
             className="text-[11px] font-medium text-zinc-500"
@@ -443,7 +488,7 @@ export function RoomItemAddWidget({
         <button
           type="button"
           onClick={handleAddItem}
-          className="w-full shrink-0 cursor-pointer rounded-xl bg-teal-500 px-6 py-3 text-sm font-semibold text-zinc-950 shadow-lg shadow-teal-500/15 transition hover:bg-teal-400 sm:w-auto"
+          className="w-full shrink-0 cursor-pointer rounded-xl bg-teal-500 px-5 py-2.5 text-sm font-semibold text-zinc-950 shadow-lg shadow-teal-500/15 transition hover:bg-teal-400 sm:w-auto sm:px-6 sm:py-3"
         >
           선택한 칸에 물품 추가
         </button>

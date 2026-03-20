@@ -140,10 +140,7 @@ export function DashboardInventorySection({
       )}
 
       {selectedRoomId ? (
-        <div className="mt-6 shrink-0 border-t border-zinc-800 pt-5">
-          <p className="mb-3 text-[11px] font-medium uppercase tracking-wide text-zinc-500">
-            이어서 · 물품 등록
-          </p>
+        <div className="mt-6 shrink-0 border-t border-zinc-800 pt-4">
           <RoomItemAddPanel
             key={selectedRoomId}
             selected={selected}
