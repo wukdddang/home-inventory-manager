@@ -158,11 +158,11 @@ Interface → Business → Context → Domain → Infrastructure
 | 1    | User                | 사용자 계정                                                  | —                                                            | ★★★★★    |
 | 2    | Household           | 가족·공유 그룹                                               | User ↔ ManyToMany                                            | ★★★★     |
 | 3    | Category            | 대분류 (식료품, 생활용품, 의약품, 전자제품, 식기류, 가구류…) | — (계층형 가능)                                              | ★★★★★    |
-| 4    | StorageLocation     | 보관 장소 (냉장고 문쪽, 선반 2단, 욕실장...)                 | Household                                                    | ★★★★     |
+| 4    | StorageLocation     | 보관 슬롯 (방·가구 아래 최종 칸; 냉장고 문쪽, 서랍 등)      | Household, Room·FurniturePlacement(선택)                     | ★★★★     |
 | 5    | Unit                | 단위 마스터 (ml, g, 개, 병, 팩...)                           | —                                                            | ★★★      |
 | 6    | Product             | 상품 마스터 (소모품·비소모품: 식료품, 전자제품, 가구 등)     | Category                                                     | ★★★★★    |
 | 7    | ProductVariant      | 용량/포장 단위별 정보                                        | Product                                                      | ★★★★     |
-| 8    | InventoryItem       | 실제 보유 재고                                               | ProductVariant, StorageLocation                              | ★★★★★    |
+| 8    | InventoryItem       | 실제 보유 재고(물품)                                         | ProductVariant, StorageLocation(→ Room·가구 간접)            | ★★★★★    |
 | 9    | Purchase            | 구매 기록                                                    | InventoryItem                                                | ★★★★     |
 | 10   | PurchaseBatch       | 로트별 유통기한 정보                                         | Purchase                                                     | ★★★★     |
 | 11   | Consumption         | 소비/사용 기록                                               | InventoryItem                                                | ★★★★     |
@@ -175,6 +175,9 @@ Interface → Business → Context → Domain → Infrastructure
 | 18   | ReportPreset        | 자주 보는 리포트 설정 저장                                   | User                                                         | ★★       |
 | 19   | Account             | 잔고 (현금, 통장 등)                                         | User 또는 Household                                          | ★★★      |
 | 20   | RecurringIncome     | 예정 수입 (월급날, 금액 등)                                  | User 또는 Household                                          | ★★★      |
+
+**공간 계층(방 → 가구 배치 → 보관 슬롯 → 재고)**  
+`HouseStructure`(1:1) → `Room`(방, JSON room id 동기) → `FurniturePlacement`(가구 인스턴스) → `StorageLocation` → `InventoryItem`. 상세는 [docs/er-diagram.md](../docs/er-diagram.md), [docs/entity-logical-design.md](../docs/entity-logical-design.md) §5~§7.
 
 **추가 구현 대상**  
 Recipe, Brand, Supplier, Photo(영수증/제품사진), Integration(카카오톡 알림 등) — [추가로 고려할 기능](../docs/policy/considerations.md) 참고.

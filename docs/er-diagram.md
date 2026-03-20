@@ -13,11 +13,11 @@
 | 1    | User                | 사용자 계정                                                                | — (Household과 N:N)                  | ★★★★★    |
 | 2    | Household           | 가족·공유 그룹                                                             | User ↔ ManyToMany                    | ★★★★     |
 | 3    | Category            | 대분류 (식료품, 생활용품, 의약품, 전자제품, 식기류, 가구류…) — 플랫(1단계) | —                                    | ★★★★★    |
-| 4    | StorageLocation     | 보관 장소                                                                  | Household                            | ★★★★     |
+| 4    | StorageLocation     | 보관 슬롯(방·가구 아래 최종 칸)                                            | Household, Room·FurniturePlacement(선택) | ★★★★     |
 | 5    | Unit                | 단위 마스터 (ml, g, 개…)                                                   | —                                    | ★★★      |
 | 6    | Product             | 상품 마스터 (소모품·비소모품: 식료품, 전자제품, 가구 등)                   | Category                             | ★★★★★    |
 | 7    | ProductVariant      | 용량/포장 단위별 정보                                                      | Product                              | ★★★★     |
-| 8    | InventoryItem       | 실제 보유 재고                                                             | ProductVariant, StorageLocation      | ★★★★★    |
+| 8    | InventoryItem       | 실제 보유 재고(물품)                                                       | ProductVariant, StorageLocation(→방·가구 간접) | ★★★★★    |
 | 9    | Purchase            | 구매 기록                                                                  | InventoryItem                        | ★★★★     |
 | 10   | PurchaseBatch       | 로트별 유통기한 (로트=한 번에 구매한 같은 품목·같은 유통기한 묶음)         | Purchase                             | ★★★★     |
 | 11   | Consumption         | 소비/사용 기록                                                             | InventoryItem                        | ★★★★     |
@@ -29,6 +29,8 @@
 | 17   | ExpirationAlertRule | 만료 알림 설정(품목별 일수)                                                | User 또는 Household, Product         | ★★★      |
 | 18   | ReportPreset        | 리포트 설정 저장                                                           | User                                 | ★★       |
 | 19   | HouseStructure      | 집 구조(2D/3D) 한 채 — 방·슬롯 정의(JSONB)                                 | Household 1:1                        | ★★★      |
+| 20   | Room                | 집 구조 내 **방**(JSON room id와 FK로 동기)                                | HouseStructure                       | ★★★      |
+| 21   | FurniturePlacement  | 방 안 **가구 배치**(인스턴스; 종류는 선택적으로 Product)                   | Room, (선택) Product/ProductVariant  | ★★★      |
 
 ### User ↔ Household (다대다)
 
@@ -45,7 +47,11 @@
 ```
 Household (가족·공유 그룹)
   ├── HouseStructure (1:1, 선택) — 집 구조(방·슬롯 JSON)
-  ├── StorageLocation (1:N) — roomId 등으로 HouseStructure와 연동 가능
+  │     └── Room (1:N) — 방 엔티티(structureRoomKey ↔ JSON)
+  │           ├── FurniturePlacement (1:N) — 가구 배치(인스턴스)
+  │           │     └── StorageLocation (1:N) — 그 가구 위·안 보관 슬롯
+  │           └── StorageLocation (1:N) — 방 직속 슬롯(냉장고 등)
+  ├── StorageLocation (1:N) — 구조 미연동·레거시 장소도 가능
   ├── ShoppingList (1:N)
   └── ExpirationAlertRule (1:N, 선택)
 
@@ -93,6 +99,10 @@ erDiagram
     User }o--o{ Household : "members (N:N)"
 
     Household ||--o| HouseStructure : "optional 1:1"
+    HouseStructure ||--o{ Room : rooms
+    Room ||--o{ FurniturePlacement : placements
+    FurniturePlacement ||--o{ StorageLocation : slots_on_furniture
+    Room ||--o{ StorageLocation : slots_in_room
     Household ||--o{ StorageLocation : has
     Household ||--o{ ShoppingList : has
     Household ||--o{ ExpirationAlertRule : "optional"
@@ -108,7 +118,9 @@ erDiagram
     Product ||--o{ ExpirationAlertRule : "per product"
     ProductVariant ||--o{ InventoryItem : stocked_as
     StorageLocation ||--o{ InventoryItem : stores
-    StorageLocation }o--o| HouseStructure : "optional room"
+    StorageLocation }o--o| HouseStructure : "legacy optional"
+    FurniturePlacement }o--o| Product : "optional kind"
+    FurniturePlacement }o--o| ProductVariant : "optional variant"
 
     InventoryItem ||--o{ Purchase : purchases
     Purchase ||--o{ PurchaseBatch : batches
@@ -125,7 +137,7 @@ erDiagram
 
 - **Category**는 플랫(1단계)만 사용; `parentId`·계층 없음. **ShoppingListItem**은 카테고리를 필수로 두고, 품목/변형/재고 출처는 알림·UX에 따라 선택.
 - **ExpirationAlertRule**은 품목(Product)마다 유통기한 **며칠 전** 알림 일수를 다르게 둘 수 있음.
-- **HouseStructure**: 상세는 [집 구조도 백엔드 명세](./house-structure-3d-feature.md) 참고. StorageLocation에 `houseStructureId`, `roomId` 등으로 "방"과 연결 가능.
+- **HouseStructure**: 상세는 [집 구조도 백엔드 명세](./house-structure-3d-feature.md) 참고. **방**은 `Room` 엔티티로 정규화하고, **가구 배치**는 `FurniturePlacement`, 물품(재고)은 기존처럼 `StorageLocation` → `InventoryItem`으로 연결한다([논리 설계](./entity-logical-design.md) §5~§7, §11).
 
 ---
 

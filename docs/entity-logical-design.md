@@ -21,8 +21,12 @@ erDiagram
     Category ||--o{ Product : "categoryId"
 
     Household ||--o| HouseStructure : "householdId"
+    HouseStructure ||--o{ Room : "houseStructureId"
+    Room ||--o{ FurniturePlacement : "roomId"
+    Room ||--o{ StorageLocation : "roomId"
+    FurniturePlacement ||--o{ StorageLocation : "furniturePlacementId"
     Household ||--o{ StorageLocation : "householdId"
-    StorageLocation }o--o| HouseStructure : "houseStructureId, roomId"
+    StorageLocation }o--o| HouseStructure : "레거시: houseStructureId, roomId 문자열"
     Household ||--o{ ExpirationAlertRule : "householdId"
     Product ||--o{ ExpirationAlertRule : "productId"
 
@@ -59,7 +63,7 @@ erDiagram
 
 ## 논리적 ERD — 주요 엔티티 속성 (PK·FK)
 
-> Mermaid 블록은 **다이어그램용 속성 요약**입니다. **정본(필수/선택·비고·제약)** 은 아래 §1~§19 표를 따릅니다.
+> Mermaid 블록은 **다이어그램용 속성 요약**입니다. **정본(필수/선택·비고·제약)** 은 아래 §1~§21 표를 따릅니다.
 
 ### 인증·가족·공유 그룹
 
@@ -90,7 +94,7 @@ erDiagram
     }
 ```
 
-### 집 구조·보관 장소
+### 집 구조·방·가구 배치·보관 장소
 
 ```mermaid
 erDiagram
@@ -103,12 +107,34 @@ erDiagram
         timestamp createdAt
         timestamp updatedAt
     }
+    Room {
+        bigint id PK
+        bigint houseStructureId FK
+        string structureRoomKey
+        string displayName
+        int sortOrder
+        timestamp createdAt
+        timestamp updatedAt
+    }
+    FurniturePlacement {
+        bigint id PK
+        bigint roomId FK
+        string label
+        bigint productId FK
+        bigint productVariantId FK
+        int sortOrder
+        jsonb placementPayload
+        timestamp createdAt
+        timestamp updatedAt
+    }
     StorageLocation {
         bigint id PK
         bigint householdId FK
         string name
+        bigint roomId FK
+        bigint furniturePlacementId FK
         bigint houseStructureId FK
-        string roomId
+        string legacyRoomKey
         int sortOrder
         timestamp createdAt
         timestamp updatedAt
@@ -116,6 +142,8 @@ erDiagram
 ```
 
 - **HouseStructure**: `householdId`는 **Household당 1건**(unique, 1:1).
+- **Room**: `(houseStructureId, structureRoomKey)` **유일** 권장(JSON room id와 1:1 대응).
+- **FurniturePlacement**: `productId`·`productVariantId`는 **선택**(가구를 마스터에 안 올린 경우 라벨만으로 운용 가능).
 
 ### 카테고리·단위·상품 마스터
 
@@ -287,8 +315,8 @@ erDiagram
     }
 ```
 
-- **ExpirationAlertRule**: `productId` **필수**. `userId`와 `householdId`는 **택1**(정확히 하나만 NOT NULL). **동일 소유·동일 품목** 중복 방지는 §18.
-- **ShoppingListItem**: **`categoryId` 필수**; `productId`·`productVariantId`·`sourceInventoryItemId`는 **힌트**. 상세·재고 반영 플로우는 §16.
+- **ExpirationAlertRule**: `productId` **필수**. `userId`와 `householdId`는 **택1**(정확히 하나만 NOT NULL). **동일 소유·동일 품목** 중복 방지는 §20.
+- **ShoppingListItem**: **`categoryId` 필수**; `productId`·`productVariantId`·`sourceInventoryItemId`는 **힌트**. 상세·재고 반영 플로우는 §18.
 
 ---
 
@@ -355,29 +383,74 @@ erDiagram
 | **선택** | version              | int                    | 스키마 버전                   |
 | **선택** | createdAt, updatedAt | timestamp              | —                             |
 
-**관계**: Household (1:1), StorageLocation(선택: roomId로 방 연결)
+**관계**: Household (1:1), Room (1:N)
 
 → API·스키마 상세: [house-structure-3d-feature.md](./house-structure-3d-feature.md)
 
 ---
 
-## 5. StorageLocation (보관 장소)
+## 5. Room (방)
 
-| 구분     | 항목                 | 타입/비고                     | 검토                                |
-| -------- | -------------------- | ----------------------------- | ----------------------------------- |
-| **필수** | id                   | PK                            | —                                   |
-| **필수** | householdId          | FK → Household                | —                                   |
-| **필수** | name                 | string                        | "냉장고 문쪽", "선반 2단", "욕실장" |
-| **선택** | houseStructureId     | FK → HouseStructure, nullable | 집 구조 내 방과 연결 시             |
-| **선택** | roomId               | string, nullable              | structurePayload 내 room id         |
-| **선택** | sortOrder            | int                           | —                                   |
-| **선택** | createdAt, updatedAt | timestamp                     | —                                   |
+| 구분     | 항목                 | 타입/비고                        | 검토                                                         |
+| -------- | -------------------- | -------------------------------- | ------------------------------------------------------------ |
+| **필수** | id                   | PK                               | —                                                            |
+| **필수** | houseStructureId     | FK → HouseStructure              | 소속 집 구조                                                 |
+| **필수** | structureRoomKey     | string                           | `structurePayload` 내 room id와 **동일** (앱·3D와 동기)      |
+| **선택** | displayName          | string, nullable                 | UI 표시명(JSON 라벨과 다를 때)                               |
+| **선택** | sortOrder            | int                              | 방 목록 정렬                                                 |
+| **선택** | createdAt, updatedAt | timestamp                        | —                                                            |
 
-**관계**: Household (N:1), HouseStructure (선택 N:1), InventoryItem (1:N)
+**관계**: HouseStructure (N:1), FurniturePlacement (1:N), StorageLocation (1:N, 방 직속 슬롯)
+
+### 식별·제약 (권장)
+
+- `(houseStructureId, structureRoomKey)` **유일**(UNIQUE) — 동일 집 구조 안에서 방 키 중복 방지.
 
 ---
 
-## 6. Unit (단위 마스터)
+## 6. FurniturePlacement (가구 배치)
+
+| 구분     | 항목                 | 타입/비고                     | 검토                                                                 |
+| -------- | -------------------- | ----------------------------- | -------------------------------------------------------------------- |
+| **필수** | id                   | PK                            | —                                                                    |
+| **필수** | roomId               | FK → Room                     | 이 가구가 놓인 방                                                  |
+| **필수** | label                | string                        | "책상", "침대 옆 협탁" 등 **인스턴스 구분** (동일 Product 여러 개일 때 필수) |
+| **선택** | productId            | FK → Product, nullable        | 가구 **종류**를 마스터와 연결할 때(가구류 카테고리 등)               |
+| **선택** | productVariantId     | FK → ProductVariant, nullable | 모델·규격까지 연결할 때                                            |
+| **선택** | sortOrder            | int                           | 방 안에서 가구 나열 순서                                           |
+| **선택** | placementPayload     | jsonb, nullable               | 3D 위치·회전 등(집 구조 편집기와 맞출 때)                          |
+| **선택** | createdAt, updatedAt | timestamp                     | —                                                                    |
+
+**관계**: Room (N:1), Product·ProductVariant (선택 N:1), StorageLocation (1:N, 이 가구에 매단 보관 슬롯)
+
+**비고**: 가구를 `Product`에 등록하지 않으면 **`label`만**으로 운용 가능.
+
+---
+
+## 7. StorageLocation (보관 장소)
+
+| 구분     | 항목                    | 타입/비고                     | 검토                                                                                         |
+| -------- | ----------------------- | ----------------------------- | -------------------------------------------------------------------------------------------- |
+| **필수** | id                      | PK                            | —                                                                                            |
+| **필수** | householdId             | FK → Household                | —                                                                                            |
+| **필수** | name                    | string                        | "책상 서랍 왼쪽", "냉장고 문쪽", "선반 2단"                                                  |
+| **선택** | roomId                  | FK → Room, nullable           | **방 직속** 보관(냉장고·벽장 등)일 때                                                        |
+| **선택** | furniturePlacementId    | FK → FurniturePlacement, nullable | **특정 가구** 위·안의 칸일 때; 있으면 보통 `roomId`는 NULL(FK 중복 방지)·조인으로 방 유도 |
+| **선택** | houseStructureId        | FK → HouseStructure, nullable | **레거시** 또는 Room 미도입 데이터 마이그레이션용                                            |
+| **선택** | legacyRoomKey           | string, nullable              | **레거시**: 예전 `structurePayload` room id 문자열 (`Room` 도입 후 `roomId` FK로 이전 권장)   |
+| **선택** | sortOrder               | int                           | —                                                                                            |
+| **선택** | createdAt, updatedAt    | timestamp                     | —                                                                                            |
+
+**관계**: Household (N:1), Room (선택 N:1), FurniturePlacement (선택 N:1), HouseStructure (선택 N:1, 레거시), InventoryItem (1:N)
+
+### 정합성 (권장)
+
+- `furniturePlacementId`가 있으면, 해당 `FurniturePlacement.roomId`가 가리키는 방과 **동일 가족·동일 집 구조**인지 API에서 검증.
+- `roomId`와 `furniturePlacementId`를 **동시에** 채울 경우: `furniturePlacement.roomId === storageLocation.roomId`인지 검증하거나, 앱에서는 **한쪽만** 채우도록 단순화.
+
+---
+
+## 8. Unit (단위 마스터)
 
 | 구분     | 항목      | 타입/비고      | 검토                        |
 | -------- | --------- | -------------- | --------------------------- |
@@ -390,7 +463,7 @@ erDiagram
 
 ---
 
-## 7. Product (상품 마스터)
+## 9. Product (상품 마스터)
 
 | 구분     | 항목                 | 타입/비고        | 검토                                                                                                      |
 | -------- | -------------------- | ---------------- | --------------------------------------------------------------------------------------------------------- |
@@ -402,13 +475,13 @@ erDiagram
 | **선택** | description          | text, nullable   | —                                                                                                         |
 | **선택** | createdAt, updatedAt | timestamp        | —                                                                                                         |
 
-**관계**: Category (N:1), ProductVariant (1:N), ExpirationAlertRule (1:N), ShoppingListItem (선택 `productId`·`productVariantId` 힌트로 참조 가능)
+**관계**: Category (N:1), ProductVariant (1:N), ExpirationAlertRule (1:N), FurniturePlacement (1:N, 선택 `productId`), ShoppingListItem (선택 `productId`·`productVariantId` 힌트로 참조 가능)
 
 **비고**: 바코드는 수집하지 않음.
 
 ---
 
-## 8. ProductVariant (용량/포장 단위별 정보)
+## 10. ProductVariant (용량/포장 단위별 정보)
 
 | 구분     | 항목                 | 타입/비고         | 검토                                                 |
 | -------- | -------------------- | ----------------- | ---------------------------------------------------- |
@@ -422,13 +495,13 @@ erDiagram
 | **선택** | isDefault            | boolean           | 대표 용량 여부                                       |
 | **선택** | createdAt, updatedAt | timestamp         | —                                                    |
 
-**관계**: Product (N:1), Unit (N:1), InventoryItem (1:N), ShoppingListItem (선택 `productVariantId` 힌트)
+**관계**: Product (N:1), Unit (N:1), InventoryItem (1:N), FurniturePlacement (1:N, 선택 `productVariantId`), ShoppingListItem (선택 `productVariantId` 힌트)
 
 **비고**: 바코드는 사용하지 않음.
 
 ---
 
-## 9. InventoryItem (실제 보유 재고)
+## 11. InventoryItem (실제 보유 재고)
 
 | 구분     | 항목                 | 타입/비고            | 검토                                               |
 | -------- | -------------------- | -------------------- | -------------------------------------------------- |
@@ -441,11 +514,13 @@ erDiagram
 
 **관계**: ProductVariant (N:1), StorageLocation (N:1), Purchase (1:N), Consumption (1:N), InventoryLog (1:N), WasteRecord (1:N), ShoppingListItem (선택 `sourceInventoryItemId`로 참조 가능)
 
+**위치(물품)**: `StorageLocation`을 통해 간접적으로 **방·가구 배치**와 연결됨 — `Room` → `FurniturePlacement` → `StorageLocation` → `InventoryItem`(§5~§7).
+
 **추가 검토**: `householdId`(조회 편의용 중복), `unitId`(variant에서 가져올 수 있음)
 
 ---
 
-## 10. Purchase (구매 기록)
+## 12. Purchase (구매 기록)
 
 | 구분     | 항목            | 타입/비고           | 검토                                      |
 | -------- | --------------- | ------------------- | ----------------------------------------- |
@@ -465,7 +540,7 @@ erDiagram
 
 ---
 
-## 11. PurchaseBatch (유통기한 로트)
+## 13. PurchaseBatch (유통기한 로트)
 
 > **로트(lot)**: 한 번에 구매한 같은 품목 묶음. 같은 유통기한을 공유하는 단위.  
 > 예: 우유 2팩을 3월 1일에 구매하고 유통기한이 3월 10일이면, 그 2팩이 한 로트.
@@ -482,7 +557,7 @@ erDiagram
 
 ---
 
-## 12. Consumption (소비/사용 기록)
+## 14. Consumption (소비/사용 기록)
 
 | 구분     | 항목            | 타입/비고          | 검토              |
 | -------- | --------------- | ------------------ | ----------------- |
@@ -497,7 +572,7 @@ erDiagram
 
 ---
 
-## 13. InventoryLog (재고 변경 이력)
+## 15. InventoryLog (재고 변경 이력)
 
 | 구분     | 항목            | 타입/비고           | 검토                                         |
 | -------- | --------------- | ------------------- | -------------------------------------------- |
@@ -517,7 +592,7 @@ erDiagram
 
 ---
 
-## 14. WasteRecord (폐기 기록)
+## 16. WasteRecord (폐기 기록)
 
 | 구분     | 항목            | 타입/비고           | 검토                                                                                                      |
 | -------- | --------------- | ------------------- | --------------------------------------------------------------------------------------------------------- |
@@ -534,7 +609,7 @@ erDiagram
 
 ---
 
-## 15. ShoppingList (장보기 리스트)
+## 17. ShoppingList (장보기 리스트)
 
 | 구분     | 항목                 | 타입/비고           | 검토                                                                   |
 | -------- | -------------------- | ------------------- | ---------------------------------------------------------------------- |
@@ -552,7 +627,7 @@ erDiagram
 
 ---
 
-## 16. ShoppingListItem (리스트 항목)
+## 18. ShoppingListItem (리스트 항목)
 
 > **역할**: 마트 가기 전 **“살 것 목록(의도)”** — 유통기한·재고 부족 알림을 눌러 넣을 때는 **카테고리 단위**로 쌓이기 쉽고, **동원 참치 몇 g·스팸 브랜드·로트·금액** 같은 것은 **재고에 올릴 때(구매 반영)** 확정한다.
 
@@ -589,7 +664,7 @@ erDiagram
 
 ---
 
-## 17. Notification (알림)
+## 19. Notification (알림)
 
 | 구분     | 항목           | 타입/비고           | 검토                                             |
 | -------- | -------------- | ------------------- | ------------------------------------------------ |
@@ -608,7 +683,7 @@ erDiagram
 
 ---
 
-## 18. ExpirationAlertRule (만료 알림 설정)
+## 20. ExpirationAlertRule (만료 알림 설정)
 
 | 구분          | 항목                        | 타입/비고      | 검토                                                |
 | ------------- | --------------------------- | -------------- | --------------------------------------------------- |
@@ -646,7 +721,7 @@ erDiagram
 
 ---
 
-## 19. ReportPreset (리포트 설정 저장)
+## 21. ReportPreset (리포트 설정 저장)
 
 | 구분     | 항목                 | 타입/비고 | 검토                |
 | -------- | -------------------- | --------- | ------------------- |

@@ -36,13 +36,28 @@
 
 ---
 
+## Room (방)
+
+- [ ] 사용자는_집_구조에_맞춰_방을_동기화한다 (structureRoomKey ↔ JSON)
+- [ ] 사용자는_방_목록을_조회한다
+
+---
+
+## FurniturePlacement (가구 배치)
+
+- [ ] 사용자는_방_안에_가구_배치를_등록·수정·삭제한다 (라벨·선택적 Product)
+- [ ] 사용자는_방_별_가구_배치_목록을_조회한다
+
+---
+
 ## StorageLocation (보관 장소)
 
 - [ ] 사용자는_보관_장소를_등록한다
 - [ ] 사용자는_보관_장소_목록을_조회한다
 - [ ] 사용자는_보관_장소를_수정한다
 - [ ] 사용자는_보관_장소를_삭제한다
-- [ ] 사용자는_보관_장소를_집_구조_내_방과_연결한다 (houseStructureId, roomId)
+- [ ] 사용자는_보관_장소를_Room_FurniturePlacement와_연결한다 (방_직속_또는_가구_아래_슬롯)
+- [ ] (레거시) 기존_houseStructureId_legacyRoomKey_데이터를_Room_FK로_이전한다
 
 ---
 
@@ -50,7 +65,7 @@
 
 - [ ] 사용자는_가족·공유_그룹의_집_구조를_등록·수정한다 (structurePayload 저장)
 - [ ] 사용자는_가족·공유_그룹의_집_구조를_조회한다
-- [ ] (클라이언트) 방_기준_물품_목록_조회는_StorageLocation roomId + InventoryItem 조합으로 제공
+- [ ] (클라이언트) 방·가구·보관슬롯_경로로_물품_목록을_조회한다 (Room → FurniturePlacement → StorageLocation → InventoryItem)
 
 → 백엔드 상세: [house-structure-3d-feature.md](./house-structure-3d-feature.md)
 
