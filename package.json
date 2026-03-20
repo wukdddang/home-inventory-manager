@@ -2,10 +2,17 @@
   "name": "home-inventory-manager",
   "private": true,
   "scripts": {
-    "dev:frontend": "pnpm --filter frontend dev",
-    "dev:backend": "pnpm --filter backend start:dev",
-    "build:frontend": "pnpm --filter frontend build",
-    "build:backend": "pnpm --filter backend build",
-    "build": "pnpm run build:frontend && pnpm run build:backend"
-  }
+    "dev": "turbo run dev",
+    "dev:frontend": "turbo run dev --filter=frontend",
+    "dev:backend": "turbo run dev --filter=backend",
+    "build": "turbo run build",
+    "build:frontend": "turbo run build --filter=frontend",
+    "build:backend": "turbo run build --filter=backend",
+    "lint": "turbo run lint",
+    "test": "turbo run test"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.6"
+  },
+  "packageManager": "pnpm@9.15.4"
 }
