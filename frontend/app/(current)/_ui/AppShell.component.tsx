@@ -1,11 +1,14 @@
 "use client";
 
 import { useAppRoutePrefix } from "@/lib/use-app-route-prefix";
-import type { AuthUser } from "@/types/domain";
-import { getAuthUser, setAuthUser } from "@/lib/local-store";
+import {
+  getAuthUserSnapshot,
+  setAuthUser,
+  subscribeAuthUser,
+} from "@/lib/local-store";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 const navPaths = [
   { path: "/dashboard", label: "메인" },
@@ -16,11 +19,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const prefix = useAppRoutePrefix();
-  const [user, setUser] = useState<AuthUser | null>(null);
-
-  useEffect(() => {
-    setUser(getAuthUser());
-  }, []);
+  const user = useSyncExternalStore(
+    subscribeAuthUser,
+    getAuthUserSnapshot,
+    () => null,
+  );
 
   const handleLogout = () => {
     setAuthUser(null);
@@ -30,7 +33,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       <header className="sticky top-0 z-40 border-b border-zinc-800/80 bg-zinc-950/90 backdrop-blur-md">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
+        <div className="flex h-14 w-full items-center justify-between gap-3 px-3 sm:px-4">
           <Link
             href={`${prefix}/dashboard`}
             className="font-semibold tracking-tight text-teal-400"
@@ -56,7 +59,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             })}
           </nav>
           <div className="flex items-center gap-3 text-sm">
-            <span className="hidden max-w-[140px] truncate text-zinc-500 sm:inline">
+            <span className="hidden max-w-35 truncate text-zinc-500 sm:inline">
               {user?.displayName ?? user?.email}
             </span>
             <button
@@ -69,7 +72,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">{children}</main>
+      <main className="w-full px-3 py-4 sm:px-4">{children}</main>
     </div>
   );
 }

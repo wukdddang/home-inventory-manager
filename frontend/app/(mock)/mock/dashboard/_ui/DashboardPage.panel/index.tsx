@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useDashboard } from "../../_hooks/useDashboard";
 import { DashboardHouseholdsSection } from "../DashboardHouseholds.section";
 import { DashboardInventorySection } from "../DashboardInventory.section";
-import { DashboardItemFormSection } from "../DashboardItemForm.section";
 import { DashboardRoomsSection } from "../DashboardRooms.section";
 import type { ViewMode } from "../ViewModeToggle.module";
 
@@ -17,20 +16,21 @@ export function DashboardPanel() {
   const [viewMode, setViewMode] = useState<ViewMode>("structure");
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (households.length === 0) {
-      setSelectedHouseholdId(null);
-      return;
+  /** 목록 변경 시에도 유효한 거점만 보이도록 (effect 없이 파생) */
+  const viewingHouseholdId = useMemo(() => {
+    if (households.length === 0) return null;
+    if (
+      selectedHouseholdId != null &&
+      households.some((h) => h.id === selectedHouseholdId)
+    ) {
+      return selectedHouseholdId;
     }
-    setSelectedHouseholdId((prev) => {
-      if (prev && households.some((h) => h.id === prev)) return prev;
-      return households[0].id;
-    });
-  }, [households]);
+    return households[0]?.id ?? null;
+  }, [households, selectedHouseholdId]);
 
   const selected = useMemo(
-    () => households.find((h) => h.id === selectedHouseholdId) ?? null,
-    [households, selectedHouseholdId],
+    () => households.find((h) => h.id === viewingHouseholdId) ?? null,
+    [households, viewingHouseholdId],
   );
 
   const handleSelectHousehold = (id: string) => {
@@ -67,7 +67,7 @@ export function DashboardPanel() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="grid grid-cols-1 gap-6">
       {dataMode === "mock" ? (
         <div
           className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100"
@@ -80,25 +80,34 @@ export function DashboardPanel() {
           </span>
         </div>
       ) : null}
-      <DashboardHouseholdsSection
-        selectedHouseholdId={selectedHouseholdId}
-        onSelectHousehold={handleSelectHousehold}
-        onAfterAddHousehold={handleAfterAddHousehold}
-        onDeleteHousehold={handleDeleteHousehold}
-      />
-      <DashboardRoomsSection
-        selected={selected}
-        selectedRoomId={selectedRoomId}
-        onRoomSelect={setSelectedRoomId}
-      />
-      <DashboardInventorySection
-        selected={selected}
-        viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        selectedRoomId={selectedRoomId}
-        onRoomSelect={setSelectedRoomId}
-      />
-      <DashboardItemFormSection selected={selected} />
+      {/*
+        데스크톱(lg+): 거점·방(좌, 넓은 고정 트랙) / 조회·등록(우) 2열
+        모바일: 1열, 동일 gap-6
+      */}
+      <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-[32rem_minmax(0,1fr)] lg:items-start xl:grid-cols-[36rem_minmax(0,1fr)]">
+        <div className="grid min-w-0 grid-cols-1 gap-6">
+          <DashboardHouseholdsSection
+            selectedHouseholdId={viewingHouseholdId}
+            onSelectHousehold={handleSelectHousehold}
+            onAfterAddHousehold={handleAfterAddHousehold}
+            onDeleteHousehold={handleDeleteHousehold}
+          />
+          <DashboardRoomsSection
+            selected={selected}
+            selectedRoomId={selectedRoomId}
+            onRoomSelect={setSelectedRoomId}
+          />
+        </div>
+        <div className="grid min-w-0 grid-cols-1 gap-6">
+          <DashboardInventorySection
+            selected={selected}
+            viewMode={viewMode}
+            onViewModeChange={setViewMode}
+            selectedRoomId={selectedRoomId}
+            onRoomSelect={setSelectedRoomId}
+          />
+        </div>
+      </div>
     </div>
   );
 }

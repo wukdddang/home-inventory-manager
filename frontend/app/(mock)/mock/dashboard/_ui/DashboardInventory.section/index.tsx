@@ -2,8 +2,9 @@
 
 import { useMemo } from "react";
 import { useDashboard } from "../../_hooks/useDashboard";
-import { HouseStructure } from "../HouseStructure.module";
+import { HouseStructureFlow } from "../HouseStructureFlow.module";
 import { ItemsSpreadsheet } from "../ItemsSpreadsheet.module";
+import { RoomItemAddWidget } from "../DashboardItemForm.section";
 import { RoomItemsPanel } from "../RoomItemsPanel.module";
 import {
   ViewModeToggle,
@@ -44,6 +45,19 @@ export function DashboardInventorySection({
     }));
   };
 
+  const handleRoomPositionChange = (
+    roomId: string,
+    x: number,
+    y: number,
+  ) => {
+    거점을_갱신_한다(selected.id, (h) => ({
+      ...h,
+      rooms: h.rooms.map((r) =>
+        r.id === roomId ? { ...r, x, y } : r,
+      ),
+    }));
+  };
+
   const handleDeleteItem = (itemId: string) => {
     거점을_갱신_한다(selected.id, (h) => ({
       ...h,
@@ -52,12 +66,12 @@ export function DashboardInventorySection({
   };
 
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex min-h-[calc(100dvh-7rem)] flex-col rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6 lg:min-h-[calc(100dvh-6.5rem)]">
+      <div className="flex shrink-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-base font-semibold text-white">조회 모드</h2>
           <p className="mt-1 text-sm text-zinc-500">
-            집 구조(2D) 또는 물품 표 형태로 전환합니다.
+            구조도에서 방을 드래그해 배치하거나, 표로 전환해 물품을 확인합니다.
           </p>
         </div>
         <ViewModeToggle
@@ -67,26 +81,53 @@ export function DashboardInventorySection({
       </div>
 
       {viewMode === "structure" ? (
-        <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_280px]">
-          <div className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950">
-            <HouseStructure
-              household={selected}
+        <div className="mt-6 flex min-h-0 flex-1 flex-col gap-4">
+          <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_17rem]">
+            <div className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950">
+              <HouseStructureFlow
+                household={selected}
+                selectedRoomId={selectedRoomId}
+                onRoomSelect={(id) => onRoomSelect(id)}
+                onRoomRename={handleRoomRename}
+                onRoomPositionChange={handleRoomPositionChange}
+              />
+            </div>
+            <RoomItemsPanel
               selectedRoomId={selectedRoomId}
-              onRoomSelect={(id) => onRoomSelect(id)}
-              onRoomRename={handleRoomRename}
+              roomItems={roomItems}
             />
           </div>
-          <RoomItemsPanel
-            selectedRoomId={selectedRoomId}
-            roomItems={roomItems}
-          />
+          {selectedRoomId ? (
+            <RoomItemAddWidget
+              selected={selected}
+              roomId={selectedRoomId}
+            />
+          ) : (
+            <p className="shrink-0 rounded-xl border border-dashed border-zinc-700 bg-zinc-950/50 px-4 py-3 text-center text-sm text-zinc-500">
+              물품을 추가하려면 구조도에서 방을 먼저 선택하세요.
+            </p>
+          )}
         </div>
       ) : (
-        <div className="mt-6">
-          <ItemsSpreadsheet
-            household={selected}
-            onDeleteItem={handleDeleteItem}
-          />
+        <div className="mt-6 flex min-h-0 flex-1 flex-col gap-4">
+          <div className="min-h-0 flex-1 overflow-auto">
+            <ItemsSpreadsheet
+              household={selected}
+              onDeleteItem={handleDeleteItem}
+              onSelectRoomId={(id) => onRoomSelect(id)}
+            />
+          </div>
+          {selectedRoomId ? (
+            <RoomItemAddWidget
+              selected={selected}
+              roomId={selectedRoomId}
+            />
+          ) : (
+            <p className="shrink-0 rounded-xl border border-dashed border-zinc-700 bg-zinc-950/50 px-4 py-3 text-center text-sm text-zinc-500">
+              표에서 행의 방을 참고한 뒤, 왼쪽 목록에서 방을 선택하면 여기서 물품을
+              등록할 수 있습니다.
+            </p>
+          )}
         </div>
       )}
     </div>
