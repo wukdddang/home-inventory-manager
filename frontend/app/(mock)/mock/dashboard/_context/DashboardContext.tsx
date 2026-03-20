@@ -8,6 +8,10 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import {
+  cloneDefaultCatalog,
+  ensureHouseholdCatalog,
+} from "@/lib/product-catalog-defaults";
 import type { Household, HouseholdKind } from "@/types/domain";
 import { newEntityId } from "../_lib/dashboard-helpers";
 import { dashboardApiHouseholdsClient } from "./dashboard-api.service";
@@ -69,7 +73,7 @@ export function DashboardProvider({
     void (async () => {
       try {
         const list = await householdsPort.list();
-        setHouseholds(list);
+        setHouseholds(list.map((h) => ensureHouseholdCatalog(h)));
       } catch (err) {
         console.error("거점 목록 로드 오류:", err);
         setError(
@@ -107,6 +111,7 @@ export function DashboardProvider({
       kind,
       rooms: [],
       items: [],
+      catalog: cloneDefaultCatalog(),
       createdAt: new Date().toISOString(),
     };
     setHouseholds((prev) => [...prev, h]);

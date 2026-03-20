@@ -9,7 +9,12 @@ import {
   type ReactNode,
 } from "react";
 import { getAppSettings, setAppSettings as persistSettings } from "@/lib/local-store";
-import type { AppSettings, GroupMember } from "@/types/domain";
+import {
+  DEFAULT_NOTIFICATION_DETAIL,
+  type AppSettings,
+  type GroupMember,
+  type NotificationDetailPreferences,
+} from "@/types/domain";
 
 export type SettingsContextType = {
   settings: AppSettings | null;
@@ -27,6 +32,8 @@ export type SettingsContextType = {
   알림_플래그를_토글_한다: (
     key: "notifyExpiration" | "notifyShopping" | "notifyLowStock",
   ) => void;
+  /** §17·§18 정렬 알림 상세(만료 일수·스코프 등)를 부분 갱신한다 */
+  알림_상세를_갱신한다: (patch: Partial<NotificationDetailPreferences>) => void;
 };
 
 export type SettingsProviderProps = { children: ReactNode };
@@ -95,6 +102,24 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
     [],
   );
 
+  const 알림_상세를_갱신한다 = useCallback(
+    (patch: Partial<NotificationDetailPreferences>) => {
+      setSettings((s) =>
+        s
+          ? {
+              ...s,
+              notificationDetail: {
+                ...DEFAULT_NOTIFICATION_DETAIL,
+                ...s.notificationDetail,
+                ...patch,
+              },
+            }
+          : s,
+      );
+    },
+    [],
+  );
+
   const value = useMemo<SettingsContextType>(
     () => ({
       settings,
@@ -105,6 +130,7 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
       그룹_멤버를_추가_한다,
       그룹_멤버를_제거_한다,
       알림_플래그를_토글_한다,
+      알림_상세를_갱신한다,
     }),
     [
       settings,
@@ -115,6 +141,7 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
       그룹_멤버를_추가_한다,
       그룹_멤버를_제거_한다,
       알림_플래그를_토글_한다,
+      알림_상세를_갱신한다,
     ],
   );
 

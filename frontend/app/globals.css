@@ -1,8 +1,58 @@
 @import "tailwindcss";
 
+@keyframes app-toast-in {
+  from {
+    opacity: 0;
+    transform: translateX(calc(100% + 0.75rem)) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes app-toast-out {
+  from {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(calc(100% + 0.75rem)) scale(0.98);
+  }
+}
+
+/* 얇은 스크롤바 (Chromium / Safari / Firefox thin) — 앱 전역 통일 */
 :root {
+  --app-scrollbar-size: 6px;
+  --app-scrollbar-track: #18181b;
+  --app-scrollbar-thumb: rgb(82 82 91 / 0.55);
+  --app-scrollbar-thumb-hover: rgb(113 113 122 / 0.85);
   --background: #ffffff;
   --foreground: #171717;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--app-scrollbar-thumb) var(--app-scrollbar-track);
+}
+
+*::-webkit-scrollbar {
+  width: var(--app-scrollbar-size);
+  height: var(--app-scrollbar-size);
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--app-scrollbar-track);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--app-scrollbar-thumb);
+  border-radius: 9999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--app-scrollbar-thumb-hover);
 }
 
 @theme inline {
@@ -19,8 +69,34 @@
   }
 }
 
+html {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
+  height: 100%;
+  min-height: 100%;
+  overflow: hidden;
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* 클릭 가능한 컨트롤 — pointer 통일 */
+button:not(:disabled),
+a[href],
+select:not(:disabled),
+summary,
+[role="button"]:not([aria-disabled="true"]),
+[role="switch"]:not([aria-disabled="true"]),
+[role="tab"]:not([aria-disabled="true"]),
+input[type="checkbox"]:not(:disabled),
+input[type="radio"]:not(:disabled) {
+  cursor: pointer;
+}
+
+button:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
 }

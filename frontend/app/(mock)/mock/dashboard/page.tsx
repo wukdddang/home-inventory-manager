@@ -7,5 +7,9 @@ export default function DashboardPage() {
   const pathname = usePathname();
   const dataMode = pathname.startsWith("/mock") ? "mock" : "api";
 
-  return <DashboardScreen dataMode={dataMode} />;
+  return (
+    <div className="flex h-full min-h-0 w-full flex-col">
+      <DashboardScreen dataMode={dataMode} />
+    </div>
+  );
 }

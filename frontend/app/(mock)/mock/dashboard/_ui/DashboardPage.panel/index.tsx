@@ -5,6 +5,7 @@ import { useDashboard } from "../../_hooks/useDashboard";
 import { DashboardHouseholdsSection } from "../DashboardHouseholds.section";
 import { DashboardInventorySection } from "../DashboardInventory.section";
 import { DashboardRoomsSection } from "../DashboardRooms.section";
+import { RoomItemAddFloatingPanel } from "../RoomItemAddFloatingPanel.module";
 import type { ViewMode } from "../ViewModeToggle.module";
 
 export function DashboardPanel() {
@@ -67,10 +68,10 @@ export function DashboardPanel() {
   }
 
   return (
-    <div className="grid grid-cols-1 gap-6">
+    <div className="flex w-full flex-col gap-6 lg:min-h-0 lg:flex-1 lg:overflow-hidden">
       {dataMode === "mock" ? (
         <div
-          className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100"
+          className="shrink-0 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100"
           role="status"
         >
           <span className="font-medium">Mock 데이터</span>
@@ -81,33 +82,46 @@ export function DashboardPanel() {
         </div>
       ) : null}
       {/*
-        데스크톱(lg+): 거점·방(좌, 넓은 고정 트랙) / 조회·등록(우) 2열
-        모바일: 1열, 동일 gap-6
+        데스크톱(lg+): 좌·우 컬럼 각각 세로 스크롤 (뷰포트 높이 고정)
+        모바일: 1열, 문서 스크롤
       */}
-      <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-[32rem_minmax(0,1fr)] lg:items-start xl:grid-cols-[36rem_minmax(0,1fr)]">
-        <div className="grid min-w-0 grid-cols-1 gap-6">
-          <DashboardHouseholdsSection
-            selectedHouseholdId={viewingHouseholdId}
-            onSelectHousehold={handleSelectHousehold}
-            onAfterAddHousehold={handleAfterAddHousehold}
-            onDeleteHousehold={handleDeleteHousehold}
-          />
-          <DashboardRoomsSection
-            selected={selected}
-            selectedRoomId={selectedRoomId}
-            onRoomSelect={setSelectedRoomId}
-          />
+      <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,32rem)_minmax(0,1fr)] lg:gap-6 lg:overflow-hidden xl:grid-cols-[minmax(0,36rem)_minmax(0,1fr)]">
+        <div className="min-h-0 min-w-0 overflow-y-auto overscroll-y-contain lg:pr-1">
+          <div className="grid min-w-0 grid-cols-1 gap-6 pb-1">
+            <DashboardHouseholdsSection
+              selectedHouseholdId={viewingHouseholdId}
+              onSelectHousehold={handleSelectHousehold}
+              onAfterAddHousehold={handleAfterAddHousehold}
+              onDeleteHousehold={handleDeleteHousehold}
+            />
+            <DashboardRoomsSection
+              selected={selected}
+              selectedRoomId={selectedRoomId}
+              onRoomSelect={setSelectedRoomId}
+            />
+          </div>
         </div>
-        <div className="grid min-w-0 grid-cols-1 gap-6">
-          <DashboardInventorySection
-            selected={selected}
-            viewMode={viewMode}
-            onViewModeChange={setViewMode}
-            selectedRoomId={selectedRoomId}
-            onRoomSelect={setSelectedRoomId}
-          />
+        <div className="min-h-0 min-w-0 overflow-y-auto overscroll-y-contain lg:pl-1">
+          <div className="grid min-w-0 grid-cols-1 gap-6 pb-1">
+            <DashboardInventorySection
+              selected={selected}
+              viewMode={viewMode}
+              onViewModeChange={setViewMode}
+              selectedRoomId={selectedRoomId}
+              onRoomSelect={setSelectedRoomId}
+            />
+          </div>
         </div>
       </div>
+
+      {selected && selectedRoomId ? (
+        <RoomItemAddFloatingPanel
+          key={selectedRoomId}
+          selected={selected}
+          roomId={selectedRoomId}
+          onDismissRoom={() => setSelectedRoomId(null)}
+        />
+      ) : null}
     </div>
   );
 }

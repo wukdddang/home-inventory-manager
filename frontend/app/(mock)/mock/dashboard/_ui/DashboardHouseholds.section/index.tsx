@@ -1,5 +1,6 @@
 "use client";
 
+import { AlertModal } from "@/app/_ui/alert-modal";
 import { useState } from "react";
 import { useDashboard } from "../../_hooks/useDashboard";
 import { KIND_LABEL } from "../../_lib/dashboard-helpers";
@@ -21,12 +22,19 @@ export function DashboardHouseholdsSection({
   const { households, 거점을_추가_한다 } = useDashboard();
   const [newHouseName, setNewHouseName] = useState("");
   const [newHouseKind, setNewHouseKind] = useState<HouseholdKind>("home");
+  const [pendingDeleteHouseholdId, setPendingDeleteHouseholdId] = useState<
+    string | null
+  >(null);
 
   const handleAddHousehold = () => {
     const id = 거점을_추가_한다(newHouseName, newHouseKind);
     onAfterAddHousehold(id);
     setNewHouseName("");
   };
+
+  const pendingDeleteHousehold = pendingDeleteHouseholdId
+    ? households.find((h) => h.id === pendingDeleteHouseholdId)
+    : null;
 
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
@@ -58,13 +66,11 @@ export function DashboardHouseholdsSection({
             className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-teal-500"
           />
         </div>
-        <div className="w-full max-w-[200px] space-y-2">
+        <div className="w-full max-w-50 space-y-2">
           <label className="text-xs font-medium text-zinc-400">유형</label>
           <select
             value={newHouseKind}
-            onChange={(e) =>
-              setNewHouseKind(e.target.value as HouseholdKind)
-            }
+            onChange={(e) => setNewHouseKind(e.target.value as HouseholdKind)}
             className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-teal-500"
           >
             {(Object.keys(KIND_LABEL) as HouseholdKind[]).map((k) => (
@@ -77,7 +83,7 @@ export function DashboardHouseholdsSection({
         <button
           type="button"
           onClick={handleAddHousehold}
-          className="rounded-xl bg-teal-500 px-5 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-teal-400"
+          className="cursor-pointer rounded-xl bg-teal-500 px-5 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-teal-400"
         >
           거점 추가
         </button>
@@ -97,7 +103,7 @@ export function DashboardHouseholdsSection({
               <button
                 type="button"
                 onClick={() => onSelectHousehold(h.id)}
-                className="text-left text-sm font-medium text-white"
+                className="cursor-pointer text-left text-sm font-medium text-white"
               >
                 {h.name}
                 <span className="ml-2 text-xs font-normal text-zinc-500">
@@ -106,8 +112,8 @@ export function DashboardHouseholdsSection({
               </button>
               <button
                 type="button"
-                onClick={() => onDeleteHousehold(h.id)}
-                className="rounded-lg px-2 py-1 text-xs text-zinc-500 hover:bg-rose-500/20 hover:text-rose-300"
+                onClick={() => setPendingDeleteHouseholdId(h.id)}
+                className="cursor-pointer rounded-lg px-2 py-1 text-xs text-zinc-500 hover:bg-rose-500/20 hover:text-rose-300"
                 aria-label={`${h.name} 삭제`}
               >
                 삭제
@@ -116,6 +122,28 @@ export function DashboardHouseholdsSection({
           ))}
         </div>
       ) : null}
+
+      <AlertModal
+        open={pendingDeleteHouseholdId !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDeleteHouseholdId(null);
+        }}
+        title="거점 삭제"
+        description={
+          pendingDeleteHousehold
+            ? `삭제하시겠습니까? 「${pendingDeleteHousehold.name}」과(와) 소속 방·물품 데이터가 함께 제거됩니다. 이 작업은 되돌릴 수 없습니다.`
+            : "삭제하시겠습니까?"
+        }
+        confirmLabel="삭제"
+        cancelLabel="취소"
+        variant="danger"
+        onConfirm={() => {
+          if (pendingDeleteHouseholdId) {
+            onDeleteHousehold(pendingDeleteHouseholdId);
+          }
+          setPendingDeleteHouseholdId(null);
+        }}
+      />
     </div>
   );
 }

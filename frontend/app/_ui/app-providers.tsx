@@ -15,8 +15,11 @@ function ToastViewportHost() {
 
   return (
     <>
-      {toasts.map(({ id, title, description, action, ...props }) => (
-        <Toast key={id} {...props}>
+      {toasts.map((toast) => {
+        const { id, title, description, action, duration, ...props } = toast;
+        void duration;
+        return (
+        <Toast key={id} duration={Number.POSITIVE_INFINITY} {...props}>
           <div className="grid gap-1">
             {title ? <ToastTitle>{title}</ToastTitle> : null}
             {description ? (
@@ -26,7 +29,8 @@ function ToastViewportHost() {
           {action}
           <ToastClose />
         </Toast>
-      ))}
+        );
+      })}
       <ToastViewport />
     </>
   );
@@ -34,8 +38,10 @@ function ToastViewportHost() {
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
-    <ToastProvider swipeDirection="right" duration={4000}>
-      {children}
+    <ToastProvider swipeDirection="right" duration={Number.POSITIVE_INFINITY}>
+      <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+        {children}
+      </div>
       <ToastViewportHost />
     </ToastProvider>
   );

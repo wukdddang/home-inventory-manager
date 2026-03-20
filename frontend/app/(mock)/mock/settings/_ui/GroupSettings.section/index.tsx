@@ -1,5 +1,6 @@
 "use client";
 
+import { AlertModal } from "@/app/_ui/alert-modal";
 import { FormEvent, useState } from "react";
 import { useSettings } from "../../_hooks/useSettings";
 import type { GroupMember } from "@/types/domain";
@@ -13,6 +14,9 @@ export function GroupSettingsSection() {
     useSettings();
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteLabel, setInviteLabel] = useState("");
+  const [pendingRemoveMemberId, setPendingRemoveMemberId] = useState<
+    string | null
+  >(null);
 
   if (!settings) return null;
 
@@ -30,6 +34,10 @@ export function GroupSettingsSection() {
     setInviteEmail("");
     setInviteLabel("");
   };
+
+  const pendingRemoveMember = pendingRemoveMemberId
+    ? settings.groups.find((g) => g.id === pendingRemoveMemberId)
+    : null;
 
   return (
     <section className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
@@ -64,7 +72,7 @@ export function GroupSettingsSection() {
         </div>
         <button
           type="submit"
-          className="rounded-xl bg-teal-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-teal-400"
+          className="cursor-pointer rounded-xl bg-teal-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-teal-400"
         >
           멤버 추가
         </button>
@@ -91,8 +99,8 @@ export function GroupSettingsSection() {
               </div>
               <button
                 type="button"
-                onClick={() => 그룹_멤버를_제거_한다(g.id)}
-                className="text-xs text-rose-400 hover:underline"
+                onClick={() => setPendingRemoveMemberId(g.id)}
+                className="cursor-pointer text-xs text-rose-400 hover:underline"
               >
                 제거
               </button>
@@ -100,6 +108,28 @@ export function GroupSettingsSection() {
           ))
         )}
       </ul>
+
+      <AlertModal
+        open={pendingRemoveMemberId !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingRemoveMemberId(null);
+        }}
+        title="그룹 멤버 제거"
+        description={
+          pendingRemoveMember
+            ? `삭제하시겠습니까? 「${pendingRemoveMember.email}」을(를) 그룹에서 제거합니다.`
+            : "삭제하시겠습니까?"
+        }
+        confirmLabel="제거"
+        cancelLabel="취소"
+        variant="danger"
+        onConfirm={() => {
+          if (pendingRemoveMemberId) {
+            그룹_멤버를_제거_한다(pendingRemoveMemberId);
+          }
+          setPendingRemoveMemberId(null);
+        }}
+      />
     </section>
   );
 }

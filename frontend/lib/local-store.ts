@@ -1,7 +1,22 @@
 "use client";
 
 import type { AppSettings, AuthUser, Household } from "@/types/domain";
-import { DEFAULT_SETTINGS as DEFAULTS } from "@/types/domain";
+import {
+  DEFAULT_NOTIFICATION_DETAIL,
+  DEFAULT_SETTINGS as DEFAULTS,
+} from "@/types/domain";
+
+function normalizeAppSettings(partial: Partial<AppSettings>): AppSettings {
+  return {
+    ...DEFAULTS,
+    ...partial,
+    groups: partial.groups ?? DEFAULTS.groups,
+    notificationDetail: {
+      ...DEFAULT_NOTIFICATION_DETAIL,
+      ...(partial.notificationDetail ?? {}),
+    },
+  };
+}
 
 const K_USER = "him-user";
 const K_HOUSEHOLDS = "him-households";
@@ -76,7 +91,7 @@ export function getAppSettings(): AppSettings {
     localStorage.getItem(K_SETTINGS),
     {},
   );
-  return { ...DEFAULTS, ...s, groups: s.groups ?? DEFAULTS.groups };
+  return normalizeAppSettings(s);
 }
 
 export function setAppSettings(s: AppSettings) {

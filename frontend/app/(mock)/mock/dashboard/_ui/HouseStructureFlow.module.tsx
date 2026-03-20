@@ -15,8 +15,7 @@ import {
   type NodeTypes,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { VIEW_BOX } from "../_lib/dashboard-helpers";
+import { memo, useCallback, useEffect, useState } from "react";
 
 type RoomNodeData = { label: string; active: boolean };
 
@@ -35,11 +34,6 @@ const RoomNode = memo(function RoomNode({ data }: NodeProps<Node<RoomNodeData>>)
 });
 
 const nodeTypes = { room: RoomNode } satisfies NodeTypes;
-
-function parseViewBox(): { w: number; h: number } {
-  const parts = VIEW_BOX.split(/\s+/).map(Number);
-  return { w: parts[2] ?? 620, h: parts[3] ?? 380 };
-}
 
 function roomsToNodes(
   rooms: StructureRoom[],
@@ -71,7 +65,6 @@ function HouseStructureFlowInner({
   onRoomRename,
   onRoomPositionChange,
 }: HouseStructureFlowProps) {
-  const { w, h } = useMemo(() => parseViewBox(), []);
   const [nodes, setNodes, onNodesChange] = useNodesState<Node<RoomNodeData>>(
     [],
   );
@@ -119,7 +112,11 @@ function HouseStructureFlowInner({
 
   return (
     <>
-      <div className="min-h-[min(60vh,520px)] w-full flex-1 [&_.react-flow]:min-h-[min(60vh,520px)]">
+      {/*
+        isolate + overflow-hidden: React Flow 내부 레이어가 인접 컬럼으로 퍼져
+        포인터/스크롤을 가로채는 경우 방지
+      */}
+      <div className="relative z-0 isolate min-h-[min(60vh,520px)] w-full min-w-0 flex-1 overflow-hidden [&_.react-flow]:h-full [&_.react-flow]:min-h-[min(60vh,520px)]">
         <ReactFlow
           nodes={nodes}
           onNodesChange={onNodesChange}
@@ -132,15 +129,8 @@ function HouseStructureFlowInner({
           zoomOnScroll
           minZoom={0.35}
           maxZoom={1.6}
-          translateExtent={[
-            [0, 0],
-            [w, h],
-          ]}
-          nodeExtent={[
-            [0, 0],
-            [w, h],
-          ]}
           defaultViewport={{ x: 0, y: 0, zoom: 1 }}
+          fitView
           className="rounded-lg bg-zinc-950"
           proOptions={{ hideAttribution: true }}
         >

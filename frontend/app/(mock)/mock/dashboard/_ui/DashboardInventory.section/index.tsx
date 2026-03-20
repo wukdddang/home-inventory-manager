@@ -4,7 +4,6 @@ import { useMemo } from "react";
 import { useDashboard } from "../../_hooks/useDashboard";
 import { HouseStructureFlow } from "../HouseStructureFlow.module";
 import { ItemsSpreadsheet } from "../ItemsSpreadsheet.module";
-import { RoomItemAddWidget } from "../DashboardItemForm.section";
 import { RoomItemsPanel } from "../RoomItemsPanel.module";
 import {
   ViewModeToggle,
@@ -65,8 +64,24 @@ export function DashboardInventorySection({
     }));
   };
 
+  const noRoomHint = (
+    <p className="shrink-0 rounded-xl border border-dashed border-zinc-700 bg-zinc-950/50 px-4 py-3 text-center text-sm text-zinc-500">
+      {viewMode === "structure" ? (
+        <>
+          물품을 추가하려면 구조도에서 방을 선택하세요. 화면 오른쪽 고정 패널에서
+          등록합니다.
+        </>
+      ) : (
+        <>
+          표에서 방을 참고한 뒤 왼쪽 목록에서 방을 선택하면, 오른쪽 고정 패널에서
+          물품을 등록할 수 있습니다.
+        </>
+      )}
+    </p>
+  );
+
   return (
-    <div className="flex min-h-[calc(100dvh-7rem)] flex-col rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6 lg:min-h-[calc(100dvh-6.5rem)]">
+    <div className="flex min-h-0 w-full flex-col rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
       <div className="flex shrink-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-base font-semibold text-white">조회 모드</h2>
@@ -81,7 +96,7 @@ export function DashboardInventorySection({
       </div>
 
       {viewMode === "structure" ? (
-        <div className="mt-6 flex min-h-0 flex-1 flex-col gap-4">
+        <div className="mt-6 flex min-h-0 min-w-0 flex-1 flex-col gap-4">
           <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_17rem]">
             <div className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950">
               <HouseStructureFlow
@@ -97,19 +112,10 @@ export function DashboardInventorySection({
               roomItems={roomItems}
             />
           </div>
-          {selectedRoomId ? (
-            <RoomItemAddWidget
-              selected={selected}
-              roomId={selectedRoomId}
-            />
-          ) : (
-            <p className="shrink-0 rounded-xl border border-dashed border-zinc-700 bg-zinc-950/50 px-4 py-3 text-center text-sm text-zinc-500">
-              물품을 추가하려면 구조도에서 방을 먼저 선택하세요.
-            </p>
-          )}
+          {!selectedRoomId ? noRoomHint : null}
         </div>
       ) : (
-        <div className="mt-6 flex min-h-0 flex-1 flex-col gap-4">
+        <div className="mt-6 flex min-h-0 min-w-0 flex-1 flex-col gap-4">
           <div className="min-h-0 flex-1 overflow-auto">
             <ItemsSpreadsheet
               household={selected}
@@ -117,17 +123,7 @@ export function DashboardInventorySection({
               onSelectRoomId={(id) => onRoomSelect(id)}
             />
           </div>
-          {selectedRoomId ? (
-            <RoomItemAddWidget
-              selected={selected}
-              roomId={selectedRoomId}
-            />
-          ) : (
-            <p className="shrink-0 rounded-xl border border-dashed border-zinc-700 bg-zinc-950/50 px-4 py-3 text-center text-sm text-zinc-500">
-              표에서 행의 방을 참고한 뒤, 왼쪽 목록에서 방을 선택하면 여기서 물품을
-              등록할 수 있습니다.
-            </p>
-          )}
+          {!selectedRoomId ? noRoomHint : null}
         </div>
       )}
     </div>

@@ -24,7 +24,7 @@ export function SignupFormSection() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-950 px-4 py-12">
+    <div className="flex min-h-full items-center justify-center bg-zinc-950 px-4 py-12">
       <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900/50 p-8 shadow-xl shadow-black/40">
         <h1 className="text-2xl font-semibold text-white">회원가입</h1>
         <p className="mt-1 text-sm text-zinc-500">

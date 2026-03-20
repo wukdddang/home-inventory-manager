@@ -1,5 +1,6 @@
 "use client";
 
+import { AlertModal } from "@/app/_ui/alert-modal";
 import { useState } from "react";
 import { useDashboard } from "../../_hooks/useDashboard";
 import { defaultRoomGrid, newEntityId } from "../../_lib/dashboard-helpers";
@@ -20,6 +21,9 @@ export function DashboardRoomsSection({
   const [roomDraftName, setRoomDraftName] = useState("");
   const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
   const [editingRoomName, setEditingRoomName] = useState("");
+  const [pendingDeleteRoomId, setPendingDeleteRoomId] = useState<string | null>(
+    null,
+  );
 
   if (!selected) return null;
 
@@ -50,7 +54,7 @@ export function DashboardRoomsSection({
     setEditingRoomId(null);
   };
 
-  const handleDeleteRoom = (roomId: string) => {
+  const confirmDeleteRoom = (roomId: string) => {
     거점을_갱신_한다(selected.id, (h) => ({
       ...h,
       rooms: h.rooms.filter((r) => r.id !== roomId),
@@ -59,6 +63,10 @@ export function DashboardRoomsSection({
     if (selectedRoomId === roomId) onRoomSelect(null);
     setEditingRoomId(null);
   };
+
+  const pendingDeleteRoom = pendingDeleteRoomId
+    ? selected.rooms.find((r) => r.id === pendingDeleteRoomId)
+    : null;
 
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
@@ -79,7 +87,7 @@ export function DashboardRoomsSection({
         <button
           type="button"
           onClick={handleAddRoom}
-          className="rounded-xl border border-zinc-600 px-4 py-2 text-sm font-medium text-teal-300 hover:bg-zinc-800"
+          className="cursor-pointer rounded-xl border border-zinc-600 px-4 py-2 text-sm font-medium text-teal-300 hover:bg-zinc-800"
         >
           방 추가
         </button>
@@ -106,14 +114,14 @@ export function DashboardRoomsSection({
                   <button
                     type="button"
                     onClick={() => handleSaveRoomName(r.id)}
-                    className="rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-medium text-white"
+                    className="cursor-pointer rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-medium text-white"
                   >
                     저장
                   </button>
                   <button
                     type="button"
                     onClick={() => setEditingRoomId(null)}
-                    className="text-xs text-zinc-500"
+                    className="cursor-pointer text-xs text-zinc-500"
                   >
                     취소
                   </button>
@@ -128,14 +136,14 @@ export function DashboardRoomsSection({
                     setEditingRoomId(r.id);
                     setEditingRoomName(r.name);
                   }}
-                  className="rounded-lg border border-zinc-600 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-800"
+                  className="cursor-pointer rounded-lg border border-zinc-600 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-800"
                 >
                   이름 수정
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleDeleteRoom(r.id)}
-                  className="rounded-lg border border-rose-900/50 px-3 py-1 text-xs text-rose-400 hover:bg-rose-950/40"
+                  onClick={() => setPendingDeleteRoomId(r.id)}
+                  className="cursor-pointer rounded-lg border border-rose-900/50 px-3 py-1 text-xs text-rose-400 hover:bg-rose-950/40"
                 >
                   삭제
                 </button>
@@ -144,6 +152,26 @@ export function DashboardRoomsSection({
           ))
         )}
       </ul>
+
+      <AlertModal
+        open={pendingDeleteRoomId !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDeleteRoomId(null);
+        }}
+        title="방 삭제"
+        description={
+          pendingDeleteRoom
+            ? `삭제하시겠습니까? 「${pendingDeleteRoom.name}」에 묶인 물품도 함께 제거됩니다.`
+            : "삭제하시겠습니까?"
+        }
+        confirmLabel="삭제"
+        cancelLabel="취소"
+        variant="danger"
+        onConfirm={() => {
+          if (pendingDeleteRoomId) confirmDeleteRoom(pendingDeleteRoomId);
+          setPendingDeleteRoomId(null);
+        }}
+      />
     </div>
   );
 }

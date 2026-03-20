@@ -8,7 +8,10 @@ import type {
 } from "@/app/_ui/feedback/toast";
 
 const TOAST_LIMIT = 4;
-const TOAST_REMOVE_DELAY = 4000;
+/** 토스트가 화면에 머무는 시간(ms) */
+const TOAST_DEFAULT_DURATION = 4000;
+/** 닫힘 애니메이션 후 DOM에서 제거까지 대기 (toast.tsx 퇴장 시간과 맞춤) */
+const TOAST_EXIT_DURATION_MS = 320;
 
 type ToasterToast = ToastProps & {
   id: string;
@@ -55,20 +58,42 @@ interface State {
   toasts: ToasterToast[];
 }
 
-const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
+const removeFromDomTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
+const autoDismissTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
 
-const addToRemoveQueue = (toastId: string, delay: number) => {
-  if (toastTimeouts.has(toastId)) return;
+function clearRemoveTimeout(toastId: string) {
+  const t = removeFromDomTimeouts.get(toastId);
+  if (t) clearTimeout(t);
+  removeFromDomTimeouts.delete(toastId);
+}
 
+function clearAutoDismissTimeout(toastId: string) {
+  const t = autoDismissTimeouts.get(toastId);
+  if (t) clearTimeout(t);
+  autoDismissTimeouts.delete(toastId);
+}
+
+/** `open: false` 이후 퇴장 애니메이션을 보여 준 뒤 언마운트 */
+const scheduleRemoveFromDom = (toastId: string, delay = TOAST_EXIT_DURATION_MS) => {
+  clearRemoveTimeout(toastId);
   const timeout = setTimeout(() => {
-    toastTimeouts.delete(toastId);
+    removeFromDomTimeouts.delete(toastId);
     dispatch({
       type: actionTypes.REMOVE_TOAST,
       toastId,
     });
   }, delay);
+  removeFromDomTimeouts.set(toastId, timeout);
+};
 
-  toastTimeouts.set(toastId, timeout);
+/** 표시 시간이 끝나면 먼저 DISMISS(닫힘 애니메이션) → 이후 scheduleRemoveFromDom */
+const scheduleAutoDismiss = (toastId: string, delay: number) => {
+  clearAutoDismissTimeout(toastId);
+  const timeout = setTimeout(() => {
+    autoDismissTimeouts.delete(toastId);
+    dispatch({ type: actionTypes.DISMISS_TOAST, toastId });
+  }, delay);
+  autoDismissTimeouts.set(toastId, timeout);
 };
 
 export const reducer = (state: State, action: Action): State => {
@@ -91,10 +116,12 @@ export const reducer = (state: State, action: Action): State => {
       const { toastId } = action;
 
       if (toastId) {
-        addToRemoveQueue(toastId, TOAST_REMOVE_DELAY);
+        clearAutoDismissTimeout(toastId);
+        scheduleRemoveFromDom(toastId, TOAST_EXIT_DURATION_MS);
       } else {
         state.toasts.forEach((t) => {
-          addToRemoveQueue(t.id, TOAST_REMOVE_DELAY);
+          clearAutoDismissTimeout(t.id);
+          scheduleRemoveFromDom(t.id, TOAST_EXIT_DURATION_MS);
         });
       }
 
@@ -109,8 +136,12 @@ export const reducer = (state: State, action: Action): State => {
     }
     case actionTypes.REMOVE_TOAST:
       if (action.toastId === undefined) {
+        [...removeFromDomTimeouts.keys()].forEach(clearRemoveTimeout);
+        [...autoDismissTimeouts.keys()].forEach(clearAutoDismissTimeout);
         return { ...state, toasts: [] };
       }
+      clearRemoveTimeout(action.toastId);
+      clearAutoDismissTimeout(action.toastId);
       return {
         ...state,
         toasts: state.toasts.filter((t) => t.id !== action.toastId),
@@ -149,16 +180,16 @@ function toastFn({ duration, ...props }: ToastInput) {
       ...props,
       id,
       open: true,
-      duration: duration ?? TOAST_REMOVE_DELAY,
+      duration: duration ?? TOAST_DEFAULT_DURATION,
       onOpenChange: (open) => {
         if (!open) dismiss();
       },
     },
   });
 
-  const finalDuration = duration ?? TOAST_REMOVE_DELAY;
+  const finalDuration = duration ?? TOAST_DEFAULT_DURATION;
   if (finalDuration > 0) {
-    addToRemoveQueue(id, finalDuration);
+    scheduleAutoDismiss(id, finalDuration);
   }
 
   return { id, dismiss, update };

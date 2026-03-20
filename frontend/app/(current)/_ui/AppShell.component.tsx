@@ -31,12 +31,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
-      <header className="sticky top-0 z-40 border-b border-zinc-800/80 bg-zinc-950/90 backdrop-blur-md">
+    <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-zinc-950 text-zinc-100">
+      <header className="z-40 shrink-0 border-b border-zinc-800/80 bg-zinc-950/90 backdrop-blur-md">
         <div className="flex h-14 w-full items-center justify-between gap-3 px-3 sm:px-4">
           <Link
             href={`${prefix}/dashboard`}
-            className="font-semibold tracking-tight text-teal-400"
+            className="cursor-pointer font-semibold tracking-tight text-teal-400"
           >
             집비치기
           </Link>
@@ -47,7 +47,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <Link
                   key={n.path}
                   href={href}
-                  className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                  className={`cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                     pathname === href
                       ? "bg-teal-500/15 text-teal-300"
                       : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
@@ -65,14 +65,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <button
               type="button"
               onClick={handleLogout}
-              className="rounded-lg border border-zinc-700 px-2 py-1 text-xs text-zinc-300 hover:border-zinc-500"
+              className="cursor-pointer rounded-lg border border-zinc-700 px-2 py-1 text-xs text-zinc-300 hover:border-zinc-500"
             >
               로그아웃
             </button>
           </div>
         </div>
       </header>
-      <main className="w-full px-3 py-4 sm:px-4">{children}</main>
+      <main className="min-h-0 w-full flex-1 overflow-y-auto overscroll-y-contain px-3 py-4 sm:px-4 lg:overflow-hidden">
+        {children}
+      </main>
     </div>
   );
 }
