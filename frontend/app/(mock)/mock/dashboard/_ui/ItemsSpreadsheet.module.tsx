@@ -65,8 +65,12 @@ export function ItemsSpreadsheet({
                     key={it.id}
                     className="border-b border-zinc-800/80 hover:bg-zinc-900/50"
                   >
-                    <td className="px-3 py-2.5 text-zinc-300">{cols.category}</td>
-                    <td className="px-3 py-2.5 text-zinc-200">{cols.product}</td>
+                    <td className="px-3 py-2.5 text-zinc-300">
+                      {cols.category}
+                    </td>
+                    <td className="px-3 py-2.5 text-zinc-200">
+                      {cols.product}
+                    </td>
                     <td className="px-3 py-2.5 text-zinc-400">{cols.spec}</td>
                     <td className="px-3 py-2.5 text-zinc-400">{it.quantity}</td>
                     <td className="px-3 py-2.5 text-zinc-400">{it.unit}</td>

@@ -28,8 +28,7 @@ export function DashboardRoomsSection({
   if (!selected) return null;
 
   const handleAddRoom = () => {
-    const label =
-      roomDraftName.trim() || `방 ${selected.rooms.length + 1}`;
+    const label = roomDraftName.trim() || `방 ${selected.rooms.length + 1}`;
     const grid = defaultRoomGrid(selected.rooms.length);
     const room: StructureRoom = {
       id: newEntityId(),
@@ -108,7 +107,7 @@ export function DashboardRoomsSection({
                   <input
                     value={editingRoomName}
                     onChange={(e) => setEditingRoomName(e.target.value)}
-                    className="min-w-[160px] flex-1 rounded-lg border border-zinc-600 bg-zinc-950 px-2 py-1.5 text-sm text-white"
+                    className="min-w-40 flex-1 rounded-lg border border-zinc-600 bg-zinc-950 px-2 py-1.5 text-sm text-white"
                     autoFocus
                   />
                   <button
