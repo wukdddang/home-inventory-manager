@@ -38,20 +38,18 @@ const RoomNode = memo(function RoomNode({ data }: NodeProps<Node<RoomNodeData>>)
 
   return (
     <div
-      className={`flex h-full w-full flex-col overflow-hidden rounded-lg border-2 text-left ${
+      title="드래그하여 방 위치 이동 · 내부 목록은 휠로 스크롤"
+      className={`flex h-full w-full cursor-grab flex-col overflow-hidden rounded-lg border-2 text-left active:cursor-grabbing ${
         data.active
           ? "border-teal-400 bg-teal-500/20 text-teal-50"
           : "border-zinc-600 bg-zinc-800/85 text-zinc-200"
       }`}
     >
-      <div
-        className="flex min-h-9 shrink-0 cursor-grab items-center justify-center border-b border-zinc-600/40 px-1 py-1 text-center text-[11px] font-semibold leading-tight tracking-tight active:cursor-grabbing"
-        title="이 줄을 드래그하면 방을 옮길 수 있습니다"
-      >
+      <div className="flex min-h-9 shrink-0 items-center justify-center border-b border-zinc-600/40 px-1 py-1 text-center text-[11px] font-semibold leading-tight tracking-tight">
         <span className="line-clamp-2">{data.label}</span>
       </div>
       <div
-        className={`nodrag nopan nowheel min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain p-1 ${
+        className={`nopan nowheel min-h-0 flex-1 select-none overflow-y-auto overflow-x-hidden overscroll-y-contain p-1 ${
           hasInner ? "" : "flex items-center justify-center"
         }`}
       >
@@ -120,6 +118,58 @@ const RoomNode = memo(function RoomNode({ data }: NodeProps<Node<RoomNodeData>>)
 
 const nodeTypes = { room: RoomNode } satisfies NodeTypes;
 
+/** RoomNode 타이틀 줄(min-h-9·패딩)에 대응하는 대략 높이(px) */
+const DIAGRAM_ROOM_TITLE_H = 40;
+/** 본문 영역 p-1 상하 */
+const DIAGRAM_INNER_PAD_Y = 8;
+/** 가구·보관 미등록 문구 블록 */
+const DIAGRAM_EMPTY_BODY_H = 52;
+const DIAGRAM_DIRECT_LABEL_H = 14;
+const DIAGRAM_DIRECT_SLOT_ROW_H = 17;
+const DIAGRAM_BLOCK_GAP_H = 8;
+/** 가구 카드: 제목·테두리·여백 */
+const DIAGRAM_FURNITURE_CARD_BASE_H = 30;
+const DIAGRAM_FURNITURE_SLOT_ROW_H = 14;
+const DIAGRAM_FURNITURE_EMPTY_H = 20;
+
+/**
+ * 방 직속 칸·가구·슬롯 표시에 필요한 최소 높이(픽셀).
+ * 저장된 `room.height`보다 크면 노드를 키워 스크롤 부담을 줄인다.
+ */
+function estimateDiagramRoomContentHeightPx(
+  directSlots: { id: string }[],
+  furnitures: { slots: { id: string }[] }[],
+): number {
+  const hasInner =
+    directSlots.length > 0 || furnitures.length > 0;
+  let body = DIAGRAM_INNER_PAD_Y;
+  if (!hasInner) {
+    return (
+      DIAGRAM_ROOM_TITLE_H +
+      body +
+      DIAGRAM_EMPTY_BODY_H +
+      DIAGRAM_INNER_PAD_Y
+    );
+  }
+  if (directSlots.length > 0) {
+    body += DIAGRAM_DIRECT_LABEL_H;
+    body += directSlots.length * DIAGRAM_DIRECT_SLOT_ROW_H;
+  }
+  furnitures.forEach((fp, index) => {
+    if (index > 0 || directSlots.length > 0) {
+      body += DIAGRAM_BLOCK_GAP_H;
+    }
+    body += DIAGRAM_FURNITURE_CARD_BASE_H;
+    if (fp.slots.length > 0) {
+      body += fp.slots.length * DIAGRAM_FURNITURE_SLOT_ROW_H;
+    } else {
+      body += DIAGRAM_FURNITURE_EMPTY_H;
+    }
+  });
+  body += DIAGRAM_INNER_PAD_Y;
+  return DIAGRAM_ROOM_TITLE_H + body;
+}
+
 function roomsToNodes(
   household: Household,
   selectedRoomId: string | null,
@@ -153,6 +203,12 @@ function roomsToNodes(
           .map((s) => ({ id: s.id, name: s.name })),
       }));
 
+    const contentMinH = estimateDiagramRoomContentHeightPx(
+      directSlots,
+      furnitures,
+    );
+    const nodeHeight = Math.max(r.height, contentMinH);
+
     return {
       id: r.id,
       type: "room",
@@ -163,7 +219,7 @@ function roomsToNodes(
         directSlots,
         furnitures,
       },
-      style: { width: r.width, height: r.height },
+      style: { width: r.width, height: nodeHeight },
       draggable: true,
       selectable: true,
     };
@@ -246,7 +302,7 @@ function HouseStructureFlowInner({
           nodeTypes={nodeTypes}
           nodesConnectable={false}
           nodesDraggable
-          panOnDrag={false}
+          nodeDragThreshold={6}
           panOnScroll
           zoomOnScroll
           minZoom={0.35}
@@ -292,9 +348,8 @@ function HouseStructureFlowInner({
         }}
       />
       <p className="border-t border-zinc-800 px-1 py-2 text-[11px] text-zinc-500">
-        팁: 방 이름 줄을 드래그해 이동 · 클릭해 선택 · 더블클릭으로 이름 편집 ·
-        캔버스 빈 곳에서는 휠로 이동·확대 · 방 안 가구·칸 목록 위에서는 휠이
-        목록만 스크롤됩니다.
+        팁: 방 카드에서 드래그해 이동(짧은 드래그는 클릭) · 배경(격자)을
+        드래그하면 캔버스 팬 · 휠로 이동·확대 · 방 안 목록은 휠로 스크롤.
       </p>
     </>
   );

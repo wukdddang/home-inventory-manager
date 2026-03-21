@@ -6,19 +6,22 @@ import { createPortal } from "react-dom";
 
 const overlayEase = [0.4, 0, 0.2, 1] as const;
 
+/** 모달 딤·패널 입·퇴장 공통 길이(초) */
+const MOTION_MODAL_DURATION_S = 0.5;
+
 export const motionModalOverlayTransition = {
-  duration: 0.22,
+  duration: MOTION_MODAL_DURATION_S,
   ease: overlayEase,
 };
 
+/** 딤과 동일 이징으로 입장 리듬을 맞춤 */
 export const motionModalPanelOpenTransition = {
-  type: "spring" as const,
-  damping: 28,
-  stiffness: 340,
+  duration: MOTION_MODAL_DURATION_S,
+  ease: overlayEase,
 };
 
 export const motionModalPanelCloseTransition = {
-  duration: 0.2,
+  duration: MOTION_MODAL_DURATION_S,
   ease: overlayEase,
 };
 
@@ -72,10 +75,10 @@ export function MotionModalLayer({
         <>
           <motion.div
             key={`${baseKey}-overlay`}
-            className="fixed inset-0 z-10040 bg-black/60 backdrop-blur-sm"
+            className="fixed inset-0 z-10040 bg-black/60"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            exit={{ opacity: 0, transition: motionModalOverlayTransition }}
             transition={motionModalOverlayTransition}
             onPointerDown={(e) => {
               if (
@@ -94,12 +97,12 @@ export function MotionModalLayer({
             aria-labelledby={ariaLabelledBy}
             aria-describedby={ariaDescribedBy}
             className={panelClassName}
-            initial={{ opacity: 0, scale: 0.96, y: 8 }}
+            initial={{ opacity: 0, scale: 0.98, y: 4 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{
               opacity: 0,
-              scale: 0.96,
-              y: 8,
+              scale: 0.98,
+              y: 4,
               transition: motionModalPanelCloseTransition,
             }}
             transition={motionModalPanelOpenTransition}
