@@ -391,6 +391,42 @@ export function RoomItemAddWidget({
     </>
   );
 
+  const footerQtyAndSubmit = (
+    <>
+      <div
+        className={cn(
+          "w-full space-y-1",
+          embedInFloatingPanel ? "max-w-full" : "sm:max-w-48",
+        )}
+      >
+        <label
+          htmlFor={`stock-qty-${roomId}`}
+          className="text-[11px] font-medium text-zinc-500"
+        >
+          보유 수량 (선택한 Variant 기준)
+        </label>
+        <input
+          id={`stock-qty-${roomId}`}
+          type="number"
+          min={0}
+          value={stockQty}
+          onChange={(e) => setStockQty(e.target.value)}
+          className={inputClass}
+        />
+      </div>
+      <button
+        type="button"
+        onClick={handleAddItem}
+        className={cn(
+          "shrink-0 cursor-pointer rounded-xl bg-teal-500 px-5 py-2.5 text-sm font-semibold text-zinc-950 shadow-lg shadow-teal-500/15 transition hover:bg-teal-400 sm:px-6 sm:py-3",
+          embedInFloatingPanel ? "w-full" : "w-full sm:w-auto",
+        )}
+      >
+        선택한 칸에 물품 추가
+      </button>
+    </>
+  );
+
   return (
     <div
       className={cn(
@@ -412,8 +448,8 @@ export function RoomItemAddWidget({
         </header>
       ) : (
         <p className="mb-3 text-[11px] leading-snug text-zinc-500">
-          왼쪽: 보관·카테고리 — 오른쪽: 품목·용량·수량. 카탈로그는 상단 헤더에서
-          추가하거나{" "}
+          왼쪽·가운데: 보관·카테고리 / 품목·용량 — 오른쪽: 수량·추가. 카탈로그는
+          상단 헤더에서 추가하거나{" "}
           <Link
             href={`${routePrefix}/settings`}
             className="text-teal-400/90 underline-offset-2 hover:underline"
@@ -425,12 +461,15 @@ export function RoomItemAddWidget({
       )}
 
       {embedInFloatingPanel ? (
-        <div className="grid grid-cols-1 gap-3 min-[480px]:grid-cols-2 min-[480px]:gap-4">
+        <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,2fr)_minmax(0,2fr)_minmax(0,1fr)] lg:gap-4">
           <div className="min-w-0 rounded-xl border border-zinc-800/55 bg-zinc-900/30 p-3 ring-1 ring-zinc-800/40 sm:p-4">
             <ol className="list-none space-y-4 p-0">{steps12}</ol>
           </div>
           <div className="min-w-0 rounded-xl border border-zinc-800/55 bg-zinc-900/30 p-3 ring-1 ring-zinc-800/40 sm:p-4">
             <ol className="list-none space-y-4 p-0">{steps34}</ol>
+          </div>
+          <div className="flex min-h-0 min-w-0 flex-col justify-end gap-4 rounded-xl border border-teal-500/25 bg-zinc-950/50 p-3 ring-1 ring-teal-500/10 sm:p-4">
+            {footerQtyAndSubmit}
           </div>
         </div>
       ) : (
@@ -458,41 +497,15 @@ export function RoomItemAddWidget({
         </>
       )}
 
-      <footer
-        className={cn(
-          "flex flex-col gap-4 rounded-xl border border-teal-500/25 bg-zinc-950/50 p-4 ring-1 ring-teal-500/10 sm:flex-row sm:items-end sm:justify-between sm:gap-6",
-          embedInFloatingPanel ? "mt-3" : "mt-5",
-        )}
-      >
-        <div
+      {!embedInFloatingPanel ? (
+        <footer
           className={cn(
-            "w-full space-y-1",
-            embedInFloatingPanel ? "max-w-full sm:max-w-40" : "sm:max-w-48",
+            "mt-5 flex flex-col gap-4 rounded-xl border border-teal-500/25 bg-zinc-950/50 p-4 ring-1 ring-teal-500/10 sm:flex-row sm:items-end sm:justify-between sm:gap-6",
           )}
         >
-          <label
-            htmlFor={`stock-qty-${roomId}`}
-            className="text-[11px] font-medium text-zinc-500"
-          >
-            보유 수량 (선택한 Variant 기준)
-          </label>
-          <input
-            id={`stock-qty-${roomId}`}
-            type="number"
-            min={0}
-            value={stockQty}
-            onChange={(e) => setStockQty(e.target.value)}
-            className={inputClass}
-          />
-        </div>
-        <button
-          type="button"
-          onClick={handleAddItem}
-          className="w-full shrink-0 cursor-pointer rounded-xl bg-teal-500 px-5 py-2.5 text-sm font-semibold text-zinc-950 shadow-lg shadow-teal-500/15 transition hover:bg-teal-400 sm:w-auto sm:px-6 sm:py-3"
-        >
-          선택한 칸에 물품 추가
-        </button>
-      </footer>
+          {footerQtyAndSubmit}
+        </footer>
+      ) : null}
     </div>
   );
 }

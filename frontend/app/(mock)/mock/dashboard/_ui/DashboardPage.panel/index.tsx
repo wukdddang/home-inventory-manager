@@ -130,8 +130,8 @@ export function DashboardPanel() {
         데스크톱(lg+): 좌·우 컬럼 각각 세로 스크롤 (뷰포트 높이 고정)
         모바일: 1열, 문서 스크롤
       */}
-      <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,32rem)_minmax(0,1fr)] lg:gap-6 lg:overflow-hidden xl:grid-cols-[minmax(0,36rem)_minmax(0,1fr)]">
-        <div className="min-h-0 min-w-0 overflow-y-auto overscroll-y-contain lg:pr-1">
+      <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,32rem)_minmax(0,1fr)] lg:gap-x-0 lg:overflow-hidden xl:grid-cols-[minmax(0,36rem)_minmax(0,1fr)]">
+        <div className="min-h-0 min-w-0 overflow-y-auto overscroll-y-contain">
           <div className="grid min-w-0 grid-cols-1 gap-6 pb-1">
             <DashboardHouseholdsSection
               selectedHouseholdId={viewingHouseholdId}
@@ -150,7 +150,7 @@ export function DashboardPanel() {
             />
           </div>
         </div>
-        <div className="min-h-0 min-w-0 overflow-y-auto overscroll-y-contain lg:pl-1">
+        <div className="min-h-0 min-w-0 overflow-y-auto overscroll-y-contain lg:px-6">
           <div className="grid min-w-0 grid-cols-1 gap-6 pb-1">
             <DashboardInventorySection
               selected={selected}

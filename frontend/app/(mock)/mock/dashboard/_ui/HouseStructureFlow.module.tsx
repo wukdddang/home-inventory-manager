@@ -44,11 +44,14 @@ const RoomNode = memo(function RoomNode({ data }: NodeProps<Node<RoomNodeData>>)
           : "border-zinc-600 bg-zinc-800/85 text-zinc-200"
       }`}
     >
-      <div className="shrink-0 border-b border-zinc-600/40 px-1 py-0.5 text-center text-[11px] font-semibold leading-tight tracking-tight">
+      <div
+        className="flex min-h-9 shrink-0 cursor-grab items-center justify-center border-b border-zinc-600/40 px-1 py-1 text-center text-[11px] font-semibold leading-tight tracking-tight active:cursor-grabbing"
+        title="이 줄을 드래그하면 방을 옮길 수 있습니다"
+      >
         <span className="line-clamp-2">{data.label}</span>
       </div>
       <div
-        className={`nodrag nopan min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-1 ${
+        className={`nodrag nopan nowheel min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain p-1 ${
           hasInner ? "" : "flex items-center justify-center"
         }`}
       >
@@ -242,6 +245,8 @@ function HouseStructureFlowInner({
           onNodeDoubleClick={onNodeDoubleClick}
           nodeTypes={nodeTypes}
           nodesConnectable={false}
+          nodesDraggable
+          panOnDrag={false}
           panOnScroll
           zoomOnScroll
           minZoom={0.35}
@@ -287,9 +292,9 @@ function HouseStructureFlowInner({
         }}
       />
       <p className="border-t border-zinc-800 px-1 py-2 text-[11px] text-zinc-500">
-        팁: 드래그로 방 이동 · 클릭해 선택 · 더블클릭으로 방 이름 편집 · 각 방
-        안에 방 직속 보관 칸·가구·가구 아래 칸이 표시됩니다(내부는 스크롤,
-        방은 제목 줄에서 드래그).
+        팁: 방 이름 줄을 드래그해 이동 · 클릭해 선택 · 더블클릭으로 이름 편집 ·
+        캔버스 빈 곳에서는 휠로 이동·확대 · 방 안 가구·칸 목록 위에서는 휠이
+        목록만 스크롤됩니다.
       </p>
     </>
   );

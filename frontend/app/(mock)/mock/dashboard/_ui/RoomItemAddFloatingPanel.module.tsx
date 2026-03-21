@@ -40,12 +40,12 @@ export function RoomItemAddPanel({
     <div
       id={anchorId}
       className={cn(
-        "scroll-mt-4 flex min-w-0 flex-col overflow-hidden rounded-xl bg-zinc-950/90",
+        "scroll-mt-4 flex min-w-0 flex-col rounded-xl bg-zinc-950/90",
       )}
       aria-label={`${room?.name ?? "방"}에 물품 추가`}
     >
       {expanded ? (
-        <div className="flex min-h-0 min-w-0 flex-col">
+        <div className="flex min-w-0 flex-col">
           <div className="flex min-w-0 shrink-0 flex-nowrap items-center gap-2 overflow-x-auto border-b border-zinc-800/90 px-2 py-2.5 sm:gap-3 sm:px-3">
             <div className="flex min-w-0 max-w-[min(100%,12rem)] shrink items-center gap-2 sm:max-w-xs md:max-w-sm sm:gap-2.5">
               <span className="shrink-0 text-sm font-semibold text-teal-400">
@@ -58,37 +58,39 @@ export function RoomItemAddPanel({
                 {room?.name ?? "방"}
               </span>
             </div>
-            {catalogHydrated ? (
-              <div
-                className="min-w-0 shrink-0"
-                aria-label="카탈로그 빠른 추가"
-              >
-                <CatalogModalsControls
-                  catalog={productCatalog}
-                  onCatalogUpdate={카탈로그를_갱신_한다}
-                  layout="panel"
-                  buttonRowClassName="flex-nowrap items-center gap-2"
-                />
+            <div className="ml-auto flex min-w-0 shrink-0 flex-nowrap items-center gap-2 sm:gap-2.5">
+              {catalogHydrated ? (
+                <div
+                  className="shrink-0"
+                  aria-label="카탈로그 빠른 추가"
+                >
+                  <CatalogModalsControls
+                    catalog={productCatalog}
+                    onCatalogUpdate={카탈로그를_갱신_한다}
+                    layout="panel"
+                    buttonRowClassName="flex-nowrap items-center gap-2"
+                  />
+                </div>
+              ) : null}
+              <div className="flex shrink-0 items-center gap-2 border-l border-zinc-800/70 pl-2 sm:gap-2.5 sm:pl-3">
+                <button
+                  type="button"
+                  onClick={() => onExpandedChange(false)}
+                  className="cursor-pointer rounded-lg border border-zinc-600 px-2 py-1 text-[11px] font-medium whitespace-nowrap text-zinc-300 hover:bg-zinc-800 sm:px-2.5"
+                >
+                  접기
+                </button>
+                <button
+                  type="button"
+                  onClick={onDismissRoom}
+                  className="cursor-pointer text-[11px] whitespace-nowrap text-zinc-500 underline-offset-2 hover:text-zinc-300 hover:underline"
+                >
+                  방 선택 해제
+                </button>
               </div>
-            ) : null}
-            <div className="ml-auto flex shrink-0 items-center gap-2 border-l border-zinc-800/70 pl-2 sm:gap-2.5 sm:pl-3">
-              <button
-                type="button"
-                onClick={() => onExpandedChange(false)}
-                className="cursor-pointer rounded-lg border border-zinc-600 px-2 py-1 text-[11px] font-medium whitespace-nowrap text-zinc-300 hover:bg-zinc-800 sm:px-2.5"
-              >
-                접기
-              </button>
-              <button
-                type="button"
-                onClick={onDismissRoom}
-                className="cursor-pointer text-[11px] whitespace-nowrap text-zinc-500 underline-offset-2 hover:text-zinc-300 hover:underline"
-              >
-                방 선택 해제
-              </button>
             </div>
           </div>
-          <div className="max-h-[min(62vh,37.5rem)] min-h-0 overflow-y-auto overscroll-y-contain px-3 py-3">
+          <div className="px-3 py-3">
             <RoomItemAddWidget
               embedInFloatingPanel
               selected={selected}
