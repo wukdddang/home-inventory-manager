@@ -441,10 +441,7 @@ export function RoomItemAddWidget({
   return (
     <div
       className={cn(
-        "shrink-0",
-        embedInFloatingPanel
-          ? "rounded-xl border border-zinc-800/90 bg-zinc-950/50 p-3 ring-1 ring-zinc-800/60 sm:p-4"
-          : "rounded-2xl border border-teal-500/20 bg-linear-to-b from-teal-500/[0.07] to-zinc-950/40 p-4 ring-1 ring-teal-500/10 sm:p-5",
+        "shrink-0"
       )}
     >
       {!embedInFloatingPanel ? (
