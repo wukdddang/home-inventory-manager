@@ -6,7 +6,6 @@ import { DashboardHouseholdsSection } from "../DashboardHouseholds.section";
 import { DashboardInventorySection } from "../DashboardInventory.section";
 import { DashboardPlacementsSection } from "../DashboardPlacements.section";
 import { DashboardRoomsSection } from "../DashboardRooms.section";
-import { CatalogModalsControls } from "@/app/(current)/dashboard/_ui/CatalogModals.controls";
 import type { ViewMode } from "../ViewModeToggle.module";
 
 const ITEM_ADD_PANEL_ANCHOR_ID = "dashboard-item-add-panel";
@@ -18,9 +17,6 @@ export function DashboardPanel() {
     loading,
     error,
     거점을_삭제_한다,
-    productCatalog,
-    카탈로그를_갱신_한다,
-    catalogHydrated,
   } = useDashboard();
   const [selectedHouseholdId, setSelectedHouseholdId] = useState<string | null>(
     null,
@@ -104,26 +100,6 @@ export function DashboardPanel() {
             {" "}
             — 인메모리 시드만 사용합니다. 실제 저장소·백엔드와 연결되지 않습니다.
           </span>
-        </div>
-      ) : null}
-      {catalogHydrated ? (
-        <div
-          className="shrink-0 rounded-xl border border-zinc-800 bg-zinc-900/50 px-4 py-3 ring-1 ring-zinc-800/80"
-          role="region"
-          aria-label="공통 상품 카탈로그 빠른 편집"
-        >
-          <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-zinc-500">
-            공통 상품 카탈로그
-          </p>
-          <p className="mb-3 text-xs text-zinc-600">
-            모든 거점이 같은 목록을 씁니다. 설정 화면에서도 동일하게 편집할 수
-            있습니다.
-          </p>
-          <CatalogModalsControls
-            catalog={productCatalog}
-            onCatalogUpdate={카탈로그를_갱신_한다}
-            layout="toolbar"
-          />
         </div>
       ) : null}
       {/*

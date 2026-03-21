@@ -3,7 +3,10 @@
 import { CatalogModalsControls } from "@/app/(current)/dashboard/_ui/CatalogModals.controls";
 import { cn } from "@/lib/utils";
 import type { Household } from "@/types/domain";
-import { RoomItemAddWidget } from "./DashboardItemForm.section";
+import {
+  ItemAddPanelHeaderCatalogHint,
+  RoomItemAddWidget,
+} from "./DashboardItemForm.section";
 import { useDashboard } from "../_hooks/useDashboard";
 
 export type RoomItemAddPanelProps = {
@@ -47,16 +50,17 @@ export function RoomItemAddPanel({
       {expanded ? (
         <div className="flex min-w-0 flex-col">
           <div className="flex min-w-0 shrink-0 flex-nowrap items-center gap-2 overflow-x-auto border-b border-zinc-800/90 px-2 py-2.5 sm:gap-3 sm:px-3">
-            <div className="flex min-w-0 max-w-[min(100%,12rem)] shrink items-center gap-2 sm:max-w-xs md:max-w-sm sm:gap-2.5">
+            <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 gap-y-1 pr-1">
               <span className="shrink-0 text-sm font-semibold text-teal-400">
                 물품 추가
               </span>
               <span
-                className="min-w-0 flex-1 truncate text-sm font-semibold text-zinc-100"
+                className="max-w-[min(100%,10rem)] shrink-0 truncate text-sm font-semibold text-zinc-100 sm:max-w-[14rem]"
                 title={room?.name ?? "방"}
               >
                 {room?.name ?? "방"}
               </span>
+              <ItemAddPanelHeaderCatalogHint />
             </div>
             <div className="ml-auto flex min-w-0 shrink-0 flex-nowrap items-center gap-2 sm:gap-2.5">
               {catalogHydrated ? (

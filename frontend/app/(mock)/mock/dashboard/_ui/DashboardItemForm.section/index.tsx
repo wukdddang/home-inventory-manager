@@ -67,16 +67,11 @@ function StepShell({
   );
 }
 
-function CatalogHintLink({ embedInFloatingPanel = false }: { embedInFloatingPanel?: boolean }) {
+function CatalogHintLink() {
   const prefix = useAppRoutePrefix();
   return (
     <p className="text-[11px] leading-snug text-zinc-600">
-      목록에 없으면{" "}
-      {embedInFloatingPanel ? (
-        <>패널 헤더의 추가 버튼·</>
-      ) : (
-        <>위 버튼·대시보드 상단「공통 상품 카탈로그」·</>
-      )}
+      목록에 없으면 위쪽 카탈로그 추가 버튼·
       <Link
         href={`${prefix}/settings`}
         className="font-medium text-teal-400/90 underline-offset-2 hover:underline"
@@ -85,6 +80,23 @@ function CatalogHintLink({ embedInFloatingPanel = false }: { embedInFloatingPane
       </Link>
       에서 모달로 추가하세요.
     </p>
+  );
+}
+
+/** 물품 추가 패널 헤더 — 제목 옆 인라인 안내 */
+export function ItemAddPanelHeaderCatalogHint() {
+  const prefix = useAppRoutePrefix();
+  return (
+    <span className="min-w-0 max-w-full text-[11px] leading-snug text-zinc-500">
+      목록에 없으면 추가 버튼 또는{" "}
+      <Link
+        href={`${prefix}/settings`}
+        className="font-medium whitespace-nowrap text-teal-400/90 underline-offset-2 hover:underline"
+      >
+        설정 → 상품 카탈로그
+      </Link>
+      에서 모달로 추가하세요.
+    </span>
   );
 }
 
@@ -100,7 +112,6 @@ export function RoomItemAddWidget({
     카탈로그를_갱신_한다,
     catalogHydrated,
   } = useDashboard();
-  const routePrefix = useAppRoutePrefix();
 
   const [pickedStorageId, setPickedStorageId] = useState("");
   const [categoryId, setCategoryId] = useState("");
@@ -295,7 +306,7 @@ export function RoomItemAddWidget({
         {categories.length === 0 ? (
           <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200/90">
             등록된 카테고리가 없습니다.
-            <CatalogHintLink embedInFloatingPanel={embedInFloatingPanel} />
+            {!embedInFloatingPanel ? <CatalogHintLink /> : null}
           </p>
         ) : (
           <>
@@ -315,7 +326,7 @@ export function RoomItemAddWidget({
                 </option>
               ))}
             </select>
-            <CatalogHintLink embedInFloatingPanel={embedInFloatingPanel} />
+            {!embedInFloatingPanel ? <CatalogHintLink /> : null}
           </>
         )}
       </StepShell>
@@ -353,7 +364,7 @@ export function RoomItemAddWidget({
             ))
           )}
         </select>
-        <CatalogHintLink embedInFloatingPanel={embedInFloatingPanel} />
+        {!embedInFloatingPanel ? <CatalogHintLink /> : null}
       </StepShell>
 
       <StepShell
@@ -386,7 +397,7 @@ export function RoomItemAddWidget({
             })
           )}
         </select>
-        <CatalogHintLink embedInFloatingPanel={embedInFloatingPanel} />
+        {!embedInFloatingPanel ? <CatalogHintLink /> : null}
       </StepShell>
     </>
   );
@@ -442,21 +453,13 @@ export function RoomItemAddWidget({
             물품 등록 · {room.name}
           </h2>
           <p className="mt-1 max-w-prose text-xs leading-relaxed text-zinc-500">
-            보관 칸을 고른 뒤 카탈로그에서 품목을 고릅니다. 아래 버튼·대시보드
-            상단·설정에서 카테고리·품목·용량(Variant)을 모달로 추가할 수 있습니다.
+            보관 칸을 고른 뒤 카탈로그에서 품목을 고릅니다. 아래 카탈로그 추가
+            영역·설정에서 카테고리·품목·용량(Variant)을 모달로 추가할 수 있습니다.
           </p>
         </header>
       ) : (
         <p className="mb-3 text-[11px] leading-snug text-zinc-500">
-          왼쪽·가운데: 보관·카테고리 / 품목·용량 — 오른쪽: 수량·추가. 카탈로그는
-          상단 헤더에서 추가하거나{" "}
-          <Link
-            href={`${routePrefix}/settings`}
-            className="text-teal-400/90 underline-offset-2 hover:underline"
-          >
-            설정
-          </Link>
-          을 이용하세요.
+          왼쪽·가운데: 보관·카테고리 / 품목·용량 — 오른쪽: 수량·추가.
         </p>
       )}
 
