@@ -2,6 +2,7 @@
 
 import { FormModal } from "@/app/_ui/form-modal";
 import { newEntityId } from "@/app/(mock)/mock/dashboard/_lib/dashboard-helpers";
+import { MAX_CATALOG_IMAGE_BYTES, readImageFileAsDataUrl } from "@/lib/image-upload";
 import { toast } from "@/hooks/use-toast";
 import type {
   CatalogProduct,
@@ -37,7 +38,7 @@ export type CatalogModalsControlsProps = {
 };
 
 /**
- * 카테고리·품목·Variant 추가 모달 묶음 (`/dashboard`, `/mock/dashboard`, 설정 공통).
+ * 카테고리·품목·용량·포장 추가 모달 묶음 (`/dashboard`, `/mock/dashboard`, 설정 공통).
  */
 export function CatalogModalsControls({
   catalog,
@@ -52,6 +53,8 @@ export function CatalogModalsControls({
   const [prodCategoryId, setProdCategoryId] = useState("");
   const [prodName, setProdName] = useState("");
   const [prodConsumable, setProdConsumable] = useState(true);
+  const [prodDescription, setProdDescription] = useState("");
+  const [prodImageUrl, setProdImageUrl] = useState<string | null>(null);
 
   const [varOpen, setVarOpen] = useState(false);
   const [varCategoryId, setVarCategoryId] = useState("");
@@ -107,6 +110,11 @@ export function CatalogModalsControls({
     return catalog.variants.filter((v) => v.productId === varProductIdResolved);
   }, [catalog.variants, varProductIdResolved]);
 
+  const varSelectedProduct = useMemo(
+    () => catalog.products.find((p) => p.id === varProductIdResolved),
+    [catalog.products, varProductIdResolved],
+  );
+
   const updateCatalog = useCallback(
     (fn: (c: ProductCatalog) => ProductCatalog) => {
       onCatalogUpdate(fn);
@@ -143,17 +151,22 @@ export function CatalogModalsControls({
       return;
     }
     const id = newEntityId();
+    const desc = prodDescription.trim();
     const p: CatalogProduct = {
       id,
       categoryId: categoryIdForProd,
       name,
       isConsumable: prodConsumable,
+      ...(desc ? { description: desc } : {}),
+      ...(prodImageUrl ? { imageUrl: prodImageUrl } : {}),
     };
     updateCatalog((c) => ({
       ...c,
       products: [...c.products, p],
     }));
     setProdName("");
+    setProdDescription("");
+    setProdImageUrl(null);
     setProdOpen(false);
     toast({ title: "품목 추가됨", description: name });
   };
@@ -176,6 +189,12 @@ export function CatalogModalsControls({
     const unit = catalog.units.find((u) => u.id === varUnitIdResolved);
     const label =
       varLabel.trim() || (unit ? `${q}${unit.symbol}` : String(q));
+    const productForToast = catalog.products.find(
+      (p) => p.id === varProductIdResolved,
+    );
+    const toastDesc = productForToast
+      ? `${productForToast.name} › ${label}`
+      : label;
     const v: CatalogProductVariant = {
       id,
       productId: varProductIdResolved,
@@ -191,7 +210,7 @@ export function CatalogModalsControls({
     setVarLabel("");
     setVarQtyPer("500");
     setVarOpen(false);
-    toast({ title: "용량·포장 단위 추가됨", description: label });
+    toast({ title: "용량·포장 추가됨", description: toastDesc });
   };
 
   const buttonRowClass = cn(
@@ -222,6 +241,8 @@ export function CatalogModalsControls({
           onClick={() => {
             setProdCategoryId(categories[0]?.id ?? "");
             setProdName("");
+            setProdDescription("");
+            setProdImageUrl(null);
             setProdConsumable(true);
             setProdOpen(true);
           }}
@@ -242,14 +263,14 @@ export function CatalogModalsControls({
           }}
           disabled={categories.length === 0 || units.length === 0}
         >
-          용량·포장(Variant) 추가
+          용량·포장 추가
         </button>
       </div>
 
       {layout === "settings" ? (
         <p className="mt-4 text-[11px] text-zinc-600">
           현재 카테고리 {catalog.categories.length}개 · 품목{" "}
-          {catalog.products.length}개 · Variant {catalog.variants.length}개
+          {catalog.products.length}개 · 용량·포장 {catalog.variants.length}개
         </p>
       ) : null}
 
@@ -277,7 +298,7 @@ export function CatalogModalsControls({
         open={prodOpen}
         onOpenChange={setProdOpen}
         title="품목 추가"
-        description="선택한 카테고리 아래에 상품 마스터를 만듭니다."
+        description="같은 카테고리 안에서도 품목을 나눠 등록합니다. 예: 신라면·열라면처럼 이름을 구체적으로 쓰고, 포장 사진을 올리면 목록에서 더 쉽게 구분할 수 있습니다."
         submitLabel="추가"
         onSubmit={handleSubmitProduct}
         submitDisabled={!prodName.trim() || !categoryIdForProd}
@@ -306,9 +327,63 @@ export function CatalogModalsControls({
             <input
               value={prodName}
               onChange={(e) => setProdName(e.target.value)}
-              placeholder="예: 라면"
+              placeholder="예: 신라면, 열라면 (품목마다 따로 등록)"
               className={`${inputClass} mt-1`}
             />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-zinc-500">
+              설명 (선택)
+            </label>
+            <textarea
+              value={prodDescription}
+              onChange={(e) => setProdDescription(e.target.value)}
+              placeholder="브랜드·메모 등"
+              rows={2}
+              className={`${inputClass} mt-1 resize-y`}
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-zinc-500">
+              사진 (선택)
+            </label>
+            <input
+              type="file"
+              accept="image/*"
+              className={`${inputClass} mt-1 cursor-pointer text-xs file:mr-2 file:cursor-pointer file:rounded-lg file:border-0 file:bg-zinc-800 file:px-2 file:py-1 file:text-teal-200`}
+              onChange={async (e) => {
+                const f = e.target.files?.[0];
+                e.target.value = "";
+                if (!f) return;
+                const r = await readImageFileAsDataUrl(f, MAX_CATALOG_IMAGE_BYTES);
+                if (!r.ok) {
+                  toast({
+                    title: "이미지를 넣을 수 없습니다",
+                    description: r.reason,
+                    variant: "warning",
+                  });
+                  return;
+                }
+                setProdImageUrl(r.dataUrl);
+              }}
+            />
+            {prodImageUrl ? (
+              <div className="mt-2 flex items-start gap-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={prodImageUrl}
+                  alt=""
+                  className="h-16 w-16 rounded-lg border border-zinc-700 object-cover"
+                />
+                <button
+                  type="button"
+                  className="text-xs text-rose-400 hover:underline"
+                  onClick={() => setProdImageUrl(null)}
+                >
+                  사진 제거
+                </button>
+              </div>
+            ) : null}
           </div>
           <label className="flex cursor-pointer items-center gap-2 text-sm text-zinc-300">
             <input
@@ -325,8 +400,8 @@ export function CatalogModalsControls({
       <FormModal
         open={varOpen}
         onOpenChange={setVarOpen}
-        title="용량·포장(Variant) 추가"
-        description="품목별 단위·용량(예: 500ml, 1팩 5개입)을 등록합니다."
+        title="용량·포장 추가"
+        description="선택한 품목에 단위·용량(예: 500ml, 1팩 5개입)을 붙입니다."
         submitLabel="추가"
         onSubmit={handleSubmitVariant}
         submitDisabled={
@@ -375,6 +450,30 @@ export function CatalogModalsControls({
               )}
             </select>
           </div>
+          {varSelectedProduct ? (
+            <div className="flex items-center gap-3 rounded-xl border border-zinc-800 bg-zinc-950/70 p-3">
+              {varSelectedProduct.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={varSelectedProduct.imageUrl}
+                  alt=""
+                  className="size-12 shrink-0 rounded-lg border border-zinc-700 object-cover"
+                />
+              ) : (
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-lg border border-dashed border-zinc-700 bg-zinc-900 text-[10px] text-zinc-600">
+                  사진 없음
+                </div>
+              )}
+              <div className="min-w-0">
+                <p className="text-[11px] font-medium text-zinc-500">
+                  적용할 품목
+                </p>
+                <p className="truncate text-sm font-semibold text-zinc-100">
+                  {varSelectedProduct.name}
+                </p>
+              </div>
+            </div>
+          ) : null}
           <div>
             <label className="text-xs font-medium text-zinc-500">단위</label>
             <select

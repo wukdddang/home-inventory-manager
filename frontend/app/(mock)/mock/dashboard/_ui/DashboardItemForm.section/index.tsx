@@ -228,6 +228,11 @@ export function RoomItemAddWidget({
     return productsInCategory[0]?.id ?? "";
   }, [productId, productsInCategory]);
 
+  const selectedProduct = useMemo(() => {
+    if (!catalog || !productIdResolved) return null;
+    return catalog.products.find((p) => p.id === productIdResolved) ?? null;
+  }, [catalog, productIdResolved]);
+
   const variantsInProduct = useMemo(() => {
     if (!catalog || !productIdResolved) return [];
     return catalog.variants.filter((v) => v.productId === productIdResolved);
@@ -408,7 +413,7 @@ export function RoomItemAddWidget({
       <StepShell
         step={3}
         title="품목"
-        subtitle="선택한 카테고리 안의 품목을 고릅니다."
+        subtitle="같은 종류라도 품목을 나눠 등록합니다.「품목 추가」에서 신라면·열라면처럼 이름을 구분하고 사진을 넣으면 목록에서 헷갈리지 않습니다."
         compact={embedInFloatingPanel}
         listItemClassName={
           embedInFloatingPanel ? "break-inside-avoid pb-1" : undefined
@@ -435,6 +440,20 @@ export function RoomItemAddWidget({
             ))
           )}
         </select>
+        {selectedProduct?.imageUrl ? (
+          <div className="mt-2 flex items-center gap-2 rounded-lg border border-zinc-800/80 bg-zinc-950/50 p-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={selectedProduct.imageUrl}
+              alt=""
+              className="size-11 shrink-0 rounded-md border border-zinc-700 object-cover"
+            />
+            <p className="text-[11px] leading-snug text-zinc-500">
+              품목에 등록된 사진입니다. 구분은「품목 추가」에서 이름·사진으로
+              관리합니다.
+            </p>
+          </div>
+        ) : null}
         {!embedInFloatingPanel ? <CatalogHintLink /> : null}
       </StepShell>
 
