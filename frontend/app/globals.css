@@ -22,6 +22,34 @@
   }
 }
 
+@keyframes app-loading-bar-indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(350%);
+  }
+}
+
+.app-loading-bar-indeterminate-fill {
+  animation: app-loading-bar-indeterminate 1.15s cubic-bezier(0.4, 0, 0.2, 1)
+    infinite;
+  will-change: transform;
+}
+
+/* AnimatePresence 퇴장 시: 무한 transform 애니메이션 중지 + 고정 위치(부모 페이드만) */
+.app-loading-bar-indeterminate-fill-idle {
+  animation: none;
+  transform: translateX(40%);
+  will-change: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-loading-bar-indeterminate-fill {
+    animation-duration: 2.4s;
+  }
+}
+
 /* 얇은 스크롤바 (Chromium / Safari / Firefox thin) — 앱 전역 통일 */
 :root {
   --app-scrollbar-size: 6px;

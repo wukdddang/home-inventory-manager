@@ -1,5 +1,6 @@
 "use client";
 
+import { AppLoadingState } from "@/app/_ui/app-loading-state";
 import { useDashboard } from "../../../dashboard/_hooks/useDashboard";
 import { CatalogModalsControls } from "@/app/(current)/dashboard/_ui/CatalogModals.controls";
 
@@ -27,7 +28,11 @@ export function CatalogSettingsSection() {
     return (
       <section className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
         <h2 className="text-base font-semibold text-white">상품 카탈로그</h2>
-        <p className="mt-2 text-sm text-zinc-500">카탈로그를 불러오는 중…</p>
+        <AppLoadingState
+          layout="embedded"
+          message="카탈로그를 불러오는 중…"
+          className="mt-2"
+        />
       </section>
     );
   }

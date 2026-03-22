@@ -12,7 +12,9 @@ export default function SettingsPage() {
   return (
     <DashboardProvider dataMode={dataMode}>
       <SettingsProvider>
-        <SettingsPanel />
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <SettingsPanel />
+        </div>
       </SettingsProvider>
     </DashboardProvider>
   );
