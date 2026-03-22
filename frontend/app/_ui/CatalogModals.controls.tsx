@@ -10,8 +10,28 @@ import type {
   ProductCatalog,
 } from "@/types/domain";
 import { FolderTree, Package, PackagePlus } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
+
+const catalogModalBodyEase = [0.4, 0, 0.2, 1] as const;
+
+/** FormModal 내부 필드 — 외곽 MotionModalLayer와 겹치지 않게 짧게 뒤따라 올라옴 */
+function CatalogModalFormBody({ children }: { children: ReactNode }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        duration: 0.28,
+        delay: 0.04,
+        ease: catalogModalBodyEase,
+      }}
+    >
+      {children}
+    </motion.div>
+  );
+}
 
 const inputClass =
   "w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/30";
@@ -289,15 +309,17 @@ export function CatalogModalsControls({
         onSubmit={handleSubmitCategory}
         submitDisabled={!catName.trim()}
       >
-        <label className="block text-xs font-medium text-zinc-500">
-          이름
-        </label>
-        <input
-          value={catName}
-          onChange={(e) => setCatName(e.target.value)}
-          placeholder="예: 식료품"
-          className={`${inputClass} mt-1`}
-        />
+        <CatalogModalFormBody>
+          <label className="block text-xs font-medium text-zinc-500">
+            이름
+          </label>
+          <input
+            value={catName}
+            onChange={(e) => setCatName(e.target.value)}
+            placeholder="예: 식료품"
+            className={`${inputClass} mt-1`}
+          />
+        </CatalogModalFormBody>
       </FormModal>
 
       <FormModal
@@ -309,7 +331,8 @@ export function CatalogModalsControls({
         onSubmit={handleSubmitProduct}
         submitDisabled={!prodName.trim() || !categoryIdForProd}
       >
-        <div className="space-y-3">
+        <CatalogModalFormBody>
+          <div className="space-y-3">
           <div>
             <label className="text-xs font-medium text-zinc-500">
               카테고리
@@ -400,7 +423,8 @@ export function CatalogModalsControls({
             />
             소비형 품목
           </label>
-        </div>
+          </div>
+        </CatalogModalFormBody>
       </FormModal>
 
       <FormModal
@@ -417,7 +441,8 @@ export function CatalogModalsControls({
           Number(varQtyPer) <= 0
         }
       >
-        <div className="space-y-3">
+        <CatalogModalFormBody>
+          <div className="space-y-3">
           <div>
             <label className="text-xs font-medium text-zinc-500">
               카테고리
@@ -519,7 +544,8 @@ export function CatalogModalsControls({
               className={`${inputClass} mt-1`}
             />
           </div>
-        </div>
+          </div>
+        </CatalogModalFormBody>
       </FormModal>
     </>
   );

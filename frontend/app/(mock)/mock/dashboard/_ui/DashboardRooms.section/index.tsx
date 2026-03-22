@@ -3,6 +3,7 @@
 import { AlertModal } from "@/app/_ui/alert-modal";
 import { MotionModalLayer } from "@/app/_ui/motion-modal-layer";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 import type { Household, StorageLocationRow, StructureRoom } from "@/types/domain";
 import { useEffect, useId, useState, type MouseEvent } from "react";
 import { useDashboard } from "../../_hooks/useDashboard";
@@ -216,20 +217,28 @@ export function DashboardRoomsSection({
               return (
                 <div
                   key={r.id}
-                  className={cn(
-                    "flex shrink-0 items-center rounded-lg",
-                    isSelected
-                      ? "bg-teal-500/15 ring-1 ring-teal-500/50"
-                      : "bg-transparent",
-                  )}
+                  className="relative flex shrink-0 items-center overflow-hidden rounded-lg"
                 >
+                  {isSelected ? (
+                    <motion.div
+                      layoutId="dashboard-rooms-tab-selection"
+                      className="pointer-events-none absolute inset-0 z-0 rounded-lg bg-teal-500/15 ring-1 ring-teal-500/50"
+                      initial={false}
+                      transition={{
+                        type: "spring",
+                        stiffness: 520,
+                        damping: 38,
+                        mass: 0.85,
+                      }}
+                    />
+                  ) : null}
                   <button
                     type="button"
                     role="tab"
                     aria-selected={isSelected}
                     onClick={() => onRoomSelect(r.id)}
                     className={cn(
-                      "cursor-pointer px-3 py-2 text-left text-sm font-medium transition-colors",
+                      "relative z-10 cursor-pointer px-3 py-2 text-left text-sm font-medium transition-colors",
                       isSelected
                         ? "text-teal-100"
                         : "text-zinc-300 hover:text-white",
@@ -240,7 +249,7 @@ export function DashboardRoomsSection({
                   <button
                     type="button"
                     onClick={(e) => openEditModal(r.id, e)}
-                    className="cursor-pointer rounded-md p-2 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-teal-300"
+                    className="relative z-10 cursor-pointer rounded-md p-2 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-teal-300"
                     aria-label={`${r.name} 이름 수정`}
                   >
                     <PencilIcon />
@@ -251,7 +260,7 @@ export function DashboardRoomsSection({
                       e.stopPropagation();
                       setPendingDeleteRoomId(r.id);
                     }}
-                    className="cursor-pointer rounded-md p-2 text-zinc-500 transition-colors hover:bg-rose-500/15 hover:text-rose-300"
+                    className="relative z-10 cursor-pointer rounded-md p-2 text-zinc-500 transition-colors hover:bg-rose-500/15 hover:text-rose-300"
                     aria-label={`${r.name} 삭제`}
                   >
                     <TrashIcon />

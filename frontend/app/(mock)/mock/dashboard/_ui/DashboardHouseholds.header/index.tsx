@@ -7,6 +7,7 @@ import {
   sortHouseholdKindDefinitions,
 } from "@/lib/household-kind-defaults";
 import { cn } from "@/lib/utils";
+import { motion } from "framer-motion";
 import { useEffect, useId, useState } from "react";
 import { useDashboard } from "../../_hooks/useDashboard";
 import { HouseholdKindsManageModal } from "../HouseholdKindsManage.modal";
@@ -148,20 +149,28 @@ export function DashboardHouseholdsHeader({
               return (
                 <div
                   key={h.id}
-                  className={cn(
-                    "flex shrink-0 items-center rounded-lg",
-                    selected
-                      ? "bg-teal-500/15 ring-1 ring-teal-500/50"
-                      : "bg-transparent",
-                  )}
+                  className="relative flex shrink-0 items-center overflow-hidden rounded-lg"
                 >
+                  {selected ? (
+                    <motion.div
+                      layoutId="dashboard-households-tab-selection"
+                      className="pointer-events-none absolute inset-0 z-0 rounded-lg bg-teal-500/15 ring-1 ring-teal-500/50"
+                      initial={false}
+                      transition={{
+                        type: "spring",
+                        stiffness: 520,
+                        damping: 38,
+                        mass: 0.85,
+                      }}
+                    />
+                  ) : null}
                   <button
                     type="button"
                     role="tab"
                     aria-selected={selected}
                     onClick={() => onSelectHousehold(h.id)}
                     className={cn(
-                      "cursor-pointer px-3 py-2 text-left text-sm font-medium transition-colors",
+                      "relative z-10 cursor-pointer px-3 py-2 text-left text-sm font-medium transition-colors",
                       selected ? "text-teal-100" : "text-zinc-300 hover:text-white",
                     )}
                   >
@@ -181,7 +190,7 @@ export function DashboardHouseholdsHeader({
                       e.stopPropagation();
                       setPendingDeleteHouseholdId(h.id);
                     }}
-                    className="cursor-pointer rounded-md p-2 text-zinc-500 transition-colors hover:bg-rose-500/15 hover:text-rose-300"
+                    className="relative z-10 cursor-pointer rounded-md p-2 text-zinc-500 transition-colors hover:bg-rose-500/15 hover:text-rose-300"
                     aria-label={`${h.name} 삭제`}
                   >
                     <TrashIcon />
