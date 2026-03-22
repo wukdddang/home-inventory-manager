@@ -7,7 +7,10 @@ import type {
   AuthUser,
   Household,
   HouseholdKindDefinition,
+  InventoryLedgerRow,
   ProductCatalog,
+  PurchaseBatchLot,
+  PurchaseRecord,
 } from "@/types/domain";
 import {
   DEFAULT_NOTIFICATION_DETAIL,
@@ -33,6 +36,63 @@ const K_HOUSEHOLDS = "him-households";
 const K_CATALOG = "him-product-catalog";
 const K_HOUSEHOLD_KINDS = "him-household-kinds";
 const K_SETTINGS = "him-settings";
+const K_PURCHASES = "him-purchases";
+const K_INVENTORY_LEDGER = "him-inventory-ledger";
+
+function isLedgerTypeString(x: string): x is InventoryLedgerRow["type"] {
+  return x === "in" || x === "out" || x === "adjust" || x === "waste";
+}
+
+function isInventoryLedgerRowShape(x: unknown): x is InventoryLedgerRow {
+  if (!x || typeof x !== "object") return false;
+  const o = x as Record<string, unknown>;
+  return (
+    typeof o.id === "string" &&
+    typeof o.householdId === "string" &&
+    typeof o.inventoryItemId === "string" &&
+    typeof o.type === "string" &&
+    isLedgerTypeString(o.type) &&
+    typeof o.quantityDelta === "number" &&
+    Number.isFinite(o.quantityDelta) &&
+    typeof o.quantityAfter === "number" &&
+    Number.isFinite(o.quantityAfter) &&
+    typeof o.createdAt === "string"
+  );
+}
+
+function isPurchaseBatchLotShape(x: unknown): x is PurchaseBatchLot {
+  if (!x || typeof x !== "object") return false;
+  const o = x as Record<string, unknown>;
+  return (
+    typeof o.id === "string" &&
+    typeof o.quantity === "number" &&
+    Number.isFinite(o.quantity) &&
+    o.quantity > 0 &&
+    typeof o.expiresOn === "string" &&
+    o.expiresOn.length >= 8
+  );
+}
+
+function isPurchaseRecordShape(x: unknown): x is PurchaseRecord {
+  if (!x || typeof x !== "object") return false;
+  const o = x as Record<string, unknown>;
+  if (
+    typeof o.id !== "string" ||
+    typeof o.householdId !== "string" ||
+    typeof o.itemName !== "string" ||
+    typeof o.purchasedOn !== "string" ||
+    typeof o.unitPrice !== "number" ||
+    !Number.isFinite(o.unitPrice) ||
+    typeof o.totalPrice !== "number" ||
+    !Number.isFinite(o.totalPrice) ||
+    typeof o.unitSymbol !== "string" ||
+    !Array.isArray(o.batches) ||
+    o.batches.length === 0
+  ) {
+    return false;
+  }
+  return o.batches.every(isPurchaseBatchLotShape);
+}
 
 function isHouseholdKindDefinitionsShape(
   x: unknown,
@@ -62,8 +122,9 @@ function isProductCatalogShape(x: unknown): x is ProductCatalog {
 function householdWithoutLegacyCatalog(
   h: Household & { catalog?: unknown },
 ): Household {
-  const { catalog: _, ...rest } = h;
-  return rest;
+  const rest = { ...h };
+  delete (rest as { catalog?: unknown }).catalog;
+  return rest as Household;
 }
 
 /**
@@ -273,10 +334,22 @@ export function getHouseholds(): Household[] {
   return list.map(householdWithoutLegacyCatalog);
 }
 
+const householdListeners = new Set<() => void>();
+
+export function subscribeHouseholds(onStoreChange: () => void) {
+  householdListeners.add(onStoreChange);
+  return () => householdListeners.delete(onStoreChange);
+}
+
+function emitHouseholds() {
+  householdListeners.forEach((fn) => fn());
+}
+
 export function setHouseholds(list: Household[]) {
   if (typeof window === "undefined") return;
   const stripped = list.map((h) => householdWithoutLegacyCatalog(h));
   localStorage.setItem(K_HOUSEHOLDS, JSON.stringify(stripped));
+  emitHouseholds();
 }
 
 export function getAppSettings(): AppSettings {
@@ -291,6 +364,123 @@ export function getAppSettings(): AppSettings {
 export function setAppSettings(s: AppSettings) {
   if (typeof window === "undefined") return;
   localStorage.setItem(K_SETTINGS, JSON.stringify(s));
+}
+
+let purchasesCache: {
+  raw: string | null | undefined;
+  list: PurchaseRecord[];
+} = { raw: undefined, list: [] };
+
+const purchaseListeners = new Set<() => void>();
+
+export function subscribePurchases(onStoreChange: () => void) {
+  purchaseListeners.add(onStoreChange);
+  return () => purchaseListeners.delete(onStoreChange);
+}
+
+function emitPurchases() {
+  purchaseListeners.forEach((fn) => fn());
+}
+
+/** 구매·유통기한 로트 화면용 (거점별 `householdId` 필터는 UI에서 처리) */
+export function getPurchases(): PurchaseRecord[] {
+  if (typeof window === "undefined") return [];
+  const raw = localStorage.getItem(K_PURCHASES);
+  if (purchasesCache.raw === raw) return purchasesCache.list;
+  const parsed = safeParse<unknown[]>(raw, []);
+  const list = Array.isArray(parsed)
+    ? parsed.filter(isPurchaseRecordShape)
+    : [];
+  purchasesCache = { raw, list };
+  return list;
+}
+
+export function setPurchases(list: PurchaseRecord[]) {
+  if (typeof window === "undefined") return;
+  const str = JSON.stringify(list);
+  localStorage.setItem(K_PURCHASES, str);
+  purchasesCache = { raw: str, list };
+  emitPurchases();
+}
+
+let ledgerCache: {
+  raw: string | null | undefined;
+  list: InventoryLedgerRow[];
+} = { raw: undefined, list: [] };
+
+const inventoryLedgerListeners = new Set<() => void>();
+
+export function subscribeInventoryLedger(onStoreChange: () => void) {
+  inventoryLedgerListeners.add(onStoreChange);
+  return () => inventoryLedgerListeners.delete(onStoreChange);
+}
+
+function emitInventoryLedger() {
+  inventoryLedgerListeners.forEach((fn) => fn());
+}
+
+/** 재고 소비·폐기 등 이력 (`him-inventory-ledger`) */
+export function getInventoryLedger(): InventoryLedgerRow[] {
+  if (typeof window === "undefined") return [];
+  const raw = localStorage.getItem(K_INVENTORY_LEDGER);
+  if (ledgerCache.raw === raw) return ledgerCache.list;
+  const parsed = safeParse<unknown[]>(raw, []);
+  const list = Array.isArray(parsed)
+    ? parsed.filter(isInventoryLedgerRowShape)
+    : [];
+  ledgerCache = { raw, list };
+  return list;
+}
+
+export function setInventoryLedger(list: InventoryLedgerRow[]) {
+  if (typeof window === "undefined") return;
+  const str = JSON.stringify(list);
+  localStorage.setItem(K_INVENTORY_LEDGER, str);
+  ledgerCache = { raw: str, list };
+  emitInventoryLedger();
+}
+
+export function appendInventoryLedgerRow(row: InventoryLedgerRow) {
+  setInventoryLedger([...getInventoryLedger(), row]);
+}
+
+/** 재고 이력 화면용 — 거점·구매·이력 중 하나라도 바뀌면 알림 */
+export function subscribeInventoryHistoryBundle(onStoreChange: () => void) {
+  const u1 = subscribeInventoryLedger(onStoreChange);
+  const u2 = subscribePurchases(onStoreChange);
+  const u3 = subscribeHouseholds(onStoreChange);
+  return () => {
+    u1();
+    u2();
+    u3();
+  };
+}
+
+let historyBundleCache: {
+  key: string;
+  data: {
+    ledger: InventoryLedgerRow[];
+    households: Household[];
+    purchases: PurchaseRecord[];
+  };
+} | null = null;
+
+export function getInventoryHistoryBundleSnapshot(): {
+  ledger: InventoryLedgerRow[];
+  households: Household[];
+  purchases: PurchaseRecord[];
+} {
+  if (typeof window === "undefined") {
+    return { ledger: [], households: [], purchases: [] };
+  }
+  const ledger = getInventoryLedger();
+  const households = getHouseholds();
+  const purchases = getPurchases();
+  const key = `${JSON.stringify(ledger)}|${JSON.stringify(households)}|${JSON.stringify(purchases)}`;
+  if (historyBundleCache?.key === key) return historyBundleCache.data;
+  const data = { ledger, households, purchases };
+  historyBundleCache = { key, data };
+  return data;
 }
 
 export { DEFAULTS as DEFAULT_APP_SETTINGS };

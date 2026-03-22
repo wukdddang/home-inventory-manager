@@ -5,7 +5,8 @@ import type { DashboardHouseholdsPort } from "./dashboard-households.port";
 /** 네트워크 지연을 흉내 낸다 (Route Handler 연동 시 제거·단축 가능) */
 const MOCK_LATENCY_MS = 200;
 
-const MOCK_SEED_HOUSEHOLDS: Household[] = [
+/** 대시보드 mock·구매·로트 mock 등에서 동일 거점 스냅샷으로 재사용 */
+export const MOCK_SEED_HOUSEHOLDS: Household[] = [
   {
     id: "mock-household-home",
     name: "우리 집",

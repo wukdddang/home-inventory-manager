@@ -1,17 +1,25 @@
 "use client";
 
-import { useMemo } from "react";
+import { toast } from "@/hooks/use-toast";
+import { resolveItemRoomId } from "@/lib/household-location";
+import { getPurchases, subscribePurchases } from "@/lib/local-store";
+import { useAppRoutePrefix } from "@/lib/use-app-route-prefix";
+import type { Household, InventoryRow } from "@/types/domain";
+import Link from "next/link";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import { useDashboard } from "../../_hooks/useDashboard";
 import {
   HouseStructureFlow,
   type StructureDiagramCommitPayload,
 } from "./HouseStructureFlow.module";
+import {
+  InventoryConsumeWasteModal,
+  type InventoryConsumeWasteMode,
+} from "./InventoryConsumeWaste.module";
 import { ItemsSpreadsheet } from "./ItemsSpreadsheet.module";
 import { RoomItemsPanel } from "./RoomItemsPanel.module";
-import { ViewModeToggle, type ViewMode } from "./ViewModeToggle.module";
-import { resolveItemRoomId } from "@/lib/household-location";
-import type { Household } from "@/types/domain";
 import { RoomItemAddPanel } from "./RoomItemAddFloatingPanel.module";
+import { ViewModeToggle, type ViewMode } from "./ViewModeToggle.module";
 
 export type { ViewMode } from "./ViewModeToggle.module";
 
@@ -36,7 +44,23 @@ export function DashboardInventorySection({
   onItemAddPanelExpandedChange,
   itemAddPanelAnchorId,
 }: DashboardInventorySectionProps) {
-  const { 거점을_갱신_한다, productCatalog } = useDashboard();
+  const prefix = useAppRoutePrefix();
+  const {
+    거점을_갱신_한다,
+    productCatalog,
+    재고_소비를_기록_한다,
+    재고_폐기를_기록_한다,
+  } = useDashboard();
+
+  const purchases = useSyncExternalStore(
+    subscribePurchases,
+    () => getPurchases(),
+    () => [],
+  );
+
+  const [cwOpen, setCwOpen] = useState(false);
+  const [cwItem, setCwItem] = useState<InventoryRow | null>(null);
+  const [cwMode, setCwMode] = useState<InventoryConsumeWasteMode>("consume");
 
   const roomItems = useMemo(() => {
     if (!selected || !selectedRoomId) return [];
@@ -89,6 +113,66 @@ export function DashboardInventorySection({
     }));
   };
 
+  const handleOpenConsume = (it: InventoryRow) => {
+    setCwItem(it);
+    setCwMode("consume");
+    setCwOpen(true);
+  };
+
+  const handleOpenWaste = (it: InventoryRow) => {
+    setCwItem(it);
+    setCwMode("waste");
+    setCwOpen(true);
+  };
+
+  const handleCwConfirm = (
+    quantity: number,
+    memo: string,
+    wasteReason?: string,
+  ) => {
+    if (!selected || !cwItem) return;
+    if (cwMode === "consume") {
+      const ok = 재고_소비를_기록_한다(
+        selected.id,
+        cwItem.id,
+        quantity,
+        memo,
+      );
+      if (ok) {
+        toast({
+          title: "소비를 기록했습니다",
+          description: `${cwItem.name} −${quantity}${cwItem.unit}`,
+        });
+      } else {
+        toast({
+          title: "기록할 수 없습니다",
+          description: "보유 수량을 확인하세요.",
+          variant: "warning",
+        });
+      }
+      return;
+    }
+    const ok = 재고_폐기를_기록_한다(
+      selected.id,
+      cwItem.id,
+      quantity,
+      wasteReason ?? "other",
+      memo,
+    );
+    if (ok) {
+      toast({
+        title: "폐기를 기록했습니다",
+        description: `${cwItem.name} −${quantity}${cwItem.unit}`,
+      });
+    } else {
+      toast({
+        title: "기록할 수 없습니다",
+        description: "보유 수량을 확인하세요.",
+        variant: "warning",
+      });
+    }
+  };
+
   const noRoomHint = (
     <p className="shrink-0 rounded-xl border border-dashed border-zinc-700 bg-zinc-950/50 px-4 py-3 text-center text-sm text-zinc-500">
       {viewMode === "structure" ? (
@@ -112,8 +196,14 @@ export function DashboardInventorySection({
           <h2 className="text-base font-semibold text-white">조회 모드</h2>
           <p className="mt-1 text-sm text-zinc-500">
             구조도에서 방·직속·가구 블록을 드래그해 배치하거나, 표로 전환해 물품을
-            확인합니다.
+            확인합니다. 구매와 연결된 품목은 로트·임박이 표시됩니다.
           </p>
+          <Link
+            href={`${prefix}/inventory-history`}
+            className="mt-2 inline-block text-xs font-medium text-teal-400/90 hover:underline"
+          >
+            재고 이력 타임라인 보기 →
+          </Link>
         </div>
         <ViewModeToggle
           viewMode={viewMode}
@@ -138,6 +228,9 @@ export function DashboardInventorySection({
                 household={selected}
                 selectedRoomId={selectedRoomId}
                 roomItems={roomItems}
+                purchases={purchases}
+                on소비하려고_연다={handleOpenConsume}
+                on폐기하려고_연다={handleOpenWaste}
               />
             </div>
           </div>
@@ -149,7 +242,10 @@ export function DashboardInventorySection({
             <ItemsSpreadsheet
               household={selected}
               catalog={productCatalog}
+              purchases={purchases}
               onDeleteItem={handleDeleteItem}
+              on소비하려고_연다={handleOpenConsume}
+              on폐기하려고_연다={handleOpenWaste}
               onSelectRoomId={(id) => onRoomSelect(id)}
             />
           </div>
@@ -169,6 +265,16 @@ export function DashboardInventorySection({
           />
         </div>
       ) : null}
+
+      <InventoryConsumeWasteModal
+        key={`${cwItem?.id ?? "none"}-${cwMode}`}
+        open={cwOpen}
+        onOpenChange={setCwOpen}
+        mode={cwMode}
+        item={cwItem}
+        maxQuantity={cwItem?.quantity ?? 0}
+        on확인한다={handleCwConfirm}
+      />
     </div>
   );
 }

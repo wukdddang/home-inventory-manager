@@ -1,0 +1,97 @@
+import type { PurchaseRecord } from "@/types/domain";
+
+function 날짜에_일수를_더한다(base: Date, days: number): Date {
+  const d = new Date(base);
+  d.setDate(d.getDate() + days);
+  return d;
+}
+
+function 날짜를_YMD_문자열로_한다(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+/**
+ * `/mock/purchases`에서 `him-purchases`가 비었을 때만 쓰는 예시 구매·로트.
+ * 호출 시점의 «오늘» 기준으로 만료·임박·여유 뱃지가 보이도록 날짜를 잡는다.
+ */
+export function mock구매_시드를_생성한다(): PurchaseRecord[] {
+  const now = new Date();
+  return [
+    {
+      id: "mock-purchase-milk-1",
+      householdId: "mock-household-home",
+      inventoryItemId: "mock-item-milk-shelf",
+      productId: "p-milk",
+      productVariantId: "v-milk-500",
+      itemName: "식료품 › 우유 › 500ml",
+      variantCaption: "500ml",
+      unitSymbol: "병",
+      purchasedOn: 날짜를_YMD_문자열로_한다(날짜에_일수를_더한다(now, -5)),
+      unitPrice: 2800,
+      totalPrice: 5600,
+      supplierName: "이마트",
+      batches: [
+        {
+          id: "mock-lot-milk-a",
+          quantity: 1,
+          expiresOn: 날짜를_YMD_문자열로_한다(날짜에_일수를_더한다(now, -2)),
+        },
+        {
+          id: "mock-lot-milk-b",
+          quantity: 1,
+          expiresOn: 날짜를_YMD_문자열로_한다(날짜에_일수를_더한다(now, 3)),
+        },
+      ],
+    },
+    {
+      id: "mock-purchase-ramen-1",
+      householdId: "mock-household-home",
+      inventoryItemId: "mock-item-ramen",
+      productId: "p-ramen",
+      productVariantId: "v-ramen-1",
+      itemName: "식료품 › 라면 › 1봉",
+      variantCaption: "1봉",
+      unitSymbol: "개",
+      purchasedOn: 날짜를_YMD_문자열로_한다(날짜에_일수를_더한다(now, -12)),
+      unitPrice: 900,
+      totalPrice: 10800,
+      supplierName: "쿠팡",
+      batches: [
+        {
+          id: "mock-lot-ramen-a",
+          quantity: 12,
+          expiresOn: 날짜를_YMD_문자열로_한다(날짜에_일수를_더한다(now, 200)),
+        },
+      ],
+    },
+    {
+      id: "mock-purchase-paper-1",
+      householdId: "mock-household-office",
+      inventoryItemId: "mock-item-paper",
+      productId: "p-a4",
+      productVariantId: "v-a4-ream",
+      itemName: "사무용품 › A4 용지 › 1권",
+      variantCaption: "1권",
+      unitSymbol: "권",
+      purchasedOn: 날짜를_YMD_문자열로_한다(날짜에_일수를_더한다(now, -35)),
+      unitPrice: 12000,
+      totalPrice: 60000,
+      supplierName: "오피스디포",
+      batches: [
+        {
+          id: "mock-lot-paper-a",
+          quantity: 2,
+          expiresOn: 날짜를_YMD_문자열로_한다(now),
+        },
+        {
+          id: "mock-lot-paper-b",
+          quantity: 3,
+          expiresOn: 날짜를_YMD_문자열로_한다(날짜에_일수를_더한다(now, 400)),
+        },
+      ],
+    },
+  ];
+}

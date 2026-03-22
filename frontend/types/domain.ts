@@ -116,6 +116,63 @@ export type InventoryRow = {
 };
 
 /**
+ * ERD PurchaseBatch — 같은 유통기한을 공유하는 로트(클라이언트·로컬 저장용).
+ */
+export type PurchaseBatchLot = {
+  id: string;
+  /** 이 로트 수량(재고 Variant 단위와 동일하게 해석) */
+  quantity: number;
+  /** 유통기한 YYYY-MM-DD */
+  expiresOn: string;
+};
+
+/**
+ * ERD Purchase — 구매 1건과 그에 딸린 로트 목록(클라이언트·로컬 저장용).
+ */
+export type PurchaseRecord = {
+  id: string;
+  householdId: string;
+  /** 연결 재고 행 — 없으면 수동 입력 품목만 */
+  inventoryItemId?: string;
+  productId?: string;
+  productVariantId?: string;
+  /** 목록·모달 표시용 */
+  itemName: string;
+  variantCaption?: string;
+  unitSymbol: string;
+  /** 구매일 YYYY-MM-DD */
+  purchasedOn: string;
+  unitPrice: number;
+  totalPrice: number;
+  supplierName?: string;
+  batches: PurchaseBatchLot[];
+};
+
+/** 논리 설계 §15 InventoryLog.type */
+export type InventoryLedgerType = "in" | "out" | "adjust" | "waste";
+
+/**
+ * 재고 변경 이력(클라이언트·로컬 `him-inventory-ledger`).
+ * ERD InventoryLog + 폐기 시 reason 등 UI 필드.
+ */
+export type InventoryLedgerRow = {
+  id: string;
+  householdId: string;
+  inventoryItemId: string;
+  type: InventoryLedgerType;
+  quantityDelta: number;
+  quantityAfter: number;
+  /** 기록 시점 표시명(품목 삭제 후에도 이력 식별) */
+  itemLabel?: string;
+  memo?: string;
+  refType?: string;
+  refId?: string;
+  /** 폐기 사유 코드·자유 입력 */
+  reason?: string;
+  createdAt: string;
+};
+
+/**
  * 구조도 캔버스에서 옮긴 노드 좌표.
  * 키: `slot:{storageLocationId}`(방 직속 칸) · `fp:{furniturePlacementId}`(가구)
  */

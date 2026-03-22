@@ -1,11 +1,12 @@
 "use client";
 
 import { AlertModal } from "@/app/_ui/alert-modal";
+import { FormModal } from "@/app/_ui/form-modal";
 import { toast } from "@/hooks/use-toast";
 import { getHouseholdKindLabel } from "@/lib/household-kind-defaults";
 import { cn } from "@/lib/utils";
 import type { GroupMember, Household } from "@/types/domain";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useDashboard } from "../../../dashboard/_hooks/useDashboard";
 
 function newMemberId() {
@@ -144,6 +145,7 @@ export function HouseholdMembershipSettingsSection() {
   const [rolePickerMemberId, setRolePickerMemberId] = useState<string | null>(
     null,
   );
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
 
   const selectedId = useMemo(() => {
     if (households.length === 0) return null;
@@ -168,8 +170,13 @@ export function HouseholdMembershipSettingsSection() {
     );
   }, [pendingRemoveMemberId, selected]);
 
-  const handleAddMember = (e: FormEvent) => {
-    e.preventDefault();
+  const resetInviteFields = () => {
+    setInviteEmail("");
+    setInviteLabel("");
+    setInviteRole("member");
+  };
+
+  const handleInviteModalSubmit = () => {
     if (!selected) return;
     const email = inviteEmail.trim().toLowerCase();
     if (!email) {
@@ -202,9 +209,8 @@ export function HouseholdMembershipSettingsSection() {
       ...h,
       members: next,
     }));
-    setInviteEmail("");
-    setInviteLabel("");
-    setInviteRole("member");
+    resetInviteFields();
+    setInviteModalOpen(false);
     toast({
       title: "멤버를 추가했습니다",
       description: `${selected.name} · (로컬 데모)`,
@@ -323,14 +329,42 @@ export function HouseholdMembershipSettingsSection() {
         </select>
       </div>
 
-      <form
-        onSubmit={handleAddMember}
-        className="mt-5 flex flex-col gap-3 rounded-xl border border-zinc-800/90 bg-zinc-950/40 p-4"
+      <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-xs text-zinc-500">
+          멤버 초대·역할 지정은 모달에서 진행합니다.
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            resetInviteFields();
+            setInviteModalOpen(true);
+          }}
+          className="shrink-0 cursor-pointer rounded-xl bg-teal-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-teal-400"
+        >
+          멤버 추가…
+        </button>
+      </div>
+
+      <FormModal
+        open={inviteModalOpen}
+        onOpenChange={(open) => {
+          setInviteModalOpen(open);
+          if (!open) resetInviteFields();
+        }}
+        title="멤버 추가"
+        description={
+          selected
+            ? `대상 거점: ${selected.name} (${getHouseholdKindLabel(selected.kind, householdKindDefinitions)}) · 데모에서는 로컬에만 반영됩니다.`
+            : ""
+        }
+        submitLabel="추가"
+        cancelLabel="취소"
+        onSubmit={handleInviteModalSubmit}
+        submitDisabled={!inviteEmail.trim()}
       >
-        <p className="text-xs font-medium text-zinc-400">멤버 초대 (데모)</p>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
-          <div className="min-w-0 flex-1 space-y-1">
-            <label className="text-xs text-zinc-500">이메일</label>
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <label className="text-xs text-zinc-400">이메일</label>
             <input
               type="email"
               value={inviteEmail}
@@ -339,8 +373,8 @@ export function HouseholdMembershipSettingsSection() {
               placeholder="member@example.com"
             />
           </div>
-          <div className="min-w-0 flex-1 space-y-1">
-            <label className="text-xs text-zinc-500">표시 이름 (선택)</label>
+          <div className="space-y-1">
+            <label className="text-xs text-zinc-400">표시 이름 (선택)</label>
             <input
               value={inviteLabel}
               onChange={(e) => setInviteLabel(e.target.value)}
@@ -348,8 +382,8 @@ export function HouseholdMembershipSettingsSection() {
               placeholder="엄마, 동료…"
             />
           </div>
-          <div className="w-full space-y-1 sm:w-36">
-            <label className="text-xs text-zinc-500">역할</label>
+          <div className="space-y-1">
+            <label className="text-xs text-zinc-400">역할</label>
             <select
               value={inviteRole}
               onChange={(e) =>
@@ -361,14 +395,8 @@ export function HouseholdMembershipSettingsSection() {
               <option value="owner">소유자</option>
             </select>
           </div>
-          <button
-            type="submit"
-            className="w-full shrink-0 cursor-pointer rounded-xl bg-teal-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-teal-400 sm:w-auto"
-          >
-            추가
-          </button>
         </div>
-      </form>
+      </FormModal>
 
       <ul className="mt-4 divide-y divide-zinc-800 rounded-xl border border-zinc-800">
         {members.length === 0 ? (

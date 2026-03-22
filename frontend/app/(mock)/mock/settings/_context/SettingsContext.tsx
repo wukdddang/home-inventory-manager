@@ -1,5 +1,6 @@
 "use client";
 
+import { APP_PAGE_MIN_LOADING_MS } from "@/app/_ui/app-loading-state";
 import {
   createContext,
   useCallback,
@@ -68,9 +69,48 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
     }
   }, []);
 
+  /** 최초 마운트만 최소 로딩 시간을 두어 대시보드와 같이 progress 막대가 보이게 함 */
   useEffect(() => {
-    설정을_불러온다();
-  }, [설정을_불러온다]);
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    const t0 =
+      typeof performance !== "undefined" ? performance.now() : Date.now();
+
+    void (async () => {
+      try {
+        const s = getAppSettings();
+        const elapsed =
+          (typeof performance !== "undefined" ? performance.now() : Date.now()) -
+          t0;
+        const rest = Math.max(0, APP_PAGE_MIN_LOADING_MS - elapsed);
+        if (rest > 0) {
+          await new Promise((r) => setTimeout(r, rest));
+        }
+        if (cancelled) return;
+        setSettings(s);
+      } catch (err) {
+        console.error("설정 로드 오류:", err);
+        if (!cancelled) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "설정을 불러오는 중 오류가 발생했습니다.",
+          );
+          setSettings(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+          setHydrated(true);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!hydrated || !settings) return;

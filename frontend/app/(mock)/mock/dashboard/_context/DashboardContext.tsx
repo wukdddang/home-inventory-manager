@@ -16,6 +16,7 @@ import {
   sortHouseholdKindDefinitions,
 } from "@/lib/household-kind-defaults";
 import {
+  appendInventoryLedgerRow,
   getSharedHouseholdKindDefinitions,
   getSharedProductCatalog,
   setSharedHouseholdKindDefinitions,
@@ -82,6 +83,21 @@ export type DashboardContextType = {
   카탈로그를_갱신_한다: (
     updater: (c: ProductCatalog) => ProductCatalog,
   ) => void;
+  /** 소비(사용) — 수량 감소 + `him-inventory-ledger` type `out` */
+  재고_소비를_기록_한다: (
+    householdId: string,
+    itemId: string,
+    quantity: number,
+    memo?: string,
+  ) => boolean;
+  /** 폐기 — 수량 감소 + `him-inventory-ledger` type `waste` */
+  재고_폐기를_기록_한다: (
+    householdId: string,
+    itemId: string,
+    quantity: number,
+    reasonCode: string,
+    memo?: string,
+  ) => boolean;
 };
 
 export type DashboardProviderProps = {
@@ -122,6 +138,11 @@ export function DashboardProvider({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hydrated, setHydrated] = useState(false);
+  const householdsRef = useRef(households);
+
+  useLayoutEffect(() => {
+    householdsRef.current = households;
+  }, [households]);
 
   useEffect(() => {
     setProductCatalog(getSharedProductCatalog());
@@ -236,6 +257,75 @@ export function DashboardProvider({
     [],
   );
 
+  const 재고_소비를_기록_한다 = useCallback(
+    (householdId: string, itemId: string, quantity: number, memo?: string) => {
+      if (!Number.isFinite(quantity) || quantity < 1) return false;
+      const h = householdsRef.current.find((x) => x.id === householdId);
+      if (!h) return false;
+      const it = h.items.find((i) => i.id === itemId);
+      if (!it || it.quantity < quantity) return false;
+      const nextQty = it.quantity - quantity;
+      const trimmed = memo?.trim();
+      appendInventoryLedgerRow({
+        id: crypto.randomUUID(),
+        householdId,
+        inventoryItemId: itemId,
+        type: "out",
+        quantityDelta: -quantity,
+        quantityAfter: nextQty,
+        itemLabel: it.name,
+        memo: trimmed || undefined,
+        createdAt: new Date().toISOString(),
+      });
+      거점을_갱신_한다(householdId, (prev) => ({
+        ...prev,
+        items: prev.items.map((row) =>
+          row.id === itemId ? { ...row, quantity: nextQty } : row,
+        ),
+      }));
+      return true;
+    },
+    [거점을_갱신_한다],
+  );
+
+  const 재고_폐기를_기록_한다 = useCallback(
+    (
+      householdId: string,
+      itemId: string,
+      quantity: number,
+      reasonCode: string,
+      memo?: string,
+    ) => {
+      if (!Number.isFinite(quantity) || quantity < 1) return false;
+      const h = householdsRef.current.find((x) => x.id === householdId);
+      if (!h) return false;
+      const it = h.items.find((i) => i.id === itemId);
+      if (!it || it.quantity < quantity) return false;
+      const nextQty = it.quantity - quantity;
+      const trimmed = memo?.trim();
+      appendInventoryLedgerRow({
+        id: crypto.randomUUID(),
+        householdId,
+        inventoryItemId: itemId,
+        type: "waste",
+        quantityDelta: -quantity,
+        quantityAfter: nextQty,
+        itemLabel: it.name,
+        reason: reasonCode,
+        memo: trimmed || undefined,
+        createdAt: new Date().toISOString(),
+      });
+      거점을_갱신_한다(householdId, (prev) => ({
+        ...prev,
+        items: prev.items.map((row) =>
+          row.id === itemId ? { ...row, quantity: nextQty } : row,
+        ),
+      }));
+      return true;
+    },
+    [거점을_갱신_한다],
+  );
+
   const 카탈로그를_갱신_한다 = useCallback(
     (updater: (c: ProductCatalog) => ProductCatalog) => {
       setProductCatalog((c) => updater(structuredClone(c)));
@@ -259,6 +349,8 @@ export function DashboardProvider({
       거점을_갱신_한다,
       거점_유형_정의를_교체_한다,
       카탈로그를_갱신_한다,
+      재고_소비를_기록_한다,
+      재고_폐기를_기록_한다,
     }),
     [
       dataMode,
@@ -275,6 +367,8 @@ export function DashboardProvider({
       거점을_갱신_한다,
       거점_유형_정의를_교체_한다,
       카탈로그를_갱신_한다,
+      재고_소비를_기록_한다,
+      재고_폐기를_기록_한다,
     ],
   );
 

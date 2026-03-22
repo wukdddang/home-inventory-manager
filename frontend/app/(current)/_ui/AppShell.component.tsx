@@ -12,6 +12,8 @@ import { useSyncExternalStore } from "react";
 
 const navPaths = [
   { path: "/dashboard", label: "메인" },
+  { path: "/purchases", label: "구매·로트" },
+  { path: "/inventory-history", label: "재고 이력" },
   { path: "/settings", label: "설정" },
 ] as const;
 

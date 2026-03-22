@@ -13,7 +13,7 @@ import {
 } from "@/lib/local-store";
 import type { AuthUser } from "@/types/domain";
 import { usePathname } from "next/navigation";
-import { FormEvent, useState, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore } from "react";
 
 const inputClass =
   "w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/30";
@@ -28,6 +28,7 @@ function AccountSecuritySettingsBody({
   persistUser: (next: AuthUser) => void;
 }) {
   const [displayName, setDisplayName] = useState(user?.displayName ?? "");
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [passwordModalOpen, setPasswordModalOpen] = useState(false);
   const [pwCurrent, setPwCurrent] = useState("");
   const [pwNew, setPwNew] = useState("");
@@ -41,8 +42,16 @@ function AccountSecuritySettingsBody({
     setPwMsg("");
   };
 
-  const handleProfileSubmit = (e: FormEvent) => {
-    e.preventDefault();
+  const openProfileModal = () => {
+    setDisplayName(user?.displayName ?? "");
+    setProfileModalOpen(true);
+  };
+
+  const resetProfileModalFields = () => {
+    setDisplayName(user?.displayName ?? "");
+  };
+
+  const handleProfileModalSubmit = () => {
     if (!user) {
       toast({
         title: "로그인이 필요합니다",
@@ -63,6 +72,7 @@ function AccountSecuritySettingsBody({
         ? "목 계정 · him-mock-settings-account"
         : "him-user (로컬)",
     });
+    setProfileModalOpen(false);
   };
 
   const handleSendVerification = () => {
@@ -131,19 +141,61 @@ function AccountSecuritySettingsBody({
       </p>
 
       <div className="mt-6 border-t border-zinc-800/80 pt-6">
-        <h3 className="text-sm font-medium text-zinc-200">계정 정보</h3>
+        <h3 className="text-sm font-medium text-zinc-200">계정 · 프로필</h3>
+        <p className="mt-1 text-xs text-zinc-500">
+          이메일·표시 이름·인증은 모달에서 관리합니다.
+        </p>
         {!user ? (
           <p className="mt-2 text-sm text-zinc-500">
-            로그인한 사용자만 프로필을 편집할 수 있습니다.{" "}
+            로그인한 사용자만 편집할 수 있습니다.{" "}
             <span className="text-zinc-600">
-              실제 경로(`/settings`)에서는 로그인 후 이용하세요.
+              `/settings`에서는 로그인 후 이용하세요.
             </span>
           </p>
         ) : (
-          <form
-            onSubmit={handleProfileSubmit}
-            className="mt-3 max-w-md space-y-3"
-          >
+          <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+              <span className="truncate font-medium text-zinc-200">
+                {user.email}
+              </span>
+              <span className="text-zinc-600">·</span>
+              <span className="truncate text-zinc-400">{user.displayName}</span>
+              <span
+                className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                  verified
+                    ? "bg-teal-500/20 text-teal-200"
+                    : "bg-amber-500/15 text-amber-200/90"
+                }`}
+              >
+                {verified ? "인증됨" : "미인증"}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={openProfileModal}
+              className="shrink-0 cursor-pointer rounded-xl border border-zinc-600 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800"
+            >
+              계정·프로필 관리…
+            </button>
+          </div>
+        )}
+      </div>
+
+      <FormModal
+        open={profileModalOpen}
+        onOpenChange={(open) => {
+          setProfileModalOpen(open);
+          if (!open) resetProfileModalFields();
+        }}
+        title="계정 · 프로필 관리"
+        description="표시 이름을 저장하고, 이메일 인증 관련 동작을 연습할 수 있습니다."
+        submitLabel="프로필 저장"
+        cancelLabel="닫기"
+        onSubmit={handleProfileModalSubmit}
+        submitDisabled={!user || !displayName.trim()}
+      >
+        {user ? (
+          <div className="space-y-5">
             <div className="space-y-1">
               <label className="text-xs text-zinc-400">이메일 (로그인 ID)</label>
               <input
@@ -166,51 +218,42 @@ function AccountSecuritySettingsBody({
                 placeholder="홍길동"
               />
             </div>
-            <button
-              type="submit"
-              className="cursor-pointer rounded-xl bg-teal-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-teal-400"
-            >
-              프로필 저장
-            </button>
-          </form>
-        )}
-      </div>
-
-      <div className="mt-6 border-t border-zinc-800/80 pt-6">
-        <h3 className="text-sm font-medium text-zinc-200">이메일 인증</h3>
-        <p className="mt-1 text-xs text-zinc-500">
-          가입 후 인증 링크 클릭 등 백엔드 플로우와 맞출 수 있는 자리입니다.
-        </p>
-        <div className="mt-3 flex flex-wrap items-center gap-2">
-          <span
-            className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-              verified
-                ? "bg-teal-500/20 text-teal-200"
-                : "bg-amber-500/15 text-amber-200/90"
-            }`}
-          >
-            {verified ? "인증됨" : "미인증"}
-          </span>
-          <button
-            type="button"
-            onClick={handleSendVerification}
-            disabled={!user}
-            className="cursor-pointer rounded-lg border border-zinc-600 px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            인증 메일 보내기 (데모)
-          </button>
-          {!verified ? (
-            <button
-              type="button"
-              onClick={handleMarkVerifiedMock}
-              disabled={!user}
-              className="cursor-pointer rounded-lg border border-teal-500/40 bg-teal-500/10 px-3 py-1.5 text-xs font-medium text-teal-200 hover:bg-teal-500/20 disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              모의로 인증 완료
-            </button>
-          ) : null}
-        </div>
-      </div>
+            <div className="border-t border-zinc-800 pt-4">
+              <p className="text-xs font-medium text-zinc-400">이메일 인증</p>
+              <p className="mt-1 text-[11px] text-zinc-500">
+                가입 후 인증 링크 등 백엔드 플로우와 맞출 수 있습니다.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <span
+                  className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    verified
+                      ? "bg-teal-500/20 text-teal-200"
+                      : "bg-amber-500/15 text-amber-200/90"
+                  }`}
+                >
+                  {verified ? "인증됨" : "미인증"}
+                </span>
+                <button
+                  type="button"
+                  onClick={handleSendVerification}
+                  className="cursor-pointer rounded-lg border border-zinc-600 px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-800"
+                >
+                  인증 메일 보내기 (데모)
+                </button>
+                {!verified ? (
+                  <button
+                    type="button"
+                    onClick={handleMarkVerifiedMock}
+                    className="cursor-pointer rounded-lg border border-teal-500/40 bg-teal-500/10 px-3 py-1.5 text-xs font-medium text-teal-200 hover:bg-teal-500/20"
+                  >
+                    모의로 인증 완료
+                  </button>
+                ) : null}
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </FormModal>
 
       <div className="mt-6 border-t border-zinc-800/80 pt-6">
         <h3 className="text-sm font-medium text-zinc-200">비밀번호</h3>

@@ -1,19 +1,27 @@
 "use client";
 
-import { useMemo } from "react";
+import { InventoryLotExpiryBadge } from "@/app/_ui/inventory-lot-expiry-badge";
 import { groupInventoryByStorageForRoom } from "@/lib/household-location";
-import type { Household, InventoryRow } from "@/types/domain";
+import { 구매목록에서_품목_로트_요약을_구한다 } from "@/lib/inventory-lot-from-purchases";
+import type { Household, InventoryRow, PurchaseRecord } from "@/types/domain";
+import { useMemo } from "react";
 
 type RoomItemsPanelProps = {
   household: Household;
   selectedRoomId: string | null;
   roomItems: InventoryRow[];
+  purchases: PurchaseRecord[];
+  on소비하려고_연다: (item: InventoryRow) => void;
+  on폐기하려고_연다: (item: InventoryRow) => void;
 };
 
 export function RoomItemsPanel({
   household,
   selectedRoomId,
   roomItems,
+  purchases,
+  on소비하려고_연다,
+  on폐기하려고_연다,
 }: RoomItemsPanelProps) {
   const roomName = useMemo(() => {
     if (!selectedRoomId) return null;
@@ -36,7 +44,8 @@ export function RoomItemsPanel({
         {selectedRoomId && roomName ? (
           <p className="mt-1 text-xs text-zinc-500">
             <span className="font-medium text-teal-200/90">{roomName}</span>
-            에 연결된 보관 칸(블록)마다 묶어 표시합니다.
+            에 연결된 보관 칸(블록)마다 묶어 표시합니다. 구매와 연결된 품목은
+            로트·임박이 보입니다.
           </p>
         ) : (
           <p className="mt-1 text-xs text-zinc-500">
@@ -69,27 +78,60 @@ export function RoomItemsPanel({
                     </p>
                   </div>
                   <ul className="divide-y divide-zinc-800/60">
-                    {g.items.map((it) => (
-                      <li
-                        key={it.id}
-                        className="flex items-start justify-between gap-2 px-3 py-2 text-sm"
-                      >
-                        <span className="min-w-0 flex-1 text-zinc-200">
-                          <span className="block truncate leading-snug">
-                            {it.name}
-                          </span>
-                          {it.variantCaption ? (
-                            <span className="mt-0.5 block truncate text-[10px] text-zinc-500">
-                              {it.variantCaption}
+                    {g.items.map((it) => {
+                      const lot = 구매목록에서_품목_로트_요약을_구한다(
+                        purchases,
+                        household.id,
+                        it.id,
+                      );
+                      return (
+                        <li
+                          key={it.id}
+                          className="flex flex-col gap-2 px-3 py-2.5 text-sm sm:flex-row sm:items-start sm:justify-between"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <span className="block truncate leading-snug text-zinc-200">
+                              {it.name}
                             </span>
-                          ) : null}
-                        </span>
-                        <span className="shrink-0 tabular-nums text-zinc-400">
-                          {it.quantity}
-                          {it.unit}
-                        </span>
-                      </li>
-                    ))}
+                            {it.variantCaption ? (
+                              <span className="mt-0.5 block truncate text-[10px] text-zinc-500">
+                                {it.variantCaption}
+                              </span>
+                            ) : null}
+                            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                              <InventoryLotExpiryBadge
+                                worstExpiryDays={lot.worstExpiryDays}
+                                lotCount={lot.lotCount}
+                              />
+                            </div>
+                          </div>
+                          <div className="flex shrink-0 flex-col items-stretch gap-1.5 sm:items-end">
+                            <span className="tabular-nums text-zinc-400 sm:text-right">
+                              {it.quantity}
+                              {it.unit}
+                            </span>
+                            <div className="flex flex-wrap justify-end gap-1">
+                              <button
+                                type="button"
+                                disabled={it.quantity < 1}
+                                onClick={() => on소비하려고_연다(it)}
+                                className="cursor-pointer rounded-lg border border-zinc-600 px-2 py-0.5 text-[10px] text-teal-300/95 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-35"
+                              >
+                                소비
+                              </button>
+                              <button
+                                type="button"
+                                disabled={it.quantity < 1}
+                                onClick={() => on폐기하려고_연다(it)}
+                                className="cursor-pointer rounded-lg border border-zinc-600 px-2 py-0.5 text-[10px] text-rose-300/90 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-35"
+                              >
+                                폐기
+                              </button>
+                            </div>
+                          </div>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </section>
               ))}

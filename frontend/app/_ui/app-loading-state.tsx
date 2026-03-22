@@ -3,6 +3,12 @@
 import { cn } from "@/lib/utils";
 import { useIsPresent } from "framer-motion";
 
+/**
+ * 대시보드 mock `list()` 지연(~200ms)과 맞춰, 로컬 동기 로드만 하는 페이지에서도
+ * `AppLoadingState`의 progress 막대가 한 박자 보이게 할 최소 시간(ms).
+ */
+export const APP_PAGE_MIN_LOADING_MS = 220;
+
 export type AppLoadingBarProps = {
   className?: string;
   /** 트랙(배경 막대)에만 적용 */
