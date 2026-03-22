@@ -6,8 +6,8 @@ import type { Household } from "@/types/domain";
 import {
   ItemAddPanelHeaderCatalogHint,
   RoomItemAddWidget,
-} from "./DashboardItemForm.section";
-import { useDashboard } from "../_hooks/useDashboard";
+} from "../DashboardItemForm.section";
+import { useDashboard } from "../../_hooks/useDashboard";
 
 export type RoomItemAddPanelProps = {
   selected: Household;

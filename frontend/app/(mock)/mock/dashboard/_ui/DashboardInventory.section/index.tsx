@@ -2,16 +2,15 @@
 
 import { useMemo } from "react";
 import { useDashboard } from "../../_hooks/useDashboard";
-import { HouseStructureFlow } from "../HouseStructureFlow.module";
-import { ItemsSpreadsheet } from "../ItemsSpreadsheet.module";
-import { RoomItemsPanel } from "../RoomItemsPanel.module";
-import {
-  ViewModeToggle,
-  type ViewMode,
-} from "../ViewModeToggle.module";
+import { HouseStructureFlow } from "./HouseStructureFlow.module";
+import { ItemsSpreadsheet } from "./ItemsSpreadsheet.module";
+import { RoomItemsPanel } from "./RoomItemsPanel.module";
+import { ViewModeToggle, type ViewMode } from "./ViewModeToggle.module";
 import { resolveItemRoomId } from "@/lib/household-location";
 import type { Household } from "@/types/domain";
-import { RoomItemAddPanel } from "../RoomItemAddFloatingPanel.module";
+import { RoomItemAddPanel } from "./RoomItemAddFloatingPanel.module";
+
+export type { ViewMode } from "./ViewModeToggle.module";
 
 type DashboardInventorySectionProps = {
   selected: Household | null;

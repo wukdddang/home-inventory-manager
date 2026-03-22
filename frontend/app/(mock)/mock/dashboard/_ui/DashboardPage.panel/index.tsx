@@ -6,7 +6,7 @@ import { DashboardHouseholdsSection } from "../DashboardHouseholds.section";
 import { DashboardInventorySection } from "../DashboardInventory.section";
 import { DashboardPlacementsSection } from "../DashboardPlacements.section";
 import { DashboardRoomsSection } from "../DashboardRooms.section";
-import type { ViewMode } from "../ViewModeToggle.module";
+import type { ViewMode } from "../DashboardInventory.section";
 
 const ITEM_ADD_PANEL_ANCHOR_ID = "dashboard-item-add-panel";
 

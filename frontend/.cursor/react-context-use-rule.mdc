@@ -34,8 +34,11 @@ app/(mock)/mock/{page-name}/
 │   └── {PageName}Context.tsx
 ├── _ui/
 │   ├── {ComponentName}.panel/
+│   │   └── index.tsx
 │   ├── {ComponentName}.section/
-│   ├── {ComponentName}.module.tsx
+│   │   ├── index.tsx
+│   │   └── {FeatureName}.module.tsx   # 이 section(또는 이 section만 쓰는 흐름) 전용
+│   ├── {SharedName}.module.tsx        # 둘 이상의 section/panel에서 import
 │   └── {ComponentName}.component.tsx
 ├── _hooks/ (선택)
 │   └── use{HookName}.ts
@@ -280,7 +283,7 @@ function MyComponent() {
   - 예시: `ProjectTable.panel/`, `AttendanceTimeline.panel/`
 - **Section**: 페이지 내 특정 섹션
   - 예시: `ProjectDetail.section/`
-- **Module**: 재사용 가능한 기능 단위
+- **Module**: 재사용 가능한 기능 단위(배치는 아래 **`.module.tsx` 배치** 참고)
   - 예시: `ProjectTypeFilter.module.tsx`, `ProjectTree.module.tsx`
 - **Component**: 기본 UI 컴포넌트
   - 예시: `StatusSelect.component.tsx`, `SimpleStatusSelect.component.tsx`
@@ -296,10 +299,28 @@ _ui/
 │   └── {ComponentName}.module.css (선택적)
 ├── {ComponentName}.section/
 │   ├── index.tsx
+│   ├── {FeatureName}.module.tsx       # 이 section에서만 쓰는 모듈(선택)
 │   └── {ComponentName}.module.css (선택적)
-├── {ComponentName}.module.tsx
+├── {SharedName}.module.tsx            # 여러 section/panel 공유
 └── {ComponentName}.component.tsx
 ```
+
+### `.module.tsx` 배치 (전용 vs 공유)
+
+- **`_ui/{이름}.module.tsx` (루트)**  
+  **둘 이상**의 `.section/` 또는 `.panel/`에서 import하는 모듈만 둔다. 페이지 `_ui` 루트는 공유 모듈용 “평면” 공간으로 쓴다.
+
+- **`_ui/{SectionName}.section/{이름}.module.tsx` (section 안)**  
+  **특정 section(또는 그 section을 포함한 단일 화면 흐름)** 에서만 쓰는 모듈은 **해당 section 폴더 안**에 둔다. 조회/편집 UI 덩어리를 section과 같이 묶어 찾기 쉽게 한다.
+
+- **`.panel`이 타입만 필요한 경우**  
+  모듈·타입 정의는 section 쪽에 두고, `{SectionName}.section/index.tsx`에서 `export type { … } from "./Some.module"` 처럼 **타입만 재export**한다. `.panel`은 `../{SectionName}.section`에서 type-only import 한다. (실제 컴포넌트는 section 내부에서만 쓰는 패턴)
+
+- **상대 경로 보정**  
+  section 안으로 옮긴 `.module.tsx`는 `./`·`../` 기준 깊이가 바뀌므로, 같은 페이지의 `_hooks`·`_lib`·형제 `*.section` 등은 한 단계 더 올라가게(`../` → `../../` 등) 맞춘다.
+
+**본 저장소 예시 (`dashboard`)**  
+`DashboardInventory.section/` 안에 `ViewModeToggle.module.tsx`, `HouseStructureFlow.module.tsx`, `ItemsSpreadsheet.module.tsx`, `RoomItemsPanel.module.tsx`, `RoomItemAddFloatingPanel.module.tsx` 등을 두고, `DashboardPage.panel`은 `ViewMode` 타입만 `DashboardInventory.section`에서 가져온다.
 
 ## 7. API 호출 패턴
 
@@ -560,7 +581,7 @@ app/(mock)/mock/
 │   │   └── dashboard-mock.service.ts
 │   ├── _hooks/useDashboard.ts
 │   ├── _lib/dashboard-helpers.ts
-│   └── _ui/ … (DashboardPage.panel, *.section, *.module.tsx)
+│   └── _ui/ … (DashboardPage.panel, *.section, 공유 *.module.tsx; section 전용 모듈은 *.section/ 안)
 └── settings/ …
 ```
 
@@ -727,7 +748,7 @@ export function DashboardScreen({ dataMode }: { dataMode: "mock" | "api" }) {
 6. **일관성**: API 라우트 구조와 네이밍 패턴 통일
 7. **사용자 경험**: 한국어 에러 메시지와 적절한 로딩 상태
 8. **폴더 구조**: `_context/`, `_ui/`, `_hooks/` 명명 규칙 준수
-9. **컴포넌트 분류**: `.panel/`, `.section/`, `.module.tsx`, `.component.tsx` 구분 사용
+9. **컴포넌트 분류**: `.panel/`, `.section/`, `.module.tsx`, `.component.tsx` 구분 사용. **단일 section 전용 `.module.tsx`는 해당 `.section/` 폴더 안**에 둔다.
 10. **경로 일관성**: 페이지 경로와 API 경로 매핑 규칙 준수 (`/plan/{module}/{page}` ↔ `/api/{module}/{page}`)
 11. **데이터 흐름**: Context → 데이터 소스(Route Handler·서비스) → 컴포넌트 훅 사용 패턴 준수
 12. **라우트 그룹**: 정식 URL은 `app/(current)/`에 두고, 구현·Provider·`_ui`는 `app/(mock)/mock/`에 둔다. `(current)`의 `page.tsx`는 원칙적으로 **mock 쪽 `page`를 re-export**만 한다.

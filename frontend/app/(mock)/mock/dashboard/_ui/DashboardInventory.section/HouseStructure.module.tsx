@@ -2,7 +2,7 @@
 
 import { useId } from "react";
 import type { Household } from "@/types/domain";
-import { VIEW_BOX } from "../_lib/dashboard-helpers";
+import { VIEW_BOX } from "../../_lib/dashboard-helpers";
 
 type HouseStructureProps = {
   household: Household;
