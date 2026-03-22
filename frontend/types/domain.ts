@@ -124,6 +124,21 @@ export type HouseholdStructureDiagramLayout = Record<
   { x: number; y: number }
 >;
 
+/** 거점·설정에서 공유 — ERD HouseholdMember 역할(모의) */
+export type GroupMember = {
+  id: string;
+  email: string;
+  role: "owner" | "member";
+  label?: string;
+};
+
+export type AuthUser = {
+  email: string;
+  displayName: string;
+  /** 모의: 이메일 인증 완료 여부(백엔드 `emailVerifiedAt` 대응) */
+  emailVerified?: boolean;
+};
+
 export type Household = {
   id: string;
   name: string;
@@ -138,18 +153,8 @@ export type Household = {
   /** 조회 모드 구조도: 직속·가구 블록 수동 배치(방 좌표는 rooms[].x/y) */
   structureDiagramLayout?: HouseholdStructureDiagramLayout;
   createdAt: string;
-};
-
-export type AuthUser = {
-  email: string;
-  displayName: string;
-};
-
-export type GroupMember = {
-  id: string;
-  email: string;
-  role: "owner" | "member";
-  label?: string;
+  /** 거점별 공유 멤버(모의). ERD Household ↔ User 멤버십과 대응 */
+  members?: GroupMember[];
 };
 
 /**

@@ -27,6 +27,8 @@ function normalizeAppSettings(partial: Partial<AppSettings>): AppSettings {
 }
 
 const K_USER = "him-user";
+/** `/mock/settings` 계정·보안 UI 전용 목 프로필(API·him-user와 분리) */
+const K_MOCK_SETTINGS_ACCOUNT = "him-mock-settings-account";
 const K_HOUSEHOLDS = "him-households";
 const K_CATALOG = "him-product-catalog";
 const K_HOUSEHOLD_KINDS = "him-household-kinds";
@@ -182,6 +184,84 @@ export function setAuthUser(user: AuthUser | null) {
     user: safeParse<AuthUser | null>(raw, null),
   };
   emitAuthUser();
+}
+
+/** `/mock` 설정 화면에 기본으로 채워 넣는 목 계정(참조 동일성 유지) */
+export const MOCK_SETTINGS_ACCOUNT_SEED: AuthUser = Object.freeze({
+  email: "kim.demo@household.mock",
+  displayName: "김데모",
+  emailVerified: false,
+});
+
+function normalizeMockSettingsAccountUser(
+  parsed: Partial<AuthUser> | null,
+): AuthUser {
+  if (!parsed || typeof parsed !== "object") {
+    return { ...MOCK_SETTINGS_ACCOUNT_SEED };
+  }
+  const email =
+    typeof parsed.email === "string" && parsed.email.trim()
+      ? parsed.email.trim()
+      : MOCK_SETTINGS_ACCOUNT_SEED.email;
+  const displayName =
+    typeof parsed.displayName === "string" && parsed.displayName.trim()
+      ? parsed.displayName.trim()
+      : MOCK_SETTINGS_ACCOUNT_SEED.displayName;
+  return {
+    email,
+    displayName,
+    emailVerified: parsed.emailVerified === true,
+  };
+}
+
+let mockSettingsAccountCache: {
+  raw: string | null | undefined;
+  user: AuthUser;
+} = {
+  raw: undefined,
+  user: MOCK_SETTINGS_ACCOUNT_SEED,
+};
+
+const mockSettingsAccountListeners = new Set<() => void>();
+
+export function subscribeMockSettingsAccountUser(onStoreChange: () => void) {
+  mockSettingsAccountListeners.add(onStoreChange);
+  return () => mockSettingsAccountListeners.delete(onStoreChange);
+}
+
+function emitMockSettingsAccountUser() {
+  mockSettingsAccountListeners.forEach((fn) => fn());
+}
+
+/** 스냅샷은 항상 비-null (`localStorage` 비어 있으면 시드) */
+export function getMockSettingsAccountUserSnapshot(): AuthUser {
+  if (typeof window === "undefined") return MOCK_SETTINGS_ACCOUNT_SEED;
+  const raw = localStorage.getItem(K_MOCK_SETTINGS_ACCOUNT);
+  if (mockSettingsAccountCache.raw === raw) return mockSettingsAccountCache.user;
+  if (!raw) {
+    mockSettingsAccountCache = {
+      raw: null,
+      user: MOCK_SETTINGS_ACCOUNT_SEED,
+    };
+    return MOCK_SETTINGS_ACCOUNT_SEED;
+  }
+  const user = normalizeMockSettingsAccountUser(
+    safeParse<Partial<AuthUser>>(raw, {}),
+  );
+  mockSettingsAccountCache = { raw, user };
+  return user;
+}
+
+export function setMockSettingsAccountUser(user: AuthUser) {
+  if (typeof window === "undefined") return;
+  const normalized = normalizeMockSettingsAccountUser(user);
+  localStorage.setItem(
+    K_MOCK_SETTINGS_ACCOUNT,
+    JSON.stringify(normalized),
+  );
+  const raw = localStorage.getItem(K_MOCK_SETTINGS_ACCOUNT);
+  mockSettingsAccountCache = { raw, user: normalized };
+  emitMockSettingsAccountUser();
 }
 
 export function getHouseholds(): Household[] {

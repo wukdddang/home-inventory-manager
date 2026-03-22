@@ -8,11 +8,11 @@ import {
   appViewPresenceVariants,
 } from "@/app/_ui/app-view-transition.motion";
 import { AnimatePresence, motion } from "framer-motion";
+import { AccountSecuritySettingsSection } from "../AccountSecuritySettings.section";
 import { CatalogSettingsSection } from "../CatalogSettings.section";
 import { HouseholdKindsSettingsSection } from "../HouseholdKindsSettings.section";
-import { GroupSettingsSection } from "../GroupSettings.section";
+import { HouseholdMembershipSettingsSection } from "../HouseholdMembershipSettings.section";
 import { NotificationSettingsSection } from "../NotificationSettings.section";
-import { PasswordSettingsSection } from "../PasswordSettings.section";
 import { useSettings } from "../../_hooks/useSettings";
 
 export function SettingsPanel() {
@@ -48,7 +48,7 @@ export function SettingsPanel() {
       ) : (
         <motion.div
           key="settings-main"
-          className="mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-8 pb-16"
+          className="mx-auto flex w-full max-w-7xl min-w-0 flex-col gap-8 pb-16"
           initial="initial"
           animate="animate"
           exit="exit"
@@ -58,22 +58,23 @@ export function SettingsPanel() {
       <div className="min-w-0 shrink-0">
         <h1 className="text-2xl font-semibold text-white">사용자 설정</h1>
         <p className="mt-1 text-sm text-zinc-500">
-          HouseholdMember·알림 정책 등은 API 연동 후 서버와 동기화합니다.
+          계정·거점 멤버·알림 등은 로컬 데모이며, API 연동 시 서버와 맞추면
+          됩니다.
         </p>
       </div>
 
       {/*
         모바일: 1열 순서대로 스크롤
-        lg+: 좌(카탈로그·거점·그룹) / 우(계정·알림) — 대시보드 2컬럼과 비슷한 리듬
+        lg+: 좌(카탈로그·거점 유형·멤버십) / 우(계정·보안·알림)
       */}
-      <div className="grid min-w-0 grid-cols-1 gap-8 lg:grid-cols-[minmax(0,28rem)_minmax(0,1fr)] lg:gap-x-0 xl:grid-cols-[minmax(0,32rem)_minmax(0,1fr)]">
+      <div className="grid min-w-0 grid-cols-1 gap-8 lg:grid-cols-[minmax(0,38rem)_minmax(0,1fr)] lg:gap-x-0 xl:grid-cols-[minmax(0,44rem)_minmax(0,1fr)]">
         <div className="min-w-0 space-y-8 lg:border-r lg:border-zinc-800/70 lg:pr-8">
           <CatalogSettingsSection />
           <HouseholdKindsSettingsSection />
-          <GroupSettingsSection />
+          <HouseholdMembershipSettingsSection />
         </div>
         <div className="min-w-0 space-y-8 lg:pl-8">
-          <PasswordSettingsSection />
+          <AccountSecuritySettingsSection />
           <NotificationSettingsSection />
         </div>
       </div>
