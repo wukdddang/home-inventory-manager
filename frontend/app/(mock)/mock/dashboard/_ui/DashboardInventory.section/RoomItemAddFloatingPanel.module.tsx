@@ -12,8 +12,6 @@ import { useDashboard } from "../../_hooks/useDashboard";
 export type RoomItemAddPanelProps = {
   selected: Household;
   roomId: string;
-  /** 방 선택 해제 (패널 숨김) */
-  onDismissRoom: () => void;
   expanded: boolean;
   onExpandedChange: (expanded: boolean) => void;
   /** 왼쪽에서「물품 추가 패널 열기」등으로 스크롤 타깃 */
@@ -27,7 +25,6 @@ export type RoomItemAddPanelProps = {
 export function RoomItemAddPanel({
   selected,
   roomId,
-  onDismissRoom,
   expanded,
   onExpandedChange,
   anchorId = "dashboard-item-add-panel",
@@ -83,13 +80,6 @@ export function RoomItemAddPanel({
                   className="cursor-pointer rounded-lg border border-zinc-600 px-2 py-1 text-[11px] font-medium whitespace-nowrap text-zinc-300 hover:bg-zinc-800 sm:px-2.5"
                 >
                   접기
-                </button>
-                <button
-                  type="button"
-                  onClick={onDismissRoom}
-                  className="cursor-pointer text-[11px] whitespace-nowrap text-zinc-500 underline-offset-2 hover:text-zinc-300 hover:underline"
-                >
-                  방 선택 해제
                 </button>
               </div>
             </div>

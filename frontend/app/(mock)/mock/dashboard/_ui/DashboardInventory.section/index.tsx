@@ -163,7 +163,6 @@ export function DashboardInventorySection({
             key={selectedRoomId}
             selected={selected}
             roomId={selectedRoomId}
-            onDismissRoom={() => onRoomSelect(null)}
             expanded={itemAddPanelExpanded}
             onExpandedChange={onItemAddPanelExpandedChange}
             anchorId={itemAddPanelAnchorId}

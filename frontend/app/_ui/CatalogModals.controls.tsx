@@ -9,6 +9,7 @@ import type {
   CatalogProductVariant,
   ProductCatalog,
 } from "@/types/domain";
+import { FolderTree, Package, PackagePlus } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -221,23 +222,26 @@ export function CatalogModalsControls({
   );
 
   const btnClass = layout === "panel" ? btnPanel : btnOutline;
+  const catalogBtnIconClass =
+    layout === "panel" ? "size-3.5 shrink-0 opacity-90" : "size-4 shrink-0 opacity-90";
 
   return (
     <>
       <div className={buttonRowClass}>
         <button
           type="button"
-          className={btnClass}
+          className={cn(btnClass, "inline-flex items-center justify-center gap-1.5")}
           onClick={() => {
             setCatName("");
             setCatOpen(true);
           }}
         >
+          <FolderTree className={catalogBtnIconClass} aria-hidden />
           카테고리 추가
         </button>
         <button
           type="button"
-          className={btnClass}
+          className={cn(btnClass, "inline-flex items-center justify-center gap-1.5")}
           onClick={() => {
             setProdCategoryId(categories[0]?.id ?? "");
             setProdName("");
@@ -248,11 +252,12 @@ export function CatalogModalsControls({
           }}
           disabled={categories.length === 0}
         >
+          <Package className={catalogBtnIconClass} aria-hidden />
           품목 추가
         </button>
         <button
           type="button"
-          className={btnClass}
+          className={cn(btnClass, "inline-flex items-center justify-center gap-1.5")}
           onClick={() => {
             setVarCategoryId(categories[0]?.id ?? "");
             setVarProductId("");
@@ -263,6 +268,7 @@ export function CatalogModalsControls({
           }}
           disabled={categories.length === 0 || units.length === 0}
         >
+          <PackagePlus className={catalogBtnIconClass} aria-hidden />
           용량·포장 추가
         </button>
       </div>
