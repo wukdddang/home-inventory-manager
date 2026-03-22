@@ -23,6 +23,10 @@ const selectClass =
 const btnAdd =
   "cursor-pointer shrink-0 rounded-lg border border-teal-600/60 bg-teal-950/40 px-3 py-2 text-xs font-medium text-teal-100 hover:bg-teal-900/35";
 
+/** 직속 칸 추가 — 탭 줄과 톤 맞춤(배경 없음) */
+const btnAddDirectSlot =
+  "cursor-pointer shrink-0 rounded-lg border border-teal-600/60 bg-transparent px-3 py-2 text-xs font-medium text-teal-100 hover:border-teal-500/70 hover:bg-teal-500/[0.06]";
+
 const btnDangerIcon =
   "inline-flex cursor-pointer items-center justify-center rounded-lg border border-rose-900/50 p-2 text-rose-400 hover:bg-rose-950/40";
 
@@ -46,10 +50,6 @@ function TrashIcon({ className }: { className?: string }) {
   );
 }
 
-function draftKeyForSlot(roomId: string, slotId: string) {
-  return `${roomId}::${slotId}`;
-}
-
 type PendingDelete =
   | { kind: "storage"; id: string }
   | { kind: "furniture"; id: string };
@@ -68,10 +68,6 @@ export function DashboardPlacementsSection({
   onFocusItemAddPanel,
 }: DashboardPlacementsSectionProps) {
   const { 거점을_갱신_한다 } = useDashboard();
-  const [furnitureDraftBySlot, setFurnitureDraftBySlot] = useState<
-    Record<string, string>
-  >({});
-  const [slotDraft, setSlotDraft] = useState<Record<string, string>>({});
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(
     null,
   );
@@ -84,6 +80,21 @@ export function DashboardPlacementsSection({
     string | null
   >(null);
   const [directSlotModalDraft, setDirectSlotModalDraft] = useState("");
+
+  const [furnitureModalOpen, setFurnitureModalOpen] = useState(false);
+  const [furnitureModalRoomId, setFurnitureModalRoomId] = useState<
+    string | null
+  >(null);
+  const [furnitureModalSlotId, setFurnitureModalSlotId] = useState<
+    string | null
+  >(null);
+  const [furnitureModalDraft, setFurnitureModalDraft] = useState("");
+
+  const [subSlotModalOpen, setSubSlotModalOpen] = useState(false);
+  const [subSlotModalFurnitureId, setSubSlotModalFurnitureId] = useState<
+    string | null
+  >(null);
+  const [subSlotModalDraft, setSubSlotModalDraft] = useState("");
 
   if (!selected) return null;
 
@@ -179,23 +190,26 @@ export function DashboardPlacementsSection({
     toast({ title: "직속 칸이 추가되었습니다", description: name });
   };
 
-  const handleAddFurnitureToSlot = (roomId: string, slotId: string) => {
-    const key = draftKeyForSlot(roomId, slotId);
-    const label = (furnitureDraftBySlot[key] ?? "").trim();
+  const handleAddFurnitureToSlot = (
+    roomId: string,
+    slotId: string,
+    labelRaw: string,
+  ): boolean => {
+    const label = labelRaw.trim();
     if (!label) {
       toast({
         title: "가구 이름을 입력하세요",
-        description: "아래 입력란에 이름을 적고「가구 추가」를 누르세요.",
+        description: "모달에서 이름을 적고「추가」를 누르세요.",
         variant: "warning",
       });
-      return;
+      return false;
     }
     if (!roomDirectSlots(roomId).some((s) => s.id === slotId)) {
       toast({
         title: "직속 칸을 확인하세요",
         variant: "warning",
       });
-      return;
+      return false;
     }
     const id = newEntityId();
     const inRoom = furnitureInRoom(roomId);
@@ -212,8 +226,38 @@ export function DashboardPlacementsSection({
       ...h,
       furniturePlacements: [...(h.furniturePlacements ?? []), fp],
     }));
-    setFurnitureDraftBySlot((d) => ({ ...d, [key]: "" }));
     toast({ title: "가구가 이 직속 칸에 연결되었습니다", description: label });
+    return true;
+  };
+
+  const openFurnitureModal = (roomId: string, slotId: string) => {
+    setFurnitureModalRoomId(roomId);
+    setFurnitureModalSlotId(slotId);
+    setFurnitureModalDraft("");
+    setFurnitureModalOpen(true);
+  };
+
+  const submitFurnitureModal = () => {
+    if (!furnitureModalRoomId || !furnitureModalSlotId || !selected) return;
+    const label = furnitureModalDraft.trim();
+    if (!label) {
+      toast({
+        title: "가구 이름을 입력하세요",
+        description: "이름을 입력해 주세요.",
+        variant: "warning",
+      });
+      return;
+    }
+    const ok = handleAddFurnitureToSlot(
+      furnitureModalRoomId,
+      furnitureModalSlotId,
+      label,
+    );
+    if (!ok) return;
+    setFurnitureModalOpen(false);
+    setFurnitureModalDraft("");
+    setFurnitureModalRoomId(null);
+    setFurnitureModalSlotId(null);
   };
 
   const handleReanchorFurniture = (furnitureId: string, nextSlotId: string) => {
@@ -234,15 +278,18 @@ export function DashboardPlacementsSection({
     }));
   };
 
-  const handleAddFurnitureSlot = (furnitureId: string) => {
-    const name = (slotDraft[furnitureId] ?? "").trim();
+  const handleAddFurnitureSlot = (
+    furnitureId: string,
+    nameRaw: string,
+  ): boolean => {
+    const name = nameRaw.trim();
     if (!name) {
       toast({
         title: "칸 이름을 입력하세요",
-        description: "세부 칸 이름을 적고「세부 칸 추가」를 누르세요.",
+        description: "모달에서 세부 칸 이름을 적고「추가」를 누르세요.",
         variant: "warning",
       });
-      return;
+      return false;
     }
     const id = newEntityId();
     const under = slotsUnderFurniture(furnitureId);
@@ -259,8 +306,32 @@ export function DashboardPlacementsSection({
       ...h,
       storageLocations: [...(h.storageLocations ?? []), row],
     }));
-    setSlotDraft((d) => ({ ...d, [furnitureId]: "" }));
     toast({ title: "세부 보관 칸이 추가되었습니다", description: name });
+    return true;
+  };
+
+  const openSubSlotModal = (furnitureId: string) => {
+    setSubSlotModalFurnitureId(furnitureId);
+    setSubSlotModalDraft("");
+    setSubSlotModalOpen(true);
+  };
+
+  const submitSubSlotModal = () => {
+    if (!subSlotModalFurnitureId || !selected) return;
+    const name = subSlotModalDraft.trim();
+    if (!name) {
+      toast({
+        title: "칸 이름을 입력하세요",
+        description: "이름을 입력해 주세요.",
+        variant: "warning",
+      });
+      return;
+    }
+    const ok = handleAddFurnitureSlot(subSlotModalFurnitureId, name);
+    if (!ok) return;
+    setSubSlotModalOpen(false);
+    setSubSlotModalDraft("");
+    setSubSlotModalFurnitureId(null);
   };
 
   const requestDeleteStorage = (storageId: string) => {
@@ -367,12 +438,25 @@ export function DashboardPlacementsSection({
       ? (selected.rooms.find((r) => r.id === directSlotModalRoomId)?.name ?? "")
       : "";
 
+  const furnitureModalRoomName =
+    furnitureModalRoomId != null
+      ? (selected.rooms.find((r) => r.id === furnitureModalRoomId)?.name ?? "")
+      : "";
+  const furnitureModalSlotName =
+    furnitureModalSlotId != null
+      ? (slots.find((s) => s.id === furnitureModalSlotId)?.name ?? "")
+      : "";
+  const subSlotModalFurnitureLabel =
+    subSlotModalFurnitureId != null
+      ? (placements.find((f) => f.id === subSlotModalFurnitureId)?.label ?? "")
+      : "";
+
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
+    <div className="cursor-default rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
       <button
         type="button"
         title="오른쪽 아래 물품 추가 패널을 펼칩니다"
-        className="-mx-1 -mt-1 w-full rounded-xl px-1 py-1 text-left outline-none transition-colors hover:bg-teal-500/[0.05] focus-visible:ring-2 focus-visible:ring-teal-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
+        className="-mx-1 -mt-1 w-full !cursor-default rounded-xl px-1 py-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-teal-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
         onClick={() => onFocusItemAddPanel?.()}
       >
         <h2 className="text-base font-semibold text-white">
@@ -413,28 +497,10 @@ export function DashboardPlacementsSection({
                 : undefined;
 
             return (
-              <li
-                key={room.id}
-                className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-4"
-              >
+              <li key={room.id} className="rounded-xl">
                 <h3 className="text-sm font-semibold text-teal-200/95">
                   {room.name}
                 </h3>
-
-                <ol className="mt-3 list-decimal space-y-1 pl-4 text-xs text-zinc-500 marker:text-zinc-600">
-                  <li>
-                    <span className="text-zinc-400">① 직속 칸</span> —「직속 칸
-                    추가하기」로 만든 뒤, 위 탭에서 편집할 칸을 고릅니다.
-                  </li>
-                  <li>
-                    <span className="text-zinc-400">② 가구</span> — 선택한 탭(직속
-                    칸)에만 연결됩니다.
-                  </li>
-                  <li>
-                    <span className="text-zinc-400">③ 세부 칸</span> — 가구 카드
-                    안에서 나눕니다.
-                  </li>
-                </ol>
 
                 {directs.length === 0 ? (
                   <div className="mt-4 space-y-3">
@@ -443,7 +509,7 @@ export function DashboardPlacementsSection({
                     </p>
                     <button
                       type="button"
-                      className={`${btnAdd} w-full sm:w-auto`}
+                      className={`${btnAddDirectSlot} w-full sm:w-auto`}
                       onClick={() => openDirectSlotModal(room.id)}
                     >
                       직속 칸 추가하기
@@ -457,9 +523,7 @@ export function DashboardPlacementsSection({
                         role="tablist"
                         aria-label="직속 보관 칸"
                       >
-                        <p className="mb-1.5 text-[10px] font-medium text-zinc-500">
-                          직속 보관 칸 선택
-                        </p>
+                        
                         <div className="flex flex-wrap gap-1 border-b border-zinc-800 pb-px">
                           {directs.map((s) => {
                             const selectedTab = s.id === activeSlot?.id;
@@ -485,7 +549,7 @@ export function DashboardPlacementsSection({
                       </div>
                       <button
                         type="button"
-                        className={`${btnAdd} shrink-0 self-stretch sm:self-auto`}
+                        className={`${btnAddDirectSlot} shrink-0 self-stretch sm:self-auto`}
                         onClick={() => openDirectSlotModal(room.id)}
                       >
                         직속 칸 추가하기
@@ -522,14 +586,13 @@ export function DashboardPlacementsSection({
                         </div>
 
                         <div className="mt-4">
-                          <p className="text-[11px] font-medium text-zinc-400">
-                            ② 이 칸에 연결된 가구
+                          <p className="mt-1 text-sm text-zinc-500">
+                            <span className="text-zinc-400">「가구 추가」</span>
+                            로 모달을 열어 이 탭(
+                            <span className="text-zinc-400">직속 칸</span>
+                            )에만 가구를 연결합니다.
                           </p>
-                          <p className="mt-0.5 text-[11px] text-zinc-600">
-                            맨 아래 입력란에서 이 탭(직속 칸)에만 가구를
-                            추가합니다.
-                          </p>
-                          <ul className="mt-2 space-y-3">
+                          <ul className="mt-3 space-y-3">
                             {furnitureOnSlot(room.id, activeSlot.id).length ===
                             0 ? (
                               <li className="rounded-lg bg-zinc-950/40 px-2 py-2 text-xs text-zinc-600">
@@ -594,14 +657,17 @@ export function DashboardPlacementsSection({
                                     ) : null}
 
                                     <div className="mt-3 border-t border-zinc-800/70 pt-3">
-                                      <p className="text-[11px] font-medium text-zinc-400">
-                                        ③ 이 가구 아래 세부 보관 칸
+                                      <p className="mt-1 text-sm text-zinc-500">
+                                        <span className="text-zinc-400">
+                                          물품 등록
+                                        </span>
+                                        시{" "}
+                                        <span className="text-zinc-400">
+                                          여기서 만든 칸
+                                        </span>
+                                        까지 고를 수 있습니다.
                                       </p>
-                                      <p className="mt-0.5 text-[11px] text-zinc-600">
-                                        물품 등록 시 여기서 만든 칸까지 고를 수
-                                        있습니다.
-                                      </p>
-                                      <ul className="mt-2 space-y-1.5">
+                                      <ul className="mt-3 space-y-1.5">
                                         {slotsUnderFurniture(fp.id).length ===
                                         0 ? (
                                           <li className="text-xs text-zinc-600">
@@ -631,24 +697,12 @@ export function DashboardPlacementsSection({
                                           )
                                         )}
                                       </ul>
-                                      <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-stretch">
-                                        <input
-                                          value={slotDraft[fp.id] ?? ""}
-                                          onChange={(e) =>
-                                            setSlotDraft((d) => ({
-                                              ...d,
-                                              [fp.id]: e.target.value,
-                                            }))
-                                          }
-                                          placeholder="예: 서랍 왼쪽"
-                                          aria-label={`${fp.label} 아래 새 세부 칸 이름`}
-                                          className={`${inputClass} sm:min-w-0 sm:flex-1`}
-                                        />
+                                      <div className="mt-2">
                                         <button
                                           type="button"
-                                          className={`${btnAdd} sm:w-28`}
+                                          className={`${btnAdd} w-full sm:w-auto`}
                                           onClick={() =>
-                                            handleAddFurnitureSlot(fp.id)
+                                            openSubSlotModal(fp.id)
                                           }
                                         >
                                           세부 칸 추가
@@ -666,37 +720,15 @@ export function DashboardPlacementsSection({
                           <p className="mb-2 text-[11px] font-medium text-zinc-400">
                             「{activeSlot.name}」에 가구 연결
                           </p>
-                          <div className="flex flex-col gap-2 sm:flex-row sm:items-stretch">
-                            <input
-                              value={
-                                furnitureDraftBySlot[
-                                  draftKeyForSlot(room.id, activeSlot.id)
-                                ] ?? ""
-                              }
-                              onChange={(e) =>
-                                setFurnitureDraftBySlot((d) => ({
-                                  ...d,
-                                  [draftKeyForSlot(room.id, activeSlot.id)]:
-                                    e.target.value,
-                                }))
-                              }
-                              placeholder="가구 이름 (예: 주방 선반)"
-                              aria-label={`「${activeSlot.name}」에 연결할 가구 이름`}
-                              className={`${inputClass} sm:min-w-0 sm:flex-1`}
-                            />
-                            <button
-                              type="button"
-                              className={`${btnAdd} sm:w-28`}
-                              onClick={() =>
-                                handleAddFurnitureToSlot(
-                                  room.id,
-                                  activeSlot.id,
-                                )
-                              }
-                            >
-                              가구 추가
-                            </button>
-                          </div>
+                          <button
+                            type="button"
+                            className={`${btnAdd} w-full sm:w-auto`}
+                            onClick={() =>
+                              openFurnitureModal(room.id, activeSlot.id)
+                            }
+                          >
+                            가구 추가
+                          </button>
                         </div>
                       </div>
                     ) : null}
@@ -735,6 +767,71 @@ export function DashboardPlacementsSection({
           value={directSlotModalDraft}
           onChange={(e) => setDirectSlotModalDraft(e.target.value)}
           placeholder="예: 냉장고, 벽면장"
+          className={`${inputClass} mt-1`}
+          autoFocus
+        />
+      </FormModal>
+
+      <FormModal
+        open={furnitureModalOpen}
+        onOpenChange={(open) => {
+          setFurnitureModalOpen(open);
+          if (!open) {
+            setFurnitureModalDraft("");
+            setFurnitureModalRoomId(null);
+            setFurnitureModalSlotId(null);
+          }
+        }}
+        title="가구 연결"
+        description={
+          furnitureModalRoomName && furnitureModalSlotName
+            ? `「${furnitureModalRoomName}」의 직속 칸「${furnitureModalSlotName}」에 붙일 가구 이름을 정합니다.`
+            : "직속 칸에 붙일 가구 이름을 입력합니다."
+        }
+        submitLabel="추가"
+        cancelLabel="취소"
+        submitDisabled={!furnitureModalDraft.trim()}
+        onSubmit={submitFurnitureModal}
+      >
+        <label className="block text-xs font-medium text-zinc-500">
+          가구 이름
+        </label>
+        <input
+          value={furnitureModalDraft}
+          onChange={(e) => setFurnitureModalDraft(e.target.value)}
+          placeholder="예: 주방 선반"
+          className={`${inputClass} mt-1`}
+          autoFocus
+        />
+      </FormModal>
+
+      <FormModal
+        open={subSlotModalOpen}
+        onOpenChange={(open) => {
+          setSubSlotModalOpen(open);
+          if (!open) {
+            setSubSlotModalDraft("");
+            setSubSlotModalFurnitureId(null);
+          }
+        }}
+        title="세부 보관 칸 추가"
+        description={
+          subSlotModalFurnitureLabel
+            ? `「${subSlotModalFurnitureLabel}」 아래에 나눌 보관 칸 이름을 정합니다.`
+            : "가구 아래 세부 칸 이름을 입력합니다."
+        }
+        submitLabel="추가"
+        cancelLabel="취소"
+        submitDisabled={!subSlotModalDraft.trim()}
+        onSubmit={submitSubSlotModal}
+      >
+        <label className="block text-xs font-medium text-zinc-500">
+          세부 칸 이름
+        </label>
+        <input
+          value={subSlotModalDraft}
+          onChange={(e) => setSubSlotModalDraft(e.target.value)}
+          placeholder="예: 서랍 왼쪽"
           className={`${inputClass} mt-1`}
           autoFocus
         />
