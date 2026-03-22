@@ -1,7 +1,14 @@
 "use client";
 
+import { cloneDefaultHouseholdKindDefinitions } from "@/lib/household-kind-defaults";
 import { cloneDefaultCatalog } from "@/lib/product-catalog-defaults";
-import type { AppSettings, AuthUser, Household, ProductCatalog } from "@/types/domain";
+import type {
+  AppSettings,
+  AuthUser,
+  Household,
+  HouseholdKindDefinition,
+  ProductCatalog,
+} from "@/types/domain";
 import {
   DEFAULT_NOTIFICATION_DETAIL,
   DEFAULT_SETTINGS as DEFAULTS,
@@ -22,7 +29,21 @@ function normalizeAppSettings(partial: Partial<AppSettings>): AppSettings {
 const K_USER = "him-user";
 const K_HOUSEHOLDS = "him-households";
 const K_CATALOG = "him-product-catalog";
+const K_HOUSEHOLD_KINDS = "him-household-kinds";
 const K_SETTINGS = "him-settings";
+
+function isHouseholdKindDefinitionsShape(
+  x: unknown,
+): x is HouseholdKindDefinition[] {
+  if (!Array.isArray(x)) return false;
+  return x.every(
+    (row) =>
+      row != null &&
+      typeof row === "object" &&
+      typeof (row as HouseholdKindDefinition).id === "string" &&
+      typeof (row as HouseholdKindDefinition).label === "string",
+  );
+}
 
 function isProductCatalogShape(x: unknown): x is ProductCatalog {
   if (!x || typeof x !== "object") return false;
@@ -80,6 +101,34 @@ export function getSharedProductCatalog(): ProductCatalog {
 export function setSharedProductCatalog(catalog: ProductCatalog) {
   if (typeof window === "undefined") return;
   localStorage.setItem(K_CATALOG, JSON.stringify(catalog));
+}
+
+/** 거점 유형 라벨 목록 (대시보드·설정 공통, `him-household-kinds`) */
+export function getSharedHouseholdKindDefinitions(): HouseholdKindDefinition[] {
+  if (typeof window === "undefined") {
+    return cloneDefaultHouseholdKindDefinitions();
+  }
+  const raw = localStorage.getItem(K_HOUSEHOLD_KINDS);
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw) as unknown;
+      if (isHouseholdKindDefinitionsShape(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    } catch {
+      /* fallthrough */
+    }
+  }
+  const d = cloneDefaultHouseholdKindDefinitions();
+  localStorage.setItem(K_HOUSEHOLD_KINDS, JSON.stringify(d));
+  return d;
+}
+
+export function setSharedHouseholdKindDefinitions(
+  defs: HouseholdKindDefinition[],
+) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(K_HOUSEHOLD_KINDS, JSON.stringify(defs));
 }
 
 /** useSyncExternalStore용 — 동일 raw면 동일 참조 유지 (불필요한 리렌더 방지) */

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useDashboard } from "../../_hooks/useDashboard";
-import { DashboardHouseholdsSection } from "../DashboardHouseholds.section";
+import { DashboardHouseholdsHeader } from "../DashboardHouseholds.header";
 import { DashboardInventorySection } from "../DashboardInventory.section";
 import { DashboardPlacementsSection } from "../DashboardPlacements.section";
 import { DashboardRoomsSection } from "../DashboardRooms.section";
@@ -102,6 +102,12 @@ export function DashboardPanel() {
           </span>
         </div>
       ) : null}
+      <DashboardHouseholdsHeader
+        selectedHouseholdId={viewingHouseholdId}
+        onSelectHousehold={handleSelectHousehold}
+        onAfterAddHousehold={handleAfterAddHousehold}
+        onDeleteHousehold={handleDeleteHousehold}
+      />
       {/*
         데스크톱(lg+): 좌·우 컬럼 각각 세로 스크롤 (뷰포트 높이 고정)
         모바일: 1열, 문서 스크롤
@@ -109,12 +115,6 @@ export function DashboardPanel() {
       <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,32rem)_minmax(0,1fr)] lg:gap-x-0 lg:overflow-hidden xl:grid-cols-[minmax(0,36rem)_minmax(0,1fr)]">
         <div className="min-h-0 min-w-0 overflow-y-auto overscroll-y-contain">
           <div className="grid min-w-0 grid-cols-1 gap-6 pb-1">
-            <DashboardHouseholdsSection
-              selectedHouseholdId={viewingHouseholdId}
-              onSelectHousehold={handleSelectHousehold}
-              onAfterAddHousehold={handleAfterAddHousehold}
-              onDeleteHousehold={handleDeleteHousehold}
-            />
             <DashboardRoomsSection
               selected={selected}
               selectedRoomId={selectedRoomId}

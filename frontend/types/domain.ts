@@ -2,7 +2,15 @@
  * 프론트 UI·로컬 저장용 타입 (백엔드 ERD: Household, StorageLocation, InventoryItem 정렬)
  */
 
-export type HouseholdKind = "home" | "office" | "vehicle" | "other";
+/**
+ * 거점 유형 정의 (라벨은 사용자가 설정·추가·삭제 가능, id는 안정 키).
+ * 기본 id: home, office, vehicle, other
+ */
+export type HouseholdKindDefinition = {
+  id: string;
+  label: string;
+  sortOrder?: number;
+};
 
 /** 2D 구조 방 — house-structure-feature.md 의 rooms[] 와 동일 개념 */
 export type StructureRoom = {
@@ -105,7 +113,8 @@ export type InventoryRow = {
 export type Household = {
   id: string;
   name: string;
-  kind: HouseholdKind;
+  /** `HouseholdKindDefinition.id` 참조 */
+  kind: string;
   rooms: StructureRoom[];
   items: InventoryRow[];
   /** 방별 가구 배치 — 없으면 UI에서 빈 배열로 취급 */

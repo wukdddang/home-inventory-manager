@@ -1,6 +1,7 @@
 "use client";
 
 import { CatalogSettingsSection } from "../CatalogSettings.section";
+import { HouseholdKindsSettingsSection } from "../HouseholdKindsSettings.section";
 import { GroupSettingsSection } from "../GroupSettings.section";
 import { NotificationSettingsSection } from "../NotificationSettings.section";
 import { PasswordSettingsSection } from "../PasswordSettings.section";
@@ -30,6 +31,7 @@ export function SettingsPanel() {
         </p>
       </div>
       <CatalogSettingsSection />
+      <HouseholdKindsSettingsSection />
       <GroupSettingsSection />
       <PasswordSettingsSection />
       <NotificationSettingsSection />

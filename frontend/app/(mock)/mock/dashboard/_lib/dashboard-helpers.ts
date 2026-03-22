@@ -1,11 +1,4 @@
-import type { HouseholdKind, StructureRoom } from "@/types/domain";
-
-export const KIND_LABEL: Record<HouseholdKind, string> = {
-  home: "집",
-  office: "사무실",
-  vehicle: "차량",
-  other: "기타",
-};
+import type { StructureRoom } from "@/types/domain";
 
 export const VIEW_BOX = "0 0 620 380";
 
