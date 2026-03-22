@@ -26,12 +26,15 @@ type PendingDelete =
 
 type DashboardPlacementsSectionProps = {
   selected: Household | null;
+  /** 방 관리에서 선택한 방만 이 섹션에 표시 */
+  selectedRoomId: string | null;
   /** 제목 클릭 시 오른쪽 물품 추가 패널을 펼치고 스크롤 */
   onFocusItemAddPanel?: () => void;
 };
 
 export function DashboardPlacementsSection({
   selected,
+  selectedRoomId,
   onFocusItemAddPanel,
 }: DashboardPlacementsSectionProps) {
   const { 거점을_갱신_한다 } = useDashboard();
@@ -50,6 +53,11 @@ export function DashboardPlacementsSection({
 
   const placements = selected.furniturePlacements ?? [];
   const slots = selected.storageLocations ?? [];
+
+  const visibleRooms =
+    selectedRoomId != null
+      ? selected.rooms.filter((r) => r.id === selectedRoomId)
+      : [];
 
   const furnitureInRoom = (roomId: string) =>
     [...placements]
@@ -209,8 +217,8 @@ export function DashboardPlacementsSection({
           가구 배치 · 보관 장소
         </h2>
         <p className="mt-1 text-sm text-zinc-500">
-          방 직속 칸(냉장고·벽장 등)과 가구 아래 칸을 나눠 두면, 물품 등록 시
-          「어디에 있는지」까지 지정할 수 있습니다.
+          왼쪽「방 관리」에서 선택한 방에 대해서만 직속 칸·가구 배치를
+          편집합니다. 물품 등록 시「어디에 있는지」까지 지정할 수 있습니다.
         </p>
         <p className="mt-2 text-[11px] text-teal-500/75">
           제목 영역을 누르면 오른쪽「물품 추가」패널이 펼쳐집니다.
@@ -219,11 +227,21 @@ export function DashboardPlacementsSection({
 
       {selected.rooms.length === 0 ? (
         <p className="mt-4 rounded-xl border border-dashed border-zinc-700 px-4 py-6 text-center text-sm text-zinc-500">
-          먼저 방을 추가한 뒤, 이 영역에서 가구·보관 칸을 입력하세요.
+          먼저 방을 추가한 뒤, 방을 선택하면 이 영역에서 가구·보관 칸을 입력할 수
+          있습니다.
+        </p>
+      ) : selectedRoomId == null ? (
+        <p className="mt-4 rounded-xl border border-dashed border-zinc-700 px-4 py-6 text-center text-sm text-zinc-500">
+          왼쪽「방 관리」에서 방 탭을 눌러 선택하세요. 선택한 방의 가구·보관 칸만
+          여기에 표시됩니다.
+        </p>
+      ) : visibleRooms.length === 0 ? (
+        <p className="mt-4 rounded-xl border border-dashed border-amber-500/30 bg-amber-500/5 px-4 py-6 text-center text-sm text-amber-200/90">
+          선택한 방을 찾을 수 없습니다. 방 목록이 바뀌었다면 다시 선택해 주세요.
         </p>
       ) : (
         <ul className="mt-4 space-y-5">
-          {selected.rooms.map((room) => (
+          {visibleRooms.map((room) => (
             <li
               key={room.id}
               className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-4"

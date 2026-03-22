@@ -122,6 +122,7 @@ export function DashboardPanel() {
             />
             <DashboardPlacementsSection
               selected={selected}
+              selectedRoomId={selectedRoomId}
               onFocusItemAddPanel={handleFocusItemAddPanel}
             />
           </div>

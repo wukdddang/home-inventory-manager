@@ -1,10 +1,12 @@
 "use client";
 
 import { AlertModal } from "@/app/_ui/alert-modal";
-import { useState } from "react";
+import { MotionModalLayer } from "@/app/_ui/motion-modal-layer";
+import { cn } from "@/lib/utils";
+import type { Household, StorageLocationRow, StructureRoom } from "@/types/domain";
+import { useEffect, useId, useState, type MouseEvent } from "react";
 import { useDashboard } from "../../_hooks/useDashboard";
 import { defaultRoomGrid, newEntityId } from "../../_lib/dashboard-helpers";
-import type { Household, StorageLocationRow, StructureRoom } from "@/types/domain";
 
 type DashboardRoomsSectionProps = {
   selected: Household | null;
@@ -12,23 +14,97 @@ type DashboardRoomsSectionProps = {
   onRoomSelect: (roomId: string | null) => void;
 };
 
+function TrashIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      className={cn("size-4", className)}
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
+      />
+    </svg>
+  );
+}
+
+function PencilIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      className={cn("size-4", className)}
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+      />
+    </svg>
+  );
+}
+
+function PlusIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={2}
+      stroke="currentColor"
+      className={cn("size-5", className)}
+      aria-hidden
+    >
+      <path strokeLinecap="round" d="M12 4.5v15m7.5-7.5h-15" />
+    </svg>
+  );
+}
+
 export function DashboardRoomsSection({
   selected,
   selectedRoomId,
   onRoomSelect,
 }: DashboardRoomsSectionProps) {
   const { 거점을_갱신_한다 } = useDashboard();
-  const [roomDraftName, setRoomDraftName] = useState("");
-  const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
-  const [editingRoomName, setEditingRoomName] = useState("");
+  const [addOpen, setAddOpen] = useState(false);
+  const [newRoomName, setNewRoomName] = useState("");
+  const [editOpen, setEditOpen] = useState(false);
+  const [editRoomId, setEditRoomId] = useState<string | null>(null);
+  const [editRoomName, setEditRoomName] = useState("");
   const [pendingDeleteRoomId, setPendingDeleteRoomId] = useState<string | null>(
     null,
   );
 
+  const addTitleId = useId().replace(/:/g, "");
+  const addDescId = useId().replace(/:/g, "");
+  const editTitleId = useId().replace(/:/g, "");
+  const editDescId = useId().replace(/:/g, "");
+
+  useEffect(() => {
+    if (!addOpen) return;
+    setNewRoomName("");
+  }, [addOpen]);
+
+  useEffect(() => {
+    if (!editOpen || !editRoomId || !selected) return;
+    const r = selected.rooms.find((x) => x.id === editRoomId);
+    setEditRoomName(r?.name ?? "");
+  }, [editOpen, editRoomId, selected]);
+
   if (!selected) return null;
 
   const handleAddRoom = () => {
-    const label = roomDraftName.trim() || `방 ${selected.rooms.length + 1}`;
+    const label = newRoomName.trim() || `방 ${selected.rooms.length + 1}`;
     const grid = defaultRoomGrid(selected.rooms.length);
     const room: StructureRoom = {
       id: newEntityId(),
@@ -47,18 +123,28 @@ export function DashboardRoomsSection({
       rooms: [...h.rooms, room],
       storageLocations: [...(h.storageLocations ?? []), defaultSlot],
     }));
-    setRoomDraftName("");
+    setAddOpen(false);
     onRoomSelect(room.id);
   };
 
-  const handleSaveRoomName = (roomId: string) => {
-    const name = editingRoomName.trim();
+  const handleSaveRoomName = () => {
+    if (!editRoomId) return;
+    const name = editRoomName.trim();
     if (!name) return;
     거점을_갱신_한다(selected.id, (h) => ({
       ...h,
-      rooms: h.rooms.map((r) => (r.id === roomId ? { ...r, name } : r)),
+      rooms: h.rooms.map((r) => (r.id === editRoomId ? { ...r, name } : r)),
     }));
-    setEditingRoomId(null);
+    setEditOpen(false);
+    setEditRoomId(null);
+  };
+
+  const openEditModal = (roomId: string, e: MouseEvent) => {
+    e.stopPropagation();
+    setEditRoomId(roomId);
+    const r = selected.rooms.find((x) => x.id === roomId);
+    setEditRoomName(r?.name ?? "");
+    setEditOpen(true);
   };
 
   const confirmDeleteRoom = (roomId: string) => {
@@ -98,7 +184,8 @@ export function DashboardRoomsSection({
       }),
     }));
     if (selectedRoomId === roomId) onRoomSelect(null);
-    setEditingRoomId(null);
+    setEditOpen(false);
+    setEditRoomId(null);
   };
 
   const pendingDeleteRoom = pendingDeleteRoomId
@@ -107,88 +194,177 @@ export function DashboardRoomsSection({
 
   return (
     <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
-      <h2 className="text-base font-semibold text-white">방 관리 (CRUD)</h2>
+      <h2 className="text-base font-semibold text-white">방 관리</h2>
       <p className="mt-1 text-sm text-zinc-500">
-        방을 추가하고 이름을 지정하세요. 구조도에서 클릭해 선택할 수 있습니다.
+        탭으로 방을 선택하세요. 구조도에서도 같은 방이 선택됩니다. + 로 방을
+        추가합니다.
       </p>
-      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
-        <div className="flex-1 space-y-2">
-          <label className="text-xs text-zinc-400">새 방 이름</label>
-          <input
-            value={roomDraftName}
-            onChange={(e) => setRoomDraftName(e.target.value)}
-            placeholder="거실, 주방…"
-            className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-teal-500"
-          />
+
+      <div className="mt-4 flex min-w-0 items-stretch gap-2">
+        <div
+          role="tablist"
+          aria-label="방 선택"
+          className="flex min-h-11 min-w-0 flex-1 items-center gap-1 overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-950/80 p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        >
+          {selected.rooms.length === 0 ? (
+            <p className="px-3 py-2 text-sm text-zinc-500">
+              등록된 방이 없습니다. 오른쪽 + 로 추가하세요.
+            </p>
+          ) : (
+            selected.rooms.map((r) => {
+              const isSelected = r.id === selectedRoomId;
+              return (
+                <div
+                  key={r.id}
+                  className={cn(
+                    "flex shrink-0 items-center rounded-lg",
+                    isSelected
+                      ? "bg-teal-500/15 ring-1 ring-teal-500/50"
+                      : "bg-transparent",
+                  )}
+                >
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={isSelected}
+                    onClick={() => onRoomSelect(r.id)}
+                    className={cn(
+                      "cursor-pointer px-3 py-2 text-left text-sm font-medium transition-colors",
+                      isSelected
+                        ? "text-teal-100"
+                        : "text-zinc-300 hover:text-white",
+                    )}
+                  >
+                    <span className="whitespace-nowrap">{r.name}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => openEditModal(r.id, e)}
+                    className="cursor-pointer rounded-md p-2 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-teal-300"
+                    aria-label={`${r.name} 이름 수정`}
+                  >
+                    <PencilIcon />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setPendingDeleteRoomId(r.id);
+                    }}
+                    className="cursor-pointer rounded-md p-2 text-zinc-500 transition-colors hover:bg-rose-500/15 hover:text-rose-300"
+                    aria-label={`${r.name} 삭제`}
+                  >
+                    <TrashIcon />
+                  </button>
+                </div>
+              );
+            })
+          )}
         </div>
         <button
           type="button"
-          onClick={handleAddRoom}
-          className="cursor-pointer rounded-xl border border-zinc-600 px-4 py-2 text-sm font-medium text-teal-300 hover:bg-zinc-800"
+          onClick={() => setAddOpen(true)}
+          className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-teal-500/40 bg-teal-500/10 text-teal-300 transition-colors hover:bg-teal-500/20 hover:text-teal-100"
+          aria-label="방 추가"
         >
-          방 추가
+          <PlusIcon />
         </button>
       </div>
-      <ul className="mt-4 divide-y divide-zinc-800 rounded-xl border border-zinc-800">
-        {selected.rooms.length === 0 ? (
-          <li className="px-4 py-6 text-center text-sm text-zinc-500">
-            방이 없습니다. 위에서 방을 추가하세요.
-          </li>
-        ) : (
-          selected.rooms.map((r) => (
-            <li
-              key={r.id}
-              className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-            >
-              {editingRoomId === r.id ? (
-                <div className="flex flex-1 flex-wrap items-center gap-2">
-                  <input
-                    value={editingRoomName}
-                    onChange={(e) => setEditingRoomName(e.target.value)}
-                    className="min-w-40 flex-1 rounded-lg border border-zinc-600 bg-zinc-950 px-2 py-1.5 text-sm text-white"
-                    autoFocus
-                  />
-                  <button
-                    type="button"
-                    onClick={() => handleSaveRoomName(r.id)}
-                    className="cursor-pointer rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-medium text-white"
-                  >
-                    저장
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setEditingRoomId(null)}
-                    className="cursor-pointer text-xs text-zinc-500"
-                  >
-                    취소
-                  </button>
-                </div>
-              ) : (
-                <span className="font-medium text-zinc-200">{r.name}</span>
-              )}
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingRoomId(r.id);
-                    setEditingRoomName(r.name);
-                  }}
-                  className="cursor-pointer rounded-lg border border-zinc-600 px-3 py-1 text-xs text-zinc-300 hover:bg-zinc-800"
-                >
-                  이름 수정
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPendingDeleteRoomId(r.id)}
-                  className="cursor-pointer rounded-lg border border-rose-900/50 px-3 py-1 text-xs text-rose-400 hover:bg-rose-950/40"
-                >
-                  삭제
-                </button>
-              </div>
-            </li>
-          ))
-        )}
-      </ul>
+
+      <MotionModalLayer
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        closeOnOverlayClick
+        panelClassName="fixed left-1/2 top-1/2 z-10041 w-[min(100vw-2rem,28rem)] -translate-x-1/2 -translate-y-1/2 outline-none"
+        ariaLabelledBy={addTitleId}
+        ariaDescribedBy={addDescId}
+      >
+        <div className="rounded-2xl border border-zinc-700 bg-zinc-900 p-6 shadow-xl">
+          <h2 id={addTitleId} className="text-lg font-semibold text-white">
+            방 추가
+          </h2>
+          <p id={addDescId} className="mt-2 text-sm text-zinc-400">
+            방 이름을 입력하세요. 비워 두면 순서대로 기본 이름이 붙습니다.
+          </p>
+          <div className="mt-5 space-y-4">
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-zinc-400">방 이름</label>
+              <input
+                value={newRoomName}
+                onChange={(e) => setNewRoomName(e.target.value)}
+                placeholder="거실, 주방…"
+                className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-teal-500"
+                autoFocus
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                type="button"
+                className="cursor-pointer rounded-xl border border-zinc-600 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800"
+                onClick={() => setAddOpen(false)}
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                onClick={handleAddRoom}
+                className="cursor-pointer rounded-xl bg-teal-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-teal-400"
+              >
+                추가
+              </button>
+            </div>
+          </div>
+        </div>
+      </MotionModalLayer>
+
+      <MotionModalLayer
+        open={editOpen}
+        onOpenChange={(o) => {
+          setEditOpen(o);
+          if (!o) setEditRoomId(null);
+        }}
+        closeOnOverlayClick
+        panelClassName="fixed left-1/2 top-1/2 z-10041 w-[min(100vw-2rem,28rem)] -translate-x-1/2 -translate-y-1/2 outline-none"
+        ariaLabelledBy={editTitleId}
+        ariaDescribedBy={editDescId}
+      >
+        <div className="rounded-2xl border border-zinc-700 bg-zinc-900 p-6 shadow-xl">
+          <h2 id={editTitleId} className="text-lg font-semibold text-white">
+            방 이름 수정
+          </h2>
+          <p id={editDescId} className="mt-2 text-sm text-zinc-400">
+            구조도·목록에 표시되는 이름을 바꿉니다.
+          </p>
+          <div className="mt-5 space-y-4">
+            <div className="space-y-2">
+              <label className="text-xs font-medium text-zinc-400">방 이름</label>
+              <input
+                value={editRoomName}
+                onChange={(e) => setEditRoomName(e.target.value)}
+                className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-teal-500"
+                autoFocus
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-1">
+              <button
+                type="button"
+                className="cursor-pointer rounded-xl border border-zinc-600 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800"
+                onClick={() => setEditOpen(false)}
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                disabled={!editRoomName.trim()}
+                onClick={handleSaveRoomName}
+                className="cursor-pointer rounded-xl bg-teal-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-teal-400 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                저장
+              </button>
+            </div>
+          </div>
+        </div>
+      </MotionModalLayer>
 
       <AlertModal
         open={pendingDeleteRoomId !== null}
