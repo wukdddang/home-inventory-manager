@@ -3,6 +3,10 @@
 import { toast } from "@/hooks/use-toast";
 import { resolveItemRoomId } from "@/lib/household-location";
 import { getPurchases, subscribePurchases } from "@/lib/local-store";
+import {
+  getMockPurchasesSession,
+  subscribeMockPurchasesSession,
+} from "../../../purchases/_lib/mock-purchases-session-store";
 import { useAppRoutePrefix } from "@/lib/use-app-route-prefix";
 import type { Household, InventoryRow } from "@/types/domain";
 import Link from "next/link";
@@ -46,6 +50,7 @@ export function DashboardInventorySection({
 }: DashboardInventorySectionProps) {
   const prefix = useAppRoutePrefix();
   const {
+    dataMode,
     거점을_갱신_한다,
     productCatalog,
     재고_소비를_기록_한다,
@@ -53,8 +58,9 @@ export function DashboardInventorySection({
   } = useDashboard();
 
   const purchases = useSyncExternalStore(
-    subscribePurchases,
-    () => getPurchases(),
+    dataMode === "mock" ? subscribeMockPurchasesSession : subscribePurchases,
+    () =>
+      dataMode === "mock" ? getMockPurchasesSession() : getPurchases(),
     () => [],
   );
 

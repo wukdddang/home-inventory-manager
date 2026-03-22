@@ -156,8 +156,12 @@ export function PurchaseRegisterModal({
             구매·유통기한 로트 등록
           </h2>
           <p className="mt-2 text-sm text-zinc-400">
-            한 번의 구매에 여러 유통기한 로트를 나누어 넣을 수 있습니다. 데이터는
-            브라우저 `him-purchases`에 저장됩니다.
+            한 번의 구매에 여러 유통기한 로트를 나누어 넣을 수 있습니다.{" "}
+            <span className="text-zinc-500">
+              장보기 직후·정리 전에는 재고 연결 없이 적어 두었다가, 나중에 메인에서
+              물품을 만들고 연결해도 됩니다.
+            </span>{" "}
+            데이터는 브라우저 `him-purchases`에 저장됩니다.
           </p>
         </div>
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-y-contain px-5 py-4">

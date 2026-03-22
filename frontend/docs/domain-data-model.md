@@ -15,6 +15,7 @@
 
 | 주제 | 문서 |
 |------|------|
+| 메인에서 물품 넣기 vs 구매·로트만 먼저 적기 | 프론트: [screens-overview.md](./screens-overview.md) 「물품·구매 등록」절 |
 | 장보기 줄 = `categoryId` 필수, 품목/Variant/재고는 힌트 | 논리 설계 §16 `ShoppingListItem` |
 | 알림 → 장보기 → 재고 등록 플로우 | 개념 설계 `ShoppingListItem`·메모, 논리 §16 |
 | 집 구조 2D/3D·StorageLocation 연동 | 프론트: [house-structure-feature.md](./house-structure-feature.md) / 백엔드: [house-structure-3d-feature.md](../../docs/house-structure-3d-feature.md) |

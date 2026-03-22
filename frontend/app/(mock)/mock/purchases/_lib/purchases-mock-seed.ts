@@ -93,5 +93,41 @@ export function mock구매_시드를_생성한다(): PurchaseRecord[] {
         },
       ],
     },
+    /** 메인에서「구매·로트에서 가져오기」데모용 — 아직 재고 행과 연결되지 않음 */
+    {
+      id: "mock-purchase-snack-unplaced",
+      householdId: "mock-household-home",
+      itemName: "간식 › 과자 (미배치)",
+      variantCaption: "1봉",
+      unitSymbol: "개",
+      purchasedOn: 날짜를_YMD_문자열로_한다(날짜에_일수를_더한다(now, -1)),
+      unitPrice: 1500,
+      totalPrice: 3000,
+      supplierName: "편의점",
+      batches: [
+        {
+          id: "mock-lot-snack-a",
+          quantity: 2,
+          expiresOn: 날짜를_YMD_문자열로_한다(날짜에_일수를_더한다(now, 20)),
+        },
+      ],
+    },
+    {
+      id: "mock-purchase-drink-office-unplaced",
+      householdId: "mock-household-office",
+      itemName: "음료 › 생수 500ml (미배치)",
+      variantCaption: "500ml",
+      unitSymbol: "병",
+      purchasedOn: 날짜를_YMD_문자열로_한다(날짜에_일수를_더한다(now, -3)),
+      unitPrice: 600,
+      totalPrice: 3600,
+      batches: [
+        {
+          id: "mock-lot-water-a",
+          quantity: 6,
+          expiresOn: 날짜를_YMD_문자열로_한다(날짜에_일수를_더한다(now, 90)),
+        },
+      ],
+    },
   ];
 }

@@ -7,7 +7,12 @@ import {
   setPurchases,
 } from "@/lib/local-store";
 import { MOCK_SEED_HOUSEHOLDS } from "../../dashboard/_context/dashboard-mock.service";
-import { mock구매_시드를_생성한다 } from "../_lib/purchases-mock-seed";
+import {
+  getMockPurchasesSession,
+  setMockPurchasesSession,
+  subscribeMockPurchasesSession,
+  updateMockPurchasesSession,
+} from "../_lib/mock-purchases-session-store";
 import { APP_PAGE_MIN_LOADING_MS } from "@/app/_ui/app-loading-state";
 import type {
   Household,
@@ -54,11 +59,6 @@ function mock거점_스냅샷을_구한다(loaded: Household[]): Household[] {
   return structuredClone(MOCK_SEED_HOUSEHOLDS);
 }
 
-function mock구매_스냅샷을_구한다(loaded: PurchaseRecord[]): PurchaseRecord[] {
-  if (loaded.length > 0) return loaded;
-  return mock구매_시드를_생성한다();
-}
-
 export function PurchasesProvider({
   children,
   dataMode,
@@ -80,15 +80,14 @@ export function PurchasesProvider({
     void (async () => {
       try {
         const fromStoreH = getHouseholds();
-        const fromStoreP = getPurchases();
         const nextHouseholds =
           dataMode === "mock"
             ? mock거점_스냅샷을_구한다(fromStoreH)
             : fromStoreH;
         const nextPurchases =
           dataMode === "mock"
-            ? mock구매_스냅샷을_구한다(fromStoreP)
-            : fromStoreP;
+            ? getMockPurchasesSession()
+            : getPurchases();
         const catalog = getSharedProductCatalog();
 
         const elapsed =
@@ -123,6 +122,13 @@ export function PurchasesProvider({
     };
   }, [dataMode]);
 
+  useEffect(() => {
+    if (dataMode !== "mock") return;
+    return subscribeMockPurchasesSession(() => {
+      setPurchasesState(getMockPurchasesSession());
+    });
+  }, [dataMode]);
+
   const 거점_목록을_새로_고친다 = useCallback(() => {
     const fromStore = getHouseholds();
     setHouseholds(
@@ -134,11 +140,8 @@ export function PurchasesProvider({
   }, [dataMode]);
 
   const 구매_목록을_불러온다 = useCallback(() => {
-    const fromStore = getPurchases();
     setPurchasesState(
-      dataMode === "mock"
-        ? mock구매_스냅샷을_구한다(fromStore)
-        : fromStore,
+      dataMode === "mock" ? getMockPurchasesSession() : getPurchases(),
     );
   }, [dataMode]);
 
@@ -148,22 +151,37 @@ export function PurchasesProvider({
         ...draft,
         id: crypto.randomUUID(),
       };
+      if (dataMode === "mock") {
+        updateMockPurchasesSession((prev) => [...prev, row]);
+        setPurchasesState(getMockPurchasesSession());
+        return;
+      }
       setPurchasesState((prev) => {
         const next = [...prev, row];
         setPurchases(next);
         return next;
       });
     },
-    [],
+    [dataMode],
   );
 
-  const 구매를_삭제_한다 = useCallback((purchaseId: string) => {
-    setPurchasesState((prev) => {
-      const next = prev.filter((p) => p.id !== purchaseId);
-      setPurchases(next);
-      return next;
-    });
-  }, []);
+  const 구매를_삭제_한다 = useCallback(
+    (purchaseId: string) => {
+      if (dataMode === "mock") {
+        updateMockPurchasesSession((prev) =>
+          prev.filter((p) => p.id !== purchaseId),
+        );
+        setPurchasesState(getMockPurchasesSession());
+        return;
+      }
+      setPurchasesState((prev) => {
+        const next = prev.filter((p) => p.id !== purchaseId);
+        setPurchases(next);
+        return next;
+      });
+    },
+    [dataMode],
+  );
 
   const value = useMemo<PurchasesContextType>(
     () => ({

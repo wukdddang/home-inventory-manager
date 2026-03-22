@@ -130,7 +130,8 @@ export function PurchaseLotsSection() {
         <div className="min-w-0 space-y-2">
           <h2 className="text-lg font-semibold text-white">구매·유통기한 로트</h2>
           <p className="text-sm text-zinc-500">
-            구매 단위로 기록하고, 로트별 유통기한을 나눕니다.{" "}
+            구매 단위로 기록하고 로트별 유통기한을 나눕니다. 재고 행과 연결은
+            선택이며, 나중에 메인에서 물품을 맞춰도 됩니다.{" "}
             <span className="text-zinc-600">him-purchases</span>
           </p>
         </div>
@@ -176,8 +177,9 @@ export function PurchaseLotsSection() {
 
       {filteredPurchases.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-zinc-700 bg-zinc-950/30 px-4 py-10 text-center text-sm text-zinc-500">
-          이 거점에 등록된 구매가 없습니다.「구매 등록」으로 첫 로트를
-          추가해 보세요.
+          이 거점에 등록된 구매가 없습니다.「구매 등록」으로 첫 로트를 추가해
+          보세요. 이미 칸에 넣은 물품은 메인에서 등록해 보관 위치까지 한 번에
+          맞출 수 있습니다.
           <p className="mt-2 text-xs text-zinc-600">
             오늘 날짜: {오늘_날짜_문자열을_구한다()}
           </p>
