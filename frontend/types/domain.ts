@@ -28,6 +28,11 @@ export type FurniturePlacement = {
   roomId: string;
   label: string;
   sortOrder?: number;
+  /**
+   * 구조도·편집 UI: 이 방 직속 보관 칸(StorageLocation) 아래에 가구를 매단다.
+   * 없으면 방에서 곧바로 가구로만 이어진다.
+   */
+  anchorDirectStorageId?: string | null;
 };
 
 /**
@@ -110,6 +115,15 @@ export type InventoryRow = {
   quantityPerUnit?: number;
 };
 
+/**
+ * 구조도 캔버스에서 옮긴 노드 좌표.
+ * 키: `slot:{storageLocationId}`(방 직속 칸) · `fp:{furniturePlacementId}`(가구)
+ */
+export type HouseholdStructureDiagramLayout = Record<
+  string,
+  { x: number; y: number }
+>;
+
 export type Household = {
   id: string;
   name: string;
@@ -121,6 +135,8 @@ export type Household = {
   furniturePlacements?: FurniturePlacement[];
   /** 보관 슬롯(방 직속 또는 가구 하위) */
   storageLocations?: StorageLocationRow[];
+  /** 조회 모드 구조도: 직속·가구 블록 수동 배치(방 좌표는 rooms[].x/y) */
+  structureDiagramLayout?: HouseholdStructureDiagramLayout;
   createdAt: string;
 };
 

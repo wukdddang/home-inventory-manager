@@ -2,7 +2,10 @@
 
 import { useMemo } from "react";
 import { useDashboard } from "../../_hooks/useDashboard";
-import { HouseStructureFlow } from "./HouseStructureFlow.module";
+import {
+  HouseStructureFlow,
+  type StructureDiagramCommitPayload,
+} from "./HouseStructureFlow.module";
 import { ItemsSpreadsheet } from "./ItemsSpreadsheet.module";
 import { RoomItemsPanel } from "./RoomItemsPanel.module";
 import { ViewModeToggle, type ViewMode } from "./ViewModeToggle.module";
@@ -53,17 +56,30 @@ export function DashboardInventorySection({
     }));
   };
 
-  const handleRoomPositionChange = (
-    roomId: string,
-    x: number,
-    y: number,
+  const handleStructureDiagramCommit = (
+    payload: StructureDiagramCommitPayload,
   ) => {
-    거점을_갱신_한다(selected.id, (h) => ({
-      ...h,
-      rooms: h.rooms.map((r) =>
-        r.id === roomId ? { ...r, x, y } : r,
-      ),
-    }));
+    거점을_갱신_한다(selected.id, (h) => {
+      const nextLayout = { ...(h.structureDiagramLayout ?? {}) };
+      for (const [k, pos] of Object.entries(payload.layoutPatch)) {
+        nextLayout[k] = pos;
+      }
+      let next: typeof h = {
+        ...h,
+        structureDiagramLayout: nextLayout,
+      };
+      if (payload.room) {
+        next = {
+          ...next,
+          rooms: next.rooms.map((r) =>
+            r.id === payload.room!.roomId
+              ? { ...r, x: payload.room!.x, y: payload.room!.y }
+              : r,
+          ),
+        };
+      }
+      return next;
+    });
   };
 
   const handleDeleteItem = (itemId: string) => {
@@ -95,7 +111,8 @@ export function DashboardInventorySection({
         <div>
           <h2 className="text-base font-semibold text-white">조회 모드</h2>
           <p className="mt-1 text-sm text-zinc-500">
-            구조도에서 방을 드래그해 배치하거나, 표로 전환해 물품을 확인합니다.
+            구조도에서 방·직속·가구 블록을 드래그해 배치하거나, 표로 전환해 물품을
+            확인합니다.
           </p>
         </div>
         <ViewModeToggle
@@ -106,21 +123,23 @@ export function DashboardInventorySection({
 
       {viewMode === "structure" ? (
         <div className="mt-6 flex min-h-0 min-w-0 flex-1 flex-col gap-4">
-          <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,1fr)_17rem]">
-            <div className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950">
+          <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 items-stretch gap-4 lg:min-h-[380px] lg:grid-cols-[minmax(0,1fr)_minmax(14rem,22rem)]">
+            <div className="flex min-h-0 min-w-0 min-h-[280px] flex-col overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 lg:min-h-0">
               <HouseStructureFlow
                 household={selected}
                 selectedRoomId={selectedRoomId}
                 onRoomSelect={(id) => onRoomSelect(id)}
                 onRoomRename={handleRoomRename}
-                onRoomPositionChange={handleRoomPositionChange}
+                onStructureDiagramCommit={handleStructureDiagramCommit}
               />
             </div>
-            <RoomItemsPanel
-              household={selected}
-              selectedRoomId={selectedRoomId}
-              roomItems={roomItems}
-            />
+            <div className="flex min-h-0 min-h-[240px] flex-col lg:min-h-0">
+              <RoomItemsPanel
+                household={selected}
+                selectedRoomId={selectedRoomId}
+                roomItems={roomItems}
+              />
+            </div>
           </div>
           {!selectedRoomId ? noRoomHint : null}
         </div>

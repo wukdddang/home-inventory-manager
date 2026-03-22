@@ -43,9 +43,17 @@ const MOCK_SEED_HOUSEHOLDS: Household[] = [
         roomId: "mock-room-kitchen",
         label: "주방 선반",
         sortOrder: 1,
+        anchorDirectStorageId: "sl-mock-kitchen-wall",
       },
     ],
     storageLocations: [
+      {
+        id: "sl-mock-kitchen-wall",
+        name: "벽면장",
+        roomId: "mock-room-kitchen",
+        furniturePlacementId: null,
+        sortOrder: 0,
+      },
       {
         id: "sl-mock-kitchen-fridge",
         name: "냉장고",
@@ -89,6 +97,19 @@ const MOCK_SEED_HOUSEHOLDS: Household[] = [
         productVariantId: "v-ramen-1",
         variantCaption: "1봉",
         quantityPerUnit: 1,
+      },
+      {
+        id: "mock-item-milk-shelf",
+        name: "식료품 › 우유 › 500ml",
+        quantity: 2,
+        unit: "병",
+        roomId: "mock-room-kitchen",
+        storageLocationId: "sl-mock-kitchen-shelf-top",
+        categoryId: "c-food",
+        productId: "p-milk",
+        productVariantId: "v-milk-500",
+        variantCaption: "500ml",
+        quantityPerUnit: 500,
       },
       {
         id: "mock-item-tissue",

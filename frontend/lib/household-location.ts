@@ -74,6 +74,72 @@ export function listStorageOptionsForRoom(
   return out;
 }
 
+/**
+ * 방이 이미 선택된 UI에서 — ERD상 보관 블록만 표시 (가구 › 칸 또는 방 직속 칸 이름).
+ */
+export function formatStorageBlockHeading(
+  h: Household,
+  storageLocationId: string | undefined,
+): string {
+  if (!storageLocationId) {
+    return "보관 칸 미지정";
+  }
+  const slot = (h.storageLocations ?? []).find((s) => s.id === storageLocationId);
+  if (!slot) {
+    return "알 수 없는 보관 칸";
+  }
+  if (slot.furniturePlacementId) {
+    const fp = (h.furniturePlacements ?? []).find(
+      (f) => f.id === slot.furniturePlacementId,
+    );
+    const furnitureLabel = fp?.label ?? "가구";
+    return `${furnitureLabel} › ${slot.name}`;
+  }
+  return slot.name;
+}
+
+export type StorageItemGroup = {
+  storageLocationId: string | null;
+  heading: string;
+  items: InventoryRow[];
+};
+
+/** 같은 방 안 재고를 보관 칸(블록)별로 묶는다 — `listStorageOptionsForRoom` 순서를 따름 */
+export function groupInventoryByStorageForRoom(
+  h: Household,
+  roomId: string,
+  items: InventoryRow[],
+): StorageItemGroup[] {
+  const bucket = new Map<string | null, InventoryRow[]>();
+  for (const it of items) {
+    const key = it.storageLocationId ?? null;
+    const arr = bucket.get(key) ?? [];
+    arr.push(it);
+    bucket.set(key, arr);
+  }
+  const orderIds = listStorageOptionsForRoom(h, roomId).map((o) => o.id);
+  const rank = (slotId: string | null) => {
+    if (slotId === null) return 1_000_000;
+    const i = orderIds.indexOf(slotId);
+    return i === -1 ? 500_000 : i;
+  };
+  const entries = [...bucket.entries()].sort(([a], [b]) => {
+    const d = rank(a) - rank(b);
+    if (d !== 0) return d;
+    return (a ?? "").localeCompare(b ?? "");
+  });
+  return entries.map(([storageLocationId, groupItems]) => ({
+    storageLocationId,
+    heading: formatStorageBlockHeading(
+      h,
+      storageLocationId ?? undefined,
+    ),
+    items: [...groupItems].sort((x, y) =>
+      x.name.localeCompare(y.name, "ko", { sensitivity: "base" }),
+    ),
+  }));
+}
+
 export function formatLocationBreadcrumb(
   h: Household,
   item: InventoryRow,

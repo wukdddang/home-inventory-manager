@@ -1,5 +1,5 @@
 /** 카탈로그 품목 사진 등 클라이언트 전용 업로드 한도 (바이트) */
-export const MAX_CATALOG_IMAGE_BYTES = 600 * 1024;
+export const MAX_CATALOG_IMAGE_BYTES = 10 * 1024 * 1024;
 
 export type ReadImageResult =
   | { ok: true; dataUrl: string }
@@ -16,10 +16,14 @@ export async function readImageFileAsDataUrl(
     return { ok: false, reason: "이미지 파일만 넣을 수 있습니다." };
   }
   if (file.size > maxBytes) {
-    const kb = Math.round(maxBytes / 1024);
+    const mb = maxBytes / (1024 * 1024);
+    const label =
+      mb >= 1
+        ? `${mb % 1 === 0 ? mb : Math.round(mb * 10) / 10}MB`
+        : `${Math.round(maxBytes / 1024)}KB`;
     return {
       ok: false,
-      reason: `파일이 너무 큽니다. ${kb}KB 이하로 올려 주세요.`,
+      reason: `파일이 너무 큽니다. ${label} 이하로 올려 주세요.`,
     };
   }
   return new Promise((resolve) => {
