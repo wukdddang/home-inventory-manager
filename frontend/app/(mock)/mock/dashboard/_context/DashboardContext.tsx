@@ -98,6 +98,14 @@ export type DashboardContextType = {
     reasonCode: string,
     memo?: string,
   ) => boolean;
+  /** 장보기「구매 완료」— 수량 증가 + `him-inventory-ledger` type `in` */
+  재고_장보기_보충을_기록_한다: (
+    householdId: string,
+    itemId: string,
+    quantity: number,
+    memo?: string,
+    refId?: string,
+  ) => boolean;
 };
 
 export type DashboardProviderProps = {
@@ -326,6 +334,45 @@ export function DashboardProvider({
     [거점을_갱신_한다],
   );
 
+  const 재고_장보기_보충을_기록_한다 = useCallback(
+    (
+      householdId: string,
+      itemId: string,
+      quantity: number,
+      memo?: string,
+      refId?: string,
+    ) => {
+      if (!Number.isFinite(quantity) || quantity < 1) return false;
+      const h = householdsRef.current.find((x) => x.id === householdId);
+      if (!h) return false;
+      const it = h.items.find((i) => i.id === itemId);
+      if (!it) return false;
+      const nextQty = it.quantity + quantity;
+      const trimmed = memo?.trim();
+      appendInventoryLedgerRow({
+        id: crypto.randomUUID(),
+        householdId,
+        inventoryItemId: itemId,
+        type: "in",
+        quantityDelta: quantity,
+        quantityAfter: nextQty,
+        itemLabel: it.name,
+        memo: trimmed || "장보기 구매 완료",
+        refType: "shopping",
+        refId: refId?.trim() || undefined,
+        createdAt: new Date().toISOString(),
+      });
+      거점을_갱신_한다(householdId, (prev) => ({
+        ...prev,
+        items: prev.items.map((row) =>
+          row.id === itemId ? { ...row, quantity: nextQty } : row,
+        ),
+      }));
+      return true;
+    },
+    [거점을_갱신_한다],
+  );
+
   const 카탈로그를_갱신_한다 = useCallback(
     (updater: (c: ProductCatalog) => ProductCatalog) => {
       setProductCatalog((c) => updater(structuredClone(c)));
@@ -351,6 +398,7 @@ export function DashboardProvider({
       카탈로그를_갱신_한다,
       재고_소비를_기록_한다,
       재고_폐기를_기록_한다,
+      재고_장보기_보충을_기록_한다,
     }),
     [
       dataMode,
@@ -369,6 +417,7 @@ export function DashboardProvider({
       카탈로그를_갱신_한다,
       재고_소비를_기록_한다,
       재고_폐기를_기록_한다,
+      재고_장보기_보충을_기록_한다,
     ],
   );
 

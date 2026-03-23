@@ -6,14 +6,20 @@ import {
   getHouseholdKindLabel,
   sortHouseholdKindDefinitions,
 } from "@/lib/household-kind-defaults";
+import { useAppRoutePrefix } from "@/lib/use-app-route-prefix";
 import { cn } from "@/lib/utils";
+import type { Household } from "@/types/domain";
 import { motion } from "framer-motion";
-import { useEffect, useId, useState } from "react";
+import Link from "next/link";
+import { useEffect, useId, useRef, useState } from "react";
 import { useDashboard } from "../../_hooks/useDashboard";
+import { DashboardShoppingListModal } from "../DashboardInventory.section/DashboardShoppingList.module";
 import { HouseholdKindsManageModal } from "../HouseholdKindsManage.modal";
 
 type DashboardHouseholdsHeaderProps = {
   selectedHouseholdId: string | null;
+  /** 장보기 모달·거점 컨텍스트용 */
+  selectedHousehold: Household | null;
   onSelectHousehold: (id: string) => void;
   onAfterAddHousehold: (id: string) => void;
   onDeleteHousehold: (id: string) => void;
@@ -55,6 +61,26 @@ function PlusIcon({ className }: { className?: string }) {
   );
 }
 
+function InfoCircleIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      className={cn("size-5", className)}
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
+      />
+    </svg>
+  );
+}
+
 function CogIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -80,8 +106,57 @@ function CogIcon({ className }: { className?: string }) {
   );
 }
 
+function DashboardScreenHelpHint() {
+  const prefix = useAppRoutePrefix();
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (wrapRef.current?.contains(e.target as Node)) return;
+      setOpen(false);
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, [open]);
+
+  return (
+    <div ref={wrapRef} className="relative shrink-0 pt-0.5">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        aria-haspopup="true"
+        className="flex cursor-pointer items-center justify-center rounded-full border border-zinc-600 bg-zinc-950 p-1.5 text-zinc-400 transition-colors hover:border-teal-500/50 hover:text-teal-300"
+        aria-label="이 화면 안내"
+      >
+        <InfoCircleIcon className="size-4" />
+      </button>
+      {open ? (
+        <div
+          role="tooltip"
+          className="absolute left-0 top-full z-50 mt-2 w-[min(calc(100vw-2rem),22rem)] rounded-xl border border-zinc-600 bg-zinc-900 p-3 text-sm leading-relaxed text-zinc-300 shadow-xl ring-1 ring-black/40"
+        >
+          <span className="font-medium text-zinc-200">이 화면</span>에서는 방·보관
+          칸에 물품을 바로 맞춥니다. 장만 하고 칸 정리는 나중이면{" "}
+          <Link
+            href={`${prefix}/purchases`}
+            className="font-medium text-teal-400 underline-offset-2 hover:underline"
+            onClick={() => setOpen(false)}
+          >
+            구매·로트
+          </Link>
+          에서 유통기한·로트만 먼저 적어 두면 됩니다.
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 export function DashboardHouseholdsHeader({
   selectedHouseholdId,
+  selectedHousehold,
   onSelectHousehold,
   onAfterAddHousehold,
   onDeleteHousehold,
@@ -89,6 +164,7 @@ export function DashboardHouseholdsHeader({
   const { households, householdKindDefinitions, 거점을_추가_한다 } =
     useDashboard();
   const [kindsManageOpen, setKindsManageOpen] = useState(false);
+  const [shoppingOpen, setShoppingOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [newHouseName, setNewHouseName] = useState("");
   const [newHouseKind, setNewHouseKind] = useState("");
@@ -108,6 +184,10 @@ export function DashboardHouseholdsHeader({
     setNewHouseKind(defaultKindId);
   }, [addOpen, defaultKindId]);
 
+  useEffect(() => {
+    if (!selectedHousehold && shoppingOpen) setShoppingOpen(false);
+  }, [selectedHousehold, shoppingOpen]);
+
   const handleAddHousehold = () => {
     const trimmed = newHouseName.trim();
     if (!trimmed) return;
@@ -122,14 +202,27 @@ export function DashboardHouseholdsHeader({
 
   return (
     <header className="shrink-0 rounded-2xl border border-zinc-800 bg-zinc-900/40 px-4 py-4 sm:px-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-        <div className="min-w-0">
-          <h1 className="text-base font-semibold text-white sm:text-lg">
-            내 거점
-          </h1>
-          <p className="mt-0.5 text-xs text-zinc-500 sm:text-sm">
-            탭으로 거점을 전환하고, + 로 새 거점을 추가합니다.
-          </p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div className="flex min-w-0 items-start gap-2">
+          <div className="min-w-0">
+            <h1 className="text-base font-semibold text-white sm:text-lg">
+              내 거점
+            </h1>
+            <p className="mt-0.5 text-xs text-zinc-500 sm:text-sm">
+              탭으로 거점을 전환하고, + 로 새 거점을 추가합니다.
+            </p>
+          </div>
+          <DashboardScreenHelpHint />
+        </div>
+        <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
+          <button
+            type="button"
+            disabled={!selectedHousehold}
+            onClick={() => setShoppingOpen(true)}
+            className="cursor-pointer rounded-xl border border-teal-500/35 bg-teal-500/10 px-3 py-2 text-sm font-medium text-teal-200 transition-colors hover:bg-teal-500/20 hover:text-teal-100 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            장보기
+          </button>
         </div>
       </div>
 
@@ -284,6 +377,12 @@ export function DashboardHouseholdsHeader({
       <HouseholdKindsManageModal
         open={kindsManageOpen}
         onOpenChange={setKindsManageOpen}
+      />
+
+      <DashboardShoppingListModal
+        open={shoppingOpen}
+        onOpenChange={setShoppingOpen}
+        household={selectedHousehold}
       />
 
       <AlertModal

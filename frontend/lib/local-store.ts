@@ -11,6 +11,7 @@ import type {
   ProductCatalog,
   PurchaseBatchLot,
   PurchaseRecord,
+  ShoppingListEntry,
 } from "@/types/domain";
 import {
   DEFAULT_NOTIFICATION_DETAIL,
@@ -38,6 +39,7 @@ const K_HOUSEHOLD_KINDS = "him-household-kinds";
 const K_SETTINGS = "him-settings";
 const K_PURCHASES = "him-purchases";
 const K_INVENTORY_LEDGER = "him-inventory-ledger";
+const K_SHOPPING_LIST = "him-shopping-list";
 
 function isLedgerTypeString(x: string): x is InventoryLedgerRow["type"] {
   return x === "in" || x === "out" || x === "adjust" || x === "waste";
@@ -71,6 +73,35 @@ function isPurchaseBatchLotShape(x: unknown): x is PurchaseBatchLot {
     typeof o.expiresOn === "string" &&
     o.expiresOn.length >= 8
   );
+}
+
+function isShoppingListEntryShape(x: unknown): x is ShoppingListEntry {
+  if (!x || typeof x !== "object") return false;
+  const o = x as Record<string, unknown>;
+  if (
+    typeof o.id !== "string" ||
+    typeof o.householdId !== "string" ||
+    typeof o.label !== "string" ||
+    typeof o.restockQuantity !== "number" ||
+    !Number.isFinite(o.restockQuantity) ||
+    o.restockQuantity < 1 ||
+    typeof o.createdAt !== "string"
+  ) {
+    return false;
+  }
+  if (o.inventoryItemId != null && typeof o.inventoryItemId !== "string") {
+    return false;
+  }
+  if (o.unit != null && typeof o.unit !== "string") return false;
+  if (o.variantCaption != null && typeof o.variantCaption !== "string") {
+    return false;
+  }
+  if (o.categoryId != null && typeof o.categoryId !== "string") return false;
+  if (o.productId != null && typeof o.productId !== "string") return false;
+  if (o.productVariantId != null && typeof o.productVariantId !== "string") {
+    return false;
+  }
+  return true;
 }
 
 function isPurchaseRecordShape(x: unknown): x is PurchaseRecord {
@@ -401,6 +432,43 @@ export function setPurchases(list: PurchaseRecord[]) {
   localStorage.setItem(K_PURCHASES, str);
   purchasesCache = { raw: str, list };
   emitPurchases();
+}
+
+let shoppingListCache: {
+  raw: string | null | undefined;
+  list: ShoppingListEntry[];
+} = { raw: undefined, list: [] };
+
+const shoppingListListeners = new Set<() => void>();
+
+export function subscribeShoppingList(onStoreChange: () => void) {
+  shoppingListListeners.add(onStoreChange);
+  return () => shoppingListListeners.delete(onStoreChange);
+}
+
+function emitShoppingList() {
+  shoppingListListeners.forEach((fn) => fn());
+}
+
+/** 대시보드 장보기 보조 목록 */
+export function getShoppingList(): ShoppingListEntry[] {
+  if (typeof window === "undefined") return [];
+  const raw = localStorage.getItem(K_SHOPPING_LIST);
+  if (shoppingListCache.raw === raw) return shoppingListCache.list;
+  const parsed = safeParse<unknown[]>(raw, []);
+  const list = Array.isArray(parsed)
+    ? parsed.filter(isShoppingListEntryShape)
+    : [];
+  shoppingListCache = { raw, list };
+  return list;
+}
+
+export function setShoppingList(list: ShoppingListEntry[]) {
+  if (typeof window === "undefined") return;
+  const str = JSON.stringify(list);
+  localStorage.setItem(K_SHOPPING_LIST, str);
+  shoppingListCache = { raw: str, list };
+  emitShoppingList();
 }
 
 let ledgerCache: {

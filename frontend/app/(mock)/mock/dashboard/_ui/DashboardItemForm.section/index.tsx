@@ -27,6 +27,7 @@ import {
   subscribeMockPurchasesSession,
   updateMockPurchasesSession,
 } from "../../../purchases/_lib/mock-purchases-session-store";
+import { ShoppingListQuickAddFromCatalogModal } from "../DashboardInventory.section/DashboardShoppingList.module";
 
 export type RoomItemAddWidgetProps = {
   selected: Household;
@@ -118,6 +119,42 @@ function StepShell({
         {children}
       </div>
     </li>
+  );
+}
+
+/**
+ * 데스크톱 2열 그리드용 — 번호 옆 열 안에 제목·설명·select 를 한 덩어리로 둠.
+ * `lg:items-stretch` 그리드와 `h-full` + 설명 `min-h` + select `mt-auto`로 행 단위로 셀렉트 하단 맞춤.
+ */
+function StepEmbedBlock({
+  step,
+  title,
+  subtitle,
+  children,
+}: {
+  step: number;
+  title: string;
+  subtitle: string;
+  children: ReactNode;
+}) {
+  return (
+    <div className="flex h-full min-h-0 gap-3 rounded-xl border border-zinc-800/60 bg-zinc-950/35 p-3 ring-1 ring-zinc-800/40 sm:gap-3.5">
+      <div
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-teal-500/15 text-xs font-bold tabular-nums text-teal-300 ring-1 ring-teal-500/20"
+        aria-hidden
+      >
+        {step}
+      </div>
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
+        <div className="min-h-[4.25rem] shrink-0">
+          <h3 className="text-xs font-semibold text-zinc-100">{title}</h3>
+          <p className="mt-0.5 text-pretty text-[11px] leading-snug text-zinc-500 line-clamp-4">
+            {subtitle}
+          </p>
+        </div>
+        <div className="mt-auto min-w-0">{children}</div>
+      </div>
+    </div>
   );
 }
 
@@ -224,6 +261,7 @@ export function RoomItemAddWidget({
   /** 비어 있으면 구매·로트(`him-purchases`)에는 넣지 않음 */
   const [expiresOn, setExpiresOn] = useState("");
   const [purchasePickId, setPurchasePickId] = useState("");
+  const [shoppingQuickOpen, setShoppingQuickOpen] = useState(false);
 
   const purchases = useSyncExternalStore(
     dataMode === "mock" ? subscribeMockPurchasesSession : subscribePurchases,
@@ -338,6 +376,68 @@ export function RoomItemAddWidget({
       variantsInProduct.find((v) => v.isDefault) ?? variantsInProduct[0];
     return def?.id ?? "";
   }, [variantId, variantsInProduct]);
+
+  /** 오른쪽「수량·유통기한」패널 — 추가 대상 아래 품목 요약 */
+  const itemAddSummaryLine = useMemo(() => {
+    if (addSource === "catalog") {
+      if (!catalog || !room) return null;
+      const variant = catalog.variants.find((v) => v.id === variantIdResolved);
+      const product = catalog.products.find((p) => p.id === productIdResolved);
+      const category = catalog.categories.find(
+        (c) => c.id === categoryIdResolved,
+      );
+      const unit = variant
+        ? catalog.units.find((u) => u.id === variant.unitId)
+        : undefined;
+      if (!variant || !product || !category || !unit) {
+        if (categories.length === 0) return "등록된 카테고리가 없습니다.";
+        if (productsInCategory.length === 0) {
+          return "왼쪽에서 카테고리·품목을 선택하세요.";
+        }
+        if (variantsInProduct.length === 0) {
+          return "왼쪽에서 용량·포장을 선택하세요.";
+        }
+        return "왼쪽에서 품목·용량을 선택하세요.";
+      }
+      const variantCaption =
+        variant.name ?? `${variant.quantityPerUnit}${unit.symbol}`;
+      const stub: InventoryRow = {
+        id: "preview",
+        name: "",
+        quantity: 0,
+        unit: unit.symbol,
+        roomId: room.id,
+        categoryId: category.id,
+        productId: product.id,
+        productVariantId: variant.id,
+        variantCaption,
+        quantityPerUnit: variant.quantityPerUnit,
+      };
+      return inventoryDisplayLine(catalog, stub);
+    }
+    if (!selectedPlaceablePurchase) {
+      if (placeablePurchases.length === 0) {
+        return "배치할 수 있는 구매·로트가 없습니다.";
+      }
+      return "왼쪽에서 구매·로트를 선택하세요.";
+    }
+    const p = selectedPlaceablePurchase;
+    return [p.itemName, p.variantCaption, `${p.purchasedOn} 구매`]
+      .filter(Boolean)
+      .join(" · ");
+  }, [
+    addSource,
+    catalog,
+    room,
+    variantIdResolved,
+    productIdResolved,
+    categoryIdResolved,
+    categories,
+    productsInCategory,
+    variantsInProduct,
+    selectedPlaceablePurchase,
+    placeablePurchases.length,
+  ]);
 
   const handleAddItem = () => {
     if (!room || !catalog) return;
@@ -596,6 +696,106 @@ export function RoomItemAddWidget({
       </select>
     );
 
+  const categoryFieldContent =
+    categories.length === 0 ? (
+      <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200/90">
+        등록된 카테고리가 없습니다.
+        {!embedInFloatingPanel ? <CatalogHintLink /> : null}
+      </p>
+    ) : (
+      <>
+        <select
+          aria-label="카테고리 선택"
+          value={categoryIdResolved}
+          onChange={(e) => {
+            setCategoryId(e.target.value);
+            setProductId("");
+            setVariantId("");
+          }}
+          className={inputClass}
+        >
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+        {!embedInFloatingPanel ? <CatalogHintLink /> : null}
+      </>
+    );
+
+  const categoryFieldForDesktopGrid =
+    categories.length === 0 ? (
+      <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200/90">
+        등록된 카테고리가 없습니다.
+      </p>
+    ) : (
+      <select
+        aria-label="카테고리 선택"
+        value={categoryIdResolved}
+        onChange={(e) => {
+          setCategoryId(e.target.value);
+          setProductId("");
+          setVariantId("");
+        }}
+        className={inputClass}
+      >
+        {categories.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.name}
+          </option>
+        ))}
+      </select>
+    );
+
+  const productSelectControl = (
+    <select
+      aria-label="품목 선택"
+      value={productIdResolved}
+      onChange={(e) => {
+        setProductId(e.target.value);
+        setVariantId("");
+      }}
+      disabled={!categoryIdResolved || productsInCategory.length === 0}
+      className={`${inputClass} disabled:opacity-50`}
+    >
+      {productsInCategory.length === 0 ? (
+        <option value="">이 카테고리에 품목이 없습니다</option>
+      ) : (
+        productsInCategory.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.name}
+            {p.isConsumable ? "" : " (비소모)"}
+          </option>
+        ))
+      )}
+    </select>
+  );
+
+  const variantSelectControl = (
+    <select
+      aria-label="등록된 용량·포장 선택"
+      value={variantIdResolved}
+      onChange={(e) => setVariantId(e.target.value)}
+      disabled={!productIdResolved || variantsInProduct.length === 0}
+      className={`${inputClass} disabled:opacity-50`}
+    >
+      {variantsInProduct.length === 0 ? (
+        <option value="">등록된 용량·포장 없음</option>
+      ) : (
+        variantsInProduct.map((v) => {
+          const u = catalog.units.find((x) => x.id === v.unitId);
+          const label = v.name ?? `${v.quantityPerUnit}${u?.symbol ?? ""}`;
+          return (
+            <option key={v.id} value={v.id}>
+              {label}
+            </option>
+          );
+        })
+      )}
+    </select>
+  );
+
   const steps12 = (
     <>
       <StepShell
@@ -619,32 +819,7 @@ export function RoomItemAddWidget({
           embedInFloatingPanel ? "break-inside-avoid pb-1" : undefined
         }
       >
-        {categories.length === 0 ? (
-          <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200/90">
-            등록된 카테고리가 없습니다.
-            {!embedInFloatingPanel ? <CatalogHintLink /> : null}
-          </p>
-        ) : (
-          <>
-            <select
-              aria-label="카테고리 선택"
-              value={categoryIdResolved}
-              onChange={(e) => {
-                setCategoryId(e.target.value);
-                setProductId("");
-                setVariantId("");
-              }}
-              className={inputClass}
-            >
-              {categories.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-            {!embedInFloatingPanel ? <CatalogHintLink /> : null}
-          </>
-        )}
+        {categoryFieldContent}
       </StepShell>
     </>
   );
@@ -660,27 +835,7 @@ export function RoomItemAddWidget({
           embedInFloatingPanel ? "break-inside-avoid pb-1" : undefined
         }
       >
-        <select
-          aria-label="품목 선택"
-          value={productIdResolved}
-          onChange={(e) => {
-            setProductId(e.target.value);
-            setVariantId("");
-          }}
-          disabled={!categoryIdResolved || productsInCategory.length === 0}
-          className={`${inputClass} disabled:opacity-50`}
-        >
-          {productsInCategory.length === 0 ? (
-            <option value="">이 카테고리에 품목이 없습니다</option>
-          ) : (
-            productsInCategory.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-                {p.isConsumable ? "" : " (비소모)"}
-              </option>
-            ))
-          )}
-        </select>
+        {productSelectControl}
         {selectedProduct?.imageUrl ? (
           <div className="mt-2 flex items-center gap-2 rounded-lg border border-zinc-800/80 bg-zinc-950/50 p-2">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -707,28 +862,7 @@ export function RoomItemAddWidget({
           embedInFloatingPanel ? "break-inside-avoid pb-1" : undefined
         }
       >
-        <select
-          aria-label="등록된 용량·포장 선택"
-          value={variantIdResolved}
-          onChange={(e) => setVariantId(e.target.value)}
-          disabled={!productIdResolved || variantsInProduct.length === 0}
-          className={`${inputClass} disabled:opacity-50`}
-        >
-          {variantsInProduct.length === 0 ? (
-            <option value="">등록된 용량·포장 없음</option>
-          ) : (
-            variantsInProduct.map((v) => {
-              const u = catalog.units.find((x) => x.id === v.unitId);
-              const label =
-                v.name ?? `${v.quantityPerUnit}${u?.symbol ?? ""}`;
-              return (
-                <option key={v.id} value={v.id}>
-                  {label}
-                </option>
-              );
-            })
-          )}
-        </select>
+        {variantSelectControl}
         {!embedInFloatingPanel ? <CatalogHintLink /> : null}
       </StepShell>
     </>
@@ -808,62 +942,88 @@ export function RoomItemAddWidget({
     </>
   );
 
+  const catalogShoppingListButton = (
+    <button
+      type="button"
+      onClick={() => setShoppingQuickOpen(true)}
+      disabled={!catalog || !catalogHydrated}
+      className={cn(
+        "w-full cursor-pointer rounded-xl border border-teal-500/35 bg-zinc-950/50 px-4 py-2 text-sm font-medium text-teal-200/95 transition hover:border-teal-500/55 hover:bg-teal-500/10",
+        (!catalog || !catalogHydrated) && "cursor-not-allowed opacity-40",
+      )}
+    >
+      장보기에만 담기…
+    </button>
+  );
+
+  const catalogPrimaryAddButton = (
+    <button
+      type="button"
+      onClick={handleAddItem}
+      className="w-full shrink-0 cursor-pointer rounded-lg bg-teal-500 px-4 py-2 text-sm font-semibold text-zinc-950 shadow-md shadow-teal-500/15 transition hover:bg-teal-400"
+    >
+      선택한 칸에 물품 추가
+    </button>
+  );
+
+  const catalogQtyExpiryBlock = (
+    <div
+      className={cn(
+        "w-full space-y-3",
+        embedInFloatingPanel ? "max-w-full" : "sm:max-w-56",
+      )}
+    >
+      <div className="space-y-1">
+        <label
+          htmlFor={`stock-qty-${roomId}`}
+          className="text-[11px] font-medium text-zinc-500"
+        >
+          보유 수량 (선택한 용량·포장 기준)
+        </label>
+        <input
+          id={`stock-qty-${roomId}`}
+          type="number"
+          min={0}
+          value={stockQty}
+          onChange={(e) => setStockQty(e.target.value)}
+          className={inputClass}
+        />
+      </div>
+      <div className="space-y-1">
+        <label
+          htmlFor={`stock-expiry-${roomId}`}
+          className="text-[11px] font-medium text-zinc-500"
+        >
+          유통기한 (선택)
+        </label>
+        <input
+          id={`stock-expiry-${roomId}`}
+          type="date"
+          value={expiresOn}
+          onChange={(e) => setExpiresOn(e.target.value)}
+          className={`${inputClass} cursor-pointer`}
+        />
+        <p className="text-[10px] leading-snug text-zinc-600">
+          입력하면 위 수량만큼 1개의 로트로{" "}
+          <span className="text-zinc-500">him-purchases</span>에도 남고, 목록의
+          임박 뱃지에 반영됩니다. 구매일은 오늘 날짜로 기록됩니다.
+        </p>
+      </div>
+    </div>
+  );
+
   const footerQtyAndSubmit =
     addSource === "catalog" ? (
       <>
-        <div
-          className={cn(
-            "w-full space-y-3",
-            embedInFloatingPanel ? "max-w-full" : "sm:max-w-56",
-          )}
-        >
-          <div className="space-y-1">
-            <label
-              htmlFor={`stock-qty-${roomId}`}
-              className="text-[11px] font-medium text-zinc-500"
-            >
-              보유 수량 (선택한 용량·포장 기준)
-            </label>
-            <input
-              id={`stock-qty-${roomId}`}
-              type="number"
-              min={0}
-              value={stockQty}
-              onChange={(e) => setStockQty(e.target.value)}
-              className={inputClass}
-            />
+        {catalogQtyExpiryBlock}
+        {embedInFloatingPanel ? (
+          catalogPrimaryAddButton
+        ) : (
+          <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-48">
+            {catalogShoppingListButton}
+            {catalogPrimaryAddButton}
           </div>
-          <div className="space-y-1">
-            <label
-              htmlFor={`stock-expiry-${roomId}`}
-              className="text-[11px] font-medium text-zinc-500"
-            >
-              유통기한 (선택)
-            </label>
-            <input
-              id={`stock-expiry-${roomId}`}
-              type="date"
-              value={expiresOn}
-              onChange={(e) => setExpiresOn(e.target.value)}
-              className={`${inputClass} cursor-pointer`}
-            />
-            <p className="text-[10px] leading-snug text-zinc-600">
-              입력하면 위 수량만큼 1개의 로트로{" "}
-              <span className="text-zinc-500">him-purchases</span>에도 남고,
-              목록의 임박 뱃지에 반영됩니다. 구매일은 오늘 날짜로 기록됩니다.
-            </p>
-          </div>
-        </div>
-        <button
-          type="button"
-          onClick={handleAddItem}
-          className={cn(
-            "shrink-0 cursor-pointer rounded-xl bg-teal-500 px-5 py-2.5 text-sm font-semibold text-zinc-950 shadow-lg shadow-teal-500/15 transition hover:bg-teal-400 sm:px-6 sm:py-3",
-            embedInFloatingPanel ? "w-full" : "w-full sm:w-auto",
-          )}
-        >
-          선택한 칸에 물품 추가
-        </button>
+        )}
       </>
     ) : (
       <>
@@ -928,7 +1088,7 @@ export function RoomItemAddWidget({
           type="button"
           onClick={handleAddFromPurchase}
           className={cn(
-            "shrink-0 cursor-pointer rounded-xl bg-teal-500 px-5 py-2.5 text-sm font-semibold text-zinc-950 shadow-lg shadow-teal-500/15 transition hover:bg-teal-400 sm:px-6 sm:py-3",
+            "shrink-0 cursor-pointer rounded-lg bg-teal-500 px-4 py-2 text-sm font-semibold text-zinc-950 shadow-md shadow-teal-500/15 transition hover:bg-teal-400",
             embedInFloatingPanel ? "w-full" : "w-full sm:w-auto",
           )}
         >
@@ -982,6 +1142,7 @@ export function RoomItemAddWidget({
   );
 
   return (
+    <>
     <div
       className={cn(
         "shrink-0"
@@ -1004,25 +1165,68 @@ export function RoomItemAddWidget({
       {embedInFloatingPanel ? (
         <>
           <ItemAddProcessStepsRail source={addSource} />
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,2.35fr)_minmax(0,1fr)] lg:gap-4">
-            <div className="min-w-0 overflow-hidden rounded-xl border border-zinc-800/55 bg-zinc-900/30 ring-1 ring-zinc-800/40">
+          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,2.35fr)_minmax(0,1fr)] lg:items-stretch lg:gap-4">
+            <div className="flex h-auto min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-zinc-800/55 bg-zinc-900/30 ring-1 ring-zinc-800/40 lg:h-full">
               {addSource === "catalog" ? (
-                <div className="grid grid-cols-1 divide-y divide-zinc-800/50 lg:grid-cols-2 lg:divide-x lg:divide-y-0">
-                  <div className="min-w-0 p-3 sm:p-4">
-                    <ol className="list-none space-y-4 p-0">{steps12}</ol>
+                <>
+                  <div className="min-h-0 min-w-0 flex-1">
+                    <div className="lg:hidden">
+                      <div className="grid grid-cols-1 divide-y divide-zinc-800/50">
+                        <div className="min-w-0 p-3 sm:p-4">
+                          <ol className="list-none space-y-4 p-0">{steps12}</ol>
+                        </div>
+                        <div className="min-w-0 p-3 sm:p-4">
+                          <ol className="list-none space-y-4 p-0">{steps34}</ol>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="hidden lg:block">
+                      <div className="p-3 sm:p-4">
+                        <div className="grid grid-cols-2 items-stretch gap-x-4 gap-y-3">
+                          <StepEmbedBlock
+                            step={1}
+                            title="보관 위치"
+                            subtitle="이 방 안의 직속 칸 또는 가구 아래 칸을 고릅니다."
+                          >
+                            {storageSelectContent}
+                          </StepEmbedBlock>
+                          <StepEmbedBlock
+                            step={3}
+                            title="품목"
+                            subtitle="같은 종류라도 품목을 나눠 등록합니다.「품목 추가」에서 신라면·열라면처럼 이름을 구분하고 사진을 넣으면 목록에서 헷갈리지 않습니다."
+                          >
+                            {productSelectControl}
+                          </StepEmbedBlock>
+                          <StepEmbedBlock
+                            step={2}
+                            title="카테고리"
+                            subtitle="위에서 추가하거나 설정에 등록한 대분류 중에서 고릅니다."
+                          >
+                            {categoryFieldForDesktopGrid}
+                          </StepEmbedBlock>
+                          <StepEmbedBlock
+                            step={4}
+                            title="용량·포장"
+                            subtitle="등록된 단위·용량·포장을 고릅니다."
+                          >
+                            {variantSelectControl}
+                          </StepEmbedBlock>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="min-w-0 p-3 sm:p-4">
-                    <ol className="list-none space-y-4 p-0">{steps34}</ol>
+                  <div className="shrink-0 border-t border-zinc-800/50 px-3 py-3 sm:px-4">
+                    {catalogShoppingListButton}
                   </div>
-                </div>
+                </>
               ) : (
                 <div className="min-w-0 p-3 sm:p-4">
                   <ol className="list-none space-y-4 p-0">{purchaseLotSteps}</ol>
                 </div>
               )}
             </div>
-            <div className="flex min-h-0 min-w-0 flex-col gap-4 rounded-xl border border-teal-500/25 bg-zinc-950/50 p-3 ring-1 ring-teal-500/10 sm:p-4">
-              <div className="space-y-1.5 border-b border-zinc-800/50 pb-3">
+            <div className="flex h-auto min-h-0 min-w-0 flex-col rounded-xl border border-teal-500/25 bg-zinc-950/50 p-3 ring-1 ring-teal-500/10 sm:p-4 lg:h-full">
+              <div className="shrink-0 space-y-1.5 border-b border-zinc-800/50 pb-3">
                 <h3 className="text-xs font-semibold text-zinc-100">
                   {addSource === "catalog"
                     ? "수량·유통기한 확인 후 추가"
@@ -1034,18 +1238,33 @@ export function RoomItemAddWidget({
                     추가하세요.
                   </p>
                 ) : displayPickedStorageLabel ? (
-                  <p className="text-[11px] leading-snug text-zinc-500">
-                    <span className="text-zinc-500">추가 대상</span>{" "}
-                    <span
-                      className="font-medium text-zinc-200"
-                      title={displayPickedStorageLabel}
-                    >
-                      {displayPickedStorageLabel}
-                    </span>
-                  </p>
+                  <div className="space-y-1.5">
+                    <p className="text-[11px] leading-snug text-zinc-500">
+                      <span className="text-zinc-500">추가 대상</span>{" "}
+                      <span
+                        className="font-medium text-zinc-200"
+                        title={displayPickedStorageLabel}
+                      >
+                        {displayPickedStorageLabel}
+                      </span>
+                    </p>
+                    {itemAddSummaryLine ? (
+                      <p className="text-[11px] leading-snug text-zinc-500">
+                        <span className="text-zinc-600">담을 품목</span>{" "}
+                        <span
+                          className="break-words font-medium text-zinc-300"
+                          title={itemAddSummaryLine}
+                        >
+                          {itemAddSummaryLine}
+                        </span>
+                      </p>
+                    ) : null}
+                  </div>
                 ) : null}
               </div>
-              {footerQtyAndSubmit}
+              <div className="flex min-h-0 flex-1 flex-col justify-between gap-4 pt-4">
+                {footerQtyAndSubmit}
+              </div>
             </div>
           </div>
         </>
@@ -1090,5 +1309,17 @@ export function RoomItemAddWidget({
         </footer>
       ) : null}
     </div>
+    {catalog ? (
+      <ShoppingListQuickAddFromCatalogModal
+        open={shoppingQuickOpen}
+        onOpenChange={setShoppingQuickOpen}
+        household={selected}
+        catalog={catalog}
+        categoryId={categoryIdResolved}
+        productId={productIdResolved}
+        variantId={variantIdResolved}
+      />
+    ) : null}
+    </>
   );
 }

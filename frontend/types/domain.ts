@@ -148,6 +148,27 @@ export type PurchaseRecord = {
   batches: PurchaseBatchLot[];
 };
 
+/**
+ * 대시보드 장보기 보조 목록 (`him-shopping-list`).
+ * `inventoryItemId`가 있으면「구매 완료」시 해당 재고 수량이 늘어난다.
+ */
+export type ShoppingListEntry = {
+  id: string;
+  householdId: string;
+  /** 연결 재고 — 없으면 메모·카탈로그만 연결 */
+  inventoryItemId: string | null;
+  label: string;
+  unit?: string;
+  variantCaption?: string;
+  /** 카탈로그만 연결(아직 칸에 안 넣음) — 구매 완료 시 동일 품목·변형 재고가 있으면 보충 */
+  categoryId?: string;
+  productId?: string;
+  productVariantId?: string;
+  /** 구매 완료 시 더할 수량(재고 연결 시) */
+  restockQuantity: number;
+  createdAt: string;
+};
+
 /** 논리 설계 §15 InventoryLog.type */
 export type InventoryLedgerType = "in" | "out" | "adjust" | "waste";
 

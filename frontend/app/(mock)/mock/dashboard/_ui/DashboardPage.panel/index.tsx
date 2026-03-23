@@ -7,9 +7,7 @@ import {
   appViewPresenceTransition,
   appViewPresenceVariants,
 } from "@/app/_ui/app-view-transition.motion";
-import { useAppRoutePrefix } from "@/lib/use-app-route-prefix";
 import { AnimatePresence, motion } from "framer-motion";
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useDashboard } from "../../_hooks/useDashboard";
 import { DashboardHouseholdsHeader } from "../DashboardHouseholds.header";
@@ -21,7 +19,6 @@ import type { ViewMode } from "../DashboardInventory.section";
 const ITEM_ADD_PANEL_ANCHOR_ID = "dashboard-item-add-panel";
 
 export function DashboardPanel() {
-  const prefix = useAppRoutePrefix();
   const {
     dataMode,
     households,
@@ -139,21 +136,11 @@ export function DashboardPanel() {
           ) : null}
           <DashboardHouseholdsHeader
             selectedHouseholdId={viewingHouseholdId}
+            selectedHousehold={selected}
             onSelectHousehold={handleSelectHousehold}
             onAfterAddHousehold={handleAfterAddHousehold}
             onDeleteHousehold={handleDeleteHousehold}
           />
-          <p className="shrink-0 text-sm leading-relaxed text-zinc-500">
-            <span className="text-zinc-400">이 화면</span>에서는 방·보관 칸에
-            물품을 바로 맞춥니다. 장만 하고 칸 정리는 나중이면{" "}
-            <Link
-              href={`${prefix}/purchases`}
-              className="font-medium text-teal-400/90 underline-offset-2 hover:underline"
-            >
-              구매·로트
-            </Link>
-            에서 유통기한·로트만 먼저 적어 두면 됩니다.
-          </p>
           {/*
             데스크톱(lg+): 좌·우 컬럼 각각 세로 스크롤 (뷰포트 높이 고정)
             모바일: 1열, 문서 스크롤
