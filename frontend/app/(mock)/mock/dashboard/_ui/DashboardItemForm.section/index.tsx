@@ -27,6 +27,7 @@ import {
   subscribeMockPurchasesSession,
   updateMockPurchasesSession,
 } from "../../../purchases/_lib/mock-purchases-session-store";
+import { PackagePlus, ShoppingCart } from "lucide-react";
 import { ShoppingListQuickAddFromCatalogModal } from "../DashboardInventory.section/DashboardShoppingList.module";
 
 export type RoomItemAddWidgetProps = {
@@ -940,10 +941,11 @@ export function RoomItemAddWidget({
       onClick={() => setShoppingQuickOpen(true)}
       disabled={!catalog || !catalogHydrated}
       className={cn(
-        "w-full cursor-pointer rounded-xl border border-teal-500/35 bg-zinc-950/50 px-4 py-2 text-sm font-medium text-teal-200/95 transition hover:border-teal-500/55 hover:bg-teal-500/10",
+        "inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-teal-500/35 bg-zinc-950/50 px-4 py-2 text-sm font-medium text-teal-200/95 transition hover:border-teal-500/55 hover:bg-teal-500/10",
         (!catalog || !catalogHydrated) && "cursor-not-allowed opacity-40",
       )}
     >
+      <ShoppingCart className="size-4 shrink-0" aria-hidden />
       장보기에만 담기…
     </button>
   );
@@ -952,8 +954,9 @@ export function RoomItemAddWidget({
     <button
       type="button"
       onClick={handleAddItem}
-      className="w-full shrink-0 cursor-pointer rounded-lg bg-teal-500 px-4 py-2 text-sm font-semibold text-zinc-950 shadow-md shadow-teal-500/15 transition hover:bg-teal-400"
+      className="inline-flex w-full shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg bg-teal-500 px-4 py-2 text-sm font-semibold text-zinc-950 shadow-md shadow-teal-500/15 transition hover:bg-teal-400"
     >
+      <PackagePlus className="size-4 shrink-0" aria-hidden />
       선택한 칸에 물품 추가
     </button>
   );

@@ -2,6 +2,7 @@
 
 import { CatalogModalsControls } from "@/app/(current)/dashboard/_ui/CatalogModals.controls";
 import { cn } from "@/lib/utils";
+import { PackagePlus } from "lucide-react";
 import type { Household } from "@/types/domain";
 import {
   ItemAddPanelHeaderCatalogHint,
@@ -38,12 +39,13 @@ export function RoomItemAddPanel({
     >
       <div className="flex min-w-0 flex-col">
         <div className="flex min-w-0 shrink-0 flex-nowrap items-center gap-2 overflow-x-auto border-b border-zinc-800/90 px-2 py-2.5 sm:gap-3 sm:px-3">
-          <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-2 gap-y-1 pr-1">
-            <span className="shrink-0 text-sm font-semibold text-teal-400">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1 pr-1">
+            <span className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold leading-none text-teal-400">
+              <PackagePlus className="size-4 shrink-0 text-teal-400/95" aria-hidden />
               물품 추가
             </span>
             <span
-              className="max-w-[min(100%,10rem)] shrink-0 truncate text-sm font-semibold text-zinc-100 sm:max-w-56"
+              className="max-w-[min(100%,10rem)] shrink-0 truncate text-sm font-semibold leading-none text-zinc-100 sm:max-w-56"
               title={room?.name ?? "방"}
             >
               {room?.name ?? "방"}
