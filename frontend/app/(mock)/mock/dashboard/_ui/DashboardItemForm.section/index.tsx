@@ -27,7 +27,13 @@ import {
   subscribeMockPurchasesSession,
   updateMockPurchasesSession,
 } from "../../../purchases/_lib/mock-purchases-session-store";
-import { PackagePlus, ShoppingCart } from "lucide-react";
+import {
+  ArrowDownToLine,
+  BookOpen,
+  PackagePlus,
+  Receipt,
+  ShoppingCart,
+} from "lucide-react";
 import { ShoppingListQuickAddFromCatalogModal } from "../DashboardInventory.section/DashboardShoppingList.module";
 
 export type RoomItemAddWidgetProps = {
@@ -121,35 +127,48 @@ function StepShell({
 
 /**
  * 데스크톱 2열 그리드용 — 번호 옆 열 안에 제목·설명·select 를 한 덩어리로 둠.
- * `lg:items-stretch` 그리드와 `h-full` + 설명 `min-h` + select `mt-auto`로 행 단위로 셀렉트 하단 맞춤.
+ * 기본: `lg:items-stretch` 그리드에서 설명 `min-h` + 필드 `mt-auto`로 셀렉트 하단 맞춤.
+ * `dense`: 구매·로트 등 세로로 쌓는 경우 제목·필드 사이 여백 축소.
  */
 function StepEmbedBlock({
   step,
   title,
   subtitle,
   children,
+  dense = false,
 }: {
   step: number;
   title: string;
   subtitle: string;
   children: ReactNode;
+  dense?: boolean;
 }) {
   return (
-    <div className="flex h-full min-h-0 gap-3 rounded-xl border border-zinc-800/60 bg-zinc-950/35 p-3 ring-1 ring-zinc-800/40 sm:gap-3.5">
+    <div
+      className={cn(
+        "flex h-full min-h-0 rounded-xl border border-zinc-800/60",
+        dense ? "gap-2.5 p-2.5 sm:gap-3 sm:p-3" : "gap-3 p-3 sm:gap-3.5",
+      )}
+    >
       <div
         className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-teal-500/15 text-xs font-bold tabular-nums text-teal-300 ring-1 ring-teal-500/20"
         aria-hidden
       >
         {step}
       </div>
-      <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
-        <div className="min-h-17 shrink-0">
+      <div
+        className={cn(
+          "flex min-h-0 min-w-0 flex-1 flex-col",
+          dense ? "gap-4" : "gap-2",
+        )}
+      >
+        <div className={cn("shrink-0", !dense && "min-h-17")}>
           <h3 className="text-xs font-semibold text-zinc-100">{title}</h3>
           <p className="mt-0.5 text-pretty text-[11px] leading-snug text-zinc-500 line-clamp-4">
             {subtitle}
           </p>
         </div>
-        <div className="mt-auto min-w-0">{children}</div>
+        <div className={cn("min-w-0", !dense && "mt-auto")}>{children}</div>
       </div>
     </div>
   );
@@ -217,11 +236,20 @@ function CatalogHintLink() {
   );
 }
 
-/** 물품 추가 패널 헤더 — 제목 옆 인라인 안내 */
-export function ItemAddPanelHeaderCatalogHint() {
+/** 물품 추가 패널 — 카탈로그에 없을 때 안내(헤더·장보기 구역 등에서 재사용) */
+export function ItemAddPanelHeaderCatalogHint({
+  className,
+}: {
+  className?: string;
+} = {}) {
   const prefix = useAppRoutePrefix();
   return (
-    <span className="min-w-0 max-w-full text-[11px] leading-snug text-zinc-500">
+    <span
+      className={cn(
+        "min-w-0 max-w-full text-[11px] leading-snug text-zinc-500",
+        className,
+      )}
+    >
       목록에 없으면 추가 버튼 또는{" "}
       <Link
         href={`${prefix}/settings`}
@@ -862,6 +890,60 @@ export function RoomItemAddWidget({
     </>
   );
 
+  const purchaseLotStep1Fields = storageSelectContent;
+
+  const purchaseLotStep2Fields = (
+    <>
+      {placeablePurchases.length === 0 ? (
+        <div className="space-y-2 rounded-lg border border-zinc-800/80 bg-zinc-950/40 px-3 py-2 text-xs text-zinc-500">
+          <p>
+            이 거점에서 배치할 수 있는 구매가 없습니다.{" "}
+            <Link
+              href={`${prefix}/purchases`}
+              className="font-medium text-teal-400/90 underline-offset-2 hover:underline"
+            >
+              구매·로트
+            </Link>
+            에서 먼저 등록하거나, 카탈로그 탭에서 새로 추가하세요.
+          </p>
+        </div>
+      ) : (
+        <select
+          aria-label="구매·로트 선택"
+          value={purchaseSelectValue}
+          onChange={(e) => {
+            const v = e.target.value;
+            setPurchasePickId(v);
+            const picked = placeablePurchases.find((p) => p.id === v);
+            if (picked) {
+              setStockQty(
+                String(Math.max(1, 구매_로트_총수량을_구한다(picked))),
+              );
+            }
+          }}
+          className={inputClass}
+        >
+          <option value="">구매를 선택하세요</option>
+          {placeablePurchases.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.itemName} · {p.purchasedOn} · 로트 {p.batches.length}건
+            </option>
+          ))}
+        </select>
+      )}
+      {selectedPlaceablePurchase ? (
+        <ul className="mt-2 space-y-1 rounded-lg border border-zinc-800/60 bg-zinc-950/35 px-3 py-2 text-[11px] text-zinc-400">
+          {selectedPlaceablePurchase.batches.map((b) => (
+            <li key={b.id} className="tabular-nums">
+              {b.quantity}
+              {selectedPlaceablePurchase.unitSymbol} · 유통기한 {b.expiresOn}
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </>
+  );
+
   const purchaseLotSteps = (
     <>
       <StepShell
@@ -873,7 +955,7 @@ export function RoomItemAddWidget({
           embedInFloatingPanel ? "break-inside-avoid pb-1" : undefined
         }
       >
-        {storageSelectContent}
+        {purchaseLotStep1Fields}
       </StepShell>
       <StepShell
         step={2}
@@ -884,53 +966,7 @@ export function RoomItemAddWidget({
           embedInFloatingPanel ? "break-inside-avoid pb-1" : undefined
         }
       >
-        {placeablePurchases.length === 0 ? (
-          <div className="space-y-2 rounded-lg border border-zinc-800/80 bg-zinc-950/40 px-3 py-2 text-xs text-zinc-500">
-            <p>
-              이 거점에서 배치할 수 있는 구매가 없습니다.{" "}
-              <Link
-                href={`${prefix}/purchases`}
-                className="font-medium text-teal-400/90 underline-offset-2 hover:underline"
-              >
-                구매·로트
-              </Link>
-              에서 먼저 등록하거나, 카탈로그 탭에서 새로 추가하세요.
-            </p>
-          </div>
-        ) : (
-          <select
-            aria-label="구매·로트 선택"
-            value={purchaseSelectValue}
-            onChange={(e) => {
-              const v = e.target.value;
-              setPurchasePickId(v);
-              const picked = placeablePurchases.find((p) => p.id === v);
-              if (picked) {
-                setStockQty(
-                  String(Math.max(1, 구매_로트_총수량을_구한다(picked))),
-                );
-              }
-            }}
-            className={inputClass}
-          >
-            <option value="">구매를 선택하세요</option>
-            {placeablePurchases.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.itemName} · {p.purchasedOn} · 로트 {p.batches.length}건
-              </option>
-            ))}
-          </select>
-        )}
-        {selectedPlaceablePurchase ? (
-          <ul className="mt-2 space-y-1 rounded-lg border border-zinc-800/60 bg-zinc-950/35 px-3 py-2 text-[11px] text-zinc-400">
-            {selectedPlaceablePurchase.batches.map((b) => (
-              <li key={b.id} className="tabular-nums">
-                {b.quantity}
-                {selectedPlaceablePurchase.unitSymbol} · 유통기한 {b.expiresOn}
-              </li>
-            ))}
-          </ul>
-        ) : null}
+        {purchaseLotStep2Fields}
       </StepShell>
     </>
   );
@@ -941,12 +977,12 @@ export function RoomItemAddWidget({
       onClick={() => setShoppingQuickOpen(true)}
       disabled={!catalog || !catalogHydrated}
       className={cn(
-        "inline-flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl border border-teal-500/35 bg-zinc-950/50 px-4 py-2 text-sm font-medium text-teal-200/95 transition hover:border-teal-500/55 hover:bg-teal-500/10",
+        "inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl border border-teal-500/35 bg-zinc-950/50 px-4 py-2 text-sm font-medium text-teal-200/95 transition hover:border-teal-500/55 hover:bg-teal-500/10",
         (!catalog || !catalogHydrated) && "cursor-not-allowed opacity-40",
       )}
     >
       <ShoppingCart className="size-4 shrink-0" aria-hidden />
-      장보기에만 담기…
+      장보기에만 담기
     </button>
   );
 
@@ -1014,7 +1050,7 @@ export function RoomItemAddWidget({
         {embedInFloatingPanel ? (
           catalogPrimaryAddButton
         ) : (
-          <div className="flex w-full flex-col gap-2 sm:w-auto sm:min-w-48">
+          <div className="flex w-full flex-col items-start gap-2 sm:w-auto sm:min-w-48">
             {catalogShoppingListButton}
             {catalogPrimaryAddButton}
           </div>
@@ -1024,8 +1060,8 @@ export function RoomItemAddWidget({
       <>
         <div
           className={cn(
-            "w-full space-y-3",
-            embedInFloatingPanel ? "max-w-full" : "sm:max-w-56",
+            "w-full",
+            embedInFloatingPanel ? "max-w-full space-y-2" : "space-y-3 sm:max-w-56",
           )}
         >
           <div className="space-y-1">
@@ -1083,10 +1119,13 @@ export function RoomItemAddWidget({
           type="button"
           onClick={handleAddFromPurchase}
           className={cn(
-            "shrink-0 cursor-pointer rounded-lg bg-teal-500 px-4 py-2 text-sm font-semibold text-zinc-950 shadow-md shadow-teal-500/15 transition hover:bg-teal-400",
-            embedInFloatingPanel ? "w-full" : "w-full sm:w-auto",
+            "inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg bg-teal-500 font-semibold text-zinc-950 shadow-md shadow-teal-500/15 transition hover:bg-teal-400",
+            embedInFloatingPanel
+              ? "w-full px-3 py-2 text-sm"
+              : "w-full px-4 py-2 text-sm sm:w-auto",
           )}
         >
+          <ArrowDownToLine className="size-4 shrink-0" aria-hidden />
           구매·로트를 이 칸에 반영
         </button>
       </>
@@ -1094,7 +1133,7 @@ export function RoomItemAddWidget({
 
   const tabBtn = (active: boolean) =>
     cn(
-      "min-w-0 flex-1 cursor-pointer rounded-lg px-3 py-2 text-center text-xs font-medium transition-colors",
+      "inline-flex min-w-0 flex-1 cursor-pointer items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-center text-xs font-medium transition-colors",
       active
         ? "bg-teal-500/20 text-teal-200 ring-1 ring-teal-500/35"
         : "text-zinc-500 hover:bg-zinc-800/60 hover:text-zinc-300",
@@ -1119,6 +1158,7 @@ export function RoomItemAddWidget({
           setPurchasePickId("");
         }}
       >
+        <BookOpen className="size-3.5 shrink-0" aria-hidden />
         카탈로그에서 추가
       </button>
       <button
@@ -1131,6 +1171,7 @@ export function RoomItemAddWidget({
           setExpiresOn("");
         }}
       >
+        <Receipt className="size-3.5 shrink-0" aria-hidden />
         구매·로트에서 가져오기
       </button>
     </div>
@@ -1156,8 +1197,18 @@ export function RoomItemAddWidget({
         {embedInFloatingPanel ? (
           <>
             <ItemAddProcessStepsRail source={addSource} />
-            <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,2.35fr)_minmax(0,1fr)] lg:items-stretch lg:gap-4">
-              <div className="flex h-auto min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-zinc-800/55 bg-zinc-900/30 ring-1 ring-zinc-800/40 lg:h-full">
+            <div
+              className={cn(
+                "grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,2.35fr)_minmax(0,1fr)] lg:gap-4",
+                addSource === "purchase" ? "lg:items-start" : "lg:items-stretch",
+              )}
+            >
+              <div
+                className={cn(
+                  "flex h-auto min-h-0 min-w-0 flex-col overflow-hidden",
+                  addSource === "catalog" ? "lg:h-full" : "lg:h-auto",
+                )}
+              >
                 {addSource === "catalog" ? (
                   <>
                     <div className="min-h-0 min-w-0 flex-1">
@@ -1176,9 +1227,8 @@ export function RoomItemAddWidget({
                         </div>
                       </div>
                       <div className="hidden lg:block">
-                        <div className="p-3 sm:p-4">
-                          <div className="grid grid-cols-2 items-stretch gap-x-4 gap-y-3">
-                            <StepEmbedBlock
+                        <div className="grid grid-cols-2 items-stretch gap-x-4 gap-y-3">
+                          <StepEmbedBlock
                               step={1}
                               title="보관 위치"
                               subtitle="이 방 안의 직속 칸 또는 가구 아래 칸을 고릅니다."
@@ -1206,24 +1256,71 @@ export function RoomItemAddWidget({
                             >
                               {variantSelectControl}
                             </StepEmbedBlock>
-                          </div>
                         </div>
                       </div>
                     </div>
-                    <div className="shrink-0 border-t border-zinc-800/50 px-3 py-3 sm:px-4">
-                      {catalogShoppingListButton}
+                    <div className="shrink-0 px-3 py-3 sm:px-4">
+                      <div className="flex min-w-0 flex-row flex-nowrap items-center gap-2 sm:gap-3">
+                        {catalog && catalogHydrated ? (
+                          <div className="min-w-0 flex-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                            <CatalogModalsControls
+                              catalog={catalog}
+                              onCatalogUpdate={카탈로그를_갱신_한다}
+                              layout="panel"
+                              buttonRowClassName="flex-nowrap items-center gap-2"
+                            />
+                          </div>
+                        ) : null}
+                        {catalogShoppingListButton}
+                      </div>
                     </div>
                   </>
                 ) : (
-                  <div className="min-w-0 p-3 sm:p-4">
-                    <ol className="list-none space-y-4 p-0">
-                      {purchaseLotSteps}
-                    </ol>
+                  <div className="min-h-0 min-w-0 w-full">
+                    <div className="lg:hidden">
+                      <div className="min-w-0 p-3 sm:p-4">
+                        <ol className="list-none space-y-5 p-0">
+                          {purchaseLotSteps}
+                        </ol>
+                      </div>
+                    </div>
+                    <div className="hidden lg:block">
+                      <div className="flex min-w-0 flex-col gap-5">
+                        <StepEmbedBlock
+                          dense
+                          step={1}
+                          title="보관 위치"
+                          subtitle="이 구매 재고를 둘 칸을 고릅니다."
+                        >
+                          {purchaseLotStep1Fields}
+                        </StepEmbedBlock>
+                        <StepEmbedBlock
+                          dense
+                          step={2}
+                          title="구매·로트 선택"
+                          subtitle="구매·로트 화면에서 적어 둔 기록 중, 아직 재고와 연결되지 않은 것만 보입니다."
+                        >
+                          {purchaseLotStep2Fields}
+                        </StepEmbedBlock>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
-              <div className="flex h-auto min-h-0 min-w-0 flex-col rounded-xl border border-teal-500/25 bg-zinc-950/50 p-3 ring-1 ring-teal-500/10 sm:p-4 lg:h-full">
-                <div className="shrink-0 border-b border-zinc-800/50 pb-3">
+              <div
+                className={cn(
+                  "flex h-auto min-h-0 min-w-0 flex-col rounded-xl border border-teal-500/25 bg-zinc-950/50 ring-1 ring-teal-500/10",
+                  addSource === "catalog"
+                    ? "p-3 sm:p-4 lg:h-full"
+                    : "p-2.5 sm:p-3 lg:h-auto",
+                )}
+              >
+                <div
+                  className={cn(
+                    "shrink-0 border-b border-zinc-800/50",
+                    addSource === "purchase" ? "pb-2" : "pb-3",
+                  )}
+                >
                   <div className="flex gap-2.5 sm:gap-3">
                     <div
                       className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-teal-500/15 text-xs font-bold tabular-nums text-teal-300 ring-1 ring-teal-500/20"
@@ -1269,7 +1366,14 @@ export function RoomItemAddWidget({
                     </div>
                   </div>
                 </div>
-                <div className="flex min-h-0 flex-1 flex-col justify-between gap-4 pt-4">
+                <div
+                  className={cn(
+                    "flex min-h-0 flex-col",
+                    addSource === "catalog"
+                      ? "flex-1 justify-between gap-4 pt-4"
+                      : "gap-2.5 pt-2.5",
+                  )}
+                >
                   {footerQtyAndSubmit}
                 </div>
               </div>
@@ -1283,14 +1387,12 @@ export function RoomItemAddWidget({
                 role="region"
                 aria-label="카탈로그 빠른 추가"
               >
-                <p className="mb-2 text-[11px] font-medium text-zinc-500">
-                  카탈로그에 없으면 여기서 추가
-                </p>
                 <CatalogModalsControls
                   catalog={catalog}
                   onCatalogUpdate={카탈로그를_갱신_한다}
                   layout="panel"
                 />
+                <ItemAddPanelHeaderCatalogHint className="mt-3 block text-left" />
               </div>
             ) : null}
             <ol className="mt-4 list-none space-y-5 p-0">

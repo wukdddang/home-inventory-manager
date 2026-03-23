@@ -1,6 +1,5 @@
 "use client";
 
-import { CatalogModalsControls } from "@/app/(current)/dashboard/_ui/CatalogModals.controls";
 import { cn } from "@/lib/utils";
 import { PackagePlus } from "lucide-react";
 import type { Household } from "@/types/domain";
@@ -8,8 +7,6 @@ import {
   ItemAddPanelHeaderCatalogHint,
   RoomItemAddWidget,
 } from "../DashboardItemForm.section";
-import { useDashboard } from "../../_hooks/useDashboard";
-
 export type RoomItemAddPanelProps = {
   selected: Household;
   roomId: string;
@@ -26,8 +23,6 @@ export function RoomItemAddPanel({
   anchorId = "dashboard-item-add-panel",
 }: RoomItemAddPanelProps) {
   const room = selected.rooms.find((r) => r.id === roomId);
-  const { productCatalog, 카탈로그를_갱신_한다, catalogHydrated } =
-    useDashboard();
 
   return (
     <div
@@ -50,20 +45,10 @@ export function RoomItemAddPanel({
             >
               {room?.name ?? "방"}
             </span>
-            <ItemAddPanelHeaderCatalogHint />
           </div>
-          {catalogHydrated ? (
-            <div className="ml-auto flex min-w-0 shrink-0 flex-nowrap items-center gap-2 sm:gap-2.5">
-              <div className="shrink-0" aria-label="카탈로그 빠른 추가">
-                <CatalogModalsControls
-                  catalog={productCatalog}
-                  onCatalogUpdate={카탈로그를_갱신_한다}
-                  layout="panel"
-                  buttonRowClassName="flex-nowrap items-center gap-2"
-                />
-              </div>
-            </div>
-          ) : null}
+          <div className="ml-auto min-w-0 max-w-[min(100%,22rem)] shrink sm:max-w-md">
+            <ItemAddPanelHeaderCatalogHint className="block text-right text-[11px] leading-snug sm:text-left" />
+          </div>
         </div>
         <div className="px-3 py-3">
           <RoomItemAddWidget

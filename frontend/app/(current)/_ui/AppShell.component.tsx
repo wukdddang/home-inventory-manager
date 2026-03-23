@@ -7,6 +7,12 @@ import {
   setAuthUser,
   subscribeAuthUser,
 } from "@/lib/local-store";
+import {
+  History,
+  LayoutDashboard,
+  Receipt,
+  Settings,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState, useSyncExternalStore } from "react";
@@ -16,10 +22,10 @@ import {
 } from "./selected-household-shell-bridge";
 
 const navPaths = [
-  { path: "/dashboard", label: "메인" },
-  { path: "/purchases", label: "구매·로트" },
-  { path: "/inventory-history", label: "재고 이력" },
-  { path: "/settings", label: "설정" },
+  { path: "/dashboard", label: "메인", Icon: LayoutDashboard },
+  { path: "/purchases", label: "구매·로트", Icon: Receipt },
+  { path: "/inventory-history", label: "재고 이력", Icon: History },
+  { path: "/settings", label: "설정", Icon: Settings },
 ] as const;
 
 function ShoppingCartIcon({ className }: { className?: string }) {
@@ -73,16 +79,18 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           <nav className="flex flex-1 items-center justify-center gap-1 sm:gap-2">
             {navPaths.map((n) => {
               const href = `${prefix}${n.path}`;
+              const Icon = n.Icon;
               return (
                 <Link
                   key={n.path}
                   href={href}
-                  className={`cursor-pointer rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                  className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                     pathname === href
                       ? "bg-teal-500/15 text-teal-300"
                       : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
                   }`}
                 >
+                  <Icon className="size-4 shrink-0 opacity-90" aria-hidden />
                   {n.label}
                 </Link>
               );
