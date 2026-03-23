@@ -1,5 +1,5 @@
 import { stripHouseholdCatalogForPersist } from "@/lib/household-persist";
-import type { Household } from "@/types/domain";
+import type { Household, InventoryLedgerRow } from "@/types/domain";
 import type { DashboardHouseholdsPort } from "./dashboard-households.port";
 
 /** 네트워크 지연을 흉내 낸다 (Route Handler 연동 시 제거·단축 가능) */
@@ -181,6 +181,99 @@ export const MOCK_SEED_HOUSEHOLDS: Household[] = [
         quantityPerUnit: 1,
       },
     ],
+  },
+];
+
+/** 재고 이력(mock) 페이지 등에서 동일 시드로 재사용 */
+export const MOCK_SEED_INVENTORY_LEDGER: InventoryLedgerRow[] = [
+  {
+    id: "mock-ledger-001",
+    householdId: "mock-household-home",
+    inventoryItemId: "mock-item-ramen",
+    type: "in",
+    quantityDelta: 6,
+    quantityAfter: 12,
+    itemLabel: "식료품 › 라면 › 1봉",
+    memo: "장보기 구매 반영",
+    refType: "purchase",
+    refId: "mock-purchase-1",
+    createdAt: "2025-03-23T09:15:00.000Z",
+  },
+  {
+    id: "mock-ledger-002",
+    householdId: "mock-household-home",
+    inventoryItemId: "mock-item-milk-shelf",
+    type: "out",
+    quantityDelta: -1,
+    quantityAfter: 1,
+    itemLabel: "식료품 › 우유 › 500ml",
+    memo: "아침에 사용",
+    createdAt: "2025-03-22T18:40:00.000Z",
+  },
+  {
+    id: "mock-ledger-003",
+    householdId: "mock-household-home",
+    inventoryItemId: "mock-item-milk-shelf",
+    type: "waste",
+    quantityDelta: -1,
+    quantityAfter: 0,
+    itemLabel: "식료품 › 우유 › 500ml",
+    reason: "expired",
+    memo: "냉장고 맨 뒤에서 발견",
+    createdAt: "2025-03-21T11:05:00.000Z",
+  },
+  {
+    id: "mock-ledger-004",
+    householdId: "mock-household-home",
+    inventoryItemId: "mock-item-tissue",
+    type: "out",
+    quantityDelta: -1,
+    quantityAfter: 2,
+    itemLabel: "생활용품 › 티슈 › 1박스",
+    createdAt: "2025-03-20T08:00:00.000Z",
+  },
+  {
+    id: "mock-ledger-005",
+    householdId: "mock-household-home",
+    inventoryItemId: "mock-item-ramen",
+    type: "out",
+    quantityDelta: -2,
+    quantityAfter: 6,
+    itemLabel: "식료품 › 라면 › 1봉",
+    memo: "야식",
+    createdAt: "2025-03-19T23:10:00.000Z",
+  },
+  {
+    id: "mock-ledger-006",
+    householdId: "mock-household-office",
+    inventoryItemId: "mock-item-paper",
+    type: "adjust",
+    quantityDelta: 1,
+    quantityAfter: 5,
+    itemLabel: "사무용품 › A4 용지 › 1권",
+    memo: "실사 후 재고 맞춤",
+    createdAt: "2025-03-18T16:45:00.000Z",
+  },
+  {
+    id: "mock-ledger-007",
+    householdId: "mock-household-office",
+    inventoryItemId: "mock-item-paper",
+    type: "out",
+    quantityDelta: -2,
+    quantityAfter: 4,
+    itemLabel: "사무용품 › A4 용지 › 1권",
+    createdAt: "2025-03-17T10:20:00.000Z",
+  },
+  {
+    id: "mock-ledger-008",
+    householdId: "mock-household-home",
+    inventoryItemId: "mock-item-remote",
+    type: "waste",
+    quantityDelta: -1,
+    quantityAfter: 1,
+    itemLabel: "전자·소모품 › 건전지 › AAA 4입",
+    reason: "damaged",
+    createdAt: "2025-03-15T14:00:00.000Z",
   },
 ];
 

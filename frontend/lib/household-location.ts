@@ -165,6 +165,89 @@ export function formatLocationBreadcrumb(
   return `${roomName} › ${slot.name}`;
 }
 
+/** 재고 이력 표 — 거점 / 방 / 장소(직속 칸 또는 가구) / 세부장소(가구 칸) */
+export type LedgerLocationColumns = {
+  householdName: string;
+  roomName: string;
+  /** 방 직속 보관 칸 이름, 또는 가구 배치 라벨 */
+  placeLabel: string;
+  /** 가구 아래 칸만; 직속 보관이면 "-" */
+  detailLabel: string;
+};
+
+/**
+ * 품목 스냅샷으로 거점·방·장소·세부를 나눈다.
+ * 품목이 없으면 거점명만 채우고 나머지는 "-".
+ */
+export function resolveLedgerLocationColumns(
+  h: Household,
+  inventoryItemId: string,
+): LedgerLocationColumns {
+  const item = h.items.find((it) => it.id === inventoryItemId);
+  if (!item) {
+    return {
+      householdName: h.name,
+      roomName: "-",
+      placeLabel: "-",
+      detailLabel: "-",
+    };
+  }
+  const room = h.rooms.find((r) => r.id === item.roomId);
+  const roomName = room?.name ?? "-";
+  if (!item.storageLocationId) {
+    return {
+      householdName: h.name,
+      roomName,
+      placeLabel: "-",
+      detailLabel: "-",
+    };
+  }
+  const slot = (h.storageLocations ?? []).find(
+    (s) => s.id === item.storageLocationId,
+  );
+  if (!slot) {
+    return {
+      householdName: h.name,
+      roomName,
+      placeLabel: "-",
+      detailLabel: "-",
+    };
+  }
+  if (slot.furniturePlacementId) {
+    const fp = (h.furniturePlacements ?? []).find(
+      (f) => f.id === slot.furniturePlacementId,
+    );
+    const furnitureLabel = fp?.label ?? "가구";
+    return {
+      householdName: h.name,
+      roomName,
+      placeLabel: furnitureLabel,
+      detailLabel: slot.name,
+    };
+  }
+  return {
+    householdName: h.name,
+    roomName,
+    placeLabel: slot.name,
+    detailLabel: "-",
+  };
+}
+
+/**
+ * 재고 이력 등 — `resolveLedgerLocationColumns`를 ` › ` 로 이은 한 줄 문자열.
+ */
+export function formatLedgerLocationLabel(
+  h: Household,
+  inventoryItemId: string,
+): string {
+  const c = resolveLedgerLocationColumns(h, inventoryItemId);
+  const parts: string[] = [c.householdName];
+  if (c.roomName !== "-") parts.push(c.roomName);
+  if (c.placeLabel !== "-") parts.push(c.placeLabel);
+  if (c.detailLabel !== "-") parts.push(c.detailLabel);
+  return parts.join(" › ");
+}
+
 /**
  * 방마다 직속 보관 칸이 하나도 없으면 「방(기본)」 슬롯을 둔다 (idempotent).
  */
