@@ -27,7 +27,6 @@ export function DashboardPanel() {
   );
   const [viewMode, setViewMode] = useState<ViewMode>("structure");
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
-  const [itemAddPanelExpanded, setItemAddPanelExpanded] = useState(true);
 
   /** 목록 변경 시에도 유효한 거점만 보이도록 (effect 없이 파생) */
   const viewingHouseholdId = useMemo(() => {
@@ -47,16 +46,11 @@ export function DashboardPanel() {
   );
 
   useEffect(() => {
-    setItemAddPanelExpanded(true);
-  }, [selectedRoomId]);
-
-  useEffect(() => {
     setShellHousehold(selected);
     return () => setShellHousehold(null);
   }, [selected, setShellHousehold]);
 
   const handleFocusItemAddPanel = () => {
-    setItemAddPanelExpanded(true);
     requestAnimationFrame(() => {
       document
         .getElementById(ITEM_ADD_PANEL_ANCHOR_ID)
@@ -156,8 +150,6 @@ export function DashboardPanel() {
                   onViewModeChange={setViewMode}
                   selectedRoomId={selectedRoomId}
                   onRoomSelect={setSelectedRoomId}
-                  itemAddPanelExpanded={itemAddPanelExpanded}
-                  onItemAddPanelExpandedChange={setItemAddPanelExpanded}
                   itemAddPanelAnchorId={ITEM_ADD_PANEL_ANCHOR_ID}
                 />
               </div>

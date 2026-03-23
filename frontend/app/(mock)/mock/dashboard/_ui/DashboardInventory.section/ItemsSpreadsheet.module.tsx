@@ -5,8 +5,14 @@ import { InventoryLotExpiryBadge } from "@/app/_ui/inventory-lot-expiry-badge";
 import { formatLocationBreadcrumb } from "@/lib/household-location";
 import { 구매목록에서_품목_로트_요약을_구한다 } from "@/lib/inventory-lot-from-purchases";
 import { resolveInventoryRowColumns } from "@/lib/product-catalog-defaults";
-import { useState } from "react";
-import type { Household, InventoryRow, ProductCatalog, PurchaseRecord } from "@/types/domain";
+import { cn } from "@/lib/utils";
+import { useMemo, useState } from "react";
+import type {
+  Household,
+  InventoryRow,
+  ProductCatalog,
+  PurchaseRecord,
+} from "@/types/domain";
 
 type ItemsSpreadsheetProps = {
   household: Household;
@@ -19,6 +25,122 @@ type ItemsSpreadsheetProps = {
   onSelectRoomId?: (roomId: string) => void;
 };
 
+/** 정렬 가능 컬럼 (로트·액션 열 제외) */
+type SortKey =
+  | "category"
+  | "product"
+  | "spec"
+  | "quantity"
+  | "unit"
+  | "room"
+  | "location";
+
+type SortState = { key: SortKey | null; dir: "asc" | "desc" };
+
+function getSortComparable(
+  key: SortKey,
+  it: InventoryRow,
+  household: Household,
+  catalog: ProductCatalog,
+): string | number {
+  const room = household.rooms.find((r) => r.id === it.roomId);
+  const cols = resolveInventoryRowColumns(catalog, it);
+  switch (key) {
+    case "category":
+      return cols.category;
+    case "product":
+      return cols.product;
+    case "spec":
+      return cols.spec;
+    case "quantity":
+      return it.quantity;
+    case "unit":
+      return it.unit;
+    case "room":
+      return room?.name ?? "(삭제된 방)";
+    case "location":
+      return formatLocationBreadcrumb(household, it);
+    default: {
+      const _exhaustive: never = key;
+      return _exhaustive;
+    }
+  }
+}
+
+function compareForSort(
+  key: SortKey,
+  a: InventoryRow,
+  b: InventoryRow,
+  household: Household,
+  catalog: ProductCatalog,
+): number {
+  const va = getSortComparable(key, a, household, catalog);
+  const vb = getSortComparable(key, b, household, catalog);
+  if (key === "quantity") {
+    const n = (va as number) - (vb as number);
+    if (n !== 0) return n;
+  } else {
+    const s = String(va).localeCompare(String(vb), "ko");
+    if (s !== 0) return s;
+  }
+  return a.id.localeCompare(b.id);
+}
+
+type SortableThProps = {
+  label: string;
+  column: SortKey;
+  sort: SortState;
+  onCycleSort: (column: SortKey) => void;
+  className?: string;
+};
+
+function SortableTh({
+  label,
+  column,
+  sort,
+  onCycleSort,
+  className,
+}: SortableThProps) {
+  const active = sort.key === column;
+  const ariaSort = active
+    ? sort.dir === "asc"
+      ? "ascending"
+      : "descending"
+    : "none";
+
+  return (
+    <th
+      className={cn(
+        "px-3 py-2 align-top text-xs font-medium uppercase tracking-wider text-zinc-500",
+        className,
+      )}
+      aria-sort={ariaSort}
+    >
+      <button
+        type="button"
+        className="flex w-full min-w-0 cursor-pointer items-center gap-1 text-left hover:text-zinc-300"
+        onClick={() => onCycleSort(column)}
+        aria-label={
+          active
+            ? `${label}, ${sort.dir === "asc" ? "오름차순" : "내림차순"} 정렬됨. 클릭하여 변경`
+            : `${label} 기준으로 정렬`
+        }
+      >
+        <span className="min-w-0 truncate">{label}</span>
+        <span
+          className={cn(
+            "shrink-0 font-normal tabular-nums",
+            active ? "text-teal-400" : "text-zinc-600",
+          )}
+          aria-hidden
+        >
+          {active ? (sort.dir === "asc" ? "↑" : "↓") : "↕"}
+        </span>
+      </button>
+    </th>
+  );
+}
+
 export function ItemsSpreadsheet({
   household,
   catalog,
@@ -29,6 +151,27 @@ export function ItemsSpreadsheet({
   onSelectRoomId,
 }: ItemsSpreadsheetProps) {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const [sort, setSort] = useState<SortState>({ key: null, dir: "asc" });
+
+  const cycleSort = (column: SortKey) => {
+    setSort((prev) => {
+      if (prev.key !== column) return { key: column, dir: "asc" };
+      if (prev.dir === "asc") return { key: column, dir: "desc" };
+      return { key: null, dir: "asc" };
+    });
+  };
+
+  const sortedItems = useMemo(() => {
+    const items = household.items.slice();
+    if (!sort.key) return items;
+    const k = sort.key;
+    const dir = sort.dir;
+    items.sort((a, b) => {
+      const c = compareForSort(k, a, b, household, catalog);
+      return dir === "asc" ? c : -c;
+    });
+    return items;
+  }, [household, catalog, sort.key, sort.dir]);
 
   const pendingItem = pendingDeleteId
     ? household.items.find((i) => i.id === pendingDeleteId)
@@ -37,19 +180,61 @@ export function ItemsSpreadsheet({
   return (
     <>
       <div className="overflow-x-auto rounded-xl border border-zinc-800">
-        <table className="w-full min-w-[72rem] border-collapse text-left text-sm">
+        <table className="w-full min-w-6xl border-collapse text-left text-sm">
           <thead>
-            <tr className="border-b border-zinc-800 bg-zinc-950 text-xs uppercase tracking-wider text-zinc-500">
-              <th className="px-3 py-3 font-medium">카테고리</th>
-              <th className="px-3 py-3 font-medium">품목</th>
-              <th className="px-3 py-3 font-medium">용량·포장</th>
-              <th className="px-3 py-3 font-medium">수량</th>
-              <th className="px-3 py-3 font-medium">단위</th>
-              <th className="min-w-32 px-3 py-3 font-medium">로트·임박</th>
-              <th className="px-3 py-3 font-medium">방</th>
-              <th className="min-w-44 px-3 py-3 font-medium">보관 위치</th>
-              <th className="min-w-36 px-3 py-3 font-medium">소비·폐기</th>
-              <th className="w-20 px-3 py-3 font-medium">삭제</th>
+            <tr className="border-b border-zinc-800 bg-zinc-950 text-xs tracking-wider">
+              <SortableTh
+                label="카테고리"
+                column="category"
+                sort={sort}
+                onCycleSort={cycleSort}
+              />
+              <SortableTh
+                label="품목"
+                column="product"
+                sort={sort}
+                onCycleSort={cycleSort}
+              />
+              <SortableTh
+                label="용량·포장"
+                column="spec"
+                sort={sort}
+                onCycleSort={cycleSort}
+              />
+              <SortableTh
+                label="수량"
+                column="quantity"
+                sort={sort}
+                onCycleSort={cycleSort}
+              />
+              <SortableTh
+                label="단위"
+                column="unit"
+                sort={sort}
+                onCycleSort={cycleSort}
+              />
+              <th className="min-w-32 px-3 py-3 align-top text-xs font-medium uppercase tracking-wider text-zinc-500">
+                로트·임박
+              </th>
+              <SortableTh
+                label="방"
+                column="room"
+                sort={sort}
+                onCycleSort={cycleSort}
+              />
+              <SortableTh
+                label="보관 위치"
+                column="location"
+                sort={sort}
+                onCycleSort={cycleSort}
+                className="min-w-44"
+              />
+              <th className="min-w-36 px-3 py-3 align-top text-xs font-medium uppercase tracking-wider text-zinc-500">
+                소비·폐기
+              </th>
+              <th className="w-20 px-3 py-3 align-top text-xs font-medium uppercase tracking-wider text-zinc-500">
+                삭제
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -63,7 +248,7 @@ export function ItemsSpreadsheet({
                 </td>
               </tr>
             ) : (
-              household.items.map((it) => {
+              sortedItems.map((it) => {
                 const room = household.rooms.find((r) => r.id === it.roomId);
                 const cols = resolveInventoryRowColumns(catalog, it);
                 const lot = 구매목록에서_품목_로트_요약을_구한다(

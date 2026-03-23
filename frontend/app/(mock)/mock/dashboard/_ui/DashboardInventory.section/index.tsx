@@ -59,8 +59,6 @@ type DashboardInventorySectionProps = {
   onViewModeChange: (mode: ViewMode) => void;
   selectedRoomId: string | null;
   onRoomSelect: (roomId: string | null) => void;
-  itemAddPanelExpanded: boolean;
-  onItemAddPanelExpandedChange: (expanded: boolean) => void;
   itemAddPanelAnchorId?: string;
 };
 
@@ -70,8 +68,6 @@ export function DashboardInventorySection({
   onViewModeChange,
   selectedRoomId,
   onRoomSelect,
-  itemAddPanelExpanded,
-  onItemAddPanelExpandedChange,
   itemAddPanelAnchorId,
 }: DashboardInventorySectionProps) {
   const prefix = useAppRoutePrefix();
@@ -288,8 +284,6 @@ export function DashboardInventorySection({
             key={selectedRoomId}
             selected={selected}
             roomId={selectedRoomId}
-            expanded={itemAddPanelExpanded}
-            onExpandedChange={onItemAddPanelExpandedChange}
             anchorId={itemAddPanelAnchorId}
           />
         </div>
