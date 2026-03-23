@@ -37,9 +37,7 @@ export type RoomItemAddWidgetProps = {
 };
 
 function sortByOrder<T extends { sortOrder?: number }>(list: T[]): T[] {
-  return [...list].sort(
-    (a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || 0,
-  );
+  return [...list].sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0) || 0);
 }
 
 const inputClass =
@@ -87,9 +85,7 @@ function StepShell({
       <div
         className={cn(
           "flex shrink-0 items-center justify-center rounded-xl bg-teal-500/15 font-bold tabular-nums text-teal-300 ring-1 ring-teal-500/20",
-          compact
-            ? "h-8 w-8 text-xs"
-            : "h-9 w-9 text-sm",
+          compact ? "h-8 w-8 text-xs" : "h-9 w-9 text-sm",
         )}
         aria-hidden
       >
@@ -146,7 +142,7 @@ function StepEmbedBlock({
         {step}
       </div>
       <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
-        <div className="min-h-[4.25rem] shrink-0">
+        <div className="min-h-17 shrink-0">
           <h3 className="text-xs font-semibold text-zinc-100">{title}</h3>
           <p className="mt-0.5 text-pretty text-[11px] leading-snug text-zinc-500 line-clamp-4">
             {subtitle}
@@ -183,7 +179,7 @@ function ItemAddProcessStepsRail({ source }: { source: ItemAddSource }) {
       {steps.map((s, i) => (
         <Fragment key={s.n}>
           <span className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-zinc-800/80 bg-zinc-900/45 px-2 py-1 ring-1 ring-zinc-800/35">
-            <span className="flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded-md bg-teal-500/15 text-[10px] font-bold tabular-nums text-teal-300">
+            <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-md bg-teal-500/15 text-[10px] font-bold tabular-nums text-teal-300">
               {s.n}
             </span>
             <span className="min-w-0 truncate text-[11px] font-medium text-zinc-200">
@@ -265,8 +261,7 @@ export function RoomItemAddWidget({
 
   const purchases = useSyncExternalStore(
     dataMode === "mock" ? subscribeMockPurchasesSession : subscribePurchases,
-    () =>
-      dataMode === "mock" ? getMockPurchasesSession() : getPurchases(),
+    () => (dataMode === "mock" ? getMockPurchasesSession() : getPurchases()),
     () => [],
   );
 
@@ -311,8 +306,7 @@ export function RoomItemAddWidget({
   }, [purchasePickId, placeablePurchases]);
 
   const selectedPlaceablePurchase = useMemo(
-    () =>
-      placeablePurchases.find((p) => p.id === purchaseSelectValue) ?? null,
+    () => placeablePurchases.find((p) => p.id === purchaseSelectValue) ?? null,
     [placeablePurchases, purchaseSelectValue],
   );
 
@@ -625,8 +619,7 @@ export function RoomItemAddWidget({
       productId: purchase.productId,
       productVariantId: purchase.productVariantId,
       variantCaption: purchase.variantCaption,
-      quantityPerUnit:
-        variant && unit ? variant.quantityPerUnit : undefined,
+      quantityPerUnit: variant && unit ? variant.quantityPerUnit : undefined,
     };
 
     if (catalog && product && variant && unit) {
@@ -678,8 +671,8 @@ export function RoomItemAddWidget({
   const storageSelectContent =
     storageOptions.length === 0 ? (
       <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200/90">
-        이 방에 등록된 보관 칸이 없습니다.「가구 배치·보관 장소」에서 방 직속
-        칸 또는 가구·칸을 추가하세요.
+        이 방에 등록된 보관 칸이 없습니다.「가구 배치·보관 장소」에서 방 직속 칸
+        또는 가구·칸을 추가하세요.
       </p>
     ) : (
       <select
@@ -932,8 +925,7 @@ export function RoomItemAddWidget({
             {selectedPlaceablePurchase.batches.map((b) => (
               <li key={b.id} className="tabular-nums">
                 {b.quantity}
-                {selectedPlaceablePurchase.unitSymbol} · 유통기한{" "}
-                {b.expiresOn}
+                {selectedPlaceablePurchase.unitSymbol} · 유통기한 {b.expiresOn}
               </li>
             ))}
           </ul>
@@ -1143,183 +1135,195 @@ export function RoomItemAddWidget({
 
   return (
     <>
-    <div
-      className={cn(
-        "shrink-0"
-      )}
-    >
-      {!embedInFloatingPanel ? (
-        <header className="border-b border-zinc-800/80 pb-4">
-          <h2 className="text-base font-semibold tracking-tight text-teal-200">
-            물품 등록 · {room.name}
-          </h2>
-          <p className="mt-1 max-w-prose text-xs leading-relaxed text-zinc-500">
-            카탈로그에서 새로 넣거나, 구매·로트에만 적어 둔 기록을 이 방·칸에
-            연결할 수 있습니다.
-          </p>
-        </header>
-      ) : null}
+      <div className={cn("shrink-0")}>
+        {!embedInFloatingPanel ? (
+          <header className="border-b border-zinc-800/80 pb-4">
+            <h2 className="text-base font-semibold tracking-tight text-teal-200">
+              물품 등록 · {room.name}
+            </h2>
+            <p className="mt-1 max-w-prose text-xs leading-relaxed text-zinc-500">
+              카탈로그에서 새로 넣거나, 구매·로트에만 적어 둔 기록을 이 방·칸에
+              연결할 수 있습니다.
+            </p>
+          </header>
+        ) : null}
 
-      {sourceToggle}
+        {sourceToggle}
 
-      {embedInFloatingPanel ? (
-        <>
-          <ItemAddProcessStepsRail source={addSource} />
-          <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,2.35fr)_minmax(0,1fr)] lg:items-stretch lg:gap-4">
-            <div className="flex h-auto min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-zinc-800/55 bg-zinc-900/30 ring-1 ring-zinc-800/40 lg:h-full">
+        {embedInFloatingPanel ? (
+          <>
+            <ItemAddProcessStepsRail source={addSource} />
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,2.35fr)_minmax(0,1fr)] lg:items-stretch lg:gap-4">
+              <div className="flex h-auto min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-zinc-800/55 bg-zinc-900/30 ring-1 ring-zinc-800/40 lg:h-full">
+                {addSource === "catalog" ? (
+                  <>
+                    <div className="min-h-0 min-w-0 flex-1">
+                      <div className="lg:hidden">
+                        <div className="grid grid-cols-1 divide-y divide-zinc-800/50">
+                          <div className="min-w-0 p-3 sm:p-4">
+                            <ol className="list-none space-y-4 p-0">
+                              {steps12}
+                            </ol>
+                          </div>
+                          <div className="min-w-0 p-3 sm:p-4">
+                            <ol className="list-none space-y-4 p-0">
+                              {steps34}
+                            </ol>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="hidden lg:block">
+                        <div className="p-3 sm:p-4">
+                          <div className="grid grid-cols-2 items-stretch gap-x-4 gap-y-3">
+                            <StepEmbedBlock
+                              step={1}
+                              title="보관 위치"
+                              subtitle="이 방 안의 직속 칸 또는 가구 아래 칸을 고릅니다."
+                            >
+                              {storageSelectContent}
+                            </StepEmbedBlock>
+                            <StepEmbedBlock
+                              step={3}
+                              title="품목"
+                              subtitle="같은 종류라도 품목을 나눠 등록합니다.「품목 추가」에서 신라면·열라면처럼 이름을 구분하고 사진을 넣으면 목록에서 헷갈리지 않습니다."
+                            >
+                              {productSelectControl}
+                            </StepEmbedBlock>
+                            <StepEmbedBlock
+                              step={2}
+                              title="카테고리"
+                              subtitle="위에서 추가하거나 설정에 등록한 대분류 중에서 고릅니다."
+                            >
+                              {categoryFieldForDesktopGrid}
+                            </StepEmbedBlock>
+                            <StepEmbedBlock
+                              step={4}
+                              title="용량·포장"
+                              subtitle="등록된 단위·용량·포장을 고릅니다."
+                            >
+                              {variantSelectControl}
+                            </StepEmbedBlock>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="shrink-0 border-t border-zinc-800/50 px-3 py-3 sm:px-4">
+                      {catalogShoppingListButton}
+                    </div>
+                  </>
+                ) : (
+                  <div className="min-w-0 p-3 sm:p-4">
+                    <ol className="list-none space-y-4 p-0">
+                      {purchaseLotSteps}
+                    </ol>
+                  </div>
+                )}
+              </div>
+              <div className="flex h-auto min-h-0 min-w-0 flex-col rounded-xl border border-teal-500/25 bg-zinc-950/50 p-3 ring-1 ring-teal-500/10 sm:p-4 lg:h-full">
+                <div className="shrink-0 border-b border-zinc-800/50 pb-3">
+                  <div className="flex gap-2.5 sm:gap-3">
+                    <div
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-teal-500/15 text-xs font-bold tabular-nums text-teal-300 ring-1 ring-teal-500/20"
+                      aria-hidden
+                    >
+                      {addSource === "catalog" ? "5" : "3"}
+                    </div>
+                    <div className="min-w-0 flex-1 space-y-1.5">
+                      <h3 className="text-xs font-semibold text-zinc-100">
+                        {addSource === "catalog"
+                          ? "수량·유통기한 확인 후 추가"
+                          : "수량 확인 후 칸에 반영"}
+                      </h3>
+                      {storageOptions.length === 0 ? (
+                        <p className="text-[11px] leading-snug text-amber-200/85">
+                          보관 칸이 없으면 먼저「가구 배치·보관 장소」에서 칸을
+                          추가하세요.
+                        </p>
+                      ) : displayPickedStorageLabel ? (
+                        <div className="space-y-1.5">
+                          <p className="text-[11px] leading-snug text-zinc-500">
+                            <span className="text-zinc-500">추가 대상</span>{" "}
+                            <span
+                              className="font-medium text-zinc-200"
+                              title={displayPickedStorageLabel}
+                            >
+                              {displayPickedStorageLabel}
+                            </span>
+                          </p>
+                          {itemAddSummaryLine ? (
+                            <p className="text-[11px] leading-snug text-zinc-500">
+                              <span className="text-zinc-600">담을 품목</span>{" "}
+                              <span
+                                className="wrap-break-words font-medium text-zinc-300"
+                                title={itemAddSummaryLine}
+                              >
+                                {itemAddSummaryLine}
+                              </span>
+                            </p>
+                          ) : null}
+                        </div>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+                <div className="flex min-h-0 flex-1 flex-col justify-between gap-4 pt-4">
+                  {footerQtyAndSubmit}
+                </div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <>
+            {addSource === "catalog" && catalogHydrated ? (
+              <div
+                className="mb-4 rounded-xl border border-zinc-800/90 bg-zinc-900/35 p-3 ring-1 ring-zinc-800/50"
+                role="region"
+                aria-label="카탈로그 빠른 추가"
+              >
+                <p className="mb-2 text-[11px] font-medium text-zinc-500">
+                  카탈로그에 없으면 여기서 추가
+                </p>
+                <CatalogModalsControls
+                  catalog={catalog}
+                  onCatalogUpdate={카탈로그를_갱신_한다}
+                  layout="panel"
+                />
+              </div>
+            ) : null}
+            <ol className="mt-4 list-none space-y-5 p-0">
               {addSource === "catalog" ? (
                 <>
-                  <div className="min-h-0 min-w-0 flex-1">
-                    <div className="lg:hidden">
-                      <div className="grid grid-cols-1 divide-y divide-zinc-800/50">
-                        <div className="min-w-0 p-3 sm:p-4">
-                          <ol className="list-none space-y-4 p-0">{steps12}</ol>
-                        </div>
-                        <div className="min-w-0 p-3 sm:p-4">
-                          <ol className="list-none space-y-4 p-0">{steps34}</ol>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="hidden lg:block">
-                      <div className="p-3 sm:p-4">
-                        <div className="grid grid-cols-2 items-stretch gap-x-4 gap-y-3">
-                          <StepEmbedBlock
-                            step={1}
-                            title="보관 위치"
-                            subtitle="이 방 안의 직속 칸 또는 가구 아래 칸을 고릅니다."
-                          >
-                            {storageSelectContent}
-                          </StepEmbedBlock>
-                          <StepEmbedBlock
-                            step={3}
-                            title="품목"
-                            subtitle="같은 종류라도 품목을 나눠 등록합니다.「품목 추가」에서 신라면·열라면처럼 이름을 구분하고 사진을 넣으면 목록에서 헷갈리지 않습니다."
-                          >
-                            {productSelectControl}
-                          </StepEmbedBlock>
-                          <StepEmbedBlock
-                            step={2}
-                            title="카테고리"
-                            subtitle="위에서 추가하거나 설정에 등록한 대분류 중에서 고릅니다."
-                          >
-                            {categoryFieldForDesktopGrid}
-                          </StepEmbedBlock>
-                          <StepEmbedBlock
-                            step={4}
-                            title="용량·포장"
-                            subtitle="등록된 단위·용량·포장을 고릅니다."
-                          >
-                            {variantSelectControl}
-                          </StepEmbedBlock>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="shrink-0 border-t border-zinc-800/50 px-3 py-3 sm:px-4">
-                    {catalogShoppingListButton}
-                  </div>
+                  {steps12}
+                  {steps34}
                 </>
               ) : (
-                <div className="min-w-0 p-3 sm:p-4">
-                  <ol className="list-none space-y-4 p-0">{purchaseLotSteps}</ol>
-                </div>
+                purchaseLotSteps
               )}
-            </div>
-            <div className="flex h-auto min-h-0 min-w-0 flex-col rounded-xl border border-teal-500/25 bg-zinc-950/50 p-3 ring-1 ring-teal-500/10 sm:p-4 lg:h-full">
-              <div className="shrink-0 space-y-1.5 border-b border-zinc-800/50 pb-3">
-                <h3 className="text-xs font-semibold text-zinc-100">
-                  {addSource === "catalog"
-                    ? "수량·유통기한 확인 후 추가"
-                    : "수량 확인 후 칸에 반영"}
-                </h3>
-                {storageOptions.length === 0 ? (
-                  <p className="text-[11px] leading-snug text-amber-200/85">
-                    보관 칸이 없으면 먼저「가구 배치·보관 장소」에서 칸을
-                    추가하세요.
-                  </p>
-                ) : displayPickedStorageLabel ? (
-                  <div className="space-y-1.5">
-                    <p className="text-[11px] leading-snug text-zinc-500">
-                      <span className="text-zinc-500">추가 대상</span>{" "}
-                      <span
-                        className="font-medium text-zinc-200"
-                        title={displayPickedStorageLabel}
-                      >
-                        {displayPickedStorageLabel}
-                      </span>
-                    </p>
-                    {itemAddSummaryLine ? (
-                      <p className="text-[11px] leading-snug text-zinc-500">
-                        <span className="text-zinc-600">담을 품목</span>{" "}
-                        <span
-                          className="break-words font-medium text-zinc-300"
-                          title={itemAddSummaryLine}
-                        >
-                          {itemAddSummaryLine}
-                        </span>
-                      </p>
-                    ) : null}
-                  </div>
-                ) : null}
-              </div>
-              <div className="flex min-h-0 flex-1 flex-col justify-between gap-4 pt-4">
-                {footerQtyAndSubmit}
-              </div>
-            </div>
-          </div>
-        </>
-      ) : (
-        <>
-          {addSource === "catalog" && catalogHydrated ? (
-            <div
-              className="mb-4 rounded-xl border border-zinc-800/90 bg-zinc-900/35 p-3 ring-1 ring-zinc-800/50"
-              role="region"
-              aria-label="카탈로그 빠른 추가"
-            >
-              <p className="mb-2 text-[11px] font-medium text-zinc-500">
-                카탈로그에 없으면 여기서 추가
-              </p>
-              <CatalogModalsControls
-                catalog={catalog}
-                onCatalogUpdate={카탈로그를_갱신_한다}
-                layout="panel"
-              />
-            </div>
-          ) : null}
-          <ol className="mt-4 list-none space-y-5 p-0">
-            {addSource === "catalog" ? (
-              <>
-                {steps12}
-                {steps34}
-              </>
-            ) : (
-              purchaseLotSteps
-            )}
-          </ol>
-        </>
-      )}
+            </ol>
+          </>
+        )}
 
-      {!embedInFloatingPanel ? (
-        <footer
-          className={cn(
-            "mt-5 flex flex-col gap-4 rounded-xl border border-teal-500/25 bg-zinc-950/50 p-4 ring-1 ring-teal-500/10 sm:flex-row sm:items-end sm:justify-between sm:gap-6",
-          )}
-        >
-          {footerQtyAndSubmit}
-        </footer>
+        {!embedInFloatingPanel ? (
+          <footer
+            className={cn(
+              "mt-5 flex flex-col gap-4 rounded-xl border border-teal-500/25 bg-zinc-950/50 p-4 ring-1 ring-teal-500/10 sm:flex-row sm:items-end sm:justify-between sm:gap-6",
+            )}
+          >
+            {footerQtyAndSubmit}
+          </footer>
+        ) : null}
+      </div>
+      {catalog ? (
+        <ShoppingListQuickAddFromCatalogModal
+          open={shoppingQuickOpen}
+          onOpenChange={setShoppingQuickOpen}
+          household={selected}
+          catalog={catalog}
+          categoryId={categoryIdResolved}
+          productId={productIdResolved}
+          variantId={variantIdResolved}
+        />
       ) : null}
-    </div>
-    {catalog ? (
-      <ShoppingListQuickAddFromCatalogModal
-        open={shoppingQuickOpen}
-        onOpenChange={setShoppingQuickOpen}
-        household={selected}
-        catalog={catalog}
-        categoryId={categoryIdResolved}
-        productId={productIdResolved}
-        variantId={variantIdResolved}
-      />
-    ) : null}
     </>
   );
 }

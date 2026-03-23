@@ -5,7 +5,7 @@ import { MotionModalLayer } from "@/app/_ui/motion-modal-layer";
 import { sortHouseholdKindDefinitions } from "@/lib/household-kind-defaults";
 import { cn } from "@/lib/utils";
 import type { HouseholdKindDefinition } from "@/types/domain";
-import { useEffect, useId, useMemo, useState } from "react";
+import { useId, useMemo, useState } from "react";
 import { useDashboard } from "../_hooks/useDashboard";
 import { newEntityId } from "../_lib/dashboard-helpers";
 
@@ -34,27 +34,26 @@ function TrashIcon({ className }: { className?: string }) {
   );
 }
 
-/**
- * 거점 유형(라벨) 추가·삭제·수정. `/dashboard` 헤더와 `/settings`에서 공통 사용.
- */
-export function HouseholdKindsManageModal({
-  open,
+type HouseholdKindsManageModalBodyProps = {
+  householdKindDefinitions: HouseholdKindDefinition[];
+  거점_유형_정의를_교체_한다: (next: HouseholdKindDefinition[]) => void;
+  onOpenChange: (open: boolean) => void;
+  titleId: string;
+  descId: string;
+};
+
+/** `open`일 때만 마운트되어 초기 `draft`가 최신 정의로 잡힙니다(effect로 동기화할 필요 없음). */
+function HouseholdKindsManageModalBody({
+  householdKindDefinitions,
+  거점_유형_정의를_교체_한다,
   onOpenChange,
-}: HouseholdKindsManageModalProps) {
-  const { householdKindDefinitions, 거점_유형_정의를_교체_한다 } =
-    useDashboard();
-  const [draft, setDraft] = useState<HouseholdKindDefinition[]>([]);
+  titleId,
+  descId,
+}: HouseholdKindsManageModalBodyProps) {
+  const [draft, setDraft] = useState<HouseholdKindDefinition[]>(() =>
+    sortHouseholdKindDefinitions(structuredClone(householdKindDefinitions)),
+  );
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
-
-  const titleId = useId().replace(/:/g, "");
-  const descId = useId().replace(/:/g, "");
-
-  useEffect(() => {
-    if (!open) return;
-    setDraft(
-      sortHouseholdKindDefinitions(structuredClone(householdKindDefinitions)),
-    );
-  }, [open, householdKindDefinitions]);
 
   const sortedDraft = useMemo(
     () => sortHouseholdKindDefinitions(draft),
@@ -97,15 +96,7 @@ export function HouseholdKindsManageModal({
 
   return (
     <>
-      <MotionModalLayer
-        open={open}
-        onOpenChange={onOpenChange}
-        closeOnOverlayClick
-        panelClassName="fixed left-1/2 top-1/2 z-10041 w-[min(100vw-2rem,32rem)] max-h-[min(90vh,36rem)] -translate-x-1/2 -translate-y-1/2 outline-none"
-        ariaLabelledBy={titleId}
-        ariaDescribedBy={descId}
-      >
-        <div className="flex max-h-[min(90vh,36rem)] flex-col rounded-2xl border border-zinc-700 bg-zinc-900 shadow-xl">
+      <div className="flex max-h-[min(90vh,36rem)] flex-col rounded-2xl border border-zinc-700 bg-zinc-900 shadow-xl">
           <div className="shrink-0 border-b border-zinc-800 p-6 pb-4">
             <h2 id={titleId} className="text-lg font-semibold text-white">
               거점 유형 관리
@@ -169,7 +160,6 @@ export function HouseholdKindsManageModal({
             </button>
           </div>
         </div>
-      </MotionModalLayer>
 
       <AlertModal
         open={pendingDeleteId !== null}
@@ -193,5 +183,40 @@ export function HouseholdKindsManageModal({
         }}
       />
     </>
+  );
+}
+
+/**
+ * 거점 유형(라벨) 추가·삭제·수정. `/dashboard` 헤더와 `/settings`에서 공통 사용.
+ */
+export function HouseholdKindsManageModal({
+  open,
+  onOpenChange,
+}: HouseholdKindsManageModalProps) {
+  const { householdKindDefinitions, 거점_유형_정의를_교체_한다 } =
+    useDashboard();
+
+  const titleId = useId().replace(/:/g, "");
+  const descId = useId().replace(/:/g, "");
+
+  return (
+    <MotionModalLayer
+      open={open}
+      onOpenChange={onOpenChange}
+      closeOnOverlayClick
+      panelClassName="fixed left-1/2 top-1/2 z-10041 w-[min(100vw-2rem,32rem)] max-h-[min(90vh,36rem)] -translate-x-1/2 -translate-y-1/2 outline-none"
+      ariaLabelledBy={titleId}
+      ariaDescribedBy={descId}
+    >
+      {open ? (
+        <HouseholdKindsManageModalBody
+          householdKindDefinitions={householdKindDefinitions}
+          거점_유형_정의를_교체_한다={거점_유형_정의를_교체_한다}
+          onOpenChange={onOpenChange}
+          titleId={titleId}
+          descId={descId}
+        />
+      ) : null}
+    </MotionModalLayer>
   );
 }

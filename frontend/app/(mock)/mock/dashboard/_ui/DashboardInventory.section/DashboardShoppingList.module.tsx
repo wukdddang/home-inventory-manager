@@ -36,6 +36,8 @@ export type DashboardShoppingListModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   household: Household | null;
+  /** true면 목록만 표시(항목 추가·구매 완료 등 비활성). 셸 등 Provider 밖에서 사용 */
+  readOnly?: boolean;
 };
 
 function formatItemCaption(it: InventoryRow): string {
@@ -43,12 +45,7 @@ function formatItemCaption(it: InventoryRow): string {
   return parts.join(" · ");
 }
 
-function ShoppingListDetailContent({ household }: { household: Household }) {
-  const { 재고_장보기_보충을_기록_한다 } = useDashboard();
-  const [freeText, setFreeText] = useState("");
-  const [pickItemId, setPickItemId] = useState("");
-  const [depletedQty, setDepletedQty] = useState<Record<string, number>>({});
-
+function useShoppingListDerived(household: Household) {
   const savedAll = useSyncExternalStore(
     subscribeShoppingList,
     getShoppingList,
@@ -97,6 +94,103 @@ function ShoppingListDetailContent({ household }: { household: Household }) {
       .slice()
       .sort((a, b) => a.name.localeCompare(b.name, "ko"));
   }, [household.items, linkedInventoryIds, linkedCatalogVariantKeys]);
+
+  return { saved, depletedItems };
+}
+
+/** 상단 앱 셸 등 `DashboardProvider` 밖에서 열 때 — 로컬·재고만 표시, `useDashboard` 없음 */
+function ShoppingListDetailReadOnly({ household }: { household: Household }) {
+  const { saved, depletedItems } = useShoppingListDerived(household);
+  const hasRows = depletedItems.length > 0 || saved.length > 0;
+
+  return (
+    <div className="flex min-w-0 flex-col gap-4" aria-label="장보기 목록 (읽기)">
+      <p className="text-sm leading-relaxed text-zinc-400">
+        결제가 아니라 살 것·다 쓴 품목을 모아 두는 목록입니다. 이 창에서는 목록만
+        보입니다. 항목 추가·구매 완료·삭제는 대시보드에서 진행할 수 있습니다.
+      </p>
+
+      {!hasRows ? (
+        <p className="rounded-lg border border-dashed border-zinc-700 bg-zinc-950/40 px-4 py-3 text-center text-sm text-zinc-500">
+          목록이 비어 있어요. 수량이 0인 품목은 자동으로 표시됩니다.
+        </p>
+      ) : null}
+
+      {depletedItems.length > 0 ? (
+        <div className="min-w-0">
+          <h3 className="text-[10px] font-semibold tracking-wide text-amber-200/90 uppercase">
+            재고 없음 (자동)
+          </h3>
+          <ul className="mt-2 flex flex-col gap-2">
+            {depletedItems.map((it) => (
+              <li
+                key={it.id}
+                className="rounded-lg border border-amber-500/20 bg-zinc-950/60 px-3 py-2"
+              >
+                <p className="truncate text-sm font-medium text-zinc-100">
+                  {it.name}
+                </p>
+                {formatItemCaption(it) ? (
+                  <p className="truncate text-[11px] text-zinc-500">
+                    {formatItemCaption(it)} · {it.unit}
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-zinc-500">{it.unit}</p>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {saved.length > 0 ? (
+        <div className="min-w-0">
+          <h3 className="text-[10px] font-semibold tracking-wide text-teal-200/80 uppercase">
+            직접 담은 항목
+          </h3>
+          <ul className="mt-2 flex flex-col gap-2">
+            {saved.map((entry) => (
+              <li
+                key={entry.id}
+                className="rounded-lg border border-zinc-700/80 bg-zinc-950/50 px-3 py-2"
+              >
+                <p className="truncate text-sm font-medium text-zinc-100">
+                  {entry.label}
+                  {entry.inventoryItemId ? null : entry.productId &&
+                    entry.productVariantId ? (
+                    <span className="ml-1.5 text-[10px] font-normal text-teal-400/90">
+                      (카탈로그)
+                    </span>
+                  ) : (
+                    <span className="ml-1.5 text-[10px] font-normal text-zinc-500">
+                      (메모)
+                    </span>
+                  )}
+                </p>
+                <p className="truncate text-[11px] text-zinc-500">
+                  {entry.variantCaption ? `${entry.variantCaption} · ` : ""}
+                  보충 수량 {entry.restockQuantity}
+                  {entry.inventoryItemId
+                    ? ` · ${entry.unit ?? "단위"}`
+                    : entry.productId && entry.productVariantId
+                      ? ` · ${entry.unit ?? "단위"}`
+                      : ""}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function ShoppingListDetailContent({ household }: { household: Household }) {
+  const { 재고_장보기_보충을_기록_한다 } = useDashboard();
+  const [freeText, setFreeText] = useState("");
+  const [pickItemId, setPickItemId] = useState("");
+  const [depletedQty, setDepletedQty] = useState<Record<string, number>>({});
+  const { saved, depletedItems } = useShoppingListDerived(household);
 
   const pickCandidates = useMemo(() => {
     return household.items
@@ -658,47 +752,60 @@ export function DashboardShoppingListModal({
   open,
   onOpenChange,
   household,
+  readOnly = false,
 }: DashboardShoppingListModalProps) {
   const titleId = useId().replace(/:/g, "");
   const descId = useId().replace(/:/g, "");
-  const show = open && household !== null;
 
   return (
     <MotionModalLayer
-      open={show}
+      open={open}
       onOpenChange={onOpenChange}
       closeOnOverlayClick
       panelClassName="fixed left-1/2 top-1/2 z-10041 flex w-[min(100vw-1.5rem,28rem)] max-w-[100vw] -translate-x-1/2 -translate-y-1/2 outline-none sm:w-[min(100vw-2rem,36rem)]"
       ariaLabelledBy={titleId}
       ariaDescribedBy={descId}
     >
-      {household ? (
-        <div className="flex max-h-[min(92dvh,44rem)] w-full flex-col overflow-hidden rounded-2xl border border-zinc-700 bg-zinc-900 shadow-xl">
-          <div className="flex shrink-0 items-start justify-between gap-3 border-b border-zinc-800 px-4 py-4 sm:px-5">
-            <div className="min-w-0 pr-2">
-              <h2 id={titleId} className="text-lg font-semibold text-white">
-                장보기
-              </h2>
-              <p id={descId} className="mt-1 text-sm text-zinc-400">
-                선택한 거점「{household.name}」기준 목록입니다.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => onOpenChange(false)}
-              className="shrink-0 cursor-pointer rounded-lg border border-zinc-600 px-3 py-1.5 text-xs font-medium text-zinc-300 hover:bg-zinc-800"
-            >
-              닫기
-            </button>
+      <div className="flex max-h-[min(92dvh,44rem)] w-full flex-col overflow-hidden rounded-2xl border border-zinc-700 bg-zinc-900 shadow-xl">
+        <div className="flex shrink-0 items-start justify-between gap-3 border-b border-zinc-800 px-4 py-4 sm:px-5">
+          <div className="min-w-0 pr-2">
+            <h2 id={titleId} className="text-lg font-semibold text-white">
+              장보기
+            </h2>
+            <p id={descId} className="mt-1 text-sm text-zinc-400">
+              {household
+                ? `선택한 거점「${household.name}」기준 목록입니다.`
+                : "대시보드에서 거점을 불러온 뒤 목록을 볼 수 있습니다."}
+            </p>
           </div>
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 py-4 sm:px-5 sm:py-5">
-            <ShoppingListDetailContent
-              key={household.id}
-              household={household}
-            />
-          </div>
+          <button
+            type="button"
+            onClick={() => onOpenChange(false)}
+            className="shrink-0 cursor-pointer rounded-lg border border-zinc-600 px-3 py-1.5 text-xs font-medium text-zinc-300 hover:bg-zinc-800"
+          >
+            닫기
+          </button>
         </div>
-      ) : null}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-y-contain px-4 py-4 sm:px-5 sm:py-5">
+          {household ? (
+            readOnly ? (
+              <ShoppingListDetailReadOnly
+                key={household.id}
+                household={household}
+              />
+            ) : (
+              <ShoppingListDetailContent
+                key={household.id}
+                household={household}
+              />
+            )
+          ) : (
+            <p className="rounded-lg border border-dashed border-zinc-700 bg-zinc-950/40 px-4 py-6 text-center text-sm text-zinc-500">
+              메인(대시보드)에서 거점을 선택한 상태로 다시 열어 주세요.
+            </p>
+          )}
+        </div>
+      </div>
     </MotionModalLayer>
   );
 }

@@ -23,7 +23,7 @@ function TrashIcon({ className }: { className?: string }) {
       viewBox="0 0 24 24"
       strokeWidth={1.5}
       stroke="currentColor"
-      className={cn("size-4", className)}
+      className={cn("size-3.5", className)}
       aria-hidden
     >
       <path
@@ -43,7 +43,7 @@ function PencilIcon({ className }: { className?: string }) {
       viewBox="0 0 24 24"
       strokeWidth={1.5}
       stroke="currentColor"
-      className={cn("size-4", className)}
+      className={cn("size-3.5", className)}
       aria-hidden
     >
       <path
@@ -63,7 +63,7 @@ function PlusIcon({ className }: { className?: string }) {
       viewBox="0 0 24 24"
       strokeWidth={2}
       stroke="currentColor"
-      className={cn("size-5", className)}
+      className={cn("size-4", className)}
       aria-hidden
     >
       <path strokeLinecap="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -194,21 +194,21 @@ export function DashboardRoomsSection({
     : null;
 
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
-      <h2 className="text-base font-semibold text-white">방 관리</h2>
-      <p className="mt-1 text-sm text-zinc-500">
+    <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
+      <h2 className="text-sm font-semibold text-white">방 관리</h2>
+      <p className="mt-1 text-xs leading-relaxed text-zinc-500">
         탭으로 방을 선택하세요. 구조도에서도 같은 방이 선택됩니다. + 로 방을
         추가합니다.
       </p>
 
-      <div className="mt-4 flex min-w-0 items-stretch gap-2">
+      <div className="mt-3 flex min-w-0 items-stretch gap-1.5">
         <div
           role="tablist"
           aria-label="방 선택"
-          className="flex min-h-11 min-w-0 flex-1 items-center gap-1 overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-950/80 p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="flex min-h-9 min-w-0 flex-1 items-center gap-0.5 overflow-x-auto rounded-lg border border-zinc-800 bg-zinc-950/80 p-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {selected.rooms.length === 0 ? (
-            <p className="px-3 py-2 text-sm text-zinc-500">
+            <p className="px-2.5 py-1.5 text-xs text-zinc-500">
               등록된 방이 없습니다. 오른쪽 + 로 추가하세요.
             </p>
           ) : (
@@ -238,7 +238,7 @@ export function DashboardRoomsSection({
                     aria-selected={isSelected}
                     onClick={() => onRoomSelect(r.id)}
                     className={cn(
-                      "relative z-10 cursor-pointer px-3 py-2 text-left text-sm font-medium transition-colors",
+                      "relative z-10 cursor-pointer px-2.5 py-1.5 text-left text-xs font-medium transition-colors",
                       isSelected
                         ? "text-teal-100"
                         : "text-zinc-300 hover:text-white",
@@ -249,7 +249,7 @@ export function DashboardRoomsSection({
                   <button
                     type="button"
                     onClick={(e) => openEditModal(r.id, e)}
-                    className="relative z-10 cursor-pointer rounded-md p-2 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-teal-300"
+                    className="relative z-10 cursor-pointer rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-teal-300"
                     aria-label={`${r.name} 이름 수정`}
                   >
                     <PencilIcon />
@@ -260,7 +260,7 @@ export function DashboardRoomsSection({
                       e.stopPropagation();
                       setPendingDeleteRoomId(r.id);
                     }}
-                    className="relative z-10 cursor-pointer rounded-md p-2 text-zinc-500 transition-colors hover:bg-rose-500/15 hover:text-rose-300"
+                    className="relative z-10 cursor-pointer rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-rose-500/15 hover:text-rose-300"
                     aria-label={`${r.name} 삭제`}
                   >
                     <TrashIcon />
@@ -273,7 +273,7 @@ export function DashboardRoomsSection({
         <button
           type="button"
           onClick={() => setAddOpen(true)}
-          className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-teal-500/40 bg-teal-500/10 text-teal-300 transition-colors hover:bg-teal-500/20 hover:text-teal-100"
+          className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-teal-500/40 bg-teal-500/10 text-teal-300 transition-colors hover:bg-teal-500/20 hover:text-teal-100"
           aria-label="방 추가"
         >
           <PlusIcon />
@@ -288,28 +288,28 @@ export function DashboardRoomsSection({
         ariaLabelledBy={addTitleId}
         ariaDescribedBy={addDescId}
       >
-        <div className="rounded-2xl border border-zinc-700 bg-zinc-900 p-6 shadow-xl">
-          <h2 id={addTitleId} className="text-lg font-semibold text-white">
+        <div className="rounded-xl border border-zinc-700 bg-zinc-900 p-5 shadow-xl">
+          <h2 id={addTitleId} className="text-base font-semibold text-white">
             방 추가
           </h2>
-          <p id={addDescId} className="mt-2 text-sm text-zinc-400">
+          <p id={addDescId} className="mt-1.5 text-xs text-zinc-400">
             방 이름을 입력하세요. 비워 두면 순서대로 기본 이름이 붙습니다.
           </p>
-          <div className="mt-5 space-y-4">
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-zinc-400">방 이름</label>
+          <div className="mt-4 space-y-3">
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-medium text-zinc-400">방 이름</label>
               <input
                 value={newRoomName}
                 onChange={(e) => setNewRoomName(e.target.value)}
                 placeholder="거실, 주방…"
-                className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-teal-500"
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
                 autoFocus
               />
             </div>
             <div className="flex justify-end gap-2 pt-1">
               <button
                 type="button"
-                className="cursor-pointer rounded-xl border border-zinc-600 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800"
+                className="cursor-pointer rounded-lg border border-zinc-600 px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-800"
                 onClick={() => setAddOpen(false)}
               >
                 취소
@@ -317,7 +317,7 @@ export function DashboardRoomsSection({
               <button
                 type="button"
                 onClick={handleAddRoom}
-                className="cursor-pointer rounded-xl bg-teal-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-teal-400"
+                className="cursor-pointer rounded-lg bg-teal-500 px-3 py-1.5 text-xs font-semibold text-zinc-950 hover:bg-teal-400"
               >
                 추가
               </button>
@@ -337,27 +337,27 @@ export function DashboardRoomsSection({
         ariaLabelledBy={editTitleId}
         ariaDescribedBy={editDescId}
       >
-        <div className="rounded-2xl border border-zinc-700 bg-zinc-900 p-6 shadow-xl">
-          <h2 id={editTitleId} className="text-lg font-semibold text-white">
+        <div className="rounded-xl border border-zinc-700 bg-zinc-900 p-5 shadow-xl">
+          <h2 id={editTitleId} className="text-base font-semibold text-white">
             방 이름 수정
           </h2>
-          <p id={editDescId} className="mt-2 text-sm text-zinc-400">
+          <p id={editDescId} className="mt-1.5 text-xs text-zinc-400">
             구조도·목록에 표시되는 이름을 바꿉니다.
           </p>
-          <div className="mt-5 space-y-4">
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-zinc-400">방 이름</label>
+          <div className="mt-4 space-y-3">
+            <div className="space-y-1.5">
+              <label className="text-[11px] font-medium text-zinc-400">방 이름</label>
               <input
                 value={editRoomName}
                 onChange={(e) => setEditRoomName(e.target.value)}
-                className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-teal-500"
+                className="w-full rounded-lg border border-zinc-700 bg-zinc-950 px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500"
                 autoFocus
               />
             </div>
             <div className="flex justify-end gap-2 pt-1">
               <button
                 type="button"
-                className="cursor-pointer rounded-xl border border-zinc-600 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800"
+                className="cursor-pointer rounded-lg border border-zinc-600 px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-800"
                 onClick={() => setEditOpen(false)}
               >
                 취소
@@ -366,7 +366,7 @@ export function DashboardRoomsSection({
                 type="button"
                 disabled={!editRoomName.trim()}
                 onClick={handleSaveRoomName}
-                className="cursor-pointer rounded-xl bg-teal-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-teal-400 disabled:cursor-not-allowed disabled:opacity-40"
+                className="cursor-pointer rounded-lg bg-teal-500 px-3 py-1.5 text-xs font-semibold text-zinc-950 hover:bg-teal-400 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 저장
               </button>

@@ -59,8 +59,7 @@ export function DashboardInventorySection({
 
   const purchases = useSyncExternalStore(
     dataMode === "mock" ? subscribeMockPurchasesSession : subscribePurchases,
-    () =>
-      dataMode === "mock" ? getMockPurchasesSession() : getPurchases(),
+    () => (dataMode === "mock" ? getMockPurchasesSession() : getPurchases()),
     () => [],
   );
 
@@ -138,12 +137,7 @@ export function DashboardInventorySection({
   ) => {
     if (!selected || !cwItem) return;
     if (cwMode === "consume") {
-      const ok = 재고_소비를_기록_한다(
-        selected.id,
-        cwItem.id,
-        quantity,
-        memo,
-      );
+      const ok = 재고_소비를_기록_한다(selected.id, cwItem.id, quantity, memo);
       if (ok) {
         toast({
           title: "소비를 기록했습니다",
@@ -201,8 +195,8 @@ export function DashboardInventorySection({
         <div>
           <h2 className="text-base font-semibold text-white">조회 모드</h2>
           <p className="mt-1 text-sm text-zinc-500">
-            구조도에서 방·직속·가구 블록을 드래그해 배치하거나, 표로 전환해 물품을
-            확인합니다. 구매와 연결된 품목은 로트·임박이 표시됩니다.
+            구조도에서 방·직속·가구 블록을 드래그해 배치하거나, 표로 전환해
+            물품을 확인합니다. 구매와 연결된 품목은 로트·임박이 표시됩니다.
           </p>
           <Link
             href={`${prefix}/inventory-history`}
@@ -219,8 +213,8 @@ export function DashboardInventorySection({
 
       {viewMode === "structure" ? (
         <div className="mt-6 flex min-h-0 min-w-0 flex-1 flex-col gap-4">
-          <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 items-stretch gap-4 lg:min-h-[380px] lg:grid-cols-[minmax(0,1fr)_minmax(14rem,22rem)]">
-            <div className="flex min-h-0 min-w-0 min-h-[280px] flex-col overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 lg:min-h-0">
+          <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 items-stretch gap-4 lg:min-h-95 lg:grid-cols-[minmax(0,1fr)_minmax(14rem,22rem)]">
+            <div className="flex min-h-0 min-w-0 flex-col overflow-hidden rounded-xl border border-zinc-800 bg-zinc-950 lg:min-h-70">
               <HouseStructureFlow
                 household={selected}
                 selectedRoomId={selectedRoomId}
@@ -229,7 +223,7 @@ export function DashboardInventorySection({
                 onStructureDiagramCommit={handleStructureDiagramCommit}
               />
             </div>
-            <div className="flex min-h-0 min-h-[240px] flex-col lg:min-h-0">
+            <div className="flex min-h-0 flex-col lg:min-h-60">
               <RoomItemsPanel
                 household={selected}
                 selectedRoomId={selectedRoomId}
@@ -260,7 +254,7 @@ export function DashboardInventorySection({
       )}
 
       {selectedRoomId ? (
-        <div className="mt-6 shrink-0 border-t border-zinc-800 pt-4">
+        <div className="mt-6 shrink-0 border-t border-zinc-800">
           <RoomItemAddPanel
             key={selectedRoomId}
             selected={selected}

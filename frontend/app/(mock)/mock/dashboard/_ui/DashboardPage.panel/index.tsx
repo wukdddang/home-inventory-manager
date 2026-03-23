@@ -7,6 +7,7 @@ import {
   appViewPresenceTransition,
   appViewPresenceVariants,
 } from "@/app/_ui/app-view-transition.motion";
+import { useSelectedHouseholdShell } from "@/app/(current)/_ui/selected-household-shell-bridge";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { useDashboard } from "../../_hooks/useDashboard";
@@ -26,6 +27,7 @@ export function DashboardPanel() {
     error,
     거점을_삭제_한다,
   } = useDashboard();
+  const { setHousehold: setShellHousehold } = useSelectedHouseholdShell();
   const [selectedHouseholdId, setSelectedHouseholdId] = useState<string | null>(
     null,
   );
@@ -53,6 +55,11 @@ export function DashboardPanel() {
   useEffect(() => {
     setItemAddPanelExpanded(true);
   }, [selectedRoomId]);
+
+  useEffect(() => {
+    setShellHousehold(selected);
+    return () => setShellHousehold(null);
+  }, [selected, setShellHousehold]);
 
   const handleFocusItemAddPanel = () => {
     setItemAddPanelExpanded(true);
@@ -136,7 +143,6 @@ export function DashboardPanel() {
           ) : null}
           <DashboardHouseholdsHeader
             selectedHouseholdId={viewingHouseholdId}
-            selectedHousehold={selected}
             onSelectHousehold={handleSelectHousehold}
             onAfterAddHousehold={handleAfterAddHousehold}
             onDeleteHousehold={handleDeleteHousehold}

@@ -4,7 +4,7 @@ import { AlertModal } from "@/app/_ui/alert-modal";
 import { FormModal } from "@/app/_ui/form-modal";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { useDashboard } from "../../_hooks/useDashboard";
 import { newEntityId } from "../../_lib/dashboard-helpers";
 import type {
@@ -14,21 +14,21 @@ import type {
 } from "@/types/domain";
 
 const inputClass =
-  "w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-teal-500";
+  "w-full rounded-lg border border-zinc-700 bg-zinc-950 px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500";
 
 const selectClass =
-  "w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-teal-500";
+  "w-full rounded-lg border border-zinc-700 bg-zinc-950 px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500";
 
 /** 주요 추가 동작 — 같은 스타일로 통일 */
 const btnAdd =
-  "cursor-pointer shrink-0 rounded-lg border border-teal-600/60 bg-teal-950/40 px-3 py-2 text-xs font-medium text-teal-100 hover:bg-teal-900/35";
+  "cursor-pointer shrink-0 rounded-lg border border-teal-600/60 bg-teal-950/40 px-2.5 py-1.5 text-[11px] font-medium text-teal-100 hover:bg-teal-900/35";
 
 /** 직속 칸 추가 — 탭 줄과 톤 맞춤(배경 없음) */
 const btnAddDirectSlot =
-  "cursor-pointer shrink-0 rounded-lg border border-teal-600/60 bg-transparent px-3 py-2 text-xs font-medium text-teal-100 hover:border-teal-500/70 hover:bg-teal-500/[0.06]";
+  "cursor-pointer shrink-0 rounded-lg border border-teal-600/60 bg-transparent px-2.5 py-1.5 text-[11px] font-medium text-teal-100 hover:border-teal-500/70 hover:bg-teal-500/[0.06]";
 
 const btnDangerIcon =
-  "inline-flex cursor-pointer items-center justify-center rounded-lg border border-rose-900/50 p-2 text-rose-400 hover:bg-rose-950/40";
+  "inline-flex cursor-pointer items-center justify-center rounded-md border border-rose-900/50 p-1.5 text-rose-400 hover:bg-rose-950/40";
 
 function TrashIcon({ className }: { className?: string }) {
   return (
@@ -38,7 +38,7 @@ function TrashIcon({ className }: { className?: string }) {
       viewBox="0 0 24 24"
       strokeWidth={1.5}
       stroke="currentColor"
-      className={cn("size-4", className)}
+      className={cn("size-3.5", className)}
       aria-hidden
     >
       <path
@@ -71,8 +71,8 @@ export function DashboardPlacementsSection({
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(
     null,
   );
-  /** 선택한 방에서 보고 있는 직속 칸 탭 */
-  const [activeDirectSlotId, setActiveDirectSlotId] = useState<string | null>(
+  /** 사용자가 탭으로 고른 직속 칸(없거나 무효하면 아래 파생 id로 폴백) */
+  const [userDirectSlotPick, setUserDirectSlotPick] = useState<string | null>(
     null,
   );
   const [directSlotModalOpen, setDirectSlotModalOpen] = useState(false);
@@ -95,6 +95,33 @@ export function DashboardPlacementsSection({
     string | null
   >(null);
   const [subSlotModalDraft, setSubSlotModalDraft] = useState("");
+  /** 직속 칸 하위 가구 중 한 번에 하나만 펼쳐 볼 때 선택한 가구 id */
+  const [focusedFurnitureId, setFocusedFurnitureId] = useState<string | null>(
+    null,
+  );
+
+  const directsForSelectedRoom = useMemo(() => {
+    if (!selected || !selectedRoomId) return [];
+    const slotsList = selected.storageLocations ?? [];
+    return slotsList
+      .filter(
+        (s) =>
+          s.roomId === selectedRoomId &&
+          (s.furniturePlacementId == null || s.furniturePlacementId === ""),
+      )
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  }, [selected, selectedRoomId]);
+
+  const resolvedDirectSlotId = useMemo(() => {
+    if (directsForSelectedRoom.length === 0) return null;
+    if (
+      userDirectSlotPick &&
+      directsForSelectedRoom.some((s) => s.id === userDirectSlotPick)
+    ) {
+      return userDirectSlotPick;
+    }
+    return directsForSelectedRoom[0].id;
+  }, [directsForSelectedRoom, userDirectSlotPick]);
 
   if (!selected) return null;
 
@@ -125,29 +152,10 @@ export function DashboardPlacementsSection({
       .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
 
   const furnitureOnSlot = (roomId: string, slotId: string) =>
-    furnitureInRoom(roomId).filter(
-      (f) => f.anchorDirectStorageId === slotId,
-    );
+    furnitureInRoom(roomId).filter((f) => f.anchorDirectStorageId === slotId);
 
   const slotsUnderFurniture = (furnitureId: string) =>
     slots.filter((s) => s.furniturePlacementId === furnitureId);
-
-  /** 직속 칸 목록이 바뀌면 선택 탭을 유효한 값으로 맞춤 */
-  useEffect(() => {
-    if (!selectedRoomId) {
-      setActiveDirectSlotId(null);
-      return;
-    }
-    const directs = roomDirectSlots(selectedRoomId);
-    if (directs.length === 0) {
-      setActiveDirectSlotId(null);
-      return;
-    }
-    setActiveDirectSlotId((cur) => {
-      if (cur && directs.some((s) => s.id === cur)) return cur;
-      return directs[0].id;
-    });
-  }, [selectedRoomId, selected.id, slots]);
 
   const openDirectSlotModal = (roomId: string) => {
     setDirectSlotModalRoomId(roomId);
@@ -183,7 +191,7 @@ export function DashboardPlacementsSection({
       ...h,
       storageLocations: [...(h.storageLocations ?? []), row],
     }));
-    setActiveDirectSlotId(id);
+    setUserDirectSlotPick(id);
     setDirectSlotModalOpen(false);
     setDirectSlotModalDraft("");
     setDirectSlotModalRoomId(null);
@@ -213,8 +221,7 @@ export function DashboardPlacementsSection({
     }
     const id = newEntityId();
     const inRoom = furnitureInRoom(roomId);
-    const nextSort =
-      Math.max(0, ...inRoom.map((f) => f.sortOrder ?? 0)) + 1;
+    const nextSort = Math.max(0, ...inRoom.map((f) => f.sortOrder ?? 0)) + 1;
     const fp: FurniturePlacement = {
       id,
       roomId,
@@ -226,6 +233,7 @@ export function DashboardPlacementsSection({
       ...h,
       furniturePlacements: [...(h.furniturePlacements ?? []), fp],
     }));
+    setFocusedFurnitureId(id);
     toast({ title: "가구가 이 직속 칸에 연결되었습니다", description: label });
     return true;
   };
@@ -271,9 +279,7 @@ export function DashboardPlacementsSection({
     거점을_갱신_한다(selected.id, (h) => ({
       ...h,
       furniturePlacements: (h.furniturePlacements ?? []).map((f) =>
-        f.id === furnitureId
-          ? { ...f, anchorDirectStorageId: nextSlotId }
-          : f,
+        f.id === furnitureId ? { ...f, anchorDirectStorageId: nextSlotId } : f,
       ),
     }));
   };
@@ -293,8 +299,7 @@ export function DashboardPlacementsSection({
     }
     const id = newEntityId();
     const under = slotsUnderFurniture(furnitureId);
-    const nextSort =
-      Math.max(0, ...under.map((s) => s.sortOrder ?? 0)) + 1;
+    const nextSort = Math.max(0, ...under.map((s) => s.sortOrder ?? 0)) + 1;
     const row: StorageLocationRow = {
       id,
       name,
@@ -341,7 +346,9 @@ export function DashboardPlacementsSection({
       Boolean(s.roomId) &&
       (s.furniturePlacementId == null || s.furniturePlacementId === "");
     if (isRoomDirect && s.roomId) {
-      const others = roomDirectSlots(s.roomId).filter((x) => x.id !== storageId);
+      const others = roomDirectSlots(s.roomId).filter(
+        (x) => x.id !== storageId,
+      );
       const anchored = furnitureOnSlot(s.roomId, storageId);
       if (anchored.length > 0 && others.length === 0) {
         toast({
@@ -361,7 +368,8 @@ export function DashboardPlacementsSection({
     const roomId = victim?.roomId;
     const isRoomDirect =
       victim &&
-      (victim.furniturePlacementId == null || victim.furniturePlacementId === "");
+      (victim.furniturePlacementId == null ||
+        victim.furniturePlacementId === "");
 
     거점을_갱신_한다(selected.id, (h) => {
       const allSlots = [...(h.storageLocations ?? [])];
@@ -452,53 +460,63 @@ export function DashboardPlacementsSection({
       : "";
 
   return (
-    <div className="cursor-default rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
+    <div className="cursor-default rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
       <button
         type="button"
         title="오른쪽 아래 물품 추가 패널을 펼칩니다"
-        className="-mx-1 -mt-1 w-full !cursor-default rounded-xl px-1 py-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-teal-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
+        className="-mx-1 -mt-1 w-full cursor-default! rounded-lg px-1 py-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-teal-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
         onClick={() => onFocusItemAddPanel?.()}
       >
-        <h2 className="text-base font-semibold text-white">
+        <h2 className="text-sm font-semibold text-white">
           가구 배치 · 보관 장소
         </h2>
-        <p className="mt-1 text-sm text-zinc-500">
+        <p className="mt-1 text-xs leading-relaxed text-zinc-500">
           <span className="text-zinc-400">직속 칸</span>마다 탭으로 나뉩니다.
           탭을 고른 뒤 그 칸에만 가구·세부 칸을 추가하세요. 새 직속 칸은「직속
           칸 추가하기」로 만듭니다.
         </p>
-        <p className="mt-2 text-[11px] text-teal-500/75">
+        <p className="mt-1.5 text-[10px] text-teal-500/75">
           이 제목 영역을 누르면 오른쪽「물품 추가」패널이 펼쳐집니다.
         </p>
       </button>
 
       {selected.rooms.length === 0 ? (
-        <p className="mt-4 rounded-xl border border-dashed border-zinc-700 px-4 py-6 text-center text-sm text-zinc-500">
+        <p className="mt-3 rounded-lg border border-dashed border-zinc-700 px-3 py-4 text-center text-xs text-zinc-500">
           먼저 방을 추가한 뒤, 방을 선택하면 이 영역에서 구조를 입력할 수
           있습니다.
         </p>
       ) : selectedRoomId == null ? (
-        <p className="mt-4 rounded-xl border border-dashed border-zinc-700 px-4 py-6 text-center text-sm text-zinc-500">
-          왼쪽「방 관리」에서 방 탭을 눌러 선택하세요. 선택한 방의 구조만
-          여기에 표시됩니다.
+        <p className="mt-3 rounded-lg border border-dashed border-zinc-700 px-3 py-4 text-center text-xs text-zinc-500">
+          왼쪽「방 관리」에서 방 탭을 눌러 선택하세요. 선택한 방의 구조만 여기에
+          표시됩니다.
         </p>
       ) : visibleRooms.length === 0 ? (
-        <p className="mt-4 rounded-xl border border-dashed border-amber-500/30 bg-amber-500/5 px-4 py-6 text-center text-sm text-amber-200/90">
+        <p className="mt-3 rounded-lg border border-dashed border-amber-500/30 bg-amber-500/5 px-3 py-4 text-center text-xs text-amber-200/90">
           선택한 방을 찾을 수 없습니다. 방 목록이 바뀌었다면 다시 선택해 주세요.
         </p>
       ) : (
-        <ul className="mt-4 space-y-6">
+        <ul className="mt-3 space-y-4">
           {visibleRooms.map((room) => {
             const directs = roomDirectSlots(room.id);
             const multiSlot = directs.length > 1;
             const activeSlot =
-              activeDirectSlotId != null
-                ? directs.find((s) => s.id === activeDirectSlotId)
+              resolvedDirectSlotId != null
+                ? directs.find((s) => s.id === resolvedDirectSlotId)
                 : undefined;
+            const fpsForSlot = activeSlot
+              ? furnitureOnSlot(room.id, activeSlot.id)
+              : [];
+            const focusedFurniture =
+              fpsForSlot.length === 0
+                ? null
+                : focusedFurnitureId != null &&
+                    fpsForSlot.some((f) => f.id === focusedFurnitureId)
+                  ? fpsForSlot.find((f) => f.id === focusedFurnitureId)!
+                  : fpsForSlot[0];
 
             return (
               <li key={room.id} className="rounded-xl">
-                <h3 className="text-sm font-semibold text-teal-200/95">
+                <h3 className="text-xs font-semibold text-teal-200/95">
                   {room.name}
                 </h3>
 
@@ -523,7 +541,6 @@ export function DashboardPlacementsSection({
                         role="tablist"
                         aria-label="직속 보관 칸"
                       >
-                        
                         <div className="flex flex-wrap gap-1 border-b border-zinc-800 pb-px">
                           {directs.map((s) => {
                             const selectedTab = s.id === activeSlot?.id;
@@ -534,12 +551,12 @@ export function DashboardPlacementsSection({
                                 role="tab"
                                 aria-selected={selectedTab}
                                 className={cn(
-                                  "cursor-pointer rounded-t-lg border border-b-0 px-3 py-2 text-xs font-medium transition-colors",
+                                  "cursor-pointer rounded-t-md border border-b-0 px-2 py-1.5 text-[11px] font-medium transition-colors",
                                   selectedTab
                                     ? "border-amber-500/40 bg-amber-950/30 text-amber-100"
                                     : "border-transparent bg-transparent text-zinc-500 hover:bg-zinc-800/50 hover:text-zinc-300",
                                 )}
-                                onClick={() => setActiveDirectSlotId(s.id)}
+                                onClick={() => setUserDirectSlotPick(s.id)}
                               >
                                 {s.name}
                               </button>
@@ -558,18 +575,18 @@ export function DashboardPlacementsSection({
 
                     {activeSlot ? (
                       <div
-                        className="mt-4 rounded-xl border border-amber-500/30 bg-zinc-900/40 p-4"
+                        className="mt-3 rounded-lg border border-amber-500/30 bg-zinc-900/40 p-3"
                         role="tabpanel"
                         aria-labelledby={`tab-${activeSlot.id}`}
                       >
-                        <div className="flex flex-wrap items-start justify-between gap-2 border-b border-amber-500/20 pb-3">
+                        <div className="flex flex-wrap items-start justify-between gap-2 border-b border-amber-500/20 pb-2">
                           <div>
-                            <p className="text-[10px] font-medium text-amber-200/85">
+                            <p className="text-[9px] font-medium text-amber-200/85">
                               현재 직속 칸
                             </p>
                             <p
                               id={`tab-${activeSlot.id}`}
-                              className="text-base font-semibold text-zinc-100"
+                              className="text-sm font-semibold text-zinc-100"
                             >
                               {activeSlot.name}
                             </p>
@@ -585,39 +602,67 @@ export function DashboardPlacementsSection({
                           </button>
                         </div>
 
-                        <div className="mt-4">
-                          <p className="mt-1 text-sm text-zinc-500">
+                        <div className="mt-3">
+                          <p className="text-xs text-zinc-500">
                             <span className="text-zinc-400">「가구 추가」</span>
                             로 모달을 열어 이 탭(
                             <span className="text-zinc-400">직속 칸</span>
-                            )에만 가구를 연결합니다.
+                            )에만 가구를 연결합니다. 아래 뱃지로 가구를 골라 한
+                            번에 하나만 펼칩니다.
                           </p>
-                          <ul className="mt-3 space-y-3">
-                            {furnitureOnSlot(room.id, activeSlot.id).length ===
-                            0 ? (
-                              <li className="rounded-lg bg-zinc-950/40 px-2 py-2 text-xs text-zinc-600">
-                                아직 가구가 없습니다.
-                              </li>
-                            ) : (
-                              furnitureOnSlot(room.id, activeSlot.id).map(
-                                (fp) => (
+                          {fpsForSlot.length === 0 ? (
+                            <p className="mt-2 rounded-md bg-zinc-950/40 px-2 py-1.5 text-[11px] text-zinc-600">
+                              아직 가구가 없습니다.
+                            </p>
+                          ) : (
+                            <>
+                              <div
+                                className="mt-2 flex flex-wrap gap-1.5"
+                                role="tablist"
+                                aria-label="이 직속 칸의 가구"
+                              >
+                                {fpsForSlot.map((fp) => {
+                                  const sel = focusedFurniture?.id === fp.id;
+                                  return (
+                                    <button
+                                      key={fp.id}
+                                      type="button"
+                                      role="tab"
+                                      aria-selected={sel}
+                                      onClick={() =>
+                                        setFocusedFurnitureId(fp.id)
+                                      }
+                                      className={cn(
+                                        "max-w-full cursor-pointer truncate rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors",
+                                        sel
+                                          ? "border-teal-500/50 bg-teal-950/40 text-teal-100"
+                                          : "border-zinc-700 bg-zinc-950/80 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200",
+                                      )}
+                                    >
+                                      {fp.label}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                              {focusedFurniture ? (
+                                <ul className="mt-3 space-y-3">
                                   <li
-                                    key={fp.id}
-                                    className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-3"
+                                    key={focusedFurniture.id}
+                                    className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-2.5"
                                   >
                                     <div className="flex flex-wrap items-start justify-between gap-2">
-                                      <p className="text-sm font-semibold text-zinc-100">
-                                        {fp.label}
+                                      <p className="text-xs font-semibold text-zinc-100">
+                                        {focusedFurniture.label}
                                       </p>
                                       <button
                                         type="button"
                                         className={`${btnDangerIcon} shrink-0`}
                                         title="이 가구와 그 아래 세부 칸·재고를 삭제합니다"
-                                        aria-label={`「${fp.label}」 가구 삭제`}
+                                        aria-label={`「${focusedFurniture.label}」 가구 삭제`}
                                         onClick={() =>
                                           setPendingDelete({
                                             kind: "furniture",
-                                            id: fp.id,
+                                            id: focusedFurniture.id,
                                           })
                                         }
                                       >
@@ -626,23 +671,23 @@ export function DashboardPlacementsSection({
                                     </div>
 
                                     {multiSlot ? (
-                                      <div className="mt-3 space-y-1">
+                                      <div className="mt-2 space-y-1">
                                         <label
-                                          className="text-[10px] text-zinc-500"
-                                          htmlFor={`reanchor-${fp.id}`}
+                                          className="text-[9px] text-zinc-500"
+                                          htmlFor={`reanchor-${focusedFurniture.id}`}
                                         >
                                           다른 직속 칸 탭으로 옮기기
                                         </label>
                                         <select
-                                          id={`reanchor-${fp.id}`}
+                                          id={`reanchor-${focusedFurniture.id}`}
                                           className={selectClass}
                                           value={
-                                            fp.anchorDirectStorageId ??
+                                            focusedFurniture.anchorDirectStorageId ??
                                             activeSlot.id
                                           }
                                           onChange={(e) =>
                                             handleReanchorFurniture(
-                                              fp.id,
+                                              focusedFurniture.id,
                                               e.target.value,
                                             )
                                           }
@@ -656,8 +701,8 @@ export function DashboardPlacementsSection({
                                       </div>
                                     ) : null}
 
-                                    <div className="mt-3 border-t border-zinc-800/70 pt-3">
-                                      <p className="mt-1 text-sm text-zinc-500">
+                                    <div className="mt-2 border-t border-zinc-800/70 pt-2">
+                                      <p className="text-[11px] text-zinc-500">
                                         <span className="text-zinc-400">
                                           물품 등록
                                         </span>
@@ -667,42 +712,45 @@ export function DashboardPlacementsSection({
                                         </span>
                                         까지 고를 수 있습니다.
                                       </p>
-                                      <ul className="mt-3 space-y-1.5">
-                                        {slotsUnderFurniture(fp.id).length ===
-                                        0 ? (
-                                          <li className="text-xs text-zinc-600">
+                                      <ul className="mt-2 space-y-1">
+                                        {slotsUnderFurniture(
+                                          focusedFurniture.id,
+                                        ).length === 0 ? (
+                                          <li className="text-[11px] text-zinc-600">
                                             세부 칸이 없습니다.
                                           </li>
                                         ) : (
-                                          slotsUnderFurniture(fp.id).map(
-                                            (s) => (
-                                              <li
-                                                key={s.id}
-                                                className="flex items-center justify-between gap-2 rounded-md bg-zinc-900/80 px-2 py-1.5 text-xs text-zinc-300"
+                                          slotsUnderFurniture(
+                                            focusedFurniture.id,
+                                          ).map((s) => (
+                                            <li
+                                              key={s.id}
+                                              className="flex items-center justify-between gap-2 rounded-md bg-zinc-900/80 px-2 py-1 text-[11px] text-zinc-300"
+                                            >
+                                              <span>{s.name}</span>
+                                              <button
+                                                type="button"
+                                                className={`${btnDangerIcon} shrink-0`}
+                                                title="이 세부 칸과 이 칸에만 묶인 재고를 삭제합니다"
+                                                aria-label={`「${s.name}」 세부 칸 삭제`}
+                                                onClick={() =>
+                                                  requestDeleteStorage(s.id)
+                                                }
                                               >
-                                                <span>{s.name}</span>
-                                                <button
-                                                  type="button"
-                                                  className={`${btnDangerIcon} shrink-0`}
-                                                  title="이 세부 칸과 이 칸에만 묶인 재고를 삭제합니다"
-                                                  aria-label={`「${s.name}」 세부 칸 삭제`}
-                                                  onClick={() =>
-                                                    requestDeleteStorage(s.id)
-                                                  }
-                                                >
-                                                  <TrashIcon />
-                                                </button>
-                                              </li>
-                                            ),
-                                          )
+                                                <TrashIcon />
+                                              </button>
+                                            </li>
+                                          ))
                                         )}
                                       </ul>
-                                      <div className="mt-2">
+                                      <div className="mt-1.5">
                                         <button
                                           type="button"
                                           className={`${btnAdd} w-full sm:w-auto`}
                                           onClick={() =>
-                                            openSubSlotModal(fp.id)
+                                            openSubSlotModal(
+                                              focusedFurniture.id,
+                                            )
                                           }
                                         >
                                           세부 칸 추가
@@ -710,14 +758,14 @@ export function DashboardPlacementsSection({
                                       </div>
                                     </div>
                                   </li>
-                                ),
-                              )
-                            )}
-                          </ul>
+                                </ul>
+                              ) : null}
+                            </>
+                          )}
                         </div>
 
-                        <div className="mt-4 border-t border-zinc-800/70 pt-3">
-                          <p className="mb-2 text-[11px] font-medium text-zinc-400">
+                        <div className="mt-3 border-t border-zinc-800/70 pt-2">
+                          <p className="mb-1.5 text-[10px] font-medium text-zinc-400">
                             「{activeSlot.name}」에 가구 연결
                           </p>
                           <button
@@ -843,9 +891,7 @@ export function DashboardPlacementsSection({
           if (!open) setPendingDelete(null);
         }}
         title={
-          pendingDelete?.kind === "furniture"
-            ? "가구 삭제"
-            : "보관 칸 삭제"
+          pendingDelete?.kind === "furniture" ? "가구 삭제" : "보관 칸 삭제"
         }
         description={pendingDescription()}
         confirmLabel="삭제"

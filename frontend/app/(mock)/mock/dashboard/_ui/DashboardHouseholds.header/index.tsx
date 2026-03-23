@@ -8,18 +8,14 @@ import {
 } from "@/lib/household-kind-defaults";
 import { useAppRoutePrefix } from "@/lib/use-app-route-prefix";
 import { cn } from "@/lib/utils";
-import type { Household } from "@/types/domain";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { useEffect, useId, useRef, useState } from "react";
 import { useDashboard } from "../../_hooks/useDashboard";
-import { DashboardShoppingListModal } from "../DashboardInventory.section/DashboardShoppingList.module";
 import { HouseholdKindsManageModal } from "../HouseholdKindsManage.modal";
 
 type DashboardHouseholdsHeaderProps = {
   selectedHouseholdId: string | null;
-  /** 장보기 모달·거점 컨텍스트용 */
-  selectedHousehold: Household | null;
   onSelectHousehold: (id: string) => void;
   onAfterAddHousehold: (id: string) => void;
   onDeleteHousehold: (id: string) => void;
@@ -33,7 +29,7 @@ function TrashIcon({ className }: { className?: string }) {
       viewBox="0 0 24 24"
       strokeWidth={1.5}
       stroke="currentColor"
-      className={cn("size-4", className)}
+      className={cn("size-3.5", className)}
       aria-hidden
     >
       <path
@@ -53,7 +49,7 @@ function PlusIcon({ className }: { className?: string }) {
       viewBox="0 0 24 24"
       strokeWidth={2}
       stroke="currentColor"
-      className={cn("size-5", className)}
+      className={cn("size-4", className)}
       aria-hidden
     >
       <path strokeLinecap="round" d="M12 4.5v15m7.5-7.5h-15" />
@@ -69,7 +65,7 @@ function InfoCircleIcon({ className }: { className?: string }) {
       viewBox="0 0 24 24"
       strokeWidth={1.5}
       stroke="currentColor"
-      className={cn("size-5", className)}
+      className={cn("size-3.5", className)}
       aria-hidden
     >
       <path
@@ -89,7 +85,7 @@ function CogIcon({ className }: { className?: string }) {
       viewBox="0 0 24 24"
       strokeWidth={1.5}
       stroke="currentColor"
-      className={cn("size-5", className)}
+      className={cn("size-4", className)}
       aria-hidden
     >
       <path
@@ -122,21 +118,21 @@ function DashboardScreenHelpHint() {
   }, [open]);
 
   return (
-    <div ref={wrapRef} className="relative shrink-0 pt-0.5">
+    <div ref={wrapRef} className="relative inline-flex shrink-0 translate-y-px">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-haspopup="true"
-        className="flex cursor-pointer items-center justify-center rounded-full border border-zinc-600 bg-zinc-950 p-1.5 text-zinc-400 transition-colors hover:border-teal-500/50 hover:text-teal-300"
+        className="flex size-6 cursor-pointer items-center justify-center rounded-full border border-zinc-600/90 bg-zinc-950 p-0 text-zinc-400 transition-colors hover:border-teal-500/50 hover:text-teal-300"
         aria-label="이 화면 안내"
       >
-        <InfoCircleIcon className="size-4" />
+        <InfoCircleIcon className="size-3.5" />
       </button>
       {open ? (
         <div
           role="tooltip"
-          className="absolute left-0 top-full z-50 mt-2 w-[min(calc(100vw-2rem),22rem)] rounded-xl border border-zinc-600 bg-zinc-900 p-3 text-sm leading-relaxed text-zinc-300 shadow-xl ring-1 ring-black/40"
+          className="absolute left-0 top-full z-50 mt-1.5 w-[min(calc(100vw-2rem),22rem)] rounded-lg border border-zinc-600 bg-zinc-900 p-2.5 text-xs leading-relaxed text-zinc-300 shadow-xl ring-1 ring-black/40 sm:text-sm"
         >
           <span className="font-medium text-zinc-200">이 화면</span>에서는 방·보관
           칸에 물품을 바로 맞춥니다. 장만 하고 칸 정리는 나중이면{" "}
@@ -156,7 +152,6 @@ function DashboardScreenHelpHint() {
 
 export function DashboardHouseholdsHeader({
   selectedHouseholdId,
-  selectedHousehold,
   onSelectHousehold,
   onAfterAddHousehold,
   onDeleteHousehold,
@@ -164,7 +159,6 @@ export function DashboardHouseholdsHeader({
   const { households, householdKindDefinitions, 거점을_추가_한다 } =
     useDashboard();
   const [kindsManageOpen, setKindsManageOpen] = useState(false);
-  const [shoppingOpen, setShoppingOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [newHouseName, setNewHouseName] = useState("");
   const [newHouseKind, setNewHouseKind] = useState("");
@@ -184,10 +178,6 @@ export function DashboardHouseholdsHeader({
     setNewHouseKind(defaultKindId);
   }, [addOpen, defaultKindId]);
 
-  useEffect(() => {
-    if (!selectedHousehold && shoppingOpen) setShoppingOpen(false);
-  }, [selectedHousehold, shoppingOpen]);
-
   const handleAddHousehold = () => {
     const trimmed = newHouseName.trim();
     if (!trimmed) return;
@@ -201,39 +191,27 @@ export function DashboardHouseholdsHeader({
     : null;
 
   return (
-    <header className="shrink-0 rounded-2xl border border-zinc-800 bg-zinc-900/40 px-4 py-4 sm:px-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
-        <div className="flex min-w-0 items-start gap-2">
-          <div className="min-w-0">
-            <h1 className="text-base font-semibold text-white sm:text-lg">
-              내 거점
-            </h1>
-            <p className="mt-0.5 text-xs text-zinc-500 sm:text-sm">
-              탭으로 거점을 전환하고, + 로 새 거점을 추가합니다.
-            </p>
-          </div>
+    <header className="shrink-0 rounded-xl border border-zinc-800 bg-zinc-900/40 px-3 py-3 sm:px-4">
+      <div className="min-w-0">
+        <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+          <h1 className="text-sm font-semibold tracking-tight text-white sm:text-base">
+            내 거점
+          </h1>
           <DashboardScreenHelpHint />
         </div>
-        <div className="flex shrink-0 flex-wrap items-center gap-2 sm:justify-end">
-          <button
-            type="button"
-            disabled={!selectedHousehold}
-            onClick={() => setShoppingOpen(true)}
-            className="cursor-pointer rounded-xl border border-teal-500/35 bg-teal-500/10 px-3 py-2 text-sm font-medium text-teal-200 transition-colors hover:bg-teal-500/20 hover:text-teal-100 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            장보기
-          </button>
-        </div>
+        <p className="mt-1 text-[11px] leading-snug text-zinc-500 sm:text-xs">
+          탭으로 거점을 전환하고, + 로 새 거점을 추가합니다.
+        </p>
       </div>
 
-      <div className="mt-4 flex min-w-0 items-stretch gap-2">
+      <div className="mt-3 flex min-w-0 items-stretch gap-1.5">
         <div
           role="tablist"
           aria-label="거점 선택"
-          className="flex min-h-11 min-w-0 flex-1 items-center gap-1 overflow-x-auto rounded-xl border border-zinc-800 bg-zinc-950/80 p-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="flex min-h-9 min-w-0 flex-1 items-center gap-0.5 overflow-x-auto rounded-lg border border-zinc-800 bg-zinc-950/80 p-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {households.length === 0 ? (
-            <p className="px-3 py-2 text-sm text-zinc-500">
+            <p className="px-2.5 py-1.5 text-xs text-zinc-500">
               등록된 거점이 없습니다. 오른쪽 + 를 눌러 추가하세요.
             </p>
           ) : (
@@ -263,14 +241,14 @@ export function DashboardHouseholdsHeader({
                     aria-selected={selected}
                     onClick={() => onSelectHousehold(h.id)}
                     className={cn(
-                      "relative z-10 cursor-pointer px-3 py-2 text-left text-sm font-medium transition-colors",
+                      "relative z-10 cursor-pointer px-2.5 py-1.5 text-left text-xs font-medium transition-colors sm:text-[13px]",
                       selected ? "text-teal-100" : "text-zinc-300 hover:text-white",
                     )}
                   >
                     <span className="whitespace-nowrap">{h.name}</span>
                     <span
                       className={cn(
-                        "ml-2 text-xs font-normal",
+                        "ml-1.5 text-[10px] font-normal sm:text-[11px]",
                         selected ? "text-teal-200/80" : "text-zinc-500",
                       )}
                     >
@@ -283,7 +261,7 @@ export function DashboardHouseholdsHeader({
                       e.stopPropagation();
                       setPendingDeleteHouseholdId(h.id);
                     }}
-                    className="relative z-10 cursor-pointer rounded-md p-2 text-zinc-500 transition-colors hover:bg-rose-500/15 hover:text-rose-300"
+                    className="relative z-10 cursor-pointer rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-rose-500/15 hover:text-rose-300"
                     aria-label={`${h.name} 삭제`}
                   >
                     <TrashIcon />
@@ -296,7 +274,7 @@ export function DashboardHouseholdsHeader({
         <button
           type="button"
           onClick={() => setKindsManageOpen(true)}
-          className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-zinc-600 bg-zinc-950 text-zinc-400 transition-colors hover:border-zinc-500 hover:bg-zinc-800 hover:text-zinc-200"
+          className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-zinc-600 bg-zinc-950 text-zinc-400 transition-colors hover:border-zinc-500 hover:bg-zinc-800 hover:text-zinc-200"
           aria-label="거점 유형 관리"
         >
           <CogIcon />
@@ -304,7 +282,7 @@ export function DashboardHouseholdsHeader({
         <button
           type="button"
           onClick={() => setAddOpen(true)}
-          className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-xl border border-teal-500/40 bg-teal-500/10 text-teal-300 transition-colors hover:bg-teal-500/20 hover:text-teal-100"
+          className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-teal-500/40 bg-teal-500/10 text-teal-300 transition-colors hover:bg-teal-500/20 hover:text-teal-100"
           aria-label="거점 추가"
         >
           <PlusIcon />
@@ -377,12 +355,6 @@ export function DashboardHouseholdsHeader({
       <HouseholdKindsManageModal
         open={kindsManageOpen}
         onOpenChange={setKindsManageOpen}
-      />
-
-      <DashboardShoppingListModal
-        open={shoppingOpen}
-        onOpenChange={setShoppingOpen}
-        household={selectedHousehold}
       />
 
       <AlertModal
