@@ -19,13 +19,13 @@ const inputClass =
 const selectClass =
   "w-full rounded-lg border border-zinc-700 bg-zinc-950 px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500";
 
-/** 주요 추가 동작 — 같은 스타일로 통일 */
+/** 주요 추가 동작 — 틸(가구·세부 칸·옮기기) */
 const btnAdd =
-  "cursor-pointer shrink-0 rounded-lg border border-teal-600/60 bg-teal-950/40 px-2.5 py-1.5 text-[11px] font-medium text-teal-100 hover:bg-teal-900/35";
+  "inline-flex cursor-pointer shrink-0 items-center justify-center gap-1 rounded-md border border-teal-600/60 bg-teal-950/40 px-2 py-0.5 text-[10px] font-medium leading-tight text-teal-100 hover:bg-teal-900/35";
 
-/** 직속 칸 추가 — 탭 줄과 톤 맞춤(배경 없음) */
+/** 직속 칸 추가 — 직속 탭·패널과 동일 앰버 톤 */
 const btnAddDirectSlot =
-  "cursor-pointer shrink-0 rounded-lg border border-teal-600/60 bg-transparent px-2.5 py-1.5 text-[11px] font-medium text-teal-100 hover:border-teal-500/70 hover:bg-teal-500/[0.06]";
+  "inline-flex cursor-pointer shrink-0 items-center justify-center gap-1 rounded-md border border-amber-500/45 bg-amber-950/35 px-2 py-0.5 text-[10px] font-medium leading-tight text-amber-100/95 hover:border-amber-400/55 hover:bg-amber-500/[0.12]";
 
 const btnDangerIcon =
   "inline-flex cursor-pointer items-center justify-center rounded-md border border-rose-900/50 p-1.5 text-rose-400 hover:bg-rose-950/40";
@@ -45,6 +45,62 @@ function TrashIcon({ className }: { className?: string }) {
         strokeLinecap="round"
         strokeLinejoin="round"
         d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0"
+      />
+    </svg>
+  );
+}
+
+function PlusMiniIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={2}
+      stroke="currentColor"
+      className={cn("size-3 shrink-0", className)}
+      aria-hidden
+    >
+      <path strokeLinecap="round" d="M12 4.5v15m7.5-7.5h-15" />
+    </svg>
+  );
+}
+
+function ArrowsRightLeftMiniIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      className={cn("size-3 shrink-0", className)}
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"
+      />
+    </svg>
+  );
+}
+
+function PlacementsFurnitureIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      className={cn("size-4 shrink-0 text-teal-400/90", className)}
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5v9l9 5.25m0-9v9"
       />
     </svg>
   );
@@ -99,6 +155,13 @@ export function DashboardPlacementsSection({
   const [focusedFurnitureId, setFocusedFurnitureId] = useState<string | null>(
     null,
   );
+
+  const [reanchorModalOpen, setReanchorModalOpen] = useState(false);
+  const [reanchorModalFurnitureId, setReanchorModalFurnitureId] = useState<
+    string | null
+  >(null);
+  const [reanchorModalTargetSlotId, setReanchorModalTargetSlotId] =
+    useState("");
 
   const directsForSelectedRoom = useMemo(() => {
     if (!selected || !selectedRoomId) return [];
@@ -268,13 +331,16 @@ export function DashboardPlacementsSection({
     setFurnitureModalSlotId(null);
   };
 
-  const handleReanchorFurniture = (furnitureId: string, nextSlotId: string) => {
+  const handleReanchorFurniture = (
+    furnitureId: string,
+    nextSlotId: string,
+  ): boolean => {
     const fp = placements.find((f) => f.id === furnitureId);
-    if (!fp || fp.anchorDirectStorageId === nextSlotId) return;
+    if (!fp || fp.anchorDirectStorageId === nextSlotId) return false;
     const ok = roomDirectSlots(fp.roomId).some((s) => s.id === nextSlotId);
     if (!ok) {
       toast({ title: "직속 칸을 확인하세요", variant: "warning" });
-      return;
+      return false;
     }
     거점을_갱신_한다(selected.id, (h) => ({
       ...h,
@@ -282,6 +348,47 @@ export function DashboardPlacementsSection({
         f.id === furnitureId ? { ...f, anchorDirectStorageId: nextSlotId } : f,
       ),
     }));
+    return true;
+  };
+
+  const openReanchorModal = (furnitureId: string) => {
+    const fp = placements.find((f) => f.id === furnitureId);
+    if (!fp) return;
+    const dirs = roomDirectSlots(fp.roomId);
+    const cur = fp.anchorDirectStorageId ?? "";
+    const defaultTarget =
+      dirs.find((s) => s.id !== cur)?.id ?? dirs[0]?.id ?? "";
+    setReanchorModalFurnitureId(furnitureId);
+    setReanchorModalTargetSlotId(defaultTarget);
+    setReanchorModalOpen(true);
+  };
+
+  const submitReanchorModal = () => {
+    if (!reanchorModalFurnitureId || !reanchorModalTargetSlotId) return;
+    const fp = placements.find((f) => f.id === reanchorModalFurnitureId);
+    if (!fp) return;
+    if (fp.anchorDirectStorageId === reanchorModalTargetSlotId) {
+      toast({
+        title: "다른 직속 칸을 선택하세요",
+        description: "옮기려면 현재와 다른 칸을 고릅니다.",
+        variant: "warning",
+      });
+      return;
+    }
+    const ok = handleReanchorFurniture(
+      reanchorModalFurnitureId,
+      reanchorModalTargetSlotId,
+    );
+    if (ok) {
+      setReanchorModalOpen(false);
+      setReanchorModalFurnitureId(null);
+      setReanchorModalTargetSlotId("");
+      toast({
+        title: "가구를 옮겼습니다",
+        description: `「${fp.label}」연결을 바꿨습니다.`,
+        variant: "success",
+      });
+    }
   };
 
   const handleAddFurnitureSlot = (
@@ -427,6 +534,13 @@ export function DashboardPlacementsSection({
     });
   };
 
+  const reanchorModalFurniture = reanchorModalFurnitureId
+    ? placements.find((f) => f.id === reanchorModalFurnitureId)
+    : null;
+  const reanchorModalDirects = reanchorModalFurniture
+    ? roomDirectSlots(reanchorModalFurniture.roomId)
+    : [];
+
   const pendingDescription = () => {
     if (!pendingDelete) return "";
     if (pendingDelete.kind === "storage") {
@@ -467,7 +581,8 @@ export function DashboardPlacementsSection({
         className="-mx-1 -mt-1 w-full cursor-default! rounded-lg px-1 py-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-teal-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
         onClick={() => onFocusItemAddPanel?.()}
       >
-        <h2 className="text-sm font-semibold text-white">
+        <h2 className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-semibold text-white">
+          <PlacementsFurnitureIcon />
           가구 배치 · 보관 장소
         </h2>
         <p className="mt-1 text-xs leading-relaxed text-zinc-500">
@@ -530,6 +645,7 @@ export function DashboardPlacementsSection({
                       className={`${btnAddDirectSlot} w-full sm:w-auto`}
                       onClick={() => openDirectSlotModal(room.id)}
                     >
+                      <PlusMiniIcon />
                       직속 칸 추가하기
                     </button>
                   </div>
@@ -545,21 +661,49 @@ export function DashboardPlacementsSection({
                           {directs.map((s) => {
                             const selectedTab = s.id === activeSlot?.id;
                             return (
-                              <button
+                              <div
                                 key={s.id}
-                                type="button"
-                                role="tab"
-                                aria-selected={selectedTab}
                                 className={cn(
-                                  "cursor-pointer rounded-t-md border border-b-0 px-2 py-1.5 text-[11px] font-medium transition-colors",
+                                  "flex shrink-0 items-stretch overflow-hidden rounded-t-md border border-b-0",
                                   selectedTab
-                                    ? "border-amber-500/40 bg-amber-950/30 text-amber-100"
-                                    : "border-transparent bg-transparent text-zinc-500 hover:bg-zinc-800/50 hover:text-zinc-300",
+                                    ? "border-amber-500/40 bg-amber-950/30"
+                                    : "border-transparent hover:border-zinc-700/60",
                                 )}
-                                onClick={() => setUserDirectSlotPick(s.id)}
                               >
-                                {s.name}
-                              </button>
+                                <button
+                                  type="button"
+                                  role="tab"
+                                  aria-selected={selectedTab}
+                                  className={cn(
+                                    "cursor-pointer px-2 py-1.5 text-left text-[11px] font-medium transition-colors",
+                                    selectedTab
+                                      ? "text-amber-100"
+                                      : "text-zinc-500 hover:bg-zinc-800/40 hover:text-zinc-300",
+                                  )}
+                                  onClick={() => setUserDirectSlotPick(s.id)}
+                                >
+                                  <span className="whitespace-nowrap">
+                                    {s.name}
+                                  </span>
+                                </button>
+                                <button
+                                  type="button"
+                                  className={cn(
+                                    "relative z-10 flex cursor-pointer items-center justify-center p-1.5 transition-colors",
+                                    selectedTab
+                                      ? "text-amber-200/75 hover:bg-rose-500/20 hover:text-rose-300"
+                                      : "text-zinc-500 hover:bg-zinc-800/70 hover:text-rose-300",
+                                  )}
+                                  title="이 직속 칸과 이 칸에만 묶인 설정을 삭제합니다"
+                                  aria-label={`「${s.name}」 직속 칸 삭제`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    requestDeleteStorage(s.id);
+                                  }}
+                                >
+                                  <TrashIcon />
+                                </button>
+                              </div>
                             );
                           })}
                         </div>
@@ -569,6 +713,7 @@ export function DashboardPlacementsSection({
                         className={`${btnAddDirectSlot} shrink-0 self-stretch sm:self-auto`}
                         onClick={() => openDirectSlotModal(room.id)}
                       >
+                        <PlusMiniIcon />
                         직속 칸 추가하기
                       </button>
                     </div>
@@ -579,81 +724,102 @@ export function DashboardPlacementsSection({
                         role="tabpanel"
                         aria-labelledby={`tab-${activeSlot.id}`}
                       >
-                        <div className="flex flex-wrap items-start justify-between gap-2 border-b border-amber-500/20 pb-2">
-                          <div>
-                            <p className="text-[9px] font-medium text-amber-200/85">
-                              현재 직속 칸
-                            </p>
-                            <p
-                              id={`tab-${activeSlot.id}`}
-                              className="text-sm font-semibold text-zinc-100"
-                            >
-                              {activeSlot.name}
-                            </p>
-                          </div>
-                          <button
-                            type="button"
-                            className={btnDangerIcon}
-                            title="이 직속 칸과 이 칸에만 묶인 설정을 삭제합니다"
-                            aria-label={`「${activeSlot.name}」 직속 칸 삭제`}
-                            onClick={() => requestDeleteStorage(activeSlot.id)}
+                        <div className="border-b border-amber-500/20 pb-2">
+                          <p className="text-[9px] font-medium text-amber-200/85">
+                            현재 직속 칸
+                          </p>
+                          <p
+                            id={`tab-${activeSlot.id}`}
+                            className="text-sm font-semibold text-zinc-100"
                           >
-                            <TrashIcon />
-                          </button>
+                            {activeSlot.name}
+                          </p>
                         </div>
 
                         <div className="mt-3">
                           <p className="text-xs text-zinc-500">
-                            <span className="text-zinc-400">「가구 추가」</span>
-                            로 모달을 열어 이 탭(
-                            <span className="text-zinc-400">직속 칸</span>
-                            )에만 가구를 연결합니다. 아래 뱃지로 가구를 골라 한
-                            번에 하나만 펼칩니다.
+                            이 직속 칸에 붙은 가구는 아래 뱃지로 고르면 한 번에
+                            하나의 상세만 펼쳐집니다.
                           </p>
-                          {fpsForSlot.length === 0 ? (
-                            <p className="mt-2 rounded-md bg-zinc-950/40 px-2 py-1.5 text-[11px] text-zinc-600">
-                              아직 가구가 없습니다.
-                            </p>
-                          ) : (
-                            <>
-                              <div
-                                className="mt-2 flex flex-wrap gap-1.5"
-                                role="tablist"
-                                aria-label="이 직속 칸의 가구"
-                              >
-                                {fpsForSlot.map((fp) => {
-                                  const sel = focusedFurniture?.id === fp.id;
-                                  return (
-                                    <button
-                                      key={fp.id}
-                                      type="button"
-                                      role="tab"
-                                      aria-selected={sel}
-                                      onClick={() =>
-                                        setFocusedFurnitureId(fp.id)
-                                      }
-                                      className={cn(
-                                        "max-w-full cursor-pointer truncate rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors",
-                                        sel
-                                          ? "border-teal-500/50 bg-teal-950/40 text-teal-100"
-                                          : "border-zinc-700 bg-zinc-950/80 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200",
-                                      )}
-                                    >
-                                      {fp.label}
-                                    </button>
-                                  );
-                                })}
-                              </div>
-                              {focusedFurniture ? (
-                                <ul className="mt-3 space-y-3">
+
+                          <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-3">
+                            <div className="min-w-0 flex-1 space-y-2">
+                              <p className="text-[10px] font-medium text-zinc-400">
+                                「{activeSlot.name}」에 가구 연결
+                              </p>
+                              {fpsForSlot.length === 0 ? (
+                                <p className="rounded-md bg-zinc-950/40 px-2 py-1.5 text-[11px] text-zinc-600">
+                                  아직 가구가 없습니다.
+                                </p>
+                              ) : (
+                                <div
+                                  className="flex flex-wrap gap-1.5"
+                                  role="tablist"
+                                  aria-label="이 직속 칸의 가구"
+                                >
+                                  {fpsForSlot.map((fp) => {
+                                    const sel = focusedFurniture?.id === fp.id;
+                                    return (
+                                      <button
+                                        key={fp.id}
+                                        type="button"
+                                        role="tab"
+                                        aria-selected={sel}
+                                        onClick={() =>
+                                          setFocusedFurnitureId(fp.id)
+                                        }
+                                        className={cn(
+                                          "max-w-full cursor-pointer truncate rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors",
+                                          sel
+                                            ? "border-teal-500/50 bg-teal-950/40 text-teal-100"
+                                            : "border-zinc-700 bg-zinc-950/80 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200",
+                                        )}
+                                      >
+                                        {fp.label}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                            <button
+                              type="button"
+                              className={`${btnAdd} shrink-0 self-start sm:self-end`}
+                              onClick={() =>
+                                openFurnitureModal(room.id, activeSlot.id)
+                              }
+                            >
+                              <PlusMiniIcon />
+                              가구 추가
+                            </button>
+                          </div>
+
+                          {fpsForSlot.length > 0 && focusedFurniture ? (
+                            <ul className="mt-3 space-y-3">
                                   <li
                                     key={focusedFurniture.id}
                                     className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-2.5"
                                   >
                                     <div className="flex flex-wrap items-start justify-between gap-2">
-                                      <p className="text-xs font-semibold text-zinc-100">
-                                        {focusedFurniture.label}
-                                      </p>
+                                      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+                                        <p className="text-xs font-semibold text-zinc-100">
+                                          {focusedFurniture.label}
+                                        </p>
+                                        {multiSlot ? (
+                                          <button
+                                            type="button"
+                                            className={`${btnAdd} shrink-0`}
+                                            onClick={() =>
+                                              openReanchorModal(
+                                                focusedFurniture.id,
+                                              )
+                                            }
+                                          >
+                                            <ArrowsRightLeftMiniIcon />
+                                            다른 직속 칸으로 옮기기
+                                          </button>
+                                        ) : null}
+                                      </div>
                                       <button
                                         type="button"
                                         className={`${btnDangerIcon} shrink-0`}
@@ -669,37 +835,6 @@ export function DashboardPlacementsSection({
                                         <TrashIcon />
                                       </button>
                                     </div>
-
-                                    {multiSlot ? (
-                                      <div className="mt-2 space-y-1">
-                                        <label
-                                          className="text-[9px] text-zinc-500"
-                                          htmlFor={`reanchor-${focusedFurniture.id}`}
-                                        >
-                                          다른 직속 칸 탭으로 옮기기
-                                        </label>
-                                        <select
-                                          id={`reanchor-${focusedFurniture.id}`}
-                                          className={selectClass}
-                                          value={
-                                            focusedFurniture.anchorDirectStorageId ??
-                                            activeSlot.id
-                                          }
-                                          onChange={(e) =>
-                                            handleReanchorFurniture(
-                                              focusedFurniture.id,
-                                              e.target.value,
-                                            )
-                                          }
-                                        >
-                                          {directs.map((s) => (
-                                            <option key={s.id} value={s.id}>
-                                              {s.name}
-                                            </option>
-                                          ))}
-                                        </select>
-                                      </div>
-                                    ) : null}
 
                                     <div className="mt-2 border-t border-zinc-800/70 pt-2">
                                       <p className="text-[11px] text-zinc-500">
@@ -753,30 +888,14 @@ export function DashboardPlacementsSection({
                                             )
                                           }
                                         >
+                                          <PlusMiniIcon />
                                           세부 칸 추가
                                         </button>
                                       </div>
                                     </div>
                                   </li>
                                 </ul>
-                              ) : null}
-                            </>
-                          )}
-                        </div>
-
-                        <div className="mt-3 border-t border-zinc-800/70 pt-2">
-                          <p className="mb-1.5 text-[10px] font-medium text-zinc-400">
-                            「{activeSlot.name}」에 가구 연결
-                          </p>
-                          <button
-                            type="button"
-                            className={`${btnAdd} w-full sm:w-auto`}
-                            onClick={() =>
-                              openFurnitureModal(room.id, activeSlot.id)
-                            }
-                          >
-                            가구 추가
-                          </button>
+                          ) : null}
                         </div>
                       </div>
                     ) : null}
@@ -883,6 +1002,51 @@ export function DashboardPlacementsSection({
           className={`${inputClass} mt-1`}
           autoFocus
         />
+      </FormModal>
+
+      <FormModal
+        open={reanchorModalOpen}
+        onOpenChange={(open) => {
+          setReanchorModalOpen(open);
+          if (!open) {
+            setReanchorModalFurnitureId(null);
+            setReanchorModalTargetSlotId("");
+          }
+        }}
+        title="다른 직속 칸으로 옮기기"
+        description={
+          reanchorModalFurniture
+            ? `「${reanchorModalFurniture.label}」가 붙어 있는 직속 칸을 바꿉니다.`
+            : "가구가 연결될 직속 칸을 고릅니다."
+        }
+        submitLabel="옮기기"
+        cancelLabel="취소"
+        submitDisabled={
+          !reanchorModalTargetSlotId ||
+          (reanchorModalFurniture != null &&
+            reanchorModalTargetSlotId ===
+              (reanchorModalFurniture.anchorDirectStorageId ?? ""))
+        }
+        onSubmit={submitReanchorModal}
+      >
+        <label
+          className="block text-xs font-medium text-zinc-500"
+          htmlFor="reanchor-modal-slot"
+        >
+          옮길 직속 칸
+        </label>
+        <select
+          id="reanchor-modal-slot"
+          className={`${selectClass} mt-1`}
+          value={reanchorModalTargetSlotId}
+          onChange={(e) => setReanchorModalTargetSlotId(e.target.value)}
+        >
+          {reanchorModalDirects.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
       </FormModal>
 
       <AlertModal

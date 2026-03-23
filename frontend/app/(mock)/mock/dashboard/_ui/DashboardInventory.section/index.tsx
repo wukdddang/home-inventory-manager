@@ -7,6 +7,7 @@ import {
   getMockPurchasesSession,
   subscribeMockPurchasesSession,
 } from "../../../purchases/_lib/mock-purchases-session-store";
+import { cn } from "@/lib/utils";
 import { useAppRoutePrefix } from "@/lib/use-app-route-prefix";
 import type { Household, InventoryRow } from "@/types/domain";
 import Link from "next/link";
@@ -26,6 +27,31 @@ import { RoomItemAddPanel } from "./RoomItemAddFloatingPanel.module";
 import { ViewModeToggle, type ViewMode } from "./ViewModeToggle.module";
 
 export type { ViewMode } from "./ViewModeToggle.module";
+
+function ViewModeEyeIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      className={cn("size-4 shrink-0 text-teal-400/90", className)}
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"
+      />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+      />
+    </svg>
+  );
+}
 
 type DashboardInventorySectionProps = {
   selected: Household | null;
@@ -193,7 +219,10 @@ export function DashboardInventorySection({
     <div className="flex min-h-0 w-full flex-col rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
       <div className="flex shrink-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-base font-semibold text-white">조회 모드</h2>
+          <h2 className="flex flex-wrap items-center gap-2 text-base font-semibold text-white">
+            <ViewModeEyeIcon />
+            조회 모드
+          </h2>
           <p className="mt-1 text-sm text-zinc-500">
             구조도에서 방·직속·가구 블록을 드래그해 배치하거나, 표로 전환해
             물품을 확인합니다. 구매와 연결된 품목은 로트·임박이 표시됩니다.

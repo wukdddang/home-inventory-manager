@@ -9,6 +9,26 @@ import { useEffect, useId, useState, type MouseEvent } from "react";
 import { useDashboard } from "../../_hooks/useDashboard";
 import { defaultRoomGrid, newEntityId } from "../../_lib/dashboard-helpers";
 
+function RoomsSectionIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      className={cn("size-4 shrink-0 text-teal-400/90", className)}
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"
+      />
+    </svg>
+  );
+}
+
 type DashboardRoomsSectionProps = {
   selected: Household | null;
   selectedRoomId: string | null;
@@ -195,7 +215,10 @@ export function DashboardRoomsSection({
 
   return (
     <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
-      <h2 className="text-sm font-semibold text-white">방 관리</h2>
+      <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
+        <RoomsSectionIcon />
+        방 관리
+      </h2>
       <p className="mt-1 text-xs leading-relaxed text-zinc-500">
         탭으로 방을 선택하세요. 구조도에서도 같은 방이 선택됩니다. + 로 방을
         추가합니다.

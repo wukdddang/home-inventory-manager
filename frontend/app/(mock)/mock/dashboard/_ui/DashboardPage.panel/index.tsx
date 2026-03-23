@@ -20,13 +20,7 @@ import type { ViewMode } from "../DashboardInventory.section";
 const ITEM_ADD_PANEL_ANCHOR_ID = "dashboard-item-add-panel";
 
 export function DashboardPanel() {
-  const {
-    dataMode,
-    households,
-    loading,
-    error,
-    거점을_삭제_한다,
-  } = useDashboard();
+  const { households, loading, error, 거점을_삭제_한다 } = useDashboard();
   const { setHousehold: setShellHousehold } = useSelectedHouseholdShell();
   const [selectedHouseholdId, setSelectedHouseholdId] = useState<string | null>(
     null,
@@ -129,18 +123,6 @@ export function DashboardPanel() {
           variants={appViewPresenceVariants}
           transition={appViewPresenceTransition}
         >
-          {dataMode === "mock" ? (
-            <div
-              className="shrink-0 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-sm text-amber-100"
-              role="status"
-            >
-              <span className="font-medium">Mock 데이터</span>
-              <span className="text-amber-200/90">
-                {" "}
-                — 인메모리 시드만 사용합니다. 실제 저장소·백엔드와 연결되지 않습니다.
-              </span>
-            </div>
-          ) : null}
           <DashboardHouseholdsHeader
             selectedHouseholdId={viewingHouseholdId}
             onSelectHousehold={handleSelectHousehold}

@@ -14,6 +14,27 @@ import { useEffect, useId, useRef, useState } from "react";
 import { useDashboard } from "../../_hooks/useDashboard";
 import { HouseholdKindsManageModal } from "../HouseholdKindsManage.modal";
 
+/** 거점(사이트·기지) */
+function HouseholdSectionIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      className={cn("size-4 shrink-0 text-teal-400/90", className)}
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.75H15V21"
+      />
+    </svg>
+  );
+}
+
 type DashboardHouseholdsHeaderProps = {
   selectedHouseholdId: string | null;
   onSelectHousehold: (id: string) => void;
@@ -194,6 +215,7 @@ export function DashboardHouseholdsHeader({
     <header className="shrink-0 rounded-xl border border-zinc-800 bg-zinc-900/40 px-3 py-3 sm:px-4">
       <div className="min-w-0">
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
+          <HouseholdSectionIcon />
           <h1 className="text-sm font-semibold tracking-tight text-white sm:text-base">
             내 거점
           </h1>
