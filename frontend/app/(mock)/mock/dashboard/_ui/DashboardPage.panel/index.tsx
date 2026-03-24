@@ -12,6 +12,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { useDashboard } from "../../_hooks/useDashboard";
 import { DashboardHouseholdsHeader } from "../DashboardHouseholds.header";
+import { HouseholdOnboardingPanel } from "../HouseholdOnboarding.modal";
 import { DashboardInventorySection } from "../DashboardInventory.section";
 import { DashboardPlacementsSection } from "../DashboardPlacements.section";
 import { DashboardRoomsSection } from "../DashboardRooms.section";
@@ -27,6 +28,7 @@ export function DashboardPanel() {
   );
   const [viewMode, setViewMode] = useState<ViewMode>("structure");
   const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
+  const [onboardingHouseholdId, setOnboardingHouseholdId] = useState<string | null>(null);
 
   /** 목록 변경 시에도 유효한 거점만 보이도록 (effect 없이 파생) */
   const viewingHouseholdId = useMemo(() => {
@@ -66,6 +68,7 @@ export function DashboardPanel() {
   const handleAfterAddHousehold = (id: string) => {
     setSelectedHouseholdId(id);
     setSelectedRoomId(null);
+    setOnboardingHouseholdId(id);
   };
 
   const handleDeleteHousehold = (id: string) => {
@@ -130,6 +133,11 @@ export function DashboardPanel() {
           <div className="grid min-h-0 min-w-0 flex-1 grid-cols-1 gap-6 lg:grid-cols-[minmax(0,32rem)_minmax(0,1fr)] lg:gap-x-0 lg:overflow-hidden xl:grid-cols-[minmax(0,36rem)_minmax(0,1fr)]">
             <div className="min-h-0 min-w-0 overflow-y-auto overscroll-y-contain">
               <div className="grid min-w-0 grid-cols-1 gap-6 pb-1">
+                <HouseholdOnboardingPanel
+                  open={onboardingHouseholdId !== null}
+                  householdId={onboardingHouseholdId}
+                  onClose={() => setOnboardingHouseholdId(null)}
+                />
                 <DashboardRoomsSection
                   selected={selected}
                   selectedRoomId={selectedRoomId}

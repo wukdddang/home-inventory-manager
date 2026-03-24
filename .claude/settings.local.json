@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(pnpm dev:frontend)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(ls:*)",
+      "Bash(curl:*)"
     ]
   }
 }
