@@ -13,12 +13,25 @@ import {
   resolveLedgerLocationColumns,
   type LedgerLocationColumns,
 } from "@/lib/household-location";
-import type { Household, InventoryLedgerRow, InventoryLedgerType } from "@/types/domain";
+import type {
+  Household,
+  InventoryLedgerRow,
+  InventoryLedgerType,
+} from "@/types/domain";
 import { useAppRoutePrefix } from "@/lib/use-app-route-prefix";
 import { motion } from "framer-motion";
-import { ArrowDown, ArrowUp, Search } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowUp,
+  ChevronLeft,
+  ChevronRight,
+  Search,
+} from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+
+const LEDGER_PAGE_SIZE = 15;
+const LEDGER_TABLE_COL_COUNT = 13;
 
 /** `resolveLedgerLocationColumns`와 동일 규칙 — 거점 스냅샷이 없으면 id만 */
 function 이력_행_위치_열을_구한다(
@@ -79,7 +92,9 @@ function 행_메모_문자열을_구한다(
   row: InventoryLedgerRow,
   overrides: Record<string, string>,
 ): string {
-  return overrides[row.id] !== undefined ? overrides[row.id]! : (row.memo ?? "");
+  return overrides[row.id] !== undefined
+    ? overrides[row.id]!
+    : (row.memo ?? "");
 }
 
 /** 비고 열 표시 — 사용자 메모만(폐기 사유는 별도 열) */
@@ -160,6 +175,20 @@ type SortColumn =
   | "delta"
   | "balance"
   | "note";
+
+/** 사용자가 열 정렬을 끄면(scope default) 목록은 일시 내림차순으로 둔다 */
+type SortPhase =
+  | { scope: "default" }
+  | { scope: "column"; column: SortColumn; dir: "asc" | "desc" };
+
+const DEFAULT_LEDGER_SORT: { column: SortColumn; dir: "asc" | "desc" } = {
+  column: "createdAt",
+  dir: "desc",
+};
+
+function 열_첫_정렬_방향을_구한다(column: SortColumn): "asc" | "desc" {
+  return column === "createdAt" ? "desc" : "asc";
+}
 
 /** 테이블 헤더 아래에 두지 않고 상단 툴바에만 쓰는 열 필터 키 */
 type ColumnFilterKey =
@@ -245,10 +274,7 @@ function 행이_컬럼_필터에_일치하는가(
   if (filters.category && 분류 !== filters.category) return false;
   if (filters.itemName && 이름 !== filters.itemName) return false;
   if (filters.spec && 규격 !== filters.spec) return false;
-  if (
-    filters.type &&
-    이력_유형_라벨을_구한다(row.type) !== filters.type
-  ) {
+  if (filters.type && 이력_유형_라벨을_구한다(row.type) !== filters.type) {
     return false;
   }
   return true;
@@ -318,6 +344,74 @@ function 행_배열을_정렬한다(
   return out;
 }
 
+function 이력_페이지네이션_컨트롤({
+  pageIndex,
+  totalPages,
+  onPrev,
+  onNext,
+  onGoToPage,
+}: {
+  pageIndex: number;
+  totalPages: number;
+  onPrev: () => void;
+  onNext: () => void;
+  onGoToPage: (page: number) => void;
+}) {
+  const canPrev = pageIndex > 0;
+  const canNext = pageIndex < totalPages - 1;
+  return (
+    <nav
+      className="flex flex-wrap items-center justify-end gap-1.5 sm:gap-2"
+      aria-label="페이지네이션"
+    >
+      <button
+        type="button"
+        onClick={onPrev}
+        disabled={!canPrev}
+        className="inline-flex h-8 cursor-pointer items-center gap-0.5 rounded-lg border border-zinc-700 bg-zinc-950 px-2 text-[11px] font-medium text-zinc-200 transition-colors hover:border-teal-500/50 hover:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        <ChevronLeft className="size-3.5 shrink-0" aria-hidden />
+        이전
+      </button>
+      {totalPages <= 8 ? (
+        <div className="flex items-center gap-0.5">
+          {Array.from({ length: totalPages }, (_, p) => {
+            const active = p === pageIndex;
+            return (
+              <button
+                key={p}
+                type="button"
+                onClick={() => onGoToPage(p)}
+                aria-current={active ? "page" : undefined}
+                className={`inline-flex size-8 cursor-pointer items-center justify-center rounded-lg border text-[11px] font-semibold tabular-nums transition-colors ${
+                  active
+                    ? "border-teal-500/60 bg-teal-500/15 text-teal-200"
+                    : "border-zinc-700 bg-zinc-950 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200"
+                }`}
+              >
+                {p + 1}
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <span className="px-1 text-[11px] font-medium tabular-nums text-zinc-400">
+          {pageIndex + 1} / {totalPages}
+        </span>
+      )}
+      <button
+        type="button"
+        onClick={onNext}
+        disabled={!canNext}
+        className="inline-flex h-8 cursor-pointer items-center gap-0.5 rounded-lg border border-zinc-700 bg-zinc-950 px-2 text-[11px] font-medium text-zinc-200 transition-colors hover:border-teal-500/50 hover:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        다음
+        <ChevronRight className="size-3.5 shrink-0" aria-hidden />
+      </button>
+    </nav>
+  );
+}
+
 function LedgerLegend({ className = "" }: { className?: string }) {
   const 구분_순서: InventoryLedgerType[] = ["in", "out", "adjust", "waste"];
   return (
@@ -346,90 +440,140 @@ function LedgerLegend({ className = "" }: { className?: string }) {
   );
 }
 
-function 정렬_가능한_헤더({
-  column,
-  label,
-  sortColumn,
-  sortDir,
-  onSort,
-  align = "left",
-  thClassName = "",
-}: {
-  column: SortColumn;
-  label: string;
-  sortColumn: SortColumn;
-  sortDir: "asc" | "desc";
-  onSort: (c: SortColumn) => void;
-  align?: "left" | "right";
-  thClassName?: string;
-}) {
-  const active = sortColumn === column;
-  return (
-    <th
-      scope="col"
-      className={`sticky top-0 z-1 px-3 py-2.5 text-xs font-semibold tracking-wide ${
-        align === "right" ? "text-right" : "text-left"
-      } ${thClassName}`.trim()}
-    >
-      <button
-        type="button"
-        onClick={() => onSort(column)}
-        className={`group flex max-w-full items-center gap-1 rounded-md text-zinc-400 transition-colors hover:text-zinc-200 focus-visible:outline focus-visible:ring-2 focus-visible:ring-teal-500/50 ${
-          align === "right" ? "ml-auto w-full justify-end" : "inline-flex"
-        }`}
-        aria-sort={
-          active
-            ? sortDir === "asc"
-              ? "ascending"
-              : "descending"
-            : undefined
-        }
-      >
-        <span>{label}</span>
-        {active ? (
-          sortDir === "asc" ? (
-            <ArrowUp className="size-3.5 shrink-0 text-teal-400" aria-hidden />
-          ) : (
-            <ArrowDown className="size-3.5 shrink-0 text-teal-400" aria-hidden />
-          )
-        ) : (
-          <span className="inline-flex size-3.5 shrink-0 opacity-0 transition-opacity group-hover:opacity-40">
-            <ArrowUp className="size-3.5" aria-hidden />
-          </span>
-        )}
-      </button>
-    </th>
-  );
-}
-
-function 컬럼_필터_필드({
+function 헤더_열_필터_셀렉트({
   열이름,
   value,
   onChange,
   options,
+  align = "left",
+  className = "",
 }: {
   열이름: string;
   value: string;
   onChange: (v: string) => void;
   options: string[];
+  align?: "left" | "right";
+  className?: string;
 }) {
-  const 전체인가 = value === "";
+  const 비어있음 = value === "";
   return (
     <select
       value={value}
       onChange={(e) => onChange(e.target.value)}
-      aria-label={열이름}
-      className={`box-border h-9 min-w-26 max-w-36 shrink-0 cursor-pointer rounded-lg border border-zinc-700 bg-zinc-950 px-2 py-0 text-xs outline-none focus:border-teal-500 ${
-        전체인가 ? "text-zinc-500" : "text-zinc-100"
-      }`}
+      aria-label={`${열이름} 열 필터`}
+      className={`box-border h-7 min-w-0 flex-1 cursor-pointer rounded border border-zinc-600/80 bg-zinc-950 px-1.5 py-0 text-[11px] outline-none focus:border-teal-500 ${
+        align === "right" ? "text-right" : "text-left"
+      } ${비어있음 ? "text-zinc-500" : "text-zinc-200"} ${className}`.trim()}
     >
-      <option value="">{열이름} · 전체</option>
+      <option value="">{열이름}</option>
       {options.map((o) => (
         <option key={o} value={o}>
           {o}
         </option>
       ))}
     </select>
+  );
+}
+
+/** 호버 시 아이콘 표시 · 활성 열은 방향 표시 — 같은 열 클릭 시 첫 방향 → 반대 → 기본(일시 내림차순) */
+function 헤더_정렬_호버_버튼({
+  column,
+  label,
+  sortPhase,
+  onSort,
+}: {
+  column: SortColumn;
+  label: string;
+  sortPhase: SortPhase;
+  onSort: (c: SortColumn) => void;
+}) {
+  const active = sortPhase.scope === "column" && sortPhase.column === column;
+  const sortDir = active ? sortPhase.dir : "asc";
+  return (
+    <button
+      type="button"
+      onClick={() => onSort(column)}
+      className={`inline-flex shrink-0 items-center justify-center rounded p-0.5 transition-opacity focus-visible:outline focus-visible:ring-2 focus-visible:ring-teal-500/50 ${
+        active
+          ? "text-teal-400 opacity-100"
+          : "text-zinc-400 opacity-0 group-hover:opacity-100"
+      }`}
+      aria-label={
+        active
+          ? `${label} 정렬, ${sortDir === "asc" ? "오름차순" : "내림차순"} 적용`
+          : `${label} 정렬`
+      }
+    >
+      {active ? (
+        sortDir === "asc" ? (
+          <ArrowUp className="size-3.5" aria-hidden />
+        ) : (
+          <ArrowDown className="size-3.5" aria-hidden />
+        )
+      ) : (
+        <ArrowUp className="size-3.5 text-zinc-500" aria-hidden />
+      )}
+    </button>
+  );
+}
+
+/** 한 줄: 필터(select) 또는 라벨 + 호버 시 정렬 아이콘 */
+function 정렬_및_필터_헤더({
+  column,
+  label,
+  sortPhase,
+  onSort,
+  align = "left",
+  thClassName = "",
+  filter,
+}: {
+  column: SortColumn;
+  label: string;
+  sortPhase: SortPhase;
+  onSort: (c: SortColumn) => void;
+  align?: "left" | "right";
+  thClassName?: string;
+  filter?: {
+    value: string;
+    options: string[];
+    onChange: (v: string) => void;
+  };
+}) {
+  const rowClass =
+    align === "right"
+      ? "group flex min-w-0 items-center justify-end gap-1"
+      : "group flex min-w-0 items-center gap-1";
+  return (
+    <th
+      scope="col"
+      className={`sticky top-0 z-10 border-b border-zinc-700 bg-zinc-900 px-2 py-1 align-middle text-xs font-semibold tracking-wide ${thClassName}`.trim()}
+    >
+      <div className={rowClass}>
+        {filter ? (
+          <헤더_열_필터_셀렉트
+            열이름={label}
+            value={filter.value}
+            onChange={filter.onChange}
+            options={filter.options}
+            align={align}
+          />
+        ) : (
+          <span
+            className={`min-w-0 flex-1 truncate text-zinc-400 ${
+              align === "right" ? "text-right" : "text-left"
+            }`}
+          >
+            {label}
+          </span>
+        )}
+        <헤더_정렬_호버_버튼
+          column={column}
+          label={label}
+          sortPhase={sortPhase}
+          onSort={onSort}
+        />
+      </div>
+    </th>
   );
 }
 
@@ -446,8 +590,9 @@ export function InventoryHistoryPanel() {
   const [columnFilters, setColumnFilters] = useState<
     Partial<Record<ColumnFilterKey, string>>
   >({});
-  const [sortColumn, setSortColumn] = useState<SortColumn>("createdAt");
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+  const [sortPhase, setSortPhase] = useState<SortPhase>({
+    scope: "default",
+  });
   const [memoOverrides, setMemoOverrides] = useState<Record<string, string>>(
     {},
   );
@@ -455,6 +600,7 @@ export function InventoryHistoryPanel() {
     null,
   );
   const [memoDraft, setMemoDraft] = useState("");
+  const [pageIndex, setPageIndex] = useState(0);
 
   const 비고를_바꾼다 = useCallback((rowId: string, value: string) => {
     setMemoOverrides((prev) => ({ ...prev, [rowId]: value }));
@@ -475,16 +621,27 @@ export function InventoryHistoryPanel() {
   }, [memoModalRow, memoDraft, 비고를_바꾼다]);
 
   const handleSort = useCallback((column: SortColumn) => {
-    if (sortColumn === column) {
-      setSortDir((d) => (d === "asc" ? "desc" : "asc"));
-    } else {
-      setSortColumn(column);
-      /** 일시는 최신 우선이 자연스러워 첫 선택 시 내림차순 */
-      setSortDir(column === "createdAt" ? "desc" : "asc");
-    }
-  }, [sortColumn]);
+    setSortPhase((prev) => {
+      if (prev.scope === "column" && prev.column === column) {
+        const first = 열_첫_정렬_방향을_구한다(column);
+        const second = first === "asc" ? "desc" : "asc";
+        if (prev.dir === first) {
+          return { scope: "column", column, dir: second };
+        }
+        if (prev.dir === second) {
+          return { scope: "default" };
+        }
+      }
+      return {
+        scope: "column",
+        column,
+        dir: 열_첫_정렬_방향을_구한다(column),
+      };
+    });
+  }, []);
 
   const 컬럼_필터를_바꾼다 = useCallback((key: ColumnFilterKey, v: string) => {
+    setPageIndex(0);
     setColumnFilters((prev) => {
       const next = { ...prev };
       if (!v) {
@@ -495,10 +652,6 @@ export function InventoryHistoryPanel() {
       return next;
     });
   }, []);
-
-  useEffect(() => {
-    setColumnFilters({});
-  }, [filterHouseholdId]);
 
   const baseRows = useMemo(() => {
     let rows = [...MOCK_SEED_INVENTORY_LEDGER];
@@ -574,37 +727,57 @@ export function InventoryHistoryPanel() {
           memoOverrides,
         ),
       ),
-    [
-      columnFilteredRows,
-      householdsForLabels,
-      searchQuery,
-      memoOverrides,
-    ],
+    [columnFilteredRows, householdsForLabels, searchQuery, memoOverrides],
   );
 
-  const sortedRows = useMemo(
+  const sortedRows = useMemo(() => {
+    const sortColumn =
+      sortPhase.scope === "column"
+        ? sortPhase.column
+        : DEFAULT_LEDGER_SORT.column;
+    const sortDir =
+      sortPhase.scope === "column" ? sortPhase.dir : DEFAULT_LEDGER_SORT.dir;
+    return 행_배열을_정렬한다(
+      searchedRows,
+      householdsForLabels,
+      sortColumn,
+      sortDir,
+      memoOverrides,
+    );
+  }, [searchedRows, householdsForLabels, sortPhase, memoOverrides]);
+
+  const totalFiltered = sortedRows.length;
+  const totalPages = Math.max(1, Math.ceil(totalFiltered / LEDGER_PAGE_SIZE));
+  const maxPageIndex = Math.max(0, totalPages - 1);
+  const activePageIndex = Math.min(Math.max(0, pageIndex), maxPageIndex);
+
+  const paginatedRows = useMemo(
     () =>
-      행_배열을_정렬한다(
-        searchedRows,
-        householdsForLabels,
-        sortColumn,
-        sortDir,
-        memoOverrides,
+      sortedRows.slice(
+        activePageIndex * LEDGER_PAGE_SIZE,
+        activePageIndex * LEDGER_PAGE_SIZE + LEDGER_PAGE_SIZE,
       ),
-    [searchedRows, householdsForLabels, sortColumn, sortDir, memoOverrides],
+    [sortedRows, activePageIndex],
   );
 
   const totalBase = baseRows.length;
+  const hasFilterContext = searchQuery.trim() !== "" || hasActiveColumnFilters;
+  const footerRangeStart =
+    totalFiltered === 0 ? 0 : activePageIndex * LEDGER_PAGE_SIZE + 1;
+  const footerRangeEnd = Math.min(
+    totalFiltered,
+    (activePageIndex + 1) * LEDGER_PAGE_SIZE,
+  );
 
   return (
     <motion.div
-      className="flex w-full min-w-0 max-w-none flex-col gap-6 pb-16"
+      className="flex w-full min-w-0 max-w-none min-h-0 flex-1 flex-col gap-6 overflow-hidden"
       initial="initial"
       animate="animate"
       variants={appViewPresenceVariants}
       transition={appViewPresenceTransition}
     >
-      <div>
+      <div className="shrink-0">
         <h1 className="text-2xl font-semibold text-white">재고 이력</h1>
         <p className="mt-1 text-sm text-zinc-500">
           품목별 증감·잔여를 표로 확인합니다. 비고 텍스트를 누르면 모달에서
@@ -618,92 +791,45 @@ export function InventoryHistoryPanel() {
         </Link>
       </div>
 
-      <div className="flex flex-col gap-4">
+      <div className="flex min-h-0 flex-1 flex-col gap-4">
         <div
-          className="flex w-full min-w-0 items-center gap-2"
+          className="flex w-full min-w-0 shrink-0 flex-col gap-3 sm:flex-row sm:items-center sm:gap-3"
           role="toolbar"
           aria-label="목록 필터 및 범례"
         >
-          <div className="grid min-w-0 flex-1 grid-cols-[auto_minmax(0,1fr)] items-center gap-2">
-            <div className="flex min-w-0 max-w-full flex-nowrap items-center gap-2 overflow-x-auto [scrollbar-width:thin]">
-              <select
-                value={filterHouseholdId}
-                onChange={(e) => setFilterHouseholdId(e.target.value)}
-                aria-label="거점"
-                className={`box-border h-9 min-w-30 shrink-0 cursor-pointer rounded-lg border border-zinc-700 bg-zinc-950 px-2 py-0 text-xs leading-none outline-none focus:border-teal-500 ${
-                  filterHouseholdId === "all" ? "text-zinc-500" : "text-zinc-100"
-                }`}
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+            <select
+              value={filterHouseholdId}
+              onChange={(e) => {
+                setPageIndex(0);
+                setColumnFilters({});
+                setFilterHouseholdId(e.target.value);
+              }}
+              aria-label="표시 거점 범위"
+              className={`box-border h-9 min-w-30 shrink-0 cursor-pointer rounded-lg border border-zinc-700 bg-zinc-950 px-2 py-0 text-xs leading-none outline-none focus:border-teal-500 ${
+                filterHouseholdId === "all" ? "text-zinc-500" : "text-zinc-100"
+              }`}
+            >
+              <option value="all">거점</option>
+              {householdsForLabels.map((h) => (
+                <option key={h.id} value={h.id}>
+                  {h.name}
+                </option>
+              ))}
+            </select>
+            {totalBase > 0 && hasActiveColumnFilters ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setPageIndex(0);
+                  setColumnFilters({});
+                }}
+                className="shrink-0 whitespace-nowrap text-xs font-medium text-teal-400/90 hover:underline"
               >
-                <option value="all">거점 · 전체</option>
-                {householdsForLabels.map((h) => (
-                  <option key={h.id} value={h.id}>
-                    {h.name}
-                  </option>
-                ))}
-              </select>
-              {totalBase > 0 ? (
-                <>
-                  <컬럼_필터_필드
-                    열이름="거점"
-                    value={columnFilters.householdName ?? ""}
-                    onChange={(v) => 컬럼_필터를_바꾼다("householdName", v)}
-                    options={columnFilterOptions.householdName}
-                  />
-                  <컬럼_필터_필드
-                    열이름="방"
-                    value={columnFilters.roomName ?? ""}
-                    onChange={(v) => 컬럼_필터를_바꾼다("roomName", v)}
-                    options={columnFilterOptions.roomName}
-                  />
-                  <컬럼_필터_필드
-                    열이름="장소"
-                    value={columnFilters.placeLabel ?? ""}
-                    onChange={(v) => 컬럼_필터를_바꾼다("placeLabel", v)}
-                    options={columnFilterOptions.placeLabel}
-                  />
-                  <컬럼_필터_필드
-                    열이름="세부장소"
-                    value={columnFilters.detailLabel ?? ""}
-                    onChange={(v) => 컬럼_필터를_바꾼다("detailLabel", v)}
-                    options={columnFilterOptions.detailLabel}
-                  />
-                  <컬럼_필터_필드
-                    열이름="분류"
-                    value={columnFilters.category ?? ""}
-                    onChange={(v) => 컬럼_필터를_바꾼다("category", v)}
-                    options={columnFilterOptions.category}
-                  />
-                  <컬럼_필터_필드
-                    열이름="품목"
-                    value={columnFilters.itemName ?? ""}
-                    onChange={(v) => 컬럼_필터를_바꾼다("itemName", v)}
-                    options={columnFilterOptions.itemName}
-                  />
-                  <컬럼_필터_필드
-                    열이름="규격"
-                    value={columnFilters.spec ?? ""}
-                    onChange={(v) => 컬럼_필터를_바꾼다("spec", v)}
-                    options={columnFilterOptions.spec}
-                  />
-                  <컬럼_필터_필드
-                    열이름="구분"
-                    value={columnFilters.type ?? ""}
-                    onChange={(v) => 컬럼_필터를_바꾼다("type", v)}
-                    options={columnFilterOptions.type}
-                  />
-                </>
-              ) : null}
-              {hasActiveColumnFilters ? (
-                <button
-                  type="button"
-                  onClick={() => setColumnFilters({})}
-                  className="shrink-0 whitespace-nowrap text-xs font-medium text-teal-400/90 hover:underline"
-                >
-                  컬럼 필터 초기화
-                </button>
-              ) : null}
-            </div>
-            <div className="relative h-9 min-w-0 justify-self-stretch self-center">
+                표 열 필터 초기화
+              </button>
+            ) : null}
+            <div className="relative h-9 min-w-0 flex-1 basis-full sm:min-w-48 sm:basis-0">
               <Search
                 className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-zinc-500"
                 aria-hidden
@@ -711,12 +837,13 @@ export function InventoryHistoryPanel() {
               <input
                 type="search"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setPageIndex(0);
+                  setSearchQuery(e.target.value);
+                }}
                 placeholder="검색 (거점·품목·구분·비고 등)"
                 className={`box-border h-9 w-full min-w-0 rounded-lg border border-zinc-700 bg-zinc-950 py-0 pl-9 pr-3 text-sm leading-none outline-none placeholder:text-zinc-600 focus:border-teal-500 ${
-                  searchQuery.trim() === ""
-                    ? "text-zinc-500"
-                    : "text-zinc-100"
+                  searchQuery.trim() === "" ? "text-zinc-500" : "text-zinc-100"
                 }`}
                 autoComplete="off"
               />
@@ -730,161 +857,250 @@ export function InventoryHistoryPanel() {
         </div>
 
         {totalBase === 0 ? (
-          <div className="rounded-xl border border-dashed border-zinc-700 px-4 py-10">
+          <div className="flex min-h-0 flex-1 flex-col justify-center rounded-xl border border-dashed border-zinc-700 px-4 py-10">
             <p className="text-center text-sm text-zinc-500">
-              아직 기록이 없습니다. 대시보드 물품 목록에서 소비·폐기를 남기면 여기에
-              쌓입니다.
+              아직 기록이 없습니다. 대시보드 물품 목록에서 소비·폐기를 남기면
+              여기에 쌓입니다.
             </p>
             <p className="mt-6 text-right text-xs text-zinc-600">총 0행</p>
           </div>
         ) : (
           <>
             {sortedRows.length === 0 ? (
-              <div className="rounded-xl border border-dashed border-zinc-700 px-4 py-10">
+              <div className="flex min-h-0 flex-1 flex-col justify-center rounded-xl border border-dashed border-zinc-700 px-4 py-10">
                 <p className="text-center text-sm text-zinc-500">
                   {columnFilteredRows.length === 0
-                    ? "컬럼 필터 조건에 맞는 행이 없습니다."
+                    ? "표 열 필터 조건에 맞는 행이 없습니다."
                     : "검색 조건에 맞는 행이 없습니다."}
                 </p>
                 <p className="mt-6 text-right text-xs text-zinc-600">
-                  {searchQuery.trim() || hasActiveColumnFilters
-                    ? `표시 ${sortedRows.length} / 전체 ${totalBase}행`
-                    : `총 ${sortedRows.length}행`}
+                  {hasFilterContext
+                    ? `표시 ${totalFiltered} / 전체 ${totalBase}행`
+                    : `총 ${totalFiltered}행`}
                 </p>
               </div>
             ) : (
-              <div className="w-full overflow-hidden rounded-xl border border-zinc-700 bg-zinc-950/80 shadow-inner ring-1 ring-zinc-800/80">
-                <div className="w-full overflow-x-auto">
-                  <table className="w-full min-w-[1400px] table-fixed border-collapse text-left text-sm">
-                  <thead>
-                    <tr className="border-b border-zinc-700 bg-zinc-900/90">
-                      <정렬_가능한_헤더
-                        column="createdAt"
-                        label="일시"
-                        sortColumn={sortColumn}
-                        sortDir={sortDir}
-                        onSort={handleSort}
-                        thClassName="w-[6%] whitespace-nowrap"
-                      />
-                      <정렬_가능한_헤더
-                        column="householdName"
-                        label="거점"
-                        sortColumn={sortColumn}
-                        sortDir={sortDir}
-                        onSort={handleSort}
-                        thClassName="w-[8%] min-w-[5rem]"
-                      />
-                      <정렬_가능한_헤더
-                        column="roomName"
-                        label="방"
-                        sortColumn={sortColumn}
-                        sortDir={sortDir}
-                        onSort={handleSort}
-                        thClassName="w-[7%] min-w-[4rem]"
-                      />
-                      <정렬_가능한_헤더
-                        column="placeLabel"
-                        label="장소"
-                        sortColumn={sortColumn}
-                        sortDir={sortDir}
-                        onSort={handleSort}
-                        thClassName="w-[8%] min-w-[5rem]"
-                      />
-                      <정렬_가능한_헤더
-                        column="detailLabel"
-                        label="세부장소"
-                        sortColumn={sortColumn}
-                        sortDir={sortDir}
-                        onSort={handleSort}
-                        thClassName="w-[8%] min-w-[5rem]"
-                      />
-                      <정렬_가능한_헤더
-                        column="category"
-                        label="분류"
-                        sortColumn={sortColumn}
-                        sortDir={sortDir}
-                        onSort={handleSort}
-                        thClassName="w-[8%]"
-                      />
-                      <정렬_가능한_헤더
-                        column="itemName"
-                        label="품목"
-                        sortColumn={sortColumn}
-                        sortDir={sortDir}
-                        onSort={handleSort}
-                        thClassName="w-[9%]"
-                      />
-                      <정렬_가능한_헤더
-                        column="spec"
-                        label="규격"
-                        sortColumn={sortColumn}
-                        sortDir={sortDir}
-                        onSort={handleSort}
-                        thClassName="w-[7%]"
-                      />
-                      <정렬_가능한_헤더
-                        column="type"
-                        label="구분"
-                        sortColumn={sortColumn}
-                        sortDir={sortDir}
-                        onSort={handleSort}
-                        thClassName="w-[5%] whitespace-nowrap"
-                      />
-                      <정렬_가능한_헤더
-                        column="wasteReason"
-                        label="폐기 사유"
-                        sortColumn={sortColumn}
-                        sortDir={sortDir}
-                        onSort={handleSort}
-                        thClassName="w-[8%]"
-                      />
-                      <정렬_가능한_헤더
-                        column="delta"
-                        label="증감"
-                        sortColumn={sortColumn}
-                        sortDir={sortDir}
-                        onSort={handleSort}
-                        align="right"
-                        thClassName="w-[6%] whitespace-nowrap"
-                      />
-                      <정렬_가능한_헤더
-                        column="balance"
-                        label="잔여 수량"
-                        sortColumn={sortColumn}
-                        sortDir={sortDir}
-                        onSort={handleSort}
-                        align="right"
-                        thClassName="w-[5%] whitespace-nowrap"
-                      />
-                      <정렬_가능한_헤더
-                        column="note"
-                        label="비고(수정 가능)"
-                        sortColumn={sortColumn}
-                        sortDir={sortDir}
-                        onSort={handleSort}
-                        thClassName="min-w-0"
-                      />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sortedRows.map((row, idx) => (
-                      <LedgerTableRow
-                        key={row.id}
-                        row={row}
-                        households={householdsForLabels}
-                        zebra={idx % 2 === 1}
-                        memoValue={행_메모_문자열을_구한다(row, memoOverrides)}
-                        onEditMemo={() => 비고_수정_모달을_연다(row)}
-                      />
-                    ))}
-                  </tbody>
-                </table>
+              <div className="flex min-h-0 w-full flex-1 flex-col overflow-hidden rounded-xl border border-zinc-700 bg-zinc-950/80 shadow-inner ring-1 ring-zinc-800/80">
+                <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-auto [scrollbar-width:thin]">
+                  <div className="min-h-0 flex-1 overflow-y-auto">
+                    <table className="w-full min-w-350 table-fixed border-collapse text-left text-sm">
+                      <thead>
+                        <tr className="bg-zinc-900">
+                          <정렬_및_필터_헤더
+                            column="createdAt"
+                            label="일시"
+                            sortPhase={sortPhase}
+                            onSort={handleSort}
+                            thClassName="w-[6%] whitespace-nowrap"
+                          />
+                          <정렬_및_필터_헤더
+                            column="householdName"
+                            label="거점"
+                            sortPhase={sortPhase}
+                            onSort={handleSort}
+                            thClassName="w-[8%] min-w-[5rem]"
+                            filter={{
+                              value: columnFilters.householdName ?? "",
+                              options: columnFilterOptions.householdName,
+                              onChange: (v) =>
+                                컬럼_필터를_바꾼다("householdName", v),
+                            }}
+                          />
+                          <정렬_및_필터_헤더
+                            column="roomName"
+                            label="방"
+                            sortPhase={sortPhase}
+                            onSort={handleSort}
+                            thClassName="w-[7%] min-w-[4rem]"
+                            filter={{
+                              value: columnFilters.roomName ?? "",
+                              options: columnFilterOptions.roomName,
+                              onChange: (v) =>
+                                컬럼_필터를_바꾼다("roomName", v),
+                            }}
+                          />
+                          <정렬_및_필터_헤더
+                            column="placeLabel"
+                            label="장소"
+                            sortPhase={sortPhase}
+                            onSort={handleSort}
+                            thClassName="w-[8%] min-w-[5rem]"
+                            filter={{
+                              value: columnFilters.placeLabel ?? "",
+                              options: columnFilterOptions.placeLabel,
+                              onChange: (v) =>
+                                컬럼_필터를_바꾼다("placeLabel", v),
+                            }}
+                          />
+                          <정렬_및_필터_헤더
+                            column="detailLabel"
+                            label="세부장소"
+                            sortPhase={sortPhase}
+                            onSort={handleSort}
+                            thClassName="w-[8%] min-w-[5rem]"
+                            filter={{
+                              value: columnFilters.detailLabel ?? "",
+                              options: columnFilterOptions.detailLabel,
+                              onChange: (v) =>
+                                컬럼_필터를_바꾼다("detailLabel", v),
+                            }}
+                          />
+                          <정렬_및_필터_헤더
+                            column="category"
+                            label="분류"
+                            sortPhase={sortPhase}
+                            onSort={handleSort}
+                            thClassName="w-[8%]"
+                            filter={{
+                              value: columnFilters.category ?? "",
+                              options: columnFilterOptions.category,
+                              onChange: (v) =>
+                                컬럼_필터를_바꾼다("category", v),
+                            }}
+                          />
+                          <정렬_및_필터_헤더
+                            column="itemName"
+                            label="품목"
+                            sortPhase={sortPhase}
+                            onSort={handleSort}
+                            thClassName="w-[9%]"
+                            filter={{
+                              value: columnFilters.itemName ?? "",
+                              options: columnFilterOptions.itemName,
+                              onChange: (v) =>
+                                컬럼_필터를_바꾼다("itemName", v),
+                            }}
+                          />
+                          <정렬_및_필터_헤더
+                            column="spec"
+                            label="규격"
+                            sortPhase={sortPhase}
+                            onSort={handleSort}
+                            thClassName="w-[7%]"
+                            filter={{
+                              value: columnFilters.spec ?? "",
+                              options: columnFilterOptions.spec,
+                              onChange: (v) => 컬럼_필터를_바꾼다("spec", v),
+                            }}
+                          />
+                          <정렬_및_필터_헤더
+                            column="type"
+                            label="구분"
+                            sortPhase={sortPhase}
+                            onSort={handleSort}
+                            thClassName="w-[5%] whitespace-nowrap"
+                            filter={{
+                              value: columnFilters.type ?? "",
+                              options: columnFilterOptions.type,
+                              onChange: (v) => 컬럼_필터를_바꾼다("type", v),
+                            }}
+                          />
+                          <정렬_및_필터_헤더
+                            column="wasteReason"
+                            label="폐기 사유"
+                            sortPhase={sortPhase}
+                            onSort={handleSort}
+                            thClassName="w-[8%]"
+                          />
+                          <정렬_및_필터_헤더
+                            column="delta"
+                            label="증감"
+                            sortPhase={sortPhase}
+                            onSort={handleSort}
+                            align="right"
+                            thClassName="w-[6%] whitespace-nowrap"
+                          />
+                          <정렬_및_필터_헤더
+                            column="balance"
+                            label="잔여 수량"
+                            sortPhase={sortPhase}
+                            onSort={handleSort}
+                            align="right"
+                            thClassName="w-[5%] whitespace-nowrap"
+                          />
+                          <정렬_및_필터_헤더
+                            column="note"
+                            label="비고(수정 가능)"
+                            sortPhase={sortPhase}
+                            onSort={handleSort}
+                            thClassName="min-w-0"
+                          />
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paginatedRows.map((row, idx) => (
+                          <LedgerTableRow
+                            key={row.id}
+                            row={row}
+                            households={householdsForLabels}
+                            zebra={idx % 2 === 1}
+                            memoValue={행_메모_문자열을_구한다(
+                              row,
+                              memoOverrides,
+                            )}
+                            onEditMemo={() => 비고_수정_모달을_연다(row)}
+                          />
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <table
+                    className="w-full min-w-350 table-fixed border-collapse border-t border-zinc-800 bg-zinc-900/95 text-left text-sm"
+                    aria-label="재고 이력 표 요약"
+                  >
+                    <tfoot>
+                      <tr>
+                        <td
+                          colSpan={LEDGER_TABLE_COL_COUNT}
+                          className="px-3 py-2.5 align-middle"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-3">
+                            <p className="min-w-0 text-left text-xs leading-relaxed text-zinc-600">
+                              {totalFiltered === 0 ? (
+                                "표시할 행 없음"
+                              ) : (
+                                <>
+                                  <span className="font-medium text-zinc-400">
+                                    {footerRangeStart}–{footerRangeEnd}번째
+                                  </span>
+                                  <span className="text-zinc-600">
+                                    {" "}
+                                    / 이번 목록 {totalFiltered}행
+                                  </span>
+                                  {hasFilterContext ? (
+                                    <span className="text-zinc-500">
+                                      {" "}
+                                      (거점 범위·검색·표 열 필터 적용 전{" "}
+                                      {totalBase}행)
+                                    </span>
+                                  ) : (
+                                    <span className="text-zinc-500">
+                                      {" "}
+                                      · 페이지당 {LEDGER_PAGE_SIZE}행
+                                    </span>
+                                  )}
+                                </>
+                              )}
+                            </p>
+                            <이력_페이지네이션_컨트롤
+                              pageIndex={activePageIndex}
+                              totalPages={totalPages}
+                              onPrev={() =>
+                                setPageIndex(Math.max(0, activePageIndex - 1))
+                              }
+                              onNext={() =>
+                                setPageIndex(
+                                  Math.min(maxPageIndex, activePageIndex + 1),
+                                )
+                              }
+                              onGoToPage={(p) => setPageIndex(p)}
+                            />
+                          </div>
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
                 </div>
-                <p className="border-t border-zinc-800 px-3 py-2 text-right text-xs text-zinc-600">
-                  {searchQuery.trim() || hasActiveColumnFilters
-                    ? `표시 ${sortedRows.length} / 전체 ${totalBase}행`
-                    : `총 ${sortedRows.length}행`}
-                </p>
               </div>
             )}
           </>
@@ -899,7 +1115,7 @@ export function InventoryHistoryPanel() {
         title="비고 수정"
         description={
           memoModalRow
-            ? memoModalRow.itemLabel ?? memoModalRow.inventoryItemId
+            ? (memoModalRow.itemLabel ?? memoModalRow.inventoryItemId)
             : undefined
         }
         onSubmit={비고_모달에서_저장한다}
@@ -913,7 +1129,10 @@ export function InventoryHistoryPanel() {
             </span>
           </p>
         ) : null}
-        <label htmlFor="ledger-memo-draft" className="text-xs font-medium text-zinc-400">
+        <label
+          htmlFor="ledger-memo-draft"
+          className="text-xs font-medium text-zinc-400"
+        >
           메모
         </label>
         <textarea

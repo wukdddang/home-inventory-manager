@@ -1,5 +1,9 @@
 import { stripHouseholdCatalogForPersist } from "@/lib/household-persist";
-import type { Household, InventoryLedgerRow } from "@/types/domain";
+import type {
+  Household,
+  InventoryLedgerRow,
+  InventoryLedgerType,
+} from "@/types/domain";
 import type { DashboardHouseholdsPort } from "./dashboard-households.port";
 
 /** 네트워크 지연을 흉내 낸다 (Route Handler 연동 시 제거·단축 가능) */
@@ -184,8 +188,70 @@ export const MOCK_SEED_HOUSEHOLDS: Household[] = [
   },
 ];
 
+/** 재고 이력 목 페이지네이션 확인용 — 기본 8건 외 추가 행 */
+function mockInventoryLedgerExtraRows(): InventoryLedgerRow[] {
+  const items = [
+    {
+      inventoryItemId: "mock-item-ramen",
+      itemLabel: "식료품 › 라면 › 1봉",
+    },
+    {
+      inventoryItemId: "mock-item-milk-shelf",
+      itemLabel: "식료품 › 우유 › 500ml",
+    },
+    {
+      inventoryItemId: "mock-item-tissue",
+      itemLabel: "생활용품 › 티슈 › 1박스",
+    },
+    {
+      inventoryItemId: "mock-item-remote",
+      itemLabel: "전자·소모품 › 건전지 › AAA 4입",
+    },
+    {
+      inventoryItemId: "mock-item-paper",
+      itemLabel: "사무용품 › A4 용지 › 1권",
+    },
+  ] as const;
+  const types: InventoryLedgerType[] = ["in", "out", "adjust", "waste"];
+  const households = ["mock-household-home", "mock-household-office"] as const;
+  const wasteReasons = ["expired", "damaged", "other"] as const;
+
+  const rows: InventoryLedgerRow[] = [];
+  for (let i = 0; i < 42; i++) {
+    const type = types[i % 4]!;
+    const item = items[i % items.length]!;
+    const householdId = households[i % 2]!;
+    const day = 1 + (i % 22);
+    const hour = 7 + (i % 12);
+    const minute = (i * 11) % 60;
+    let quantityDelta: number;
+    if (type === "in") {
+      quantityDelta = 1 + (i % 5);
+    } else if (type === "out" || type === "waste") {
+      quantityDelta = -(1 + (i % 4));
+    } else {
+      quantityDelta = i % 2 === 0 ? 1 : -1;
+    }
+    const quantityAfter = Math.max(0, 16 + (i % 9) + quantityDelta);
+    rows.push({
+      id: `mock-ledger-${String(9 + i).padStart(3, "0")}`,
+      householdId,
+      inventoryItemId: item.inventoryItemId,
+      type,
+      quantityDelta,
+      quantityAfter,
+      itemLabel: item.itemLabel,
+      memo: i % 6 === 0 ? `목 데이터 일괄 생성 #${i + 1}` : undefined,
+      reason:
+        type === "waste" ? wasteReasons[i % 3]! : undefined,
+      createdAt: `2025-03-${String(day).padStart(2, "0")}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00.000Z`,
+    });
+  }
+  return rows;
+}
+
 /** 재고 이력(mock) 페이지 등에서 동일 시드로 재사용 */
-export const MOCK_SEED_INVENTORY_LEDGER: InventoryLedgerRow[] = [
+const MOCK_SEED_INVENTORY_LEDGER_BASE: InventoryLedgerRow[] = [
   {
     id: "mock-ledger-001",
     householdId: "mock-household-home",
@@ -275,6 +341,11 @@ export const MOCK_SEED_INVENTORY_LEDGER: InventoryLedgerRow[] = [
     reason: "damaged",
     createdAt: "2025-03-15T14:00:00.000Z",
   },
+];
+
+export const MOCK_SEED_INVENTORY_LEDGER: InventoryLedgerRow[] = [
+  ...MOCK_SEED_INVENTORY_LEDGER_BASE,
+  ...mockInventoryLedgerExtraRows(),
 ];
 
 function delay(ms: number): Promise<void> {
