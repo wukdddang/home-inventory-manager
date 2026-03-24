@@ -56,7 +56,7 @@ export function AlertModal({
           {title}
         </h2>
         {description ? (
-          <p id={descId} className="mt-2 text-sm text-zinc-400">
+          <p id={descId} className="mt-2 text-sm text-zinc-300">
             {description}
           </p>
         ) : null}

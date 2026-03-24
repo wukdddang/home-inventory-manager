@@ -21,7 +21,7 @@ export function InventoryLotExpiryBadge({
 }: InventoryLotExpiryBadgeProps) {
   if (lotCount === 0) {
     return (
-      <span className={cn("text-xs text-zinc-600", className)}>
+      <span className={cn("text-xs text-zinc-300", className)}>
         {emptyLabel}
       </span>
     );
@@ -30,7 +30,7 @@ export function InventoryLotExpiryBadge({
     return (
       <span
         className={cn(
-          "rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] text-zinc-400",
+          "rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] text-zinc-300",
           className,
         )}
       >

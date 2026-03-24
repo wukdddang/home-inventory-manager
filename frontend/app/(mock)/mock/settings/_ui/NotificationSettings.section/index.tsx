@@ -50,7 +50,7 @@ export function NotificationSettingsSection() {
   return (
     <section className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
       <h2 className="text-base font-semibold text-white">알림 설정</h2>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-zinc-300">
         §17 Notification · §18 ExpirationAlertRule · InventoryItem.minStockLevel
         과 맞춘 모의 값입니다. API 연동 시 동일 필드로 저장하면 됩니다.
       </p>
@@ -61,9 +61,9 @@ export function NotificationSettingsSection() {
           <div className="flex items-start justify-between gap-4 px-4 py-3">
             <div>
               <p className="font-medium text-zinc-200">유통기한 임박·만료</p>
-              <p className="mt-0.5 text-xs text-zinc-500">
-                <code className="text-zinc-400">expiration_soon</code> ·{" "}
-                <code className="text-zinc-400">expired</code> 유형. 품목별
+              <p className="mt-0.5 text-xs text-zinc-300">
+                <code className="text-zinc-300">expiration_soon</code> ·{" "}
+                <code className="text-zinc-300">expired</code> 유형. 품목별
                 세부 일수는 ExpirationAlertRule로 두고, 여기서는 기본 템플릿·
                 스코프를 정합니다.
               </p>
@@ -78,7 +78,7 @@ export function NotificationSettingsSection() {
             <div className="space-y-4 border-t border-zinc-800/80 px-4 py-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="block text-sm text-zinc-300">
-                  <span className="mb-1.5 block text-xs font-medium text-zinc-500">
+                  <span className="mb-1.5 block text-xs font-medium text-zinc-300">
                     기본 알림 시점 (일 전)
                   </span>
                   <input
@@ -97,16 +97,16 @@ export function NotificationSettingsSection() {
                     }
                     className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus:border-teal-600"
                   />
-                  <span className="mt-1 block text-[11px] text-zinc-600">
+                  <span className="mt-1 block text-[11px] text-zinc-300">
                     ExpirationAlertRule.daysBefore — 신규 규칙·기본 제안값
                   </span>
                 </label>
 
                 <fieldset className="min-w-0 text-sm text-zinc-300">
-                  <legend className="mb-2 text-xs font-medium text-zinc-500">
+                  <legend className="mb-2 text-xs font-medium text-zinc-300">
                     규칙 소유 (택1)
                   </legend>
-                  <p className="mb-2 text-[11px] leading-relaxed text-zinc-600">
+                  <p className="mb-2 text-[11px] leading-relaxed text-zinc-300">
                     가족 공유와 개인 규칙을 같은 품목에 동시에 쓰면 알림이
                     이중일 수 있습니다. 한 축만 쓰는 것을 권장합니다.
                   </p>
@@ -144,11 +144,11 @@ export function NotificationSettingsSection() {
               </div>
 
               <div className="space-y-3 rounded-lg border border-zinc-800/60 bg-zinc-900/30 p-3">
-                <p className="text-xs font-medium text-zinc-500">세부 유형</p>
+                <p className="text-xs font-medium text-zinc-300">세부 유형</p>
                 <label className="flex cursor-pointer items-center justify-between gap-3 text-sm text-zinc-300">
                   <span>
                     기한 지난 로트 알림{" "}
-                    <span className="text-zinc-600">(type: expired)</span>
+                    <span className="text-zinc-300">(type: expired)</span>
                   </span>
                   <ToggleSwitch
                     pressed={d.notifyExpiredLots}
@@ -163,7 +163,7 @@ export function NotificationSettingsSection() {
                 <label className="flex cursor-pointer items-center justify-between gap-3 text-sm text-zinc-300">
                   <span>
                     만료 당일 한 번 더 알림
-                    <span className="mt-0.5 block text-[11px] font-normal text-zinc-600">
+                    <span className="mt-0.5 block text-[11px] font-normal text-zinc-300">
                       스케줄러가 당일을 별도 이벤트로 처리할 때 사용. 스키마상
                       품목당 규칙 1건이면 앱 정책으로 합산합니다.
                     </span>
@@ -188,7 +188,7 @@ export function NotificationSettingsSection() {
           <div className="flex items-start justify-between gap-4 px-4 py-3">
             <div>
               <p className="font-medium text-zinc-200">장보기·ShoppingList</p>
-              <p className="mt-0.5 text-xs text-zinc-500">
+              <p className="mt-0.5 text-xs text-zinc-300">
                 리스트 변경 알림과 주간 리마인더(습관용). 항목 단위 필드는
                 ShoppingListItem과 연동합니다.
               </p>
@@ -227,7 +227,7 @@ export function NotificationSettingsSection() {
               </label>
               {d.shoppingTripReminder ? (
                 <label className="block text-sm text-zinc-300">
-                  <span className="mb-1.5 block text-xs text-zinc-500">
+                  <span className="mb-1.5 block text-xs text-zinc-300">
                     선호 요일
                   </span>
                   <select
@@ -263,9 +263,9 @@ export function NotificationSettingsSection() {
           <div className="flex items-start justify-between gap-4 px-4 py-3">
             <div>
               <p className="font-medium text-zinc-200">재고 부족</p>
-              <p className="mt-0.5 text-xs text-zinc-500">
-                <code className="text-zinc-400">low_stock</code> — 재고 줄의{" "}
-                <code className="text-zinc-400">minStockLevel</code>과 비교합니다.
+              <p className="mt-0.5 text-xs text-zinc-300">
+                <code className="text-zinc-300">low_stock</code> — 재고 줄의{" "}
+                <code className="text-zinc-300">minStockLevel</code>과 비교합니다.
               </p>
             </div>
             <ToggleSwitch
@@ -279,7 +279,7 @@ export function NotificationSettingsSection() {
               <label className="flex cursor-pointer items-start justify-between gap-3 text-sm text-zinc-300">
                 <span>
                   최소 재고가 설정된 품목만
-                  <span className="mt-1 block text-[11px] font-normal text-zinc-600">
+                  <span className="mt-1 block text-[11px] font-normal text-zinc-300">
                     minStockLevel이 NULL이면 해당 줄은 부족 알림 대상에서
                     제외됩니다.
                   </span>

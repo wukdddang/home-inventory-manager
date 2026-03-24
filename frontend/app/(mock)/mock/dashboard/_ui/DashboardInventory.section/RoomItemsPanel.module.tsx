@@ -42,24 +42,24 @@ export function RoomItemsPanel({
       <div className="shrink-0 border-b border-zinc-800/80 px-4 py-3">
         <h3 className="text-sm font-semibold text-white">선택한 방의 물품</h3>
         {selectedRoomId && roomName ? (
-          <p className="mt-1 text-xs text-zinc-500">
+          <p className="mt-1 text-xs text-zinc-300">
             <span className="font-medium text-teal-200/90">{roomName}</span>
             에 연결된 보관 칸(블록)마다 묶어 표시합니다. 구매와 연결된 품목은
             로트·임박이 보입니다.
           </p>
         ) : (
-          <p className="mt-1 text-xs text-zinc-500">
+          <p className="mt-1 text-xs text-zinc-300">
             구조도에서 방을 클릭하면 아래에 방·보관 위치·품목이 한눈에 정리됩니다.
           </p>
         )}
       </div>
 
       {!selectedRoomId ? (
-        <p className="px-4 py-6 text-sm text-zinc-500">구조도에서 방을 클릭하세요.</p>
+        <p className="px-4 py-6 text-sm text-zinc-300">구조도에서 방을 클릭하세요.</p>
       ) : (
         <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
           {roomItems.length === 0 ? (
-            <p className="px-1 py-2 text-sm text-zinc-500">
+            <p className="px-1 py-2 text-sm text-zinc-300">
               등록된 물품이 없습니다.
             </p>
           ) : (
@@ -73,7 +73,7 @@ export function RoomItemsPanel({
                     <h4 className="text-xs font-semibold text-teal-200/95">
                       {g.heading}
                     </h4>
-                    <p className="mt-0.5 text-[10px] text-zinc-600">
+                    <p className="mt-0.5 text-[10px] text-zinc-300">
                       품목 {g.items.length}개
                     </p>
                   </div>
@@ -94,7 +94,7 @@ export function RoomItemsPanel({
                               {it.name}
                             </span>
                             {it.variantCaption ? (
-                              <span className="mt-0.5 block truncate text-[10px] text-zinc-500">
+                              <span className="mt-0.5 block truncate text-[10px] text-zinc-300">
                                 {it.variantCaption}
                               </span>
                             ) : null}
@@ -106,7 +106,7 @@ export function RoomItemsPanel({
                             </div>
                           </div>
                           <div className="flex shrink-0 flex-col items-stretch gap-1.5 sm:items-end">
-                            <span className="tabular-nums text-zinc-400 sm:text-right">
+                            <span className="tabular-nums text-zinc-300 sm:text-right">
                               {it.quantity}
                               {it.unit}
                             </span>

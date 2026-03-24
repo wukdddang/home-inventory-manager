@@ -46,7 +46,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       ) : (
         <motion.div
           key="auth-loading"
-          className="flex h-full min-h-0 w-full flex-1 flex-col items-center justify-center bg-zinc-950 px-4 text-zinc-400"
+          className="flex h-full min-h-0 w-full flex-1 flex-col items-center justify-center bg-zinc-950 px-4 text-zinc-300"
           initial="initial"
           animate="animate"
           exit="exit"

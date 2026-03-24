@@ -67,7 +67,7 @@ function MembershipRoleBadgePicker({
           role="dialog"
           aria-label="역할 변경"
         >
-          <p className="px-3 pb-1 text-[11px] font-medium tracking-wide text-zinc-500 uppercase">
+          <p className="px-3 pb-1 text-[11px] font-medium tracking-wide text-zinc-300 uppercase">
             역할 선택
           </p>
           <button
@@ -101,7 +101,7 @@ function MembershipRoleBadgePicker({
             className={cn(
               "flex w-full items-center gap-2 px-3 py-2 text-left text-sm",
               isLastSoleOwner
-                ? "cursor-not-allowed text-zinc-600"
+                ? "cursor-not-allowed text-zinc-300"
                 : "cursor-pointer text-zinc-200 hover:bg-zinc-800",
               member.role === "member" && !isLastSoleOwner
                 ? "bg-zinc-800/60"
@@ -284,7 +284,7 @@ export function HouseholdMembershipSettingsSection() {
     return (
       <section className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
         <h2 className="text-base font-semibold text-white">거점 멤버십</h2>
-        <p className="mt-2 text-sm text-zinc-500">거점 목록을 불러오는 중…</p>
+        <p className="mt-2 text-sm text-zinc-300">거점 목록을 불러오는 중…</p>
       </section>
     );
   }
@@ -293,7 +293,7 @@ export function HouseholdMembershipSettingsSection() {
     return (
       <section className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
         <h2 className="text-base font-semibold text-white">거점 멤버십</h2>
-        <p className="mt-2 text-sm text-zinc-500">
+        <p className="mt-2 text-sm text-zinc-300">
           등록된 거점이 없습니다. 대시보드에서 거점을 만든 뒤 멤버를 관리할 수
           있습니다.
         </p>
@@ -306,13 +306,13 @@ export function HouseholdMembershipSettingsSection() {
   return (
     <section className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
       <h2 className="text-base font-semibold text-white">거점 멤버십</h2>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-zinc-300">
         거점(가족·공유 그룹)마다 멤버·역할을 둡니다. 초대 메일·권한 검증은
         백엔드 연동 후 연결하세요.
       </p>
 
       <div className="mt-4 space-y-1">
-        <label className="text-xs text-zinc-400">거점 선택</label>
+        <label className="text-xs text-zinc-300">거점 선택</label>
         <select
           value={selectedId ?? ""}
           onChange={(e) =>
@@ -330,7 +330,7 @@ export function HouseholdMembershipSettingsSection() {
       </div>
 
       <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-xs text-zinc-500">
+        <p className="text-xs text-zinc-300">
           멤버 초대·역할 지정은 모달에서 진행합니다.
         </p>
         <button
@@ -364,7 +364,7 @@ export function HouseholdMembershipSettingsSection() {
       >
         <div className="space-y-3">
           <div className="space-y-1">
-            <label className="text-xs text-zinc-400">이메일</label>
+            <label className="text-xs text-zinc-300">이메일</label>
             <input
               type="email"
               value={inviteEmail}
@@ -374,7 +374,7 @@ export function HouseholdMembershipSettingsSection() {
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-zinc-400">표시 이름 (선택)</label>
+            <label className="text-xs text-zinc-300">표시 이름 (선택)</label>
             <input
               value={inviteLabel}
               onChange={(e) => setInviteLabel(e.target.value)}
@@ -383,7 +383,7 @@ export function HouseholdMembershipSettingsSection() {
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-zinc-400">역할</label>
+            <label className="text-xs text-zinc-300">역할</label>
             <select
               value={inviteRole}
               onChange={(e) =>
@@ -400,9 +400,9 @@ export function HouseholdMembershipSettingsSection() {
 
       <ul className="mt-4 divide-y divide-zinc-800 rounded-xl border border-zinc-800">
         {members.length === 0 ? (
-          <li className="px-4 py-8 text-center text-sm text-zinc-500">
+          <li className="px-4 py-8 text-center text-sm text-zinc-300">
             아직 멤버가 없습니다. 첫 멤버는{" "}
-            <span className="text-zinc-400">소유자</span>로 두는 것을
+            <span className="text-zinc-300">소유자</span>로 두는 것을
             권장합니다.
           </li>
         ) : (
@@ -414,7 +414,7 @@ export function HouseholdMembershipSettingsSection() {
               <div className="min-w-0">
                 <p className="font-medium text-zinc-200">{g.email}</p>
                 {g.label ? (
-                  <p className="text-xs text-zinc-500">{g.label}</p>
+                  <p className="text-xs text-zinc-300">{g.label}</p>
                 ) : null}
               </div>
               <div className="flex flex-wrap items-center gap-3">

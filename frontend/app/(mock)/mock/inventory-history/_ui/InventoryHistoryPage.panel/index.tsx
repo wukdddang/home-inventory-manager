@@ -158,7 +158,7 @@ function 증감_뱃지_클래스를_구한다(delta: number): string {
   if (delta < 0) {
     return `${뱃지_공통} bg-rose-500/15 text-rose-300 ring-rose-500/40`;
   }
-  return `${뱃지_공통} bg-zinc-800/90 text-zinc-400 ring-zinc-600`;
+  return `${뱃지_공통} bg-zinc-800/90 text-zinc-300 ring-zinc-600`;
 }
 
 type SortColumn =
@@ -386,7 +386,7 @@ function 이력_페이지네이션_컨트롤({
                 className={`inline-flex size-8 cursor-pointer items-center justify-center rounded-lg border text-[11px] font-semibold tabular-nums transition-colors ${
                   active
                     ? "border-teal-500/60 bg-teal-500/15 text-teal-200"
-                    : "border-zinc-700 bg-zinc-950 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200"
+                    : "border-zinc-700 bg-zinc-950 text-zinc-300 hover:border-zinc-600 hover:text-zinc-200"
                 }`}
               >
                 {p + 1}
@@ -395,7 +395,7 @@ function 이력_페이지네이션_컨트롤({
           })}
         </div>
       ) : (
-        <span className="px-1 text-[11px] font-medium tabular-nums text-zinc-400">
+        <span className="px-1 text-[11px] font-medium tabular-nums text-zinc-300">
           {pageIndex + 1} / {totalPages}
         </span>
       )}
@@ -423,14 +423,14 @@ function LedgerLegend({ className = "" }: { className?: string }) {
       <span className="shrink-0 text-[11px] font-semibold text-zinc-300">
         범례
       </span>
-      <span className="shrink-0 text-[11px] text-zinc-500">증감</span>
+      <span className="shrink-0 text-[11px] text-zinc-300">증감</span>
       <span className={증감_뱃지_클래스를_구한다(1)}>+증가</span>
       <span className={증감_뱃지_클래스를_구한다(-1)}>−감소</span>
       <span
         className="mx-0.5 hidden h-4 w-px shrink-0 bg-zinc-700 sm:inline-block"
         aria-hidden
       />
-      <span className="shrink-0 text-[11px] text-zinc-500">구분</span>
+      <span className="shrink-0 text-[11px] text-zinc-300">구분</span>
       {구분_순서.map((t) => (
         <span key={t} className={구분_뱃지_클래스를_구한다(t)}>
           {이력_유형_라벨을_구한다(t)}
@@ -463,7 +463,7 @@ function 헤더_열_필터_셀렉트({
       aria-label={`${열이름} 열 필터`}
       className={`box-border h-7 min-w-0 flex-1 cursor-pointer rounded border border-zinc-600/80 bg-zinc-950 px-1.5 py-0 text-[11px] outline-none focus:border-teal-500 ${
         align === "right" ? "text-right" : "text-left"
-      } ${비어있음 ? "text-zinc-500" : "text-zinc-200"} ${className}`.trim()}
+      } ${비어있음 ? "text-zinc-300" : "text-zinc-200"} ${className}`.trim()}
     >
       <option value="">{열이름}</option>
       {options.map((o) => (
@@ -496,7 +496,7 @@ function 헤더_정렬_호버_버튼({
       className={`inline-flex shrink-0 items-center justify-center rounded p-0.5 transition-opacity focus-visible:outline focus-visible:ring-2 focus-visible:ring-teal-500/50 ${
         active
           ? "text-teal-400 opacity-100"
-          : "text-zinc-400 opacity-0 group-hover:opacity-100"
+          : "text-zinc-300 opacity-0 group-hover:opacity-100"
       }`}
       aria-label={
         active
@@ -511,7 +511,7 @@ function 헤더_정렬_호버_버튼({
           <ArrowDown className="size-3.5" aria-hidden />
         )
       ) : (
-        <ArrowUp className="size-3.5 text-zinc-500" aria-hidden />
+        <ArrowUp className="size-3.5 text-zinc-300" aria-hidden />
       )}
     </button>
   );
@@ -559,7 +559,7 @@ function 정렬_및_필터_헤더({
           />
         ) : (
           <span
-            className={`min-w-0 flex-1 truncate text-zinc-400 ${
+            className={`min-w-0 flex-1 truncate text-zinc-300 ${
               align === "right" ? "text-right" : "text-left"
             }`}
           >
@@ -779,7 +779,7 @@ export function InventoryHistoryPanel() {
     >
       <div className="shrink-0">
         <h1 className="text-2xl font-semibold text-white">재고 이력</h1>
-        <p className="mt-1 text-sm text-zinc-500">
+        <p className="mt-1 text-sm text-zinc-300">
           품목별 증감·잔여를 표로 확인합니다. 비고 텍스트를 누르면 모달에서
           편집할 수 있습니다. (mock 목 데이터·화면 전용)
         </p>
@@ -807,7 +807,7 @@ export function InventoryHistoryPanel() {
               }}
               aria-label="표시 거점 범위"
               className={`box-border h-9 min-w-30 shrink-0 cursor-pointer rounded-lg border border-zinc-700 bg-zinc-950 px-2 py-0 text-xs leading-none outline-none focus:border-teal-500 ${
-                filterHouseholdId === "all" ? "text-zinc-500" : "text-zinc-100"
+                filterHouseholdId === "all" ? "text-zinc-300" : "text-zinc-100"
               }`}
             >
               <option value="all">거점</option>
@@ -831,7 +831,7 @@ export function InventoryHistoryPanel() {
             ) : null}
             <div className="relative h-9 min-w-0 flex-1 basis-full sm:min-w-48 sm:basis-0">
               <Search
-                className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-zinc-500"
+                className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-zinc-300"
                 aria-hidden
               />
               <input
@@ -842,8 +842,8 @@ export function InventoryHistoryPanel() {
                   setSearchQuery(e.target.value);
                 }}
                 placeholder="검색 (거점·품목·구분·비고 등)"
-                className={`box-border h-9 w-full min-w-0 rounded-lg border border-zinc-700 bg-zinc-950 py-0 pl-9 pr-3 text-sm leading-none outline-none placeholder:text-zinc-600 focus:border-teal-500 ${
-                  searchQuery.trim() === "" ? "text-zinc-500" : "text-zinc-100"
+                className={`box-border h-9 w-full min-w-0 rounded-lg border border-zinc-700 bg-zinc-950 py-0 pl-9 pr-3 text-sm leading-none outline-none placeholder:text-zinc-300 focus:border-teal-500 ${
+                  searchQuery.trim() === "" ? "text-zinc-300" : "text-zinc-100"
                 }`}
                 autoComplete="off"
               />
@@ -858,22 +858,22 @@ export function InventoryHistoryPanel() {
 
         {totalBase === 0 ? (
           <div className="flex min-h-0 flex-1 flex-col justify-center rounded-xl border border-dashed border-zinc-700 px-4 py-10">
-            <p className="text-center text-sm text-zinc-500">
+            <p className="text-center text-sm text-zinc-300">
               아직 기록이 없습니다. 대시보드 물품 목록에서 소비·폐기를 남기면
               여기에 쌓입니다.
             </p>
-            <p className="mt-6 text-right text-xs text-zinc-600">총 0행</p>
+            <p className="mt-6 text-right text-xs text-zinc-300">총 0행</p>
           </div>
         ) : (
           <>
             {sortedRows.length === 0 ? (
               <div className="flex min-h-0 flex-1 flex-col justify-center rounded-xl border border-dashed border-zinc-700 px-4 py-10">
-                <p className="text-center text-sm text-zinc-500">
+                <p className="text-center text-sm text-zinc-300">
                   {columnFilteredRows.length === 0
                     ? "표 열 필터 조건에 맞는 행이 없습니다."
                     : "검색 조건에 맞는 행이 없습니다."}
                 </p>
-                <p className="mt-6 text-right text-xs text-zinc-600">
+                <p className="mt-6 text-right text-xs text-zinc-300">
                   {hasFilterContext
                     ? `표시 ${totalFiltered} / 전체 ${totalBase}행`
                     : `총 ${totalFiltered}행`}
@@ -1055,26 +1055,26 @@ export function InventoryHistoryPanel() {
                           className="px-3 py-2.5 align-middle"
                         >
                           <div className="flex flex-wrap items-center justify-between gap-3">
-                            <p className="min-w-0 text-left text-xs leading-relaxed text-zinc-600">
+                            <p className="min-w-0 text-left text-xs leading-relaxed text-zinc-300">
                               {totalFiltered === 0 ? (
                                 "표시할 행 없음"
                               ) : (
                                 <>
-                                  <span className="font-medium text-zinc-400">
+                                  <span className="font-medium text-zinc-300">
                                     {footerRangeStart}–{footerRangeEnd}번째
                                   </span>
-                                  <span className="text-zinc-600">
+                                  <span className="text-zinc-300">
                                     {" "}
                                     / 이번 목록 {totalFiltered}행
                                   </span>
                                   {hasFilterContext ? (
-                                    <span className="text-zinc-500">
+                                    <span className="text-zinc-300">
                                       {" "}
                                       (거점 범위·검색·표 열 필터 적용 전{" "}
                                       {totalBase}행)
                                     </span>
                                   ) : (
-                                    <span className="text-zinc-500">
+                                    <span className="text-zinc-300">
                                       {" "}
                                       · 페이지당 {LEDGER_PAGE_SIZE}행
                                     </span>
@@ -1122,7 +1122,7 @@ export function InventoryHistoryPanel() {
         submitLabel="저장"
       >
         {memoModalRow?.type === "waste" && memoModalRow.reason ? (
-          <p className="mb-4 text-sm text-zinc-400">
+          <p className="mb-4 text-sm text-zinc-300">
             폐기 사유:{" "}
             <span className="text-zinc-200">
               {폐기_사유_라벨을_구한다(memoModalRow.reason)}
@@ -1131,7 +1131,7 @@ export function InventoryHistoryPanel() {
         ) : null}
         <label
           htmlFor="ledger-memo-draft"
-          className="text-xs font-medium text-zinc-400"
+          className="text-xs font-medium text-zinc-300"
         >
           메모
         </label>
@@ -1141,7 +1141,7 @@ export function InventoryHistoryPanel() {
           onChange={(e) => setMemoDraft(e.target.value)}
           rows={5}
           placeholder="메모를 입력하세요"
-          className="mt-1.5 w-full resize-y rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-600 outline-none focus:border-teal-500/80 focus:ring-1 focus:ring-teal-500/30"
+          className="mt-1.5 w-full resize-y rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-300 outline-none focus:border-teal-500/80 focus:ring-1 focus:ring-teal-500/30"
         />
       </FormModal>
     </motion.div>
@@ -1178,7 +1178,7 @@ function LedgerTableRow({
       <td className="w-[6%] whitespace-nowrap px-3 py-2 align-middle tabular-nums text-zinc-300">
         <span className="block text-[13px]">{날짜}</span>
         {시각 ? (
-          <span className="block text-xs text-zinc-500">{시각}</span>
+          <span className="block text-xs text-zinc-300">{시각}</span>
         ) : null}
       </td>
       <td className="w-[8%] min-w-20 px-3 py-2 align-middle">
@@ -1187,17 +1187,17 @@ function LedgerTableRow({
         </span>
       </td>
       <td className="w-[7%] min-w-16 px-3 py-2 align-middle">
-        <span className="line-clamp-2 wrap-break-words text-xs text-zinc-400">
+        <span className="line-clamp-2 wrap-break-words text-xs text-zinc-300">
           {loc.roomName}
         </span>
       </td>
       <td className="w-[8%] min-w-20 px-3 py-2 align-middle">
-        <span className="line-clamp-2 wrap-break-words text-xs text-zinc-400">
+        <span className="line-clamp-2 wrap-break-words text-xs text-zinc-300">
           {loc.placeLabel}
         </span>
       </td>
       <td className="w-[8%] min-w-20 px-3 py-2 align-middle">
-        <span className="line-clamp-2 wrap-break-words text-xs text-zinc-400">
+        <span className="line-clamp-2 wrap-break-words text-xs text-zinc-300">
           {loc.detailLabel}
         </span>
       </td>
@@ -1207,7 +1207,7 @@ function LedgerTableRow({
       <td className="w-[9%] px-3 py-2 align-middle font-medium text-zinc-100">
         <span className="line-clamp-2 wrap-break-words">{이름}</span>
       </td>
-      <td className="w-[7%] px-3 py-2 align-middle tabular-nums text-zinc-400">
+      <td className="w-[7%] px-3 py-2 align-middle tabular-nums text-zinc-300">
         <span className="line-clamp-2 wrap-break-words">{규격}</span>
       </td>
       <td className="w-[5%] px-3 py-2 align-middle">
@@ -1215,7 +1215,7 @@ function LedgerTableRow({
           {이력_유형_라벨을_구한다(row.type)}
         </span>
       </td>
-      <td className="w-[8%] px-3 py-2 align-middle text-xs text-zinc-400">
+      <td className="w-[8%] px-3 py-2 align-middle text-xs text-zinc-300">
         <span className="line-clamp-2 wrap-break-words">
           {폐기_사유_열_텍스트를_구한다(row)}
         </span>
@@ -1235,7 +1235,7 @@ function LedgerTableRow({
         <button
           type="button"
           onClick={onEditMemo}
-          className="block w-full min-w-0 max-w-[min(28rem,48vw)] cursor-pointer truncate border-0 bg-transparent p-0 text-left font-inherit text-xs text-zinc-400 underline-offset-2 transition-colors hover:text-zinc-300 hover:underline focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/45"
+          className="block w-full min-w-0 max-w-[min(28rem,48vw)] cursor-pointer truncate border-0 bg-transparent p-0 text-left font-inherit text-xs text-zinc-300 underline-offset-2 transition-colors hover:text-zinc-300 hover:underline focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500/45"
           aria-label={`비고 편집: ${row.itemLabel ?? row.inventoryItemId}`}
         >
           {비고_메모_표시를_구한다(memoValue)}

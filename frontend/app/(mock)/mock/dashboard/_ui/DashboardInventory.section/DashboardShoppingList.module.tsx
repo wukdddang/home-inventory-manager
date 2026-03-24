@@ -111,13 +111,13 @@ function ShoppingListDetailReadOnly({ household }: { household: Household }) {
 
   return (
     <div className="flex min-w-0 flex-col gap-4" aria-label="장보기 목록 (읽기)">
-      <p className="text-sm leading-relaxed text-zinc-400">
+      <p className="text-sm leading-relaxed text-zinc-300">
         결제가 아니라 살 것·다 쓴 품목을 모아 두는 목록입니다. 이 모드에서는 목록만
         보입니다.
       </p>
 
       {!hasRows ? (
-        <p className="rounded-lg border border-dashed border-zinc-700 bg-zinc-950/40 px-4 py-3 text-center text-sm text-zinc-500">
+        <p className="rounded-lg border border-dashed border-zinc-700 bg-zinc-950/40 px-4 py-3 text-center text-sm text-zinc-300">
           목록이 비어 있어요. 수량이 0인 품목은 자동으로 표시됩니다.
         </p>
       ) : null}
@@ -137,11 +137,11 @@ function ShoppingListDetailReadOnly({ household }: { household: Household }) {
                   {it.name}
                 </p>
                 {formatItemCaption(it) ? (
-                  <p className="truncate text-[11px] text-zinc-500">
+                  <p className="truncate text-[11px] text-zinc-300">
                     {formatItemCaption(it)} · {it.unit}
                   </p>
                 ) : (
-                  <p className="text-[11px] text-zinc-500">{it.unit}</p>
+                  <p className="text-[11px] text-zinc-300">{it.unit}</p>
                 )}
               </li>
             ))}
@@ -168,7 +168,7 @@ function ShoppingListDetailReadOnly({ household }: { household: Household }) {
                       (카탈로그)
                     </span>
                   ) : (
-                    <span className="ml-1.5 text-[10px] font-normal text-zinc-500">
+                    <span className="ml-1.5 text-[10px] font-normal text-zinc-300">
                       (메모)
                     </span>
                   )}
@@ -182,7 +182,7 @@ function ShoppingListDetailReadOnly({ household }: { household: Household }) {
                     )}
                   </p>
                 ) : null}
-                <p className="truncate text-[11px] text-zinc-500">
+                <p className="truncate text-[11px] text-zinc-300">
                   {entry.variantCaption ? `${entry.variantCaption} · ` : ""}
                   보충 수량 {entry.restockQuantity}
                   {entry.inventoryItemId
@@ -205,14 +205,14 @@ function ShoppingListAddFromDashboardHint() {
   return (
     <div className="border-t border-zinc-800 pt-4">
       <p className="text-xs font-medium text-zinc-300">항목 추가</p>
-      <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+      <p className="mt-2 text-sm leading-relaxed text-zinc-300">
         목록에 품목을 담으려면 메인(대시보드)에서 거점·방을 선택한 뒤, 화면의
         <span className="font-medium text-zinc-200">「물품 등록」</span> 패널에서
         카탈로그를 고르고
         <span className="font-medium text-zinc-200">「장보기에만 담기」</span>를
         사용하세요.
       </p>
-      <p className="mt-2 text-[11px] text-zinc-500">
+      <p className="mt-2 text-[11px] text-zinc-300">
         <Link
           href={`${prefix}/dashboard`}
           className="font-medium text-teal-400/90 underline-offset-2 hover:underline"
@@ -328,7 +328,7 @@ function ShoppingListDetailContent({
 
   return (
     <div className="flex min-w-0 flex-col gap-5" aria-label="장보기 상세">
-      <p className="text-sm leading-relaxed text-zinc-400">
+      <p className="text-sm leading-relaxed text-zinc-300">
         결제가 아니라 살 것·다 쓴 품목을 모아 두는 목록입니다. 사 온 뒤「구매
         완료」하면 재고 수량이 늘고, 이력에는 입고로 남습니다.
       </p>
@@ -336,7 +336,7 @@ function ShoppingListDetailContent({
       <ShoppingListSuggestionsCard household={household} dataMode={dataMode} />
 
       {!hasRows ? (
-        <p className="rounded-lg border border-dashed border-zinc-700 bg-zinc-950/40 px-4 py-3 text-center text-sm text-zinc-500">
+        <p className="rounded-lg border border-dashed border-zinc-700 bg-zinc-950/40 px-4 py-3 text-center text-sm text-zinc-300">
           목록이 비어 있어요. 항목을 담는 방법은 아래에 안내해 두었습니다. 수량이
           0인 품목은 자동으로 표시됩니다.
         </p>
@@ -358,14 +358,14 @@ function ShoppingListDetailContent({
                     {it.name}
                   </p>
                   {formatItemCaption(it) ? (
-                    <p className="truncate text-[11px] text-zinc-500">
+                    <p className="truncate text-[11px] text-zinc-300">
                       {formatItemCaption(it)} · {it.unit}
                     </p>
                   ) : (
-                    <p className="text-[11px] text-zinc-500">{it.unit}</p>
+                    <p className="text-[11px] text-zinc-300">{it.unit}</p>
                   )}
                 </div>
-                <label className="flex items-center gap-1 text-[11px] text-zinc-400">
+                <label className="flex items-center gap-1 text-[11px] text-zinc-300">
                   <span className="whitespace-nowrap">보충</span>
                   <input
                     type="number"
@@ -411,7 +411,7 @@ function ShoppingListDetailContent({
                         (카탈로그)
                       </span>
                     ) : (
-                      <span className="ml-1.5 text-[10px] font-normal text-zinc-500">
+                      <span className="ml-1.5 text-[10px] font-normal text-zinc-300">
                         (메모)
                       </span>
                     )}
@@ -425,7 +425,7 @@ function ShoppingListDetailContent({
                       )}
                     </p>
                   ) : null}
-                  <p className="truncate text-[11px] text-zinc-500">
+                  <p className="truncate text-[11px] text-zinc-300">
                     {entry.variantCaption ? `${entry.variantCaption} · ` : ""}
                     {entry.inventoryItemId
                       ? (entry.unit ?? "단위")
@@ -436,7 +436,7 @@ function ShoppingListDetailContent({
                 </div>
                 {entry.inventoryItemId ||
                 (entry.productId && entry.productVariantId) ? (
-                  <label className="flex items-center gap-1 text-[11px] text-zinc-400">
+                  <label className="flex items-center gap-1 text-[11px] text-zinc-300">
                     <span className="whitespace-nowrap">보충</span>
                     <input
                       type="number"
@@ -466,7 +466,7 @@ function ShoppingListDetailContent({
                       description: entry.label,
                     });
                   }}
-                  className={`${rowBtn} border border-zinc-600 text-zinc-400 hover:bg-zinc-800`}
+                  className={`${rowBtn} border border-zinc-600 text-zinc-300 hover:bg-zinc-800`}
                 >
                   삭제
                 </button>
@@ -593,7 +593,7 @@ export function ShoppingListQuickAddFromCatalogModal({
         <h2 id={titleId} className="text-base font-semibold text-white">
           장보기에 담기
         </h2>
-        <p id={descId} className="mt-2 text-sm leading-relaxed text-zinc-400">
+        <p id={descId} className="mt-2 text-sm leading-relaxed text-zinc-300">
           칸·수량·유통기한 없이 목록에만 남깁니다. 헤더「장보기」에서 구매 완료·
           삭제를 할 수 있습니다.
         </p>
@@ -611,7 +611,7 @@ export function ShoppingListQuickAddFromCatalogModal({
             <div className="space-y-1">
               <label
                 htmlFor={`shopping-quick-qty-${titleId}`}
-                className="text-[11px] font-medium text-zinc-500"
+                className="text-[11px] font-medium text-zinc-300"
               >
                 사 올 때 채울 수량 (용량·포장 기준)
               </label>
@@ -687,7 +687,7 @@ export function DashboardShoppingListModal({
             <h2 id={titleId} className="text-lg font-semibold text-white">
               장보기
             </h2>
-            <p id={descId} className="mt-1 text-sm text-zinc-400">
+            <p id={descId} className="mt-1 text-sm text-zinc-300">
               {household
                 ? `선택한 거점「${household.name}」기준 목록입니다.`
                 : "대시보드에서 거점을 불러온 뒤 목록을 볼 수 있습니다."}
@@ -716,7 +716,7 @@ export function DashboardShoppingListModal({
               />
             )
           ) : (
-            <p className="rounded-lg border border-dashed border-zinc-700 bg-zinc-950/40 px-4 py-6 text-center text-sm text-zinc-500">
+            <p className="rounded-lg border border-dashed border-zinc-700 bg-zinc-950/40 px-4 py-6 text-center text-sm text-zinc-300">
               메인(대시보드)에서 거점을 선택한 상태로 다시 열어 주세요.
             </p>
           )}

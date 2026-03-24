@@ -91,7 +91,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
                     className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
                       pathname === href
                         ? "bg-teal-500/15 text-teal-300"
-                        : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+                        : "text-zinc-300 hover:bg-zinc-800 hover:text-zinc-200"
                     }`}
                   >
                     <Icon className="size-4 shrink-0 opacity-90" aria-hidden />
@@ -101,13 +101,13 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               })}
             </nav>
             <div className="flex items-center gap-2 text-sm sm:gap-3">
-              <span className="hidden max-w-35 truncate text-zinc-500 sm:inline">
+              <span className="hidden max-w-35 truncate text-zinc-300 sm:inline">
                 {user?.displayName ?? user?.email}
               </span>
               <button
                 type="button"
                 onClick={() => setShoppingOpen(true)}
-                className="flex size-8 cursor-pointer items-center justify-center rounded-lg border border-zinc-700 text-zinc-400 transition-colors hover:border-teal-500/40 hover:bg-zinc-800 hover:text-teal-300"
+                className="flex size-8 cursor-pointer items-center justify-center rounded-lg border border-zinc-700 text-zinc-300 transition-colors hover:border-teal-500/40 hover:bg-zinc-800 hover:text-teal-300"
                 aria-label="장보기 목록"
               >
                 <ShoppingCartIcon className="size-4.5" />

@@ -47,7 +47,7 @@ function PromptModalFields({
         {title}
       </h2>
       {description ? (
-        <p id={descId} className="mt-2 text-sm text-zinc-400">
+        <p id={descId} className="mt-2 text-sm text-zinc-300">
           {description}
         </p>
       ) : null}
@@ -55,7 +55,7 @@ function PromptModalFields({
         <div className="space-y-1">
           <label
             htmlFor={inputId}
-            className="text-xs font-medium text-zinc-400"
+            className="text-xs font-medium text-zinc-300"
           >
             {label}
           </label>

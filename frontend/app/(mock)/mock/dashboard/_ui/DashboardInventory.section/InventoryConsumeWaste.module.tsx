@@ -62,9 +62,9 @@ export function InventoryConsumeWasteModal({
             {title}
           </h2>
           {item ? (
-            <p className="mt-2 text-sm text-zinc-400">
+            <p className="mt-2 text-sm text-zinc-300">
               <span className="text-zinc-200">{item.name}</span>
-              <span className="ml-2 tabular-nums text-zinc-500">
+              <span className="ml-2 tabular-nums text-zinc-300">
                 (보유 {maxQuantity}
                 {item.unit})
               </span>
@@ -73,7 +73,7 @@ export function InventoryConsumeWasteModal({
         </div>
         <div className="space-y-4 px-5 py-4">
           <label className="block space-y-1.5">
-            <span className="text-xs font-medium text-zinc-400">수량</span>
+            <span className="text-xs font-medium text-zinc-300">수량</span>
             <input
               type="number"
               min={1}
@@ -85,7 +85,7 @@ export function InventoryConsumeWasteModal({
           </label>
           {mode === "waste" ? (
             <label className="block space-y-1.5">
-              <span className="text-xs font-medium text-zinc-400">사유</span>
+              <span className="text-xs font-medium text-zinc-300">사유</span>
               <select
                 value={wasteReason}
                 onChange={(e) =>
@@ -100,7 +100,7 @@ export function InventoryConsumeWasteModal({
             </label>
           ) : null}
           <label className="block space-y-1.5">
-            <span className="text-xs font-medium text-zinc-400">메모 (선택)</span>
+            <span className="text-xs font-medium text-zinc-300">메모 (선택)</span>
             <input
               value={memo}
               onChange={(e) => setMemo(e.target.value)}

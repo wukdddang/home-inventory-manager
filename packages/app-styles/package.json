@@ -1,0 +1,8 @@
+{
+  "name": "@him/app-styles",
+  "version": "0.0.0",
+  "private": true,
+  "exports": {
+    "./tailwind-extras.css": "./src/tailwind-extras.css"
+  }
+}

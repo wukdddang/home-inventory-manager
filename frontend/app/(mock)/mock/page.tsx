@@ -15,7 +15,7 @@ export default function HomePage() {
   }, [router, prefix]);
 
   return (
-    <div className="flex min-h-0 flex-1 items-center justify-center bg-zinc-950 text-zinc-500">
+    <div className="flex min-h-0 flex-1 items-center justify-center bg-zinc-950 text-zinc-300">
       <p className="text-sm">이동 중…</p>
     </div>
   );

@@ -143,13 +143,13 @@ const FurniturePlacementNode = memo(function FurniturePlacementNode({
       </div>
       <div className="nopan nowheel min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-1.5">
         {data.slots.length === 0 ? (
-          <p className="text-[9px] text-zinc-500">하위 보관 칸 없음</p>
+          <p className="text-[9px] text-zinc-300">하위 보관 칸 없음</p>
         ) : (
           <ul className="space-y-0.5 border-l border-teal-500/25 pl-1.5">
             {data.slots.map((s) => (
               <li
                 key={s.id}
-                className="truncate text-[8px] text-zinc-400"
+                className="truncate text-[8px] text-zinc-300"
                 title={s.name}
               >
                 {s.name}
@@ -575,7 +575,7 @@ function HouseStructureFlowInner({
 
   if (household.rooms.length === 0) {
     return (
-      <div className="flex min-h-80 flex-1 items-center justify-center text-sm text-zinc-500">
+      <div className="flex min-h-80 flex-1 items-center justify-center text-sm text-zinc-300">
         방을 먼저 추가하면 구조도가 표시됩니다.
       </div>
     );
@@ -649,9 +649,9 @@ function HouseStructureFlowInner({
           if (rename) onRoomRename(rename.id, next);
         }}
       />
-      <p className="border-t border-zinc-800 px-1 py-2 text-[11px] text-zinc-500">
+      <p className="border-t border-zinc-800 px-1 py-2 text-[11px] text-zinc-300">
         팁:{" "}
-        <span className="text-zinc-400">
+        <span className="text-zinc-300">
           방 → 직속 보관 칸(각각) → 그 칸에 연결된 가구 → 가구 아래 칸
         </span>
         . 방·직속·가구 블록을 각각 드래그해 배치할 수 있으며 위치는 저장됩니다.

@@ -123,32 +123,32 @@ function AccountSecuritySettingsBody({
   return (
     <section className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
       <h2 className="text-base font-semibold text-white">계정 · 보안</h2>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-zinc-300">
         {isMockRoute ? (
           <>
             <span className="text-teal-400/90">/mock</span> 전용{" "}
             <strong className="font-medium text-zinc-300">목 계정</strong>
-            입니다. API·로그인(<code className="text-zinc-400">him-user</code>
-            )과 분리되어 <code className="text-zinc-400">him-mock-settings-account</code>에
+            입니다. API·로그인(<code className="text-zinc-300">him-user</code>
+            )과 분리되어 <code className="text-zinc-300">him-mock-settings-account</code>에
             저장됩니다.
           </>
         ) : (
           <>
             프로필·이메일 인증·비밀번호 UI입니다. 로그인 세션은{" "}
-            <code className="text-zinc-400">him-user</code>와 동기화됩니다.
+            <code className="text-zinc-300">him-user</code>와 동기화됩니다.
           </>
         )}
       </p>
 
       <div className="mt-6 border-t border-zinc-800/80 pt-6">
         <h3 className="text-sm font-medium text-zinc-200">계정 · 프로필</h3>
-        <p className="mt-1 text-xs text-zinc-500">
+        <p className="mt-1 text-xs text-zinc-300">
           이메일·표시 이름·인증은 모달에서 관리합니다.
         </p>
         {!user ? (
-          <p className="mt-2 text-sm text-zinc-500">
+          <p className="mt-2 text-sm text-zinc-300">
             로그인한 사용자만 편집할 수 있습니다.{" "}
-            <span className="text-zinc-600">
+            <span className="text-zinc-300">
               `/settings`에서는 로그인 후 이용하세요.
             </span>
           </p>
@@ -158,8 +158,8 @@ function AccountSecuritySettingsBody({
               <span className="truncate font-medium text-zinc-200">
                 {user.email}
               </span>
-              <span className="text-zinc-600">·</span>
-              <span className="truncate text-zinc-400">{user.displayName}</span>
+              <span className="text-zinc-300">·</span>
+              <span className="truncate text-zinc-300">{user.displayName}</span>
               <span
                 className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
                   verified
@@ -197,7 +197,7 @@ function AccountSecuritySettingsBody({
         {user ? (
           <div className="space-y-5">
             <div className="space-y-1">
-              <label className="text-xs text-zinc-400">이메일 (로그인 ID)</label>
+              <label className="text-xs text-zinc-300">이메일 (로그인 ID)</label>
               <input
                 type="email"
                 value={user.email}
@@ -205,12 +205,12 @@ function AccountSecuritySettingsBody({
                 className={`${inputClass} cursor-not-allowed opacity-80`}
                 aria-readonly="true"
               />
-              <p className="text-[11px] text-zinc-600">
+              <p className="text-[11px] text-zinc-300">
                 변경은 보안 정책에 따라 별도 플로우로 두는 것을 권장합니다.
               </p>
             </div>
             <div className="space-y-1">
-              <label className="text-xs text-zinc-400">표시 이름</label>
+              <label className="text-xs text-zinc-300">표시 이름</label>
               <input
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
@@ -219,8 +219,8 @@ function AccountSecuritySettingsBody({
               />
             </div>
             <div className="border-t border-zinc-800 pt-4">
-              <p className="text-xs font-medium text-zinc-400">이메일 인증</p>
-              <p className="mt-1 text-[11px] text-zinc-500">
+              <p className="text-xs font-medium text-zinc-300">이메일 인증</p>
+              <p className="mt-1 text-[11px] text-zinc-300">
                 가입 후 인증 링크 등 백엔드 플로우와 맞출 수 있습니다.
               </p>
               <div className="mt-3 flex flex-wrap gap-2">
@@ -257,7 +257,7 @@ function AccountSecuritySettingsBody({
 
       <div className="mt-6 border-t border-zinc-800/80 pt-6">
         <h3 className="text-sm font-medium text-zinc-200">비밀번호</h3>
-        <p className="mt-1 text-xs text-zinc-500">
+        <p className="mt-1 text-xs text-zinc-300">
           변경은 모달에서 진행합니다. 데모에서는 클라이언트만 검증합니다.
         </p>
         <button
@@ -288,7 +288,7 @@ function AccountSecuritySettingsBody({
       >
         <div className="space-y-3">
           <div className="space-y-1">
-            <label className="text-xs text-zinc-400">현재 비밀번호</label>
+            <label className="text-xs text-zinc-300">현재 비밀번호</label>
             <input
               type="password"
               value={pwCurrent}
@@ -298,7 +298,7 @@ function AccountSecuritySettingsBody({
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-zinc-400">새 비밀번호</label>
+            <label className="text-xs text-zinc-300">새 비밀번호</label>
             <input
               type="password"
               value={pwNew}
@@ -308,7 +308,7 @@ function AccountSecuritySettingsBody({
             />
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-zinc-400">새 비밀번호 확인</label>
+            <label className="text-xs text-zinc-300">새 비밀번호 확인</label>
             <input
               type="password"
               value={pwConfirm}

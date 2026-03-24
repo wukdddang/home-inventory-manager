@@ -156,7 +156,7 @@ function SortableTh({
   return (
     <th
       className={cn(
-        "px-3 py-2 align-top text-xs font-medium uppercase tracking-wider text-zinc-500",
+        "px-3 py-2 align-top text-xs font-medium uppercase tracking-wider text-zinc-300",
         className,
       )}
       aria-sort={ariaSort}
@@ -175,7 +175,7 @@ function SortableTh({
         <span
           className={cn(
             "shrink-0 font-normal tabular-nums",
-            active ? "text-teal-400" : "text-zinc-600",
+            active ? "text-teal-400" : "text-zinc-300",
           )}
           aria-hidden
         >
@@ -253,7 +253,7 @@ export function ItemsSpreadsheet({
                 sort={sort}
                 onCycleSort={cycleSort}
               />
-              <th className="w-24 px-3 py-3 align-top text-xs font-medium uppercase tracking-wider text-zinc-500">
+              <th className="w-24 px-3 py-3 align-top text-xs font-medium uppercase tracking-wider text-zinc-300">
                 최소 재고
               </th>
               <SortableTh
@@ -262,7 +262,7 @@ export function ItemsSpreadsheet({
                 sort={sort}
                 onCycleSort={cycleSort}
               />
-              <th className="min-w-32 px-3 py-3 align-top text-xs font-medium uppercase tracking-wider text-zinc-500">
+              <th className="min-w-32 px-3 py-3 align-top text-xs font-medium uppercase tracking-wider text-zinc-300">
                 로트·임박
               </th>
               <SortableTh
@@ -278,10 +278,10 @@ export function ItemsSpreadsheet({
                 onCycleSort={cycleSort}
                 className="min-w-44"
               />
-              <th className="min-w-36 px-3 py-3 align-top text-xs font-medium uppercase tracking-wider text-zinc-500">
+              <th className="min-w-36 px-3 py-3 align-top text-xs font-medium uppercase tracking-wider text-zinc-300">
                 소비·폐기
               </th>
-              <th className="w-20 px-3 py-3 align-top text-xs font-medium uppercase tracking-wider text-zinc-500">
+              <th className="w-20 px-3 py-3 align-top text-xs font-medium uppercase tracking-wider text-zinc-300">
                 삭제
               </th>
             </tr>
@@ -291,7 +291,7 @@ export function ItemsSpreadsheet({
               <tr>
                 <td
                   colSpan={11}
-                  className="px-3 py-10 text-center text-zinc-500"
+                  className="px-3 py-10 text-center text-zinc-300"
                 >
                   물품이 없습니다. 방을 선택한 뒤 아래에서 등록하세요.
                 </td>
@@ -316,8 +316,8 @@ export function ItemsSpreadsheet({
                     <td className="px-3 py-2.5 text-zinc-200">
                       {cols.product}
                     </td>
-                    <td className="px-3 py-2.5 text-zinc-400">{cols.spec}</td>
-                    <td className="px-3 py-2.5 text-zinc-400">{it.quantity}</td>
+                    <td className="px-3 py-2.5 text-zinc-300">{cols.spec}</td>
+                    <td className="px-3 py-2.5 text-zinc-300">{it.quantity}</td>
                     <td className="px-3 py-2.5 align-middle">
                       <MinStockInput
                         itemId={it.id}
@@ -325,14 +325,14 @@ export function ItemsSpreadsheet({
                         onCommit={onUpdateItemMinStock}
                       />
                     </td>
-                    <td className="px-3 py-2.5 text-zinc-400">{it.unit}</td>
+                    <td className="px-3 py-2.5 text-zinc-300">{it.unit}</td>
                     <td className="px-3 py-2.5 align-middle">
                       <InventoryLotExpiryBadge
                         worstExpiryDays={lot.worstExpiryDays}
                         lotCount={lot.lotCount}
                       />
                     </td>
-                    <td className="px-3 py-2.5 text-zinc-400">
+                    <td className="px-3 py-2.5 text-zinc-300">
                       {room && onSelectRoomId ? (
                         <button
                           type="button"
@@ -345,7 +345,7 @@ export function ItemsSpreadsheet({
                         (room?.name ?? "(삭제된 방)")
                       )}
                     </td>
-                    <td className="max-w-56 px-3 py-2.5 text-xs leading-snug text-zinc-500">
+                    <td className="max-w-56 px-3 py-2.5 text-xs leading-snug text-zinc-300">
                       {formatLocationBreadcrumb(household, it)}
                     </td>
                     <td className="px-3 py-2.5">

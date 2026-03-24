@@ -19,7 +19,7 @@ export function ViewModeToggle({
         className={`cursor-pointer rounded-lg px-4 py-2 text-sm font-medium transition ${
           viewMode === "structure"
             ? "bg-teal-500 text-zinc-950"
-            : "text-zinc-400 hover:text-white"
+            : "text-zinc-300 hover:text-white"
         }`}
       >
         집 구조
@@ -30,7 +30,7 @@ export function ViewModeToggle({
         className={`cursor-pointer rounded-lg px-4 py-2 text-sm font-medium transition ${
           viewMode === "spreadsheet"
             ? "bg-teal-500 text-zinc-950"
-            : "text-zinc-400 hover:text-white"
+            : "text-zinc-300 hover:text-white"
         }`}
       >
         물품 목록 (표)

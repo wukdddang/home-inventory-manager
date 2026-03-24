@@ -585,8 +585,8 @@ export function DashboardPlacementsSection({
           <PlacementsFurnitureIcon />
           가구 배치 · 보관 장소
         </h2>
-        <p className="mt-1 text-xs leading-relaxed text-zinc-500">
-          <span className="text-zinc-400">직속 칸</span>마다 탭으로 나뉩니다.
+        <p className="mt-1 text-xs leading-relaxed text-zinc-300">
+          <span className="text-zinc-300">직속 칸</span>마다 탭으로 나뉩니다.
           탭을 고른 뒤 그 칸에만 가구·세부 칸을 추가하세요. 새 직속 칸은「직속
           칸 추가하기」로 만듭니다.
         </p>
@@ -596,12 +596,12 @@ export function DashboardPlacementsSection({
       </button>
 
       {selected.rooms.length === 0 ? (
-        <p className="mt-3 rounded-lg border border-dashed border-zinc-700 px-3 py-4 text-center text-xs text-zinc-500">
+        <p className="mt-3 rounded-lg border border-dashed border-zinc-700 px-3 py-4 text-center text-xs text-zinc-300">
           먼저 방을 추가한 뒤, 방을 선택하면 이 영역에서 구조를 입력할 수
           있습니다.
         </p>
       ) : selectedRoomId == null ? (
-        <p className="mt-3 rounded-lg border border-dashed border-zinc-700 px-3 py-4 text-center text-xs text-zinc-500">
+        <p className="mt-3 rounded-lg border border-dashed border-zinc-700 px-3 py-4 text-center text-xs text-zinc-300">
           왼쪽「방 관리」에서 방 탭을 눌러 선택하세요. 선택한 방의 구조만 여기에
           표시됩니다.
         </p>
@@ -637,7 +637,7 @@ export function DashboardPlacementsSection({
 
                 {directs.length === 0 ? (
                   <div className="mt-4 space-y-3">
-                    <p className="rounded-lg border border-dashed border-zinc-700/80 bg-zinc-900/30 px-3 py-4 text-center text-xs text-zinc-500">
+                    <p className="rounded-lg border border-dashed border-zinc-700/80 bg-zinc-900/30 px-3 py-4 text-center text-xs text-zinc-300">
                       직속 칸이 없습니다. 아래 버튼으로 첫 칸을 만드세요.
                     </p>
                     <button
@@ -678,7 +678,7 @@ export function DashboardPlacementsSection({
                                     "cursor-pointer px-2 py-1.5 text-left text-[11px] font-medium transition-colors",
                                     selectedTab
                                       ? "text-amber-100"
-                                      : "text-zinc-500 hover:bg-zinc-800/40 hover:text-zinc-300",
+                                      : "text-zinc-300 hover:bg-zinc-800/40 hover:text-zinc-300",
                                   )}
                                   onClick={() => setUserDirectSlotPick(s.id)}
                                 >
@@ -692,7 +692,7 @@ export function DashboardPlacementsSection({
                                     "relative z-10 flex cursor-pointer items-center justify-center p-1.5 transition-colors",
                                     selectedTab
                                       ? "text-amber-200/75 hover:bg-rose-500/20 hover:text-rose-300"
-                                      : "text-zinc-500 hover:bg-zinc-800/70 hover:text-rose-300",
+                                      : "text-zinc-300 hover:bg-zinc-800/70 hover:text-rose-300",
                                   )}
                                   title="이 직속 칸과 이 칸에만 묶인 설정을 삭제합니다"
                                   aria-label={`「${s.name}」 직속 칸 삭제`}
@@ -737,18 +737,18 @@ export function DashboardPlacementsSection({
                         </div>
 
                         <div className="mt-3">
-                          <p className="text-xs text-zinc-500">
+                          <p className="text-xs text-zinc-300">
                             이 직속 칸에 붙은 가구는 아래 뱃지로 고르면 한 번에
                             하나의 상세만 펼쳐집니다.
                           </p>
 
                           <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-3">
                             <div className="min-w-0 flex-1 space-y-2">
-                              <p className="text-[10px] font-medium text-zinc-400">
+                              <p className="text-[10px] font-medium text-zinc-300">
                                 「{activeSlot.name}」에 가구 연결
                               </p>
                               {fpsForSlot.length === 0 ? (
-                                <p className="rounded-md bg-zinc-950/40 px-2 py-1.5 text-[11px] text-zinc-600">
+                                <p className="rounded-md bg-zinc-950/40 px-2 py-1.5 text-[11px] text-zinc-300">
                                   아직 가구가 없습니다.
                                 </p>
                               ) : (
@@ -772,7 +772,7 @@ export function DashboardPlacementsSection({
                                           "max-w-full cursor-pointer truncate rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors",
                                           sel
                                             ? "border-teal-500/50 bg-teal-950/40 text-teal-100"
-                                            : "border-zinc-700 bg-zinc-950/80 text-zinc-400 hover:border-zinc-600 hover:text-zinc-200",
+                                            : "border-zinc-700 bg-zinc-950/80 text-zinc-300 hover:border-zinc-600 hover:text-zinc-200",
                                         )}
                                       >
                                         {fp.label}
@@ -837,12 +837,12 @@ export function DashboardPlacementsSection({
                                     </div>
 
                                     <div className="mt-2 border-t border-zinc-800/70 pt-2">
-                                      <p className="text-[11px] text-zinc-500">
-                                        <span className="text-zinc-400">
+                                      <p className="text-[11px] text-zinc-300">
+                                        <span className="text-zinc-300">
                                           물품 등록
                                         </span>
                                         시{" "}
-                                        <span className="text-zinc-400">
+                                        <span className="text-zinc-300">
                                           여기서 만든 칸
                                         </span>
                                         까지 고를 수 있습니다.
@@ -851,7 +851,7 @@ export function DashboardPlacementsSection({
                                         {slotsUnderFurniture(
                                           focusedFurniture.id,
                                         ).length === 0 ? (
-                                          <li className="text-[11px] text-zinc-600">
+                                          <li className="text-[11px] text-zinc-300">
                                             세부 칸이 없습니다.
                                           </li>
                                         ) : (
@@ -927,7 +927,7 @@ export function DashboardPlacementsSection({
         submitDisabled={!directSlotModalDraft.trim()}
         onSubmit={submitDirectSlotModal}
       >
-        <label className="block text-xs font-medium text-zinc-500">
+        <label className="block text-xs font-medium text-zinc-300">
           칸 이름
         </label>
         <input
@@ -960,7 +960,7 @@ export function DashboardPlacementsSection({
         submitDisabled={!furnitureModalDraft.trim()}
         onSubmit={submitFurnitureModal}
       >
-        <label className="block text-xs font-medium text-zinc-500">
+        <label className="block text-xs font-medium text-zinc-300">
           가구 이름
         </label>
         <input
@@ -992,7 +992,7 @@ export function DashboardPlacementsSection({
         submitDisabled={!subSlotModalDraft.trim()}
         onSubmit={submitSubSlotModal}
       >
-        <label className="block text-xs font-medium text-zinc-500">
+        <label className="block text-xs font-medium text-zinc-300">
           세부 칸 이름
         </label>
         <input
@@ -1030,7 +1030,7 @@ export function DashboardPlacementsSection({
         onSubmit={submitReanchorModal}
       >
         <label
-          className="block text-xs font-medium text-zinc-500"
+          className="block text-xs font-medium text-zinc-300"
           htmlFor="reanchor-modal-slot"
         >
           옮길 직속 칸

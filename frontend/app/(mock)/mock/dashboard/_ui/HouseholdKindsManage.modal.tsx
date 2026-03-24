@@ -101,7 +101,7 @@ function HouseholdKindsManageModalBody({
             <h2 id={titleId} className="text-lg font-semibold text-white">
               거점 유형 관리
             </h2>
-            <p id={descId} className="mt-2 text-sm text-zinc-400">
+            <p id={descId} className="mt-2 text-sm text-zinc-300">
               표시 이름을 바꾸거나 유형을 추가·삭제할 수 있습니다. 삭제한 유형을
               쓰던 거점은 목록의 첫 유형으로 옮깁니다.
             </p>
@@ -123,7 +123,7 @@ function HouseholdKindsManageModalBody({
                     type="button"
                     disabled={sortedDraft.length <= 1}
                     onClick={() => setPendingDeleteId(row.id)}
-                    className="cursor-pointer rounded-lg p-2 text-zinc-500 transition-colors hover:bg-rose-500/15 hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-30"
+                    className="cursor-pointer rounded-lg p-2 text-zinc-300 transition-colors hover:bg-rose-500/15 hover:text-rose-300 disabled:cursor-not-allowed disabled:opacity-30"
                     aria-label={`${row.label} 유형 삭제`}
                   >
                     <TrashIcon />
@@ -134,7 +134,7 @@ function HouseholdKindsManageModalBody({
             <button
               type="button"
               onClick={handleAddRow}
-              className="mt-3 w-full cursor-pointer rounded-xl border border-dashed border-zinc-600 py-2.5 text-sm font-medium text-zinc-400 transition-colors hover:border-teal-500/50 hover:bg-teal-500/5 hover:text-teal-200"
+              className="mt-3 w-full cursor-pointer rounded-xl border border-dashed border-zinc-600 py-2.5 text-sm font-medium text-zinc-300 transition-colors hover:border-teal-500/50 hover:bg-teal-500/5 hover:text-teal-200"
             >
               + 유형 추가
             </button>

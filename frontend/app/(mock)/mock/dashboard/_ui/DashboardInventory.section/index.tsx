@@ -196,7 +196,7 @@ export function DashboardInventorySection({
   };
 
   const noRoomHint = (
-    <p className="shrink-0 rounded-xl border border-dashed border-zinc-700 bg-zinc-950/50 px-4 py-3 text-center text-sm text-zinc-500">
+    <p className="shrink-0 rounded-xl border border-dashed border-zinc-700 bg-zinc-950/50 px-4 py-3 text-center text-sm text-zinc-300">
       {viewMode === "structure" ? (
         <>
           물품을 추가하려면 구조도에서 방을 선택하세요. 보관 칸은 왼쪽「가구
@@ -219,7 +219,7 @@ export function DashboardInventorySection({
             <ViewModeEyeIcon />
             조회 모드
           </h2>
-          <p className="mt-1 text-sm text-zinc-500">
+          <p className="mt-1 text-sm text-zinc-300">
             구조도에서 방·직속·가구 블록을 드래그해 배치하거나, 표로 전환해
             물품을 확인합니다. 구매와 연결된 품목은 로트·임박이 표시됩니다.
           </p>

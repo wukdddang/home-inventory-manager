@@ -27,14 +27,14 @@ export function SignupFormSection() {
     <div className="flex min-h-full items-center justify-center bg-zinc-950 px-4 py-12">
       <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900/50 p-8 shadow-xl shadow-black/40">
         <h1 className="text-2xl font-semibold text-white">회원가입</h1>
-        <p className="mt-1 text-sm text-zinc-500">
+        <p className="mt-1 text-sm text-zinc-300">
           로컬 데모 계정이 생성됩니다. 실제 서버 검증은 추후 API로 연결하세요.
         </p>
         <form onSubmit={handleSubmit} className="mt-8 space-y-4">
           <div>
             <label
               htmlFor="name"
-              className="block text-xs font-medium text-zinc-400"
+              className="block text-xs font-medium text-zinc-300"
             >
               표시 이름
             </label>
@@ -49,7 +49,7 @@ export function SignupFormSection() {
           <div>
             <label
               htmlFor="email"
-              className="block text-xs font-medium text-zinc-400"
+              className="block text-xs font-medium text-zinc-300"
             >
               이메일
             </label>
@@ -65,7 +65,7 @@ export function SignupFormSection() {
           <div>
             <label
               htmlFor="password"
-              className="block text-xs font-medium text-zinc-400"
+              className="block text-xs font-medium text-zinc-300"
             >
               비밀번호
             </label>
@@ -81,7 +81,7 @@ export function SignupFormSection() {
           <div>
             <label
               htmlFor="confirm"
-              className="block text-xs font-medium text-zinc-400"
+              className="block text-xs font-medium text-zinc-300"
             >
               비밀번호 확인
             </label>
@@ -106,7 +106,7 @@ export function SignupFormSection() {
             가입하고 시작하기
           </button>
         </form>
-        <p className="mt-6 text-center text-sm text-zinc-500">
+        <p className="mt-6 text-center text-sm text-zinc-300">
           이미 계정이 있나요?{" "}
           <Link
             href={`${prefix}/login`}

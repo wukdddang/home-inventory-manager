@@ -21,7 +21,7 @@ export function HouseStructure({
 
   if (household.rooms.length === 0) {
     return (
-      <div className="flex h-[320px] items-center justify-center text-sm text-zinc-500">
+      <div className="flex h-[320px] items-center justify-center text-sm text-zinc-300">
         방을 먼저 추가하면 구조도가 표시됩니다.
       </div>
     );
@@ -87,7 +87,7 @@ export function HouseStructure({
           );
         })}
       </svg>
-      <p className="border-t border-zinc-800 px-3 py-2 text-[11px] text-zinc-500">
+      <p className="border-t border-zinc-800 px-3 py-2 text-[11px] text-zinc-300">
         팁: 방을 클릭해 선택 · 더블클릭으로 이름 편집(목록과 동기)
       </p>
     </>

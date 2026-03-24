@@ -1,0 +1,8 @@
+/*
+  공통 Tailwind @theme 확장.
+  --font-pretendard 는 Next.js layout에서 next/font/local 로 주입한다.
+*/
+@theme inline {
+  --font-sans: var(--font-pretendard), "Pretendard Variable", Pretendard, ui-sans-serif,
+    system-ui, sans-serif;
+}

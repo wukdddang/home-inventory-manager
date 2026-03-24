@@ -77,7 +77,7 @@ export function AppLoadingState({
       <AppLoadingBar />
       <p
         className={cn(
-          "text-sm text-zinc-500",
+          "text-sm text-zinc-300",
           layout === "standalone" && "text-center",
         )}
       >

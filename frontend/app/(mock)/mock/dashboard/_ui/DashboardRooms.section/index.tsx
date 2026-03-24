@@ -219,7 +219,7 @@ export function DashboardRoomsSection({
         <RoomsSectionIcon />
         방 관리
       </h2>
-      <p className="mt-1 text-xs leading-relaxed text-zinc-500">
+      <p className="mt-1 text-xs leading-relaxed text-zinc-300">
         탭으로 방을 선택하세요. 구조도에서도 같은 방이 선택됩니다. + 로 방을
         추가합니다.
       </p>
@@ -231,7 +231,7 @@ export function DashboardRoomsSection({
           className="flex min-h-9 min-w-0 flex-1 items-center gap-0.5 overflow-x-auto rounded-lg border border-zinc-800 bg-zinc-950/80 p-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {selected.rooms.length === 0 ? (
-            <p className="px-2.5 py-1.5 text-xs text-zinc-500">
+            <p className="px-2.5 py-1.5 text-xs text-zinc-300">
               등록된 방이 없습니다. 오른쪽 + 로 추가하세요.
             </p>
           ) : (
@@ -272,7 +272,7 @@ export function DashboardRoomsSection({
                   <button
                     type="button"
                     onClick={(e) => openEditModal(r.id, e)}
-                    className="relative z-10 cursor-pointer rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-teal-300"
+                    className="relative z-10 cursor-pointer rounded-md p-1.5 text-zinc-300 transition-colors hover:bg-zinc-800 hover:text-teal-300"
                     aria-label={`${r.name} 이름 수정`}
                   >
                     <PencilIcon />
@@ -283,7 +283,7 @@ export function DashboardRoomsSection({
                       e.stopPropagation();
                       setPendingDeleteRoomId(r.id);
                     }}
-                    className="relative z-10 cursor-pointer rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-rose-500/15 hover:text-rose-300"
+                    className="relative z-10 cursor-pointer rounded-md p-1.5 text-zinc-300 transition-colors hover:bg-rose-500/15 hover:text-rose-300"
                     aria-label={`${r.name} 삭제`}
                   >
                     <TrashIcon />
@@ -315,12 +315,12 @@ export function DashboardRoomsSection({
           <h2 id={addTitleId} className="text-base font-semibold text-white">
             방 추가
           </h2>
-          <p id={addDescId} className="mt-1.5 text-xs text-zinc-400">
+          <p id={addDescId} className="mt-1.5 text-xs text-zinc-300">
             방 이름을 입력하세요. 비워 두면 순서대로 기본 이름이 붙습니다.
           </p>
           <div className="mt-4 space-y-3">
             <div className="space-y-1.5">
-              <label className="text-[11px] font-medium text-zinc-400">방 이름</label>
+              <label className="text-[11px] font-medium text-zinc-300">방 이름</label>
               <input
                 value={newRoomName}
                 onChange={(e) => setNewRoomName(e.target.value)}
@@ -364,12 +364,12 @@ export function DashboardRoomsSection({
           <h2 id={editTitleId} className="text-base font-semibold text-white">
             방 이름 수정
           </h2>
-          <p id={editDescId} className="mt-1.5 text-xs text-zinc-400">
+          <p id={editDescId} className="mt-1.5 text-xs text-zinc-300">
             구조도·목록에 표시되는 이름을 바꿉니다.
           </p>
           <div className="mt-4 space-y-3">
             <div className="space-y-1.5">
-              <label className="text-[11px] font-medium text-zinc-400">방 이름</label>
+              <label className="text-[11px] font-medium text-zinc-300">방 이름</label>
               <input
                 value={editRoomName}
                 onChange={(e) => setEditRoomName(e.target.value)}

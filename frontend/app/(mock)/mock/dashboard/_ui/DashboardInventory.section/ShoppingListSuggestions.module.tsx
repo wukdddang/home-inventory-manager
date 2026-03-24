@@ -137,7 +137,7 @@ export function ShoppingListSuggestionsCard({
       </h3>
       <p
         className={cn(
-          "mt-1 text-zinc-500",
+          "mt-1 text-zinc-300",
           compact ? "text-[10px] leading-snug" : "text-[11px] leading-relaxed",
         )}
       >
@@ -185,7 +185,7 @@ export function ShoppingListSuggestionsCard({
                   </span>
                 ))}
               </div>
-              <p className="mt-0.5 truncate text-[10px] text-zinc-500">
+              <p className="mt-0.5 truncate text-[10px] text-zinc-300">
                 {formatItemCaption(s.item) ? (
                   <>
                     {formatItemCaption(s.item)} · {s.item.quantity}

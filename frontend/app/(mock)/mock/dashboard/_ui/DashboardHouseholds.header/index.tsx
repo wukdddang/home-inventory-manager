@@ -145,7 +145,7 @@ function DashboardScreenHelpHint() {
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-haspopup="true"
-        className="flex size-6 cursor-pointer items-center justify-center rounded-full border border-zinc-600/90 bg-zinc-950 p-0 text-zinc-400 transition-colors hover:border-teal-500/50 hover:text-teal-300"
+        className="flex size-6 cursor-pointer items-center justify-center rounded-full border border-zinc-600/90 bg-zinc-950 p-0 text-zinc-300 transition-colors hover:border-teal-500/50 hover:text-teal-300"
         aria-label="이 화면 안내"
       >
         <InfoCircleIcon className="size-3.5" />
@@ -221,7 +221,7 @@ export function DashboardHouseholdsHeader({
           </h1>
           <DashboardScreenHelpHint />
         </div>
-        <p className="mt-1 text-[11px] leading-snug text-zinc-500 sm:text-xs">
+        <p className="mt-1 text-[11px] leading-snug text-zinc-300 sm:text-xs">
           탭으로 거점을 전환하고, + 로 새 거점을 추가합니다.
         </p>
       </div>
@@ -233,7 +233,7 @@ export function DashboardHouseholdsHeader({
           className="flex min-h-9 min-w-0 flex-1 items-center gap-0.5 overflow-x-auto rounded-lg border border-zinc-800 bg-zinc-950/80 p-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {households.length === 0 ? (
-            <p className="px-2.5 py-1.5 text-xs text-zinc-500">
+            <p className="px-2.5 py-1.5 text-xs text-zinc-300">
               등록된 거점이 없습니다. 오른쪽 + 를 눌러 추가하세요.
             </p>
           ) : (
@@ -271,7 +271,7 @@ export function DashboardHouseholdsHeader({
                     <span
                       className={cn(
                         "ml-1.5 text-[10px] font-normal sm:text-[11px]",
-                        selected ? "text-teal-200/80" : "text-zinc-500",
+                        selected ? "text-teal-200/80" : "text-zinc-300",
                       )}
                     >
                       {getHouseholdKindLabel(h.kind, householdKindDefinitions)}
@@ -283,7 +283,7 @@ export function DashboardHouseholdsHeader({
                       e.stopPropagation();
                       setPendingDeleteHouseholdId(h.id);
                     }}
-                    className="relative z-10 cursor-pointer rounded-md p-1.5 text-zinc-500 transition-colors hover:bg-rose-500/15 hover:text-rose-300"
+                    className="relative z-10 cursor-pointer rounded-md p-1.5 text-zinc-300 transition-colors hover:bg-rose-500/15 hover:text-rose-300"
                     aria-label={`${h.name} 삭제`}
                   >
                     <TrashIcon />
@@ -296,7 +296,7 @@ export function DashboardHouseholdsHeader({
         <button
           type="button"
           onClick={() => setKindsManageOpen(true)}
-          className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-zinc-600 bg-zinc-950 text-zinc-400 transition-colors hover:border-zinc-500 hover:bg-zinc-800 hover:text-zinc-200"
+          className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-lg border border-zinc-600 bg-zinc-950 text-zinc-300 transition-colors hover:border-zinc-500 hover:bg-zinc-800 hover:text-zinc-200"
           aria-label="거점 유형 관리"
         >
           <CogIcon />
@@ -323,12 +323,12 @@ export function DashboardHouseholdsHeader({
           <h2 id={addTitleId} className="text-lg font-semibold text-white">
             거점 추가
           </h2>
-          <p id={addDescId} className="mt-2 text-sm text-zinc-400">
+          <p id={addDescId} className="mt-2 text-sm text-zinc-300">
             집·사무실·차량 등 유형을 고르고 이름을 입력한 뒤 추가합니다.
           </p>
           <div className="mt-5 space-y-4">
             <div className="space-y-2">
-              <label className="text-xs font-medium text-zinc-400">
+              <label className="text-xs font-medium text-zinc-300">
                 거점 이름
               </label>
               <input
@@ -340,7 +340,7 @@ export function DashboardHouseholdsHeader({
               />
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-medium text-zinc-400">유형</label>
+              <label className="text-xs font-medium text-zinc-300">유형</label>
               <select
                 value={newHouseKind}
                 onChange={(e) => setNewHouseKind(e.target.value)}

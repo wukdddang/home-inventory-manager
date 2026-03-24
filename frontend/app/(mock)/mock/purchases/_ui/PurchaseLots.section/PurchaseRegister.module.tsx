@@ -155,9 +155,9 @@ export function PurchaseRegisterModal({
           <h2 id={titleId} className="text-lg font-semibold text-white">
             구매·유통기한 로트 등록
           </h2>
-          <p className="mt-2 text-sm text-zinc-400">
+          <p className="mt-2 text-sm text-zinc-300">
             한 번의 구매에 여러 유통기한 로트를 나누어 넣을 수 있습니다.{" "}
-            <span className="text-zinc-500">
+            <span className="text-zinc-300">
               장보기 직후·정리 전에는 재고 연결 없이 적어 두었다가, 나중에 메인에서
               물품을 만들고 연결해도 됩니다.
             </span>{" "}
@@ -166,7 +166,7 @@ export function PurchaseRegisterModal({
         </div>
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-y-contain px-5 py-4">
           <label className="block space-y-1.5">
-            <span className="text-xs font-medium text-zinc-400">재고에서 선택 (선택)</span>
+            <span className="text-xs font-medium text-zinc-300">재고에서 선택 (선택)</span>
             <select
               value={inventoryPick}
               onChange={(e) => handleInventoryChange(e.target.value)}
@@ -183,7 +183,7 @@ export function PurchaseRegisterModal({
           </label>
 
           <label className="block space-y-1.5">
-            <span className="text-xs font-medium text-zinc-400">품목 이름</span>
+            <span className="text-xs font-medium text-zinc-300">품목 이름</span>
             <input
               value={itemName}
               onChange={(e) => setItemName(e.target.value)}
@@ -194,7 +194,7 @@ export function PurchaseRegisterModal({
 
           <div className="grid grid-cols-2 gap-3">
             <label className="block space-y-1.5">
-              <span className="text-xs font-medium text-zinc-400">수량 단위</span>
+              <span className="text-xs font-medium text-zinc-300">수량 단위</span>
               <input
                 value={unitSymbol}
                 onChange={(e) => setUnitSymbol(e.target.value)}
@@ -203,7 +203,7 @@ export function PurchaseRegisterModal({
               />
             </label>
             <label className="block space-y-1.5">
-              <span className="text-xs font-medium text-zinc-400">용량·포장 메모</span>
+              <span className="text-xs font-medium text-zinc-300">용량·포장 메모</span>
               <input
                 value={variantCaption}
                 onChange={(e) => setVariantCaption(e.target.value)}
@@ -215,7 +215,7 @@ export function PurchaseRegisterModal({
 
           <div className="grid grid-cols-2 gap-3">
             <label className="block space-y-1.5">
-              <span className="text-xs font-medium text-zinc-400">구매일</span>
+              <span className="text-xs font-medium text-zinc-300">구매일</span>
               <input
                 type="date"
                 value={purchasedOn}
@@ -224,7 +224,7 @@ export function PurchaseRegisterModal({
               />
             </label>
             <label className="block space-y-1.5">
-              <span className="text-xs font-medium text-zinc-400">구매처 (선택)</span>
+              <span className="text-xs font-medium text-zinc-300">구매처 (선택)</span>
               <input
                 value={supplierName}
                 onChange={(e) => setSupplierName(e.target.value)}
@@ -236,7 +236,7 @@ export function PurchaseRegisterModal({
 
           <div className="grid grid-cols-2 gap-3">
             <label className="block space-y-1.5">
-              <span className="text-xs font-medium text-zinc-400">단가</span>
+              <span className="text-xs font-medium text-zinc-300">단가</span>
               <input
                 inputMode="decimal"
                 value={unitPriceStr}
@@ -246,7 +246,7 @@ export function PurchaseRegisterModal({
               />
             </label>
             <label className="block space-y-1.5">
-              <span className="text-xs font-medium text-zinc-400">총액</span>
+              <span className="text-xs font-medium text-zinc-300">총액</span>
               <input
                 inputMode="decimal"
                 value={totalPriceStr}
@@ -268,7 +268,7 @@ export function PurchaseRegisterModal({
                 로트 추가
               </button>
             </div>
-            <p className="mt-1 text-[11px] text-zinc-500">
+            <p className="mt-1 text-[11px] text-zinc-300">
               로트 수량 합계: <span className="text-zinc-300">{sumQty}</span>
               {unitSymbol ? ` ${unitSymbol}` : ""}
             </p>
@@ -279,7 +279,7 @@ export function PurchaseRegisterModal({
                   className="flex flex-wrap items-end gap-2 rounded-lg border border-zinc-800/80 bg-zinc-900/80 p-2"
                 >
                   <label className="min-w-[5rem] flex-1 space-y-1">
-                    <span className="text-[10px] uppercase tracking-wide text-zinc-500">
+                    <span className="text-[10px] uppercase tracking-wide text-zinc-300">
                       수량
                     </span>
                     <input
@@ -296,7 +296,7 @@ export function PurchaseRegisterModal({
                     />
                   </label>
                   <label className="min-w-[9rem] flex-[2] space-y-1">
-                    <span className="text-[10px] uppercase tracking-wide text-zinc-500">
+                    <span className="text-[10px] uppercase tracking-wide text-zinc-300">
                       유통기한
                     </span>
                     <input
@@ -312,7 +312,7 @@ export function PurchaseRegisterModal({
                     type="button"
                     disabled={batches.length <= 1}
                     onClick={() => handleRemoveLot(b.id)}
-                    className="cursor-pointer rounded-lg border border-zinc-600 px-2 py-2 text-xs text-zinc-400 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-30"
+                    className="cursor-pointer rounded-lg border border-zinc-600 px-2 py-2 text-xs text-zinc-300 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-30"
                   >
                     삭제
                   </button>

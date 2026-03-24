@@ -40,7 +40,7 @@ export function LoginShowcaseSection() {
           <br />
           구조와 표로 동시에
         </h1>
-        <p className="mt-4 max-w-md text-sm leading-relaxed text-zinc-400">
+        <p className="mt-4 max-w-md text-sm leading-relaxed text-zinc-300">
           ERD 기반 도메인(Household, StorageLocation, InventoryItem)에 맞춘
           UI입니다. API 연동 전까지 브라우저에 로컬로 저장됩니다.
         </p>
@@ -56,16 +56,16 @@ export function LoginShowcaseSection() {
               {f.tag}
             </span>
             <h3 className="mt-2 text-sm font-semibold text-white">{f.title}</h3>
-            <p className="mt-1 text-xs leading-relaxed text-zinc-400">{f.desc}</p>
+            <p className="mt-1 text-xs leading-relaxed text-zinc-300">{f.desc}</p>
           </div>
         ))}
       </div>
 
       <div className="relative z-10 mt-10 hidden rounded-2xl border border-white/10 bg-black/30 p-4 sm:block">
-        <p className="text-[10px] font-medium uppercase tracking-widest text-zinc-500">
+        <p className="text-[10px] font-medium uppercase tracking-widest text-zinc-300">
           예시 화면 흐름
         </p>
-        <div className="mt-3 flex gap-2 text-xs text-zinc-400">
+        <div className="mt-3 flex gap-2 text-xs text-zinc-300">
           <span className="rounded-lg bg-teal-500/20 px-2 py-1 text-teal-200">
             로그인
           </span>

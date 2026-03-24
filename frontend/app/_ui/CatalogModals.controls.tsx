@@ -294,7 +294,7 @@ export function CatalogModalsControls({
       </div>
 
       {layout === "settings" ? (
-        <p className="mt-4 text-[11px] text-zinc-600">
+        <p className="mt-4 text-[11px] text-zinc-300">
           현재 카테고리 {catalog.categories.length}개 · 품목{" "}
           {catalog.products.length}개 · 용량·포장 {catalog.variants.length}개
         </p>
@@ -310,7 +310,7 @@ export function CatalogModalsControls({
         submitDisabled={!catName.trim()}
       >
         <CatalogModalFormBody>
-          <label className="block text-xs font-medium text-zinc-500">
+          <label className="block text-xs font-medium text-zinc-300">
             이름
           </label>
           <input
@@ -334,7 +334,7 @@ export function CatalogModalsControls({
         <CatalogModalFormBody>
           <div className="space-y-3">
           <div>
-            <label className="text-xs font-medium text-zinc-500">
+            <label className="text-xs font-medium text-zinc-300">
               카테고리
             </label>
             <select
@@ -350,7 +350,7 @@ export function CatalogModalsControls({
             </select>
           </div>
           <div>
-            <label className="text-xs font-medium text-zinc-500">
+            <label className="text-xs font-medium text-zinc-300">
               품목명
             </label>
             <input
@@ -361,7 +361,7 @@ export function CatalogModalsControls({
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-zinc-500">
+            <label className="text-xs font-medium text-zinc-300">
               설명 (선택)
             </label>
             <textarea
@@ -373,7 +373,7 @@ export function CatalogModalsControls({
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-zinc-500">
+            <label className="text-xs font-medium text-zinc-300">
               사진 (선택)
             </label>
             <input
@@ -444,7 +444,7 @@ export function CatalogModalsControls({
         <CatalogModalFormBody>
           <div className="space-y-3">
           <div>
-            <label className="text-xs font-medium text-zinc-500">
+            <label className="text-xs font-medium text-zinc-300">
               카테고리
             </label>
             <select
@@ -463,7 +463,7 @@ export function CatalogModalsControls({
             </select>
           </div>
           <div>
-            <label className="text-xs font-medium text-zinc-500">품목</label>
+            <label className="text-xs font-medium text-zinc-300">품목</label>
             <select
               value={varProductIdResolved}
               onChange={(e) => setVarProductId(e.target.value)}
@@ -491,12 +491,12 @@ export function CatalogModalsControls({
                   className="size-12 shrink-0 rounded-lg border border-zinc-700 object-cover"
                 />
               ) : (
-                <div className="flex size-12 shrink-0 items-center justify-center rounded-lg border border-dashed border-zinc-700 bg-zinc-900 text-[10px] text-zinc-600">
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-lg border border-dashed border-zinc-700 bg-zinc-900 text-[10px] text-zinc-300">
                   사진 없음
                 </div>
               )}
               <div className="min-w-0">
-                <p className="text-[11px] font-medium text-zinc-500">
+                <p className="text-[11px] font-medium text-zinc-300">
                   적용할 품목
                 </p>
                 <p className="truncate text-sm font-semibold text-zinc-100">
@@ -506,7 +506,7 @@ export function CatalogModalsControls({
             </div>
           ) : null}
           <div>
-            <label className="text-xs font-medium text-zinc-500">단위</label>
+            <label className="text-xs font-medium text-zinc-300">단위</label>
             <select
               value={varUnitIdResolved}
               onChange={(e) => setVarUnitId(e.target.value)}
@@ -521,7 +521,7 @@ export function CatalogModalsControls({
             </select>
           </div>
           <div>
-            <label className="text-xs font-medium text-zinc-500">
+            <label className="text-xs font-medium text-zinc-300">
               용량 / 개수 (한 단위당)
             </label>
             <input
@@ -534,7 +534,7 @@ export function CatalogModalsControls({
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-zinc-500">
+            <label className="text-xs font-medium text-zinc-300">
               표시 이름 (선택)
             </label>
             <input

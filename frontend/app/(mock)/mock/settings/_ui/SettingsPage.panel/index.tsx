@@ -57,7 +57,7 @@ export function SettingsPanel() {
         >
       <div className="min-w-0 shrink-0">
         <h1 className="text-2xl font-semibold text-white">사용자 설정</h1>
-        <p className="mt-1 text-sm text-zinc-500">
+        <p className="mt-1 text-sm text-zinc-300">
           계정·거점 멤버·알림 등은 로컬 데모이며, API 연동 시 서버와 맞추면
           됩니다.
         </p>
