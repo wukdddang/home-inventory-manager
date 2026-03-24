@@ -3,6 +3,7 @@
 import { MotionModalLayer } from "@/app/_ui/motion-modal-layer";
 import {
   getNotifications,
+  getNotificationsServerSnapshot,
   setNotifications,
   subscribeNotifications,
 } from "@/lib/local-store";
@@ -161,7 +162,7 @@ export function NotificationCenterModal({
   const allNotifications = useSyncExternalStore(
     subscribeNotifications,
     getNotifications,
-    () => [],
+    getNotificationsServerSnapshot,
   );
 
   const notifications = useMemo(
@@ -322,7 +323,7 @@ export function useUnreadNotificationCount(
   const all = useSyncExternalStore(
     subscribeNotifications,
     getNotifications,
-    () => [],
+    getNotificationsServerSnapshot,
   );
   return useMemo(
     () =>

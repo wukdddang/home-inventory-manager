@@ -614,8 +614,14 @@ function emitNotifications() {
   notificationListeners.forEach((fn) => fn());
 }
 
+const EMPTY_NOTIFICATIONS: NotificationItem[] = [];
+
+export function getNotificationsServerSnapshot(): NotificationItem[] {
+  return EMPTY_NOTIFICATIONS;
+}
+
 export function getNotifications(): NotificationItem[] {
-  if (typeof window === "undefined") return [];
+  if (typeof window === "undefined") return EMPTY_NOTIFICATIONS;
   const raw = localStorage.getItem(K_NOTIFICATIONS);
   if (notificationsCache.raw === raw) return notificationsCache.list;
   const parsed = safeParse<unknown[]>(raw, []);
