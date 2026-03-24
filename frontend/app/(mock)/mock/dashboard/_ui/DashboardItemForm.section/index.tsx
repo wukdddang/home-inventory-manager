@@ -112,7 +112,7 @@ function StepShell({
             <p
               className={cn(
                 "mt-0.5 text-zinc-300",
-                compact ? "text-[11px] leading-snug" : "text-xs",
+                compact ? "text-xs leading-snug" : "text-xs",
               )}
             >
               {subtitle}
@@ -164,7 +164,7 @@ function StepEmbedBlock({
       >
         <div className={cn("shrink-0", !dense && "min-h-17")}>
           <h3 className="text-xs font-semibold text-zinc-100">{title}</h3>
-          <p className="mt-0.5 text-pretty text-[11px] leading-snug text-zinc-300 line-clamp-4">
+          <p className="mt-0.5 text-pretty text-xs leading-snug text-zinc-300 line-clamp-4">
             {subtitle}
           </p>
         </div>
@@ -206,10 +206,10 @@ export function ItemAddProcessStepsRail({
       {steps.map((s, i) => (
         <Fragment key={s.n}>
           <span className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-zinc-800/80 bg-zinc-900/45 px-2 py-1 ring-1 ring-zinc-800/35">
-            <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-md bg-teal-500/15 text-[10px] font-bold tabular-nums text-teal-300">
+            <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-md bg-teal-500/15 text-xs font-bold tabular-nums text-teal-300">
               {s.n}
             </span>
-            <span className="min-w-0 truncate text-[11px] font-medium text-zinc-200">
+            <span className="min-w-0 truncate text-xs font-medium text-zinc-200">
               {s.label}
             </span>
           </span>
@@ -230,7 +230,7 @@ export function ItemAddProcessStepsRail({
 export function CatalogHintLink() {
   const prefix = useAppRoutePrefix();
   return (
-    <p className="text-[11px] leading-snug text-zinc-300">
+    <p className="text-xs leading-snug text-zinc-300">
       목록에 없으면 위쪽 카탈로그 추가 버튼·
       <Link
         href={`${prefix}/settings`}
@@ -253,7 +253,7 @@ export function ItemAddPanelHeaderCatalogHint({
   return (
     <span
       className={cn(
-        "min-w-0 max-w-full text-[11px] leading-snug text-zinc-300",
+        "min-w-0 max-w-full text-xs leading-snug text-zinc-300",
         className,
       )}
     >
@@ -290,6 +290,7 @@ export function RoomItemAddWidget({
   const [productId, setProductId] = useState("");
   const [variantId, setVariantId] = useState("");
   const [stockQty, setStockQty] = useState("1");
+  const [minStockText, setMinStockText] = useState("");
   /** 비어 있으면 구매·로트(`him-purchases`)에는 넣지 않음 */
   const [expiresOn, setExpiresOn] = useState("");
   const [purchasePickId, setPurchasePickId] = useState("");
@@ -515,6 +516,14 @@ export function RoomItemAddWidget({
     const variantCaption =
       variant.name ?? `${variant.quantityPerUnit}${unit.symbol}`;
 
+    const parsedMin = minStockText.trim()
+      ? Math.floor(Number(minStockText))
+      : undefined;
+    const minStock =
+      parsedMin !== undefined && Number.isFinite(parsedMin) && parsedMin >= 0
+        ? parsedMin
+        : undefined;
+
     const row: InventoryRow = {
       id: newEntityId(),
       name: "",
@@ -527,6 +536,7 @@ export function RoomItemAddWidget({
       productVariantId: variant.id,
       variantCaption,
       quantityPerUnit: variant.quantityPerUnit,
+      minStockLevel: minStock,
     };
     row.name = inventoryDisplayLine(catalog, row);
 
@@ -535,6 +545,7 @@ export function RoomItemAddWidget({
       items: [...h.items, row],
     }));
     setStockQty("1");
+    setMinStockText("");
 
     const expRaw = expiresOn.trim();
     let lotNote = "";
@@ -873,7 +884,7 @@ export function RoomItemAddWidget({
               alt=""
               className="size-11 shrink-0 rounded-md border border-zinc-700 object-cover"
             />
-            <p className="text-[11px] leading-snug text-zinc-300">
+            <p className="text-xs leading-snug text-zinc-300">
               품목에 등록된 사진입니다. 구분은「품목 추가」에서 이름·사진으로
               관리합니다.
             </p>
@@ -939,7 +950,7 @@ export function RoomItemAddWidget({
         </select>
       )}
       {selectedPlaceablePurchase ? (
-        <ul className="mt-2 space-y-1 rounded-lg border border-zinc-800/60 bg-zinc-950/35 px-3 py-2 text-[11px] text-zinc-300">
+        <ul className="mt-2 space-y-1 rounded-lg border border-zinc-800/60 bg-zinc-950/35 px-3 py-2 text-xs text-zinc-300">
           {selectedPlaceablePurchase.batches.map((b) => (
             <li key={b.id} className="tabular-nums">
               {b.quantity}
@@ -1007,30 +1018,54 @@ export function RoomItemAddWidget({
   const catalogQtyExpiryBlock = (
     <div
       className={cn(
-        "w-full space-y-3",
-        embedInFloatingPanel ? "max-w-full" : "sm:max-w-56",
+        "w-full space-y-2.5",
+        embedInFloatingPanel ? "max-w-full" : "sm:max-w-72",
       )}
     >
-      <div className="space-y-1">
-        <label
-          htmlFor={`stock-qty-${roomId}`}
-          className="text-[11px] font-medium text-zinc-300"
-        >
-          보유 수량 (선택한 용량·포장 기준)
-        </label>
-        <input
-          id={`stock-qty-${roomId}`}
-          type="number"
-          min={0}
-          value={stockQty}
-          onChange={(e) => setStockQty(e.target.value)}
-          className={inputClass}
-        />
+      <div className="flex gap-2">
+        <div className="min-w-0 flex-1 space-y-1">
+          <label
+            htmlFor={`stock-qty-${roomId}`}
+            className="text-xs font-medium text-zinc-300"
+          >
+            보유 수량
+          </label>
+          <input
+            id={`stock-qty-${roomId}`}
+            type="number"
+            min={0}
+            value={stockQty}
+            onChange={(e) => setStockQty(e.target.value)}
+            className={inputClass}
+          />
+        </div>
+        <div className="min-w-0 flex-1 space-y-1">
+          <label
+            htmlFor={`stock-minstock-${roomId}`}
+            className="text-xs font-medium text-zinc-300"
+          >
+            최소 재고
+            <span className="ml-1 font-normal text-zinc-500">(선택)</span>
+          </label>
+          <input
+            id={`stock-minstock-${roomId}`}
+            type="number"
+            min={0}
+            step={1}
+            placeholder="미설정"
+            value={minStockText}
+            onChange={(e) => setMinStockText(e.target.value)}
+            className={inputClass}
+          />
+        </div>
       </div>
+      <p className="text-xs leading-snug text-zinc-500">
+        최소 재고 이하이면 부족 표시 + 장보기 제안. 비워 두면 기준 없음.
+      </p>
       <div className="space-y-1">
         <label
           htmlFor={`stock-expiry-${roomId}`}
-          className="text-[11px] font-medium text-zinc-300"
+          className="text-xs font-medium text-zinc-300"
         >
           유통기한 (선택)
         </label>
@@ -1041,10 +1076,8 @@ export function RoomItemAddWidget({
           onChange={(e) => setExpiresOn(e.target.value)}
           className={`${inputClass} cursor-pointer`}
         />
-        <p className="text-[10px] leading-snug text-zinc-300">
-          입력하면 위 수량만큼 1개의 로트로{" "}
-          <span className="text-zinc-300">him-purchases</span>에도 남고, 목록의
-          임박 뱃지에 반영됩니다. 구매일은 오늘 날짜로 기록됩니다.
+        <p className="text-xs leading-snug text-zinc-500">
+          입력하면 위 수량만큼 1개의 로트로 him-purchases에도 남고, 임박 뱃지에 반영됩니다.
         </p>
       </div>
     </div>
@@ -1074,7 +1107,7 @@ export function RoomItemAddWidget({
           <div className="space-y-1">
             <label
               htmlFor={`purchase-stock-qty-${roomId}`}
-              className="text-[11px] font-medium text-zinc-300"
+              className="text-xs font-medium text-zinc-300"
             >
               이 칸에 둘 수량
               {purchaseLotMaxQty > 0 ? (
@@ -1115,7 +1148,7 @@ export function RoomItemAddWidget({
                 purchaseLotMaxQty < 1 ? "opacity-50" : "",
               )}
             />
-            <p className="text-[10px] leading-snug text-zinc-300">
+            <p className="text-xs leading-snug text-zinc-300">
               유통기한·로트 구성은 구매·로트에 적힌 그대로 유지되며, 이 재고
               행과 구매 기록이 연결됩니다. 수량은 구매에 적은 로트 합을 넘을 수
               없습니다.
@@ -1342,13 +1375,13 @@ export function RoomItemAddWidget({
                           : "수량 확인 후 칸에 반영"}
                       </h3>
                       {storageOptions.length === 0 ? (
-                        <p className="text-[11px] leading-snug text-amber-200/85">
+                        <p className="text-xs leading-snug text-amber-200/85">
                           보관 칸이 없으면 먼저「가구 배치·보관 장소」에서 칸을
                           추가하세요.
                         </p>
                       ) : displayPickedStorageLabel ? (
                         <div className="space-y-1.5">
-                          <p className="text-[11px] leading-snug text-zinc-300">
+                          <p className="text-xs leading-snug text-zinc-300">
                             <span className="text-zinc-300">추가 대상</span>{" "}
                             <span
                               className="font-medium text-zinc-200"
@@ -1358,7 +1391,7 @@ export function RoomItemAddWidget({
                             </span>
                           </p>
                           {itemAddSummaryLine ? (
-                            <p className="text-[11px] leading-snug text-zinc-300">
+                            <p className="text-xs leading-snug text-zinc-300">
                               <span className="text-zinc-300">담을 품목</span>{" "}
                               <span
                                 className="wrap-break-words font-medium text-zinc-300"

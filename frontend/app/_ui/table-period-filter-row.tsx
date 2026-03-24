@@ -168,7 +168,7 @@ function CalendarDateField({
               <ChevronRight className="size-4" aria-hidden />
             </button>
           </div>
-          <div className="mb-1 grid grid-cols-7 gap-1 text-center text-[11px] text-zinc-400">
+          <div className="mb-1 grid grid-cols-7 gap-1 text-center text-xs text-zinc-400">
             <span>일</span>
             <span>월</span>
             <span>화</span>
@@ -212,7 +212,7 @@ function CalendarDateField({
           <div className="mt-2 flex items-center justify-between">
             <button
               type="button"
-              className="rounded px-1.5 py-1 text-[11px] text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+              className="rounded px-1.5 py-1 text-xs text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
               onClick={() => {
                 onChange("");
                 setOpen(false);
@@ -222,7 +222,7 @@ function CalendarDateField({
             </button>
             <button
               type="button"
-              className="rounded px-1.5 py-1 text-[11px] text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+              className="rounded px-1.5 py-1 text-xs text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
               onClick={() => {
                 onChange(날짜를_YMD로_표시한다(new Date()));
                 setOpen(false);

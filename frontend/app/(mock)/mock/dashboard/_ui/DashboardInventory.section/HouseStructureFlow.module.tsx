@@ -84,7 +84,7 @@ const StructureRoomNode = memo(function StructureRoomNode({
         position={Position.Right}
         className="!size-2 !border-none !bg-teal-500/80"
       />
-      <span className="line-clamp-2 text-[11px] font-semibold leading-tight">
+      <span className="line-clamp-2 text-sm font-semibold leading-tight">
         {data.label}
       </span>
     </div>
@@ -109,9 +109,9 @@ const DirectSlotNode = memo(function DirectSlotNode({
         position={Position.Right}
         className="!size-2 !border-none !bg-amber-500/70"
       />
-      <p className="text-[8px] font-medium text-amber-200/70">직속 보관</p>
+      <p className="text-xs font-normal text-amber-200/60">직속 보관</p>
       <p
-        className="mt-0.5 truncate text-[10px] font-semibold text-amber-100/95"
+        className="mt-0.5 truncate text-xs font-medium text-amber-100/95"
         title={data.label}
       >
         {data.label}
@@ -135,7 +135,7 @@ const FurniturePlacementNode = memo(function FurniturePlacementNode({
       />
       <div className="shrink-0 border-b border-teal-600/25 bg-teal-950/35 px-2 py-1">
         <p
-          className="truncate text-[9px] font-semibold text-teal-200/95"
+          className="truncate text-xs font-medium text-teal-200/95"
           title={data.label}
         >
           가구 · {data.label}
@@ -143,13 +143,13 @@ const FurniturePlacementNode = memo(function FurniturePlacementNode({
       </div>
       <div className="nopan nowheel min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-1.5">
         {data.slots.length === 0 ? (
-          <p className="text-[9px] text-zinc-300">하위 보관 칸 없음</p>
+          <p className="text-xs text-zinc-400">하위 보관 칸 없음</p>
         ) : (
           <ul className="space-y-0.5 border-l border-teal-500/25 pl-1.5">
             {data.slots.map((s) => (
               <li
                 key={s.id}
-                className="truncate text-[8px] text-zinc-300"
+                className="truncate text-xs text-zinc-400"
                 title={s.name}
               >
                 {s.name}
@@ -168,7 +168,7 @@ const nodeTypes = {
   furniturePlacement: FurniturePlacementNode,
 } satisfies NodeTypes;
 
-const ROOM_NODE_H = 52;
+const ROOM_NODE_H = 56;
 const GAP_X = 28;
 const SLOT_W = 148;
 const SLOT_H = 56;
@@ -649,7 +649,7 @@ function HouseStructureFlowInner({
           if (rename) onRoomRename(rename.id, next);
         }}
       />
-      <p className="border-t border-zinc-800 px-1 py-2 text-[11px] text-zinc-300">
+      <p className="border-t border-zinc-800 px-1 py-2 text-xs text-zinc-300">
         팁:{" "}
         <span className="text-zinc-300">
           방 → 직속 보관 칸(각각) → 그 칸에 연결된 가구 → 가구 아래 칸

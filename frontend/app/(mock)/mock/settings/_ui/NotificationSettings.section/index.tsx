@@ -97,7 +97,7 @@ export function NotificationSettingsSection() {
                     }
                     className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-white outline-none focus:border-teal-600"
                   />
-                  <span className="mt-1 block text-[11px] text-zinc-300">
+                  <span className="mt-1 block text-xs text-zinc-300">
                     ExpirationAlertRule.daysBefore — 신규 규칙·기본 제안값
                   </span>
                 </label>
@@ -106,7 +106,7 @@ export function NotificationSettingsSection() {
                   <legend className="mb-2 text-xs font-medium text-zinc-300">
                     규칙 소유 (택1)
                   </legend>
-                  <p className="mb-2 text-[11px] leading-relaxed text-zinc-300">
+                  <p className="mb-2 text-xs leading-relaxed text-zinc-300">
                     가족 공유와 개인 규칙을 같은 품목에 동시에 쓰면 알림이
                     이중일 수 있습니다. 한 축만 쓰는 것을 권장합니다.
                   </p>
@@ -163,7 +163,7 @@ export function NotificationSettingsSection() {
                 <label className="flex cursor-pointer items-center justify-between gap-3 text-sm text-zinc-300">
                   <span>
                     만료 당일 한 번 더 알림
-                    <span className="mt-0.5 block text-[11px] font-normal text-zinc-300">
+                    <span className="mt-0.5 block text-xs font-normal text-zinc-300">
                       스케줄러가 당일을 별도 이벤트로 처리할 때 사용. 스키마상
                       품목당 규칙 1건이면 앱 정책으로 합산합니다.
                     </span>
@@ -279,7 +279,7 @@ export function NotificationSettingsSection() {
               <label className="flex cursor-pointer items-start justify-between gap-3 text-sm text-zinc-300">
                 <span>
                   최소 재고가 설정된 품목만
-                  <span className="mt-1 block text-[11px] font-normal text-zinc-300">
+                  <span className="mt-1 block text-xs font-normal text-zinc-300">
                     minStockLevel이 NULL이면 해당 줄은 부족 알림 대상에서
                     제외됩니다.
                   </span>

@@ -221,7 +221,7 @@ export function DashboardHouseholdsHeader({
           </h1>
           <DashboardScreenHelpHint />
         </div>
-        <p className="mt-1 text-[11px] leading-snug text-zinc-300 sm:text-xs">
+        <p className="mt-1 text-xs leading-snug text-zinc-300 sm:text-xs">
           탭으로 거점을 전환하고, + 로 새 거점을 추가합니다.
         </p>
       </div>
@@ -263,14 +263,14 @@ export function DashboardHouseholdsHeader({
                     aria-selected={selected}
                     onClick={() => onSelectHousehold(h.id)}
                     className={cn(
-                      "relative z-10 cursor-pointer px-2.5 py-1.5 text-left text-xs font-medium transition-colors sm:text-[13px]",
+                      "relative z-10 cursor-pointer px-2.5 py-1.5 text-left text-xs font-medium transition-colors sm:text-sm",
                       selected ? "text-teal-100" : "text-zinc-300 hover:text-white",
                     )}
                   >
                     <span className="whitespace-nowrap">{h.name}</span>
                     <span
                       className={cn(
-                        "ml-1.5 text-[10px] font-normal sm:text-[11px]",
+                        "ml-1.5 text-xs font-normal sm:text-xs",
                         selected ? "text-teal-200/80" : "text-zinc-300",
                       )}
                     >

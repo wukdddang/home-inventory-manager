@@ -268,7 +268,7 @@ export function PurchaseRegisterModal({
                 로트 추가
               </button>
             </div>
-            <p className="mt-1 text-[11px] text-zinc-300">
+            <p className="mt-1 text-xs text-zinc-300">
               로트 수량 합계: <span className="text-zinc-300">{sumQty}</span>
               {unitSymbol ? ` ${unitSymbol}` : ""}
             </p>
@@ -279,7 +279,7 @@ export function PurchaseRegisterModal({
                   className="flex flex-wrap items-end gap-2 rounded-lg border border-zinc-800/80 bg-zinc-900/80 p-2"
                 >
                   <label className="min-w-[5rem] flex-1 space-y-1">
-                    <span className="text-[10px] uppercase tracking-wide text-zinc-300">
+                    <span className="text-xs uppercase tracking-wide text-zinc-300">
                       수량
                     </span>
                     <input
@@ -296,7 +296,7 @@ export function PurchaseRegisterModal({
                     />
                   </label>
                   <label className="min-w-[9rem] flex-[2] space-y-1">
-                    <span className="text-[10px] uppercase tracking-wide text-zinc-300">
+                    <span className="text-xs uppercase tracking-wide text-zinc-300">
                       유통기한
                     </span>
                     <input

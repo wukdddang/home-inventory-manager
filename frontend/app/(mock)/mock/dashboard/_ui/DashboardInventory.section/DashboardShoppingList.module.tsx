@@ -124,7 +124,7 @@ function ShoppingListDetailReadOnly({ household }: { household: Household }) {
 
       {depletedItems.length > 0 ? (
         <div className="min-w-0">
-          <h3 className="text-[10px] font-semibold tracking-wide text-amber-200/90 uppercase">
+          <h3 className="text-xs font-semibold tracking-wide text-amber-200/90 uppercase">
             재고 없음 (자동)
           </h3>
           <ul className="mt-2 flex flex-col gap-2">
@@ -137,11 +137,11 @@ function ShoppingListDetailReadOnly({ household }: { household: Household }) {
                   {it.name}
                 </p>
                 {formatItemCaption(it) ? (
-                  <p className="truncate text-[11px] text-zinc-300">
+                  <p className="truncate text-xs text-zinc-300">
                     {formatItemCaption(it)} · {it.unit}
                   </p>
                 ) : (
-                  <p className="text-[11px] text-zinc-300">{it.unit}</p>
+                  <p className="text-xs text-zinc-300">{it.unit}</p>
                 )}
               </li>
             ))}
@@ -151,7 +151,7 @@ function ShoppingListDetailReadOnly({ household }: { household: Household }) {
 
       {saved.length > 0 ? (
         <div className="min-w-0">
-          <h3 className="text-[10px] font-semibold tracking-wide text-teal-200/80 uppercase">
+          <h3 className="text-xs font-semibold tracking-wide text-teal-200/80 uppercase">
             직접 담은 항목
           </h3>
           <ul className="mt-2 flex flex-col gap-2">
@@ -164,17 +164,17 @@ function ShoppingListDetailReadOnly({ household }: { household: Household }) {
                   {entry.label}
                   {entry.inventoryItemId ? null : entry.productId &&
                     entry.productVariantId ? (
-                    <span className="ml-1.5 text-[10px] font-normal text-teal-400/90">
+                    <span className="ml-1.5 text-xs font-normal text-teal-400/90">
                       (카탈로그)
                     </span>
                   ) : (
-                    <span className="ml-1.5 text-[10px] font-normal text-zinc-300">
+                    <span className="ml-1.5 text-xs font-normal text-zinc-300">
                       (메모)
                     </span>
                   )}
                 </p>
                 {entry.targetStorageLocationId ? (
-                  <p className="truncate text-[11px] text-teal-400/85">
+                  <p className="truncate text-xs text-teal-400/85">
                     넣을 칸 ·{" "}
                     {formatShoppingListTargetStorage(
                       household,
@@ -182,7 +182,7 @@ function ShoppingListDetailReadOnly({ household }: { household: Household }) {
                     )}
                   </p>
                 ) : null}
-                <p className="truncate text-[11px] text-zinc-300">
+                <p className="truncate text-xs text-zinc-300">
                   {entry.variantCaption ? `${entry.variantCaption} · ` : ""}
                   보충 수량 {entry.restockQuantity}
                   {entry.inventoryItemId
@@ -212,7 +212,7 @@ function ShoppingListAddFromDashboardHint() {
         <span className="font-medium text-zinc-200">「장보기에만 담기」</span>를
         사용하세요.
       </p>
-      <p className="mt-2 text-[11px] text-zinc-300">
+      <p className="mt-2 text-xs text-zinc-300">
         <Link
           href={`${prefix}/dashboard`}
           className="font-medium text-teal-400/90 underline-offset-2 hover:underline"
@@ -358,14 +358,14 @@ function ShoppingListDetailContent({
                     {it.name}
                   </p>
                   {formatItemCaption(it) ? (
-                    <p className="truncate text-[11px] text-zinc-300">
+                    <p className="truncate text-xs text-zinc-300">
                       {formatItemCaption(it)} · {it.unit}
                     </p>
                   ) : (
-                    <p className="text-[11px] text-zinc-300">{it.unit}</p>
+                    <p className="text-xs text-zinc-300">{it.unit}</p>
                   )}
                 </div>
-                <label className="flex items-center gap-1 text-[11px] text-zinc-300">
+                <label className="flex items-center gap-1 text-xs text-zinc-300">
                   <span className="whitespace-nowrap">보충</span>
                   <input
                     type="number"
@@ -407,17 +407,17 @@ function ShoppingListDetailContent({
                     {entry.label}
                     {entry.inventoryItemId ? null : entry.productId &&
                       entry.productVariantId ? (
-                      <span className="ml-1.5 text-[10px] font-normal text-teal-400/90">
+                      <span className="ml-1.5 text-xs font-normal text-teal-400/90">
                         (카탈로그)
                       </span>
                     ) : (
-                      <span className="ml-1.5 text-[10px] font-normal text-zinc-300">
+                      <span className="ml-1.5 text-xs font-normal text-zinc-300">
                         (메모)
                       </span>
                     )}
                   </p>
                   {entry.targetStorageLocationId ? (
-                    <p className="truncate text-[11px] text-teal-400/85">
+                    <p className="truncate text-xs text-teal-400/85">
                       넣을 칸 ·{" "}
                       {formatShoppingListTargetStorage(
                         household,
@@ -425,7 +425,7 @@ function ShoppingListDetailContent({
                       )}
                     </p>
                   ) : null}
-                  <p className="truncate text-[11px] text-zinc-300">
+                  <p className="truncate text-xs text-zinc-300">
                     {entry.variantCaption ? `${entry.variantCaption} · ` : ""}
                     {entry.inventoryItemId
                       ? (entry.unit ?? "단위")
@@ -436,7 +436,7 @@ function ShoppingListDetailContent({
                 </div>
                 {entry.inventoryItemId ||
                 (entry.productId && entry.productVariantId) ? (
-                  <label className="flex items-center gap-1 text-[11px] text-zinc-300">
+                  <label className="flex items-center gap-1 text-xs text-zinc-300">
                     <span className="whitespace-nowrap">보충</span>
                     <input
                       type="number"
@@ -601,7 +601,7 @@ export function ShoppingListQuickAddFromCatalogModal({
         {resolved ? (
           <div className="mt-4 space-y-4">
             <div className="rounded-xl border border-teal-500/25 bg-teal-950/25 px-3 py-2.5">
-              <p className="text-[11px] font-medium text-teal-200/90">
+              <p className="text-xs font-medium text-teal-200/90">
                 담을 품목
               </p>
               <p className="mt-1 text-sm font-medium text-zinc-100">
@@ -611,7 +611,7 @@ export function ShoppingListQuickAddFromCatalogModal({
             <div className="space-y-1">
               <label
                 htmlFor={`shopping-quick-qty-${titleId}`}
-                className="text-[11px] font-medium text-zinc-300"
+                className="text-xs font-medium text-zinc-300"
               >
                 사 올 때 채울 수량 (용량·포장 기준)
               </label>

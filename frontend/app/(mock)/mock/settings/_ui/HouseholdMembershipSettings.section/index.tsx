@@ -67,7 +67,7 @@ function MembershipRoleBadgePicker({
           role="dialog"
           aria-label="역할 변경"
         >
-          <p className="px-3 pb-1 text-[11px] font-medium tracking-wide text-zinc-300 uppercase">
+          <p className="px-3 pb-1 text-xs font-medium tracking-wide text-zinc-300 uppercase">
             역할 선택
           </p>
           <button

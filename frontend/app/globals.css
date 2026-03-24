@@ -100,6 +100,15 @@
 html {
   height: 100%;
   overflow: hidden;
+  /*
+   * 뷰포트 기반 반응형 폰트 크기:
+   *  - ~24" FHD (1920px)  → 16px (기본)
+   *  - ~27" QHD (2560px)  → ~17.6px
+   *  - ~32" 4K  (3840px)  → ~20.8px
+   * Tailwind의 rem·px 기반 유틸(text-xs, text-[11px] 등)이
+   * 모니터 크기에 따라 자연스럽게 스케일됩니다.
+   */
+  font-size: clamp(14px, 0.625rem + 0.25vw, 22px);
 }
 
 body {

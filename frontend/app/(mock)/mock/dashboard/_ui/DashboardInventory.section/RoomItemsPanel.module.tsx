@@ -3,8 +3,17 @@
 import { InventoryLotExpiryBadge } from "@/app/_ui/inventory-lot-expiry-badge";
 import { groupInventoryByStorageForRoom } from "@/lib/household-location";
 import { 구매목록에서_품목_로트_요약을_구한다 } from "@/lib/inventory-lot-from-purchases";
+import { cn } from "@/lib/utils";
 import type { Household, InventoryRow, PurchaseRecord } from "@/types/domain";
 import { useMemo } from "react";
+
+function isLowStock(item: InventoryRow): boolean {
+  return (
+    item.minStockLevel != null &&
+    Number.isFinite(item.minStockLevel) &&
+    item.quantity <= item.minStockLevel
+  );
+}
 
 type RoomItemsPanelProps = {
   household: Household;
@@ -73,7 +82,7 @@ export function RoomItemsPanel({
                     <h4 className="text-xs font-semibold text-teal-200/95">
                       {g.heading}
                     </h4>
-                    <p className="mt-0.5 text-[10px] text-zinc-300">
+                    <p className="mt-0.5 text-xs text-zinc-300">
                       품목 {g.items.length}개
                     </p>
                   </div>
@@ -84,17 +93,21 @@ export function RoomItemsPanel({
                         household.id,
                         it.id,
                       );
+                      const low = isLowStock(it);
                       return (
                         <li
                           key={it.id}
-                          className="flex flex-col gap-2 px-3 py-2.5 text-sm sm:flex-row sm:items-start sm:justify-between"
+                          className={cn(
+                            "flex flex-col gap-2 px-3 py-2.5 text-sm sm:flex-row sm:items-start sm:justify-between",
+                            low && "bg-amber-500/5",
+                          )}
                         >
                           <div className="min-w-0 flex-1">
                             <span className="block truncate leading-snug text-zinc-200">
                               {it.name}
                             </span>
                             {it.variantCaption ? (
-                              <span className="mt-0.5 block truncate text-[10px] text-zinc-300">
+                              <span className="mt-0.5 block truncate text-xs text-zinc-300">
                                 {it.variantCaption}
                               </span>
                             ) : null}
@@ -103,10 +116,18 @@ export function RoomItemsPanel({
                                 worstExpiryDays={lot.worstExpiryDays}
                                 lotCount={lot.lotCount}
                               />
+                              {low ? (
+                                <span className="inline-flex items-center rounded-md border border-amber-500/30 bg-amber-500/15 px-1.5 py-0.5 text-xs font-medium text-amber-300">
+                                  부족 ({it.quantity}/{it.minStockLevel})
+                                </span>
+                              ) : null}
                             </div>
                           </div>
                           <div className="flex shrink-0 flex-col items-stretch gap-1.5 sm:items-end">
-                            <span className="tabular-nums text-zinc-300 sm:text-right">
+                            <span className={cn(
+                              "tabular-nums sm:text-right",
+                              low ? "text-amber-300" : "text-zinc-300",
+                            )}>
                               {it.quantity}
                               {it.unit}
                             </span>
@@ -115,7 +136,7 @@ export function RoomItemsPanel({
                                 type="button"
                                 disabled={it.quantity < 1}
                                 onClick={() => on소비하려고_연다(it)}
-                                className="cursor-pointer rounded-lg border border-zinc-600 px-2 py-0.5 text-[10px] text-teal-300/95 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-35"
+                                className="cursor-pointer rounded-lg border border-zinc-600 px-2 py-0.5 text-xs text-teal-300/95 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-35"
                               >
                                 소비
                               </button>
@@ -123,7 +144,7 @@ export function RoomItemsPanel({
                                 type="button"
                                 disabled={it.quantity < 1}
                                 onClick={() => on폐기하려고_연다(it)}
-                                className="cursor-pointer rounded-lg border border-zinc-600 px-2 py-0.5 text-[10px] text-rose-300/90 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-35"
+                                className="cursor-pointer rounded-lg border border-zinc-600 px-2 py-0.5 text-xs text-rose-300/90 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-35"
                               >
                                 폐기
                               </button>

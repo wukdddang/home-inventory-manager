@@ -79,34 +79,34 @@ function 구매_용량포장_텍스트를_구한다(p: PurchaseRecord): string {
 function 만료_뱃지를_렌더한다(days: number | null) {
   if (days === null) {
     return (
-      <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-[11px] text-zinc-300">
+      <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-xs text-zinc-300">
         날짜 확인
       </span>
     );
   }
   if (days < 0) {
     return (
-      <span className="rounded-full bg-rose-500/20 px-2 py-0.5 text-[11px] font-medium text-rose-200 ring-1 ring-rose-500/40">
+      <span className="rounded-full bg-rose-500/20 px-2 py-0.5 text-xs font-medium text-rose-200 ring-1 ring-rose-500/40">
         만료 후 {Math.abs(days)}일
       </span>
     );
   }
   if (days === 0) {
     return (
-      <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[11px] font-medium text-amber-100 ring-1 ring-amber-500/35">
+      <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-medium text-amber-100 ring-1 ring-amber-500/35">
         오늘 만료
       </span>
     );
   }
   if (days <= 3) {
     return (
-      <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-100 ring-1 ring-amber-500/30">
+      <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-100 ring-1 ring-amber-500/30">
         D-{days}
       </span>
     );
   }
   return (
-    <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-[11px] text-zinc-300">
+    <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-xs text-zinc-300">
       D-{days}
     </span>
   );
@@ -311,7 +311,7 @@ function 헤더_열_필터_셀렉트({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       aria-label={`${열이름} 열 필터`}
-      className={`box-border h-7 min-w-0 flex-1 cursor-pointer rounded border border-zinc-600/80 bg-zinc-950 px-1.5 py-0 text-[11px] outline-none focus:border-teal-500 ${
+      className={`box-border h-7 min-w-0 flex-1 cursor-pointer rounded border border-zinc-600/80 bg-zinc-950 px-1.5 py-0 text-xs outline-none focus:border-teal-500 ${
         align === "right" ? "text-right" : "text-left"
       } ${비어있음 ? "text-zinc-300" : "text-zinc-200"} ${className}`.trim()}
     >

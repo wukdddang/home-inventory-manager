@@ -41,7 +41,7 @@ const btnOutline =
 
 /** 물품 추가 패널 헤더 등 —「접기」와 동일 높이·타이포 */
 const btnPanel =
-  "cursor-pointer rounded-lg border border-zinc-600 px-2 py-1 text-[11px] font-medium whitespace-nowrap text-zinc-300 hover:bg-zinc-800 sm:px-2.5";
+  "cursor-pointer rounded-lg border border-zinc-600 px-2 py-1 text-xs font-medium whitespace-nowrap text-zinc-300 hover:bg-zinc-800 sm:px-2.5";
 
 function sortByOrder<T extends { sortOrder?: number }>(list: T[]): T[] {
   return [...list].sort(
@@ -294,7 +294,7 @@ export function CatalogModalsControls({
       </div>
 
       {layout === "settings" ? (
-        <p className="mt-4 text-[11px] text-zinc-300">
+        <p className="mt-4 text-xs text-zinc-300">
           현재 카테고리 {catalog.categories.length}개 · 품목{" "}
           {catalog.products.length}개 · 용량·포장 {catalog.variants.length}개
         </p>
@@ -491,12 +491,12 @@ export function CatalogModalsControls({
                   className="size-12 shrink-0 rounded-lg border border-zinc-700 object-cover"
                 />
               ) : (
-                <div className="flex size-12 shrink-0 items-center justify-center rounded-lg border border-dashed border-zinc-700 bg-zinc-900 text-[10px] text-zinc-300">
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-lg border border-dashed border-zinc-700 bg-zinc-900 text-xs text-zinc-300">
                   사진 없음
                 </div>
               )}
               <div className="min-w-0">
-                <p className="text-[11px] font-medium text-zinc-300">
+                <p className="text-xs font-medium text-zinc-300">
                   적용할 품목
                 </p>
                 <p className="truncate text-sm font-semibold text-zinc-100">

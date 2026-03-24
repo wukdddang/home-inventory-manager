@@ -78,7 +78,7 @@ export function HouseStructure({
                 y={r.y + r.height / 2}
                 textAnchor="middle"
                 dominantBaseline="middle"
-                className="pointer-events-none fill-zinc-200 text-[11px] font-medium"
+                className="pointer-events-none fill-zinc-200 text-xs font-medium"
                 style={{ fontSize: 12 }}
               >
                 {r.name}
@@ -87,7 +87,7 @@ export function HouseStructure({
           );
         })}
       </svg>
-      <p className="border-t border-zinc-800 px-3 py-2 text-[11px] text-zinc-300">
+      <p className="border-t border-zinc-800 px-3 py-2 text-xs text-zinc-300">
         팁: 방을 클릭해 선택 · 더블클릭으로 이름 편집(목록과 동기)
       </p>
     </>

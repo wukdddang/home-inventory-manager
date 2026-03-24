@@ -320,7 +320,7 @@ export function DashboardRoomsSection({
           </p>
           <div className="mt-4 space-y-3">
             <div className="space-y-1.5">
-              <label className="text-[11px] font-medium text-zinc-300">방 이름</label>
+              <label className="text-xs font-medium text-zinc-300">방 이름</label>
               <input
                 value={newRoomName}
                 onChange={(e) => setNewRoomName(e.target.value)}
@@ -369,7 +369,7 @@ export function DashboardRoomsSection({
           </p>
           <div className="mt-4 space-y-3">
             <div className="space-y-1.5">
-              <label className="text-[11px] font-medium text-zinc-300">방 이름</label>
+              <label className="text-xs font-medium text-zinc-300">방 이름</label>
               <input
                 value={editRoomName}
                 onChange={(e) => setEditRoomName(e.target.value)}

@@ -141,7 +141,7 @@ function 품목_라벨을_분해한다(
 }
 
 const 뱃지_공통 =
-  "inline-flex max-w-full items-center justify-center whitespace-nowrap rounded-full px-2 py-0.5 text-[11px] font-semibold tabular-nums leading-tight ring-1";
+  "inline-flex max-w-full items-center justify-center whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold tabular-nums leading-tight ring-1";
 
 function 구분_뱃지_클래스를_구한다(type: InventoryLedgerType): string {
   switch (type) {
@@ -373,7 +373,7 @@ function 이력_페이지네이션_컨트롤({
         type="button"
         onClick={onPrev}
         disabled={!canPrev}
-        className="inline-flex h-8 cursor-pointer items-center gap-0.5 rounded-lg border border-zinc-700 bg-zinc-950 px-2 text-[11px] font-medium text-zinc-200 transition-colors hover:border-teal-500/50 hover:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-40"
+        className="inline-flex h-8 cursor-pointer items-center gap-0.5 rounded-lg border border-zinc-700 bg-zinc-950 px-2 text-xs font-medium text-zinc-200 transition-colors hover:border-teal-500/50 hover:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-40"
       >
         <ChevronLeft className="size-3.5 shrink-0" aria-hidden />
         이전
@@ -388,7 +388,7 @@ function 이력_페이지네이션_컨트롤({
                 type="button"
                 onClick={() => onGoToPage(p)}
                 aria-current={active ? "page" : undefined}
-                className={`inline-flex size-8 cursor-pointer items-center justify-center rounded-lg border text-[11px] font-semibold tabular-nums transition-colors ${
+                className={`inline-flex size-8 cursor-pointer items-center justify-center rounded-lg border text-xs font-semibold tabular-nums transition-colors ${
                   active
                     ? "border-teal-500/60 bg-teal-500/15 text-teal-200"
                     : "border-zinc-700 bg-zinc-950 text-zinc-300 hover:border-zinc-600 hover:text-zinc-200"
@@ -400,7 +400,7 @@ function 이력_페이지네이션_컨트롤({
           })}
         </div>
       ) : (
-        <span className="px-1 text-[11px] font-medium tabular-nums text-zinc-300">
+        <span className="px-1 text-xs font-medium tabular-nums text-zinc-300">
           {pageIndex + 1} / {totalPages}
         </span>
       )}
@@ -408,7 +408,7 @@ function 이력_페이지네이션_컨트롤({
         type="button"
         onClick={onNext}
         disabled={!canNext}
-        className="inline-flex h-8 cursor-pointer items-center gap-0.5 rounded-lg border border-zinc-700 bg-zinc-950 px-2 text-[11px] font-medium text-zinc-200 transition-colors hover:border-teal-500/50 hover:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-40"
+        className="inline-flex h-8 cursor-pointer items-center gap-0.5 rounded-lg border border-zinc-700 bg-zinc-950 px-2 text-xs font-medium text-zinc-200 transition-colors hover:border-teal-500/50 hover:bg-zinc-900 disabled:cursor-not-allowed disabled:opacity-40"
       >
         다음
         <ChevronRight className="size-3.5 shrink-0" aria-hidden />
@@ -425,17 +425,17 @@ function LedgerLegend({ className = "" }: { className?: string }) {
       role="note"
       aria-label="표 범례"
     >
-      <span className="shrink-0 text-[11px] font-semibold text-zinc-300">
+      <span className="shrink-0 text-xs font-semibold text-zinc-300">
         범례
       </span>
-      <span className="shrink-0 text-[11px] text-zinc-300">증감</span>
+      <span className="shrink-0 text-xs text-zinc-300">증감</span>
       <span className={증감_뱃지_클래스를_구한다(1)}>+증가</span>
       <span className={증감_뱃지_클래스를_구한다(-1)}>−감소</span>
       <span
         className="mx-0.5 hidden h-4 w-px shrink-0 bg-zinc-700 sm:inline-block"
         aria-hidden
       />
-      <span className="shrink-0 text-[11px] text-zinc-300">구분</span>
+      <span className="shrink-0 text-xs text-zinc-300">구분</span>
       {구분_순서.map((t) => (
         <span key={t} className={구분_뱃지_클래스를_구한다(t)}>
           {이력_유형_라벨을_구한다(t)}
@@ -466,7 +466,7 @@ function 헤더_열_필터_셀렉트({
       value={value}
       onChange={(e) => onChange(e.target.value)}
       aria-label={`${열이름} 열 필터`}
-      className={`box-border h-7 min-w-0 flex-1 cursor-pointer rounded border border-zinc-600/80 bg-zinc-950 px-1.5 py-0 text-[11px] outline-none focus:border-teal-500 ${
+      className={`box-border h-7 min-w-0 flex-1 cursor-pointer rounded border border-zinc-600/80 bg-zinc-950 px-1.5 py-0 text-xs outline-none focus:border-teal-500 ${
         align === "right" ? "text-right" : "text-left"
       } ${비어있음 ? "text-zinc-300" : "text-zinc-200"} ${className}`.trim()}
     >
@@ -1225,7 +1225,7 @@ function LedgerTableRow({
       className={`border-b border-zinc-800/90 ${zebra ? "bg-zinc-900/40" : "bg-transparent"} hover:bg-zinc-800/35`}
     >
       <td className="w-[6%] whitespace-nowrap px-3 py-2 align-middle tabular-nums text-zinc-300">
-        <span className="block text-[13px]">{날짜}</span>
+        <span className="block text-sm">{날짜}</span>
         {시각 ? (
           <span className="block text-xs text-zinc-300">{시각}</span>
         ) : null}

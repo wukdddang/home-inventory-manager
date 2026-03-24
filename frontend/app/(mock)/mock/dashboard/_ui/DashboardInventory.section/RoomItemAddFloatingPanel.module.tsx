@@ -47,7 +47,7 @@ export function RoomItemAddPanel({
             </span>
           </div>
           <div className="ml-auto min-w-0 max-w-[min(100%,22rem)] shrink sm:max-w-md">
-            <ItemAddPanelHeaderCatalogHint className="block text-right text-[11px] leading-snug sm:text-left" />
+            <ItemAddPanelHeaderCatalogHint className="block text-right text-xs leading-snug sm:text-left" />
           </div>
         </div>
         <div className="px-3 py-3">

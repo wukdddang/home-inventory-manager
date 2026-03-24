@@ -138,7 +138,7 @@ export function ShoppingListSuggestionsCard({
       <p
         className={cn(
           "mt-1 text-zinc-300",
-          compact ? "text-[10px] leading-snug" : "text-[11px] leading-relaxed",
+          compact ? "text-xs leading-snug" : "text-xs leading-relaxed",
         )}
       >
         연결된 구매 로트 기준으로 유통기한이 곧 다가오거나, 품목에 적어 둔 최소
@@ -177,7 +177,7 @@ export function ShoppingListSuggestionsCard({
                   <span
                     key={r}
                     className={cn(
-                      "rounded px-1.5 py-0.5 text-[10px] font-medium",
+                      "rounded px-1.5 py-0.5 text-xs font-medium",
                       reasonBadgeClass(r),
                     )}
                   >
@@ -185,7 +185,7 @@ export function ShoppingListSuggestionsCard({
                   </span>
                 ))}
               </div>
-              <p className="mt-0.5 truncate text-[10px] text-zinc-300">
+              <p className="mt-0.5 truncate text-xs text-zinc-300">
                 {formatItemCaption(s.item) ? (
                   <>
                     {formatItemCaption(s.item)} · {s.item.quantity}

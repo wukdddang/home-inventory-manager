@@ -161,7 +161,7 @@ function AccountSecuritySettingsBody({
               <span className="text-zinc-300">·</span>
               <span className="truncate text-zinc-300">{user.displayName}</span>
               <span
-                className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${
                   verified
                     ? "bg-teal-500/20 text-teal-200"
                     : "bg-amber-500/15 text-amber-200/90"
@@ -205,7 +205,7 @@ function AccountSecuritySettingsBody({
                 className={`${inputClass} cursor-not-allowed opacity-80`}
                 aria-readonly="true"
               />
-              <p className="text-[11px] text-zinc-300">
+              <p className="text-xs text-zinc-300">
                 변경은 보안 정책에 따라 별도 플로우로 두는 것을 권장합니다.
               </p>
             </div>
@@ -220,7 +220,7 @@ function AccountSecuritySettingsBody({
             </div>
             <div className="border-t border-zinc-800 pt-4">
               <p className="text-xs font-medium text-zinc-300">이메일 인증</p>
-              <p className="mt-1 text-[11px] text-zinc-300">
+              <p className="mt-1 text-xs text-zinc-300">
                 가입 후 인증 링크 등 백엔드 플로우와 맞출 수 있습니다.
               </p>
               <div className="mt-3 flex flex-wrap gap-2">

@@ -305,10 +305,17 @@ export function ItemsSpreadsheet({
                   household.id,
                   it.id,
                 );
+                const low =
+                  it.minStockLevel != null &&
+                  Number.isFinite(it.minStockLevel) &&
+                  it.quantity <= it.minStockLevel;
                 return (
                   <tr
                     key={it.id}
-                    className="border-b border-zinc-800/80 hover:bg-zinc-900/50"
+                    className={cn(
+                      "border-b border-zinc-800/80 hover:bg-zinc-900/50",
+                      low && "bg-amber-500/5",
+                    )}
                   >
                     <td className="px-3 py-2.5 text-zinc-300">
                       {cols.category}
@@ -317,7 +324,7 @@ export function ItemsSpreadsheet({
                       {cols.product}
                     </td>
                     <td className="px-3 py-2.5 text-zinc-300">{cols.spec}</td>
-                    <td className="px-3 py-2.5 text-zinc-300">{it.quantity}</td>
+                    <td className={cn("px-3 py-2.5", low ? "font-medium text-amber-300" : "text-zinc-300")}>{it.quantity}</td>
                     <td className="px-3 py-2.5 align-middle">
                       <MinStockInput
                         itemId={it.id}
@@ -354,7 +361,7 @@ export function ItemsSpreadsheet({
                           type="button"
                           disabled={it.quantity < 1}
                           onClick={() => on소비하려고_연다(it)}
-                          className="cursor-pointer rounded border border-zinc-600 px-1.5 py-0.5 text-[10px] text-teal-300 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-35"
+                          className="cursor-pointer rounded border border-zinc-600 px-1.5 py-0.5 text-xs text-teal-300 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-35"
                         >
                           소비
                         </button>
@@ -362,7 +369,7 @@ export function ItemsSpreadsheet({
                           type="button"
                           disabled={it.quantity < 1}
                           onClick={() => on폐기하려고_연다(it)}
-                          className="cursor-pointer rounded border border-zinc-600 px-1.5 py-0.5 text-[10px] text-rose-300 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-35"
+                          className="cursor-pointer rounded border border-zinc-600 px-1.5 py-0.5 text-xs text-rose-300 hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-35"
                         >
                           폐기
                         </button>

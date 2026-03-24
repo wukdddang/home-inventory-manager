@@ -21,11 +21,11 @@ const selectClass =
 
 /** 주요 추가 동작 — 틸(가구·세부 칸·옮기기) */
 const btnAdd =
-  "inline-flex cursor-pointer shrink-0 items-center justify-center gap-1 rounded-md border border-teal-600/60 bg-teal-950/40 px-2 py-0.5 text-[10px] font-medium leading-tight text-teal-100 hover:bg-teal-900/35";
+  "inline-flex cursor-pointer shrink-0 items-center justify-center gap-1 rounded-md border border-teal-600/60 bg-teal-950/40 px-2 py-0.5 text-xs font-medium leading-tight text-teal-100 hover:bg-teal-900/35";
 
 /** 직속 칸 추가 — 직속 탭·패널과 동일 앰버 톤 */
 const btnAddDirectSlot =
-  "inline-flex cursor-pointer shrink-0 items-center justify-center gap-1 rounded-md border border-amber-500/45 bg-amber-950/35 px-2 py-0.5 text-[10px] font-medium leading-tight text-amber-100/95 hover:border-amber-400/55 hover:bg-amber-500/[0.12]";
+  "inline-flex cursor-pointer shrink-0 items-center justify-center gap-1 rounded-md border border-amber-500/45 bg-amber-950/35 px-2 py-0.5 text-xs font-medium leading-tight text-amber-100/95 hover:border-amber-400/55 hover:bg-amber-500/[0.12]";
 
 const btnDangerIcon =
   "inline-flex cursor-pointer items-center justify-center rounded-md border border-rose-900/50 p-1.5 text-rose-400 hover:bg-rose-950/40";
@@ -590,7 +590,7 @@ export function DashboardPlacementsSection({
           탭을 고른 뒤 그 칸에만 가구·세부 칸을 추가하세요. 새 직속 칸은「직속
           칸 추가하기」로 만듭니다.
         </p>
-        <p className="mt-1.5 text-[10px] text-teal-500/75">
+        <p className="mt-1.5 text-xs text-teal-500/75">
           이 제목 영역을 누르면 오른쪽「물품 추가」패널이 펼쳐집니다.
         </p>
       </button>
@@ -675,7 +675,7 @@ export function DashboardPlacementsSection({
                                   role="tab"
                                   aria-selected={selectedTab}
                                   className={cn(
-                                    "cursor-pointer px-2 py-1.5 text-left text-[11px] font-medium transition-colors",
+                                    "cursor-pointer px-2 py-1.5 text-left text-xs font-medium transition-colors",
                                     selectedTab
                                       ? "text-amber-100"
                                       : "text-zinc-300 hover:bg-zinc-800/40 hover:text-zinc-300",
@@ -725,7 +725,7 @@ export function DashboardPlacementsSection({
                         aria-labelledby={`tab-${activeSlot.id}`}
                       >
                         <div className="border-b border-amber-500/20 pb-2">
-                          <p className="text-[9px] font-medium text-amber-200/85">
+                          <p className="text-xs font-medium text-amber-200/85">
                             현재 직속 칸
                           </p>
                           <p
@@ -744,11 +744,11 @@ export function DashboardPlacementsSection({
 
                           <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-3">
                             <div className="min-w-0 flex-1 space-y-2">
-                              <p className="text-[10px] font-medium text-zinc-300">
+                              <p className="text-xs font-medium text-zinc-300">
                                 「{activeSlot.name}」에 가구 연결
                               </p>
                               {fpsForSlot.length === 0 ? (
-                                <p className="rounded-md bg-zinc-950/40 px-2 py-1.5 text-[11px] text-zinc-300">
+                                <p className="rounded-md bg-zinc-950/40 px-2 py-1.5 text-xs text-zinc-300">
                                   아직 가구가 없습니다.
                                 </p>
                               ) : (
@@ -769,7 +769,7 @@ export function DashboardPlacementsSection({
                                           setFocusedFurnitureId(fp.id)
                                         }
                                         className={cn(
-                                          "max-w-full cursor-pointer truncate rounded-full border px-2 py-0.5 text-[11px] font-medium transition-colors",
+                                          "max-w-full cursor-pointer truncate rounded-full border px-2 py-0.5 text-xs font-medium transition-colors",
                                           sel
                                             ? "border-teal-500/50 bg-teal-950/40 text-teal-100"
                                             : "border-zinc-700 bg-zinc-950/80 text-zinc-300 hover:border-zinc-600 hover:text-zinc-200",
@@ -837,7 +837,7 @@ export function DashboardPlacementsSection({
                                     </div>
 
                                     <div className="mt-2 border-t border-zinc-800/70 pt-2">
-                                      <p className="text-[11px] text-zinc-300">
+                                      <p className="text-xs text-zinc-300">
                                         <span className="text-zinc-300">
                                           물품 등록
                                         </span>
@@ -851,7 +851,7 @@ export function DashboardPlacementsSection({
                                         {slotsUnderFurniture(
                                           focusedFurniture.id,
                                         ).length === 0 ? (
-                                          <li className="text-[11px] text-zinc-300">
+                                          <li className="text-xs text-zinc-300">
                                             세부 칸이 없습니다.
                                           </li>
                                         ) : (
@@ -860,7 +860,7 @@ export function DashboardPlacementsSection({
                                           ).map((s) => (
                                             <li
                                               key={s.id}
-                                              className="flex items-center justify-between gap-2 rounded-md bg-zinc-900/80 px-2 py-1 text-[11px] text-zinc-300"
+                                              className="flex items-center justify-between gap-2 rounded-md bg-zinc-900/80 px-2 py-1 text-xs text-zinc-300"
                                             >
                                               <span>{s.name}</span>
                                               <button

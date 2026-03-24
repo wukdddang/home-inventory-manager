@@ -52,7 +52,7 @@ export function LoginShowcaseSection() {
             key={f.title}
             className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-sm"
           >
-            <span className="inline-block rounded-full bg-teal-500/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-teal-300">
+            <span className="inline-block rounded-full bg-teal-500/20 px-2 py-0.5 text-xs font-semibold uppercase tracking-wider text-teal-300">
               {f.tag}
             </span>
             <h3 className="mt-2 text-sm font-semibold text-white">{f.title}</h3>
@@ -62,7 +62,7 @@ export function LoginShowcaseSection() {
       </div>
 
       <div className="relative z-10 mt-10 hidden rounded-2xl border border-white/10 bg-black/30 p-4 sm:block">
-        <p className="text-[10px] font-medium uppercase tracking-widest text-zinc-300">
+        <p className="text-xs font-medium uppercase tracking-widest text-zinc-300">
           예시 화면 흐름
         </p>
         <div className="mt-3 flex gap-2 text-xs text-zinc-300">
