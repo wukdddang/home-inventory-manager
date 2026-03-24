@@ -195,6 +195,22 @@ export const MOCK_SEED_HOUSEHOLDS: Household[] = [
   },
 ];
 
+/**
+ * 재고 이력 mock: 오늘 기준 dayOffset일의 로컬 시각 → ISO
+ * (기간 필터·표의 일시가 같은 달력 기준을 쓰도록 함)
+ */
+function mockLedger로컬날짜시각을_만든다(
+  dayOffsetFromToday: number,
+  hour: number,
+  minute: number,
+): string {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + dayOffsetFromToday);
+  d.setHours(hour, minute, 0, 0);
+  return d.toISOString();
+}
+
 /** 재고 이력 목 페이지네이션 확인용 — 기본 8건 외 추가 행 */
 function mockInventoryLedgerExtraRows(): InventoryLedgerRow[] {
   const items = [
@@ -228,7 +244,6 @@ function mockInventoryLedgerExtraRows(): InventoryLedgerRow[] {
     const type = types[i % 4]!;
     const item = items[i % items.length]!;
     const householdId = households[i % 2]!;
-    const day = 1 + (i % 22);
     const hour = 7 + (i % 12);
     const minute = (i * 11) % 60;
     let quantityDelta: number;
@@ -251,107 +266,114 @@ function mockInventoryLedgerExtraRows(): InventoryLedgerRow[] {
       memo: i % 6 === 0 ? `목 데이터 일괄 생성 #${i + 1}` : undefined,
       reason:
         type === "waste" ? wasteReasons[i % 3]! : undefined,
-      createdAt: `2025-03-${String(day).padStart(2, "0")}T${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}:00.000Z`,
+      createdAt: mockLedger로컬날짜시각을_만든다(
+        -(1 + (i % 28)),
+        hour,
+        minute,
+      ),
     });
   }
   return rows;
 }
 
-/** 재고 이력(mock) 페이지 등에서 동일 시드로 재사용 */
-const MOCK_SEED_INVENTORY_LEDGER_BASE: InventoryLedgerRow[] = [
-  {
-    id: "mock-ledger-001",
-    householdId: "mock-household-home",
-    inventoryItemId: "mock-item-ramen",
-    type: "in",
-    quantityDelta: 6,
-    quantityAfter: 12,
-    itemLabel: "식료품 › 라면 › 1봉",
-    memo: "장보기 구매 반영",
-    refType: "purchase",
-    refId: "mock-purchase-1",
-    createdAt: "2025-03-23T09:15:00.000Z",
-  },
-  {
-    id: "mock-ledger-002",
-    householdId: "mock-household-home",
-    inventoryItemId: "mock-item-milk-shelf",
-    type: "out",
-    quantityDelta: -1,
-    quantityAfter: 1,
-    itemLabel: "식료품 › 우유 › 500ml",
-    memo: "아침에 사용",
-    createdAt: "2025-03-22T18:40:00.000Z",
-  },
-  {
-    id: "mock-ledger-003",
-    householdId: "mock-household-home",
-    inventoryItemId: "mock-item-milk-shelf",
-    type: "waste",
-    quantityDelta: -1,
-    quantityAfter: 0,
-    itemLabel: "식료품 › 우유 › 500ml",
-    reason: "expired",
-    memo: "냉장고 맨 뒤에서 발견",
-    createdAt: "2025-03-21T11:05:00.000Z",
-  },
-  {
-    id: "mock-ledger-004",
-    householdId: "mock-household-home",
-    inventoryItemId: "mock-item-tissue",
-    type: "out",
-    quantityDelta: -1,
-    quantityAfter: 2,
-    itemLabel: "생활용품 › 티슈 › 1박스",
-    createdAt: "2025-03-20T08:00:00.000Z",
-  },
-  {
-    id: "mock-ledger-005",
-    householdId: "mock-household-home",
-    inventoryItemId: "mock-item-ramen",
-    type: "out",
-    quantityDelta: -2,
-    quantityAfter: 6,
-    itemLabel: "식료품 › 라면 › 1봉",
-    memo: "야식",
-    createdAt: "2025-03-19T23:10:00.000Z",
-  },
-  {
-    id: "mock-ledger-006",
-    householdId: "mock-household-office",
-    inventoryItemId: "mock-item-paper",
-    type: "adjust",
-    quantityDelta: 1,
-    quantityAfter: 5,
-    itemLabel: "사무용품 › A4 용지 › 1권",
-    memo: "실사 후 재고 맞춤",
-    createdAt: "2025-03-18T16:45:00.000Z",
-  },
-  {
-    id: "mock-ledger-007",
-    householdId: "mock-household-office",
-    inventoryItemId: "mock-item-paper",
-    type: "out",
-    quantityDelta: -2,
-    quantityAfter: 4,
-    itemLabel: "사무용품 › A4 용지 › 1권",
-    createdAt: "2025-03-17T10:20:00.000Z",
-  },
-  {
-    id: "mock-ledger-008",
-    householdId: "mock-household-home",
-    inventoryItemId: "mock-item-remote",
-    type: "waste",
-    quantityDelta: -1,
-    quantityAfter: 1,
-    itemLabel: "전자·소모품 › 건전지 › AAA 4입",
-    reason: "damaged",
-    createdAt: "2025-03-15T14:00:00.000Z",
-  },
-];
+/** 재고 이력(mock) 페이지 등에서 동일 시드로 재사용 — 일시는 항상 «오늘» 기준 상대 날짜 */
+function buildMockInventoryLedgerBase(): InventoryLedgerRow[] {
+  const iso = mockLedger로컬날짜시각을_만든다;
+  return [
+    {
+      id: "mock-ledger-001",
+      householdId: "mock-household-home",
+      inventoryItemId: "mock-item-ramen",
+      type: "in",
+      quantityDelta: 6,
+      quantityAfter: 12,
+      itemLabel: "식료품 › 라면 › 1봉",
+      memo: "장보기 구매 반영",
+      refType: "purchase",
+      refId: "mock-purchase-1",
+      createdAt: iso(-1, 9, 15),
+    },
+    {
+      id: "mock-ledger-002",
+      householdId: "mock-household-home",
+      inventoryItemId: "mock-item-milk-shelf",
+      type: "out",
+      quantityDelta: -1,
+      quantityAfter: 1,
+      itemLabel: "식료품 › 우유 › 500ml",
+      memo: "아침에 사용",
+      createdAt: iso(-2, 18, 40),
+    },
+    {
+      id: "mock-ledger-003",
+      householdId: "mock-household-home",
+      inventoryItemId: "mock-item-milk-shelf",
+      type: "waste",
+      quantityDelta: -1,
+      quantityAfter: 0,
+      itemLabel: "식료품 › 우유 › 500ml",
+      reason: "expired",
+      memo: "냉장고 맨 뒤에서 발견",
+      createdAt: iso(-3, 11, 5),
+    },
+    {
+      id: "mock-ledger-004",
+      householdId: "mock-household-home",
+      inventoryItemId: "mock-item-tissue",
+      type: "out",
+      quantityDelta: -1,
+      quantityAfter: 2,
+      itemLabel: "생활용품 › 티슈 › 1박스",
+      createdAt: iso(-4, 8, 0),
+    },
+    {
+      id: "mock-ledger-005",
+      householdId: "mock-household-home",
+      inventoryItemId: "mock-item-ramen",
+      type: "out",
+      quantityDelta: -2,
+      quantityAfter: 6,
+      itemLabel: "식료품 › 라면 › 1봉",
+      memo: "야식",
+      createdAt: iso(-5, 23, 10),
+    },
+    {
+      id: "mock-ledger-006",
+      householdId: "mock-household-office",
+      inventoryItemId: "mock-item-paper",
+      type: "adjust",
+      quantityDelta: 1,
+      quantityAfter: 5,
+      itemLabel: "사무용품 › A4 용지 › 1권",
+      memo: "실사 후 재고 맞춤",
+      createdAt: iso(-6, 16, 45),
+    },
+    {
+      id: "mock-ledger-007",
+      householdId: "mock-household-office",
+      inventoryItemId: "mock-item-paper",
+      type: "out",
+      quantityDelta: -2,
+      quantityAfter: 4,
+      itemLabel: "사무용품 › A4 용지 › 1권",
+      createdAt: iso(-7, 10, 20),
+    },
+    {
+      id: "mock-ledger-008",
+      householdId: "mock-household-home",
+      inventoryItemId: "mock-item-remote",
+      type: "waste",
+      quantityDelta: -1,
+      quantityAfter: 1,
+      itemLabel: "전자·소모품 › 건전지 › AAA 4입",
+      reason: "damaged",
+      createdAt: iso(-8, 14, 0),
+    },
+  ];
+}
 
 export const MOCK_SEED_INVENTORY_LEDGER: InventoryLedgerRow[] = [
-  ...MOCK_SEED_INVENTORY_LEDGER_BASE,
+  ...buildMockInventoryLedgerBase(),
   ...mockInventoryLedgerExtraRows(),
 ];
 

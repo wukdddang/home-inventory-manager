@@ -5,6 +5,7 @@ import {
   appViewPresenceVariants,
 } from "@/app/_ui/app-view-transition.motion";
 import { FormModal } from "@/app/_ui/form-modal";
+import { PeriodFilterToolbar } from "@/app/_ui/table-period-filter-row";
 import {
   MOCK_SEED_HOUSEHOLDS,
   MOCK_SEED_INVENTORY_LEDGER,
@@ -13,6 +14,10 @@ import {
   resolveLedgerLocationColumns,
   type LedgerLocationColumns,
 } from "@/lib/household-location";
+import {
+  iso를_날짜키로_만든다,
+  날짜키가_기간에_포함되는가,
+} from "@/lib/table-period-filter";
 import type {
   Household,
   InventoryLedgerRow,
@@ -601,6 +606,22 @@ export function InventoryHistoryPanel() {
   );
   const [memoDraft, setMemoDraft] = useState("");
   const [pageIndex, setPageIndex] = useState(0);
+  const [periodStart, setPeriodStart] = useState("");
+  const [periodEnd, setPeriodEnd] = useState("");
+
+  const 기간_시작을_바꾼다 = useCallback((v: string) => {
+    setPageIndex(0);
+    setPeriodStart(v);
+  }, []);
+  const 기간_종료를_바꾼다 = useCallback((v: string) => {
+    setPageIndex(0);
+    setPeriodEnd(v);
+  }, []);
+  const 기간을_초기화한다 = useCallback(() => {
+    setPageIndex(0);
+    setPeriodStart("");
+    setPeriodEnd("");
+  }, []);
 
   const 비고를_바꾼다 = useCallback((rowId: string, value: string) => {
     setMemoOverrides((prev) => ({ ...prev, [rowId]: value }));
@@ -709,12 +730,23 @@ export function InventoryHistoryPanel() {
     [columnFilters],
   );
 
+  const hasActivePeriodFilter = Boolean(periodStart || periodEnd);
+
+  const periodFilteredRows = useMemo(
+    () =>
+      baseRows.filter((r) => {
+        const key = iso를_날짜키로_만든다(r.createdAt);
+        return 날짜키가_기간에_포함되는가(key, periodStart, periodEnd);
+      }),
+    [baseRows, periodStart, periodEnd],
+  );
+
   const columnFilteredRows = useMemo(
     () =>
-      baseRows.filter((r) =>
+      periodFilteredRows.filter((r) =>
         행이_컬럼_필터에_일치하는가(r, householdsForLabels, columnFilters),
       ),
-    [baseRows, householdsForLabels, columnFilters],
+    [periodFilteredRows, householdsForLabels, columnFilters],
   );
 
   const searchedRows = useMemo(
@@ -761,7 +793,10 @@ export function InventoryHistoryPanel() {
   );
 
   const totalBase = baseRows.length;
-  const hasFilterContext = searchQuery.trim() !== "" || hasActiveColumnFilters;
+  const hasFilterContext =
+    searchQuery.trim() !== "" ||
+    hasActiveColumnFilters ||
+    hasActivePeriodFilter;
   const footerRangeStart =
     totalFiltered === 0 ? 0 : activePageIndex * LEDGER_PAGE_SIZE + 1;
   const footerRangeEnd = Math.min(
@@ -803,6 +838,8 @@ export function InventoryHistoryPanel() {
               onChange={(e) => {
                 setPageIndex(0);
                 setColumnFilters({});
+                setPeriodStart("");
+                setPeriodEnd("");
                 setFilterHouseholdId(e.target.value);
               }}
               aria-label="표시 거점 범위"
@@ -829,6 +866,14 @@ export function InventoryHistoryPanel() {
                 표 열 필터 초기화
               </button>
             ) : null}
+            <PeriodFilterToolbar
+              dateFieldLabel="일시(기록일)"
+              periodStart={periodStart}
+              periodEnd={periodEnd}
+              onPeriodStartChange={기간_시작을_바꾼다}
+              onPeriodEndChange={기간_종료를_바꾼다}
+              onClear={기간을_초기화한다}
+            />
             <div className="relative h-9 min-w-0 flex-1 basis-full sm:min-w-48 sm:basis-0">
               <Search
                 className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-zinc-300"
@@ -869,9 +914,13 @@ export function InventoryHistoryPanel() {
             {sortedRows.length === 0 ? (
               <div className="flex min-h-0 flex-1 flex-col justify-center rounded-xl border border-dashed border-zinc-700 px-4 py-10">
                 <p className="text-center text-sm text-zinc-300">
-                  {columnFilteredRows.length === 0
-                    ? "표 열 필터 조건에 맞는 행이 없습니다."
-                    : "검색 조건에 맞는 행이 없습니다."}
+                  {hasActivePeriodFilter &&
+                  periodFilteredRows.length === 0 &&
+                  totalBase > 0
+                    ? "기간 조건에 맞는 행이 없습니다."
+                    : columnFilteredRows.length === 0
+                      ? "표 열 필터 조건에 맞는 행이 없습니다."
+                      : "검색 조건에 맞는 행이 없습니다."}
                 </p>
                 <p className="mt-6 text-right text-xs text-zinc-300">
                   {hasFilterContext
@@ -1070,7 +1119,7 @@ export function InventoryHistoryPanel() {
                                   {hasFilterContext ? (
                                     <span className="text-zinc-300">
                                       {" "}
-                                      (거점 범위·검색·표 열 필터 적용 전{" "}
+                                      (거점·기간·검색·표 열 필터 적용 전{" "}
                                       {totalBase}행)
                                     </span>
                                   ) : (
