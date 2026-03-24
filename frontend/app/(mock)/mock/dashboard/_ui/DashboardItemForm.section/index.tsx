@@ -35,6 +35,7 @@ import {
   ShoppingCart,
 } from "lucide-react";
 import { ShoppingListQuickAddFromCatalogModal } from "../DashboardInventory.section/DashboardShoppingList.module";
+import { ShoppingListSuggestionsCard } from "../DashboardInventory.section/ShoppingListSuggestions.module";
 
 export type RoomItemAddWidgetProps = {
   selected: Household;
@@ -1200,6 +1201,12 @@ export function RoomItemAddWidget({
         ) : null}
 
         {sourceToggle}
+
+        <ShoppingListSuggestionsCard
+          household={selected}
+          dataMode={dataMode}
+          compact={embedInFloatingPanel}
+        />
 
         {embedInFloatingPanel ? (
           <>

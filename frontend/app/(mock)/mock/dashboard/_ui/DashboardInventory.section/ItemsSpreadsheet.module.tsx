@@ -6,7 +6,7 @@ import { formatLocationBreadcrumb } from "@/lib/household-location";
 import { 구매목록에서_품목_로트_요약을_구한다 } from "@/lib/inventory-lot-from-purchases";
 import { resolveInventoryRowColumns } from "@/lib/product-catalog-defaults";
 import { cn } from "@/lib/utils";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   Household,
   InventoryRow,
@@ -21,9 +21,54 @@ type ItemsSpreadsheetProps = {
   onDeleteItem: (itemId: string) => void;
   on소비하려고_연다: (item: InventoryRow) => void;
   on폐기하려고_연다: (item: InventoryRow) => void;
+  /** 품목별 최소 재고(이하이면 장보기 제안 등) — 비우면 기준 없음 */
+  onUpdateItemMinStock: (itemId: string, min: number | undefined) => void;
   /** 표에서 방 셀 클릭 시 조회 영역의 선택 방·등록 위젯과 동기 */
   onSelectRoomId?: (roomId: string) => void;
 };
+
+function MinStockInput({
+  itemId,
+  initial,
+  onCommit,
+}: {
+  itemId: string;
+  initial: number | undefined;
+  onCommit: (itemId: string, min: number | undefined) => void;
+}) {
+  const [text, setText] = useState(() =>
+    initial != null ? String(initial) : "",
+  );
+  useEffect(() => {
+    setText(initial != null ? String(initial) : "");
+  }, [itemId, initial]);
+
+  return (
+    <input
+      type="number"
+      min={0}
+      step={1}
+      title="이 수량 이하이면 재고 부족으로 장보기에 제안"
+      value={text}
+      onChange={(e) => setText(e.target.value)}
+      onBlur={() => {
+        const raw = text.trim();
+        if (raw === "") {
+          if (initial !== undefined) onCommit(itemId, undefined);
+          return;
+        }
+        const n = Math.floor(Number(raw));
+        if (!Number.isFinite(n) || n < 0) {
+          setText(initial != null ? String(initial) : "");
+          return;
+        }
+        if (n !== initial) onCommit(itemId, n);
+      }}
+      className="w-16 rounded border border-zinc-700 bg-zinc-900 px-1.5 py-1 text-xs text-zinc-100 tabular-nums outline-none focus:border-teal-500"
+      aria-label="최소 재고"
+    />
+  );
+}
 
 /** 정렬 가능 컬럼 (로트·액션 열 제외) */
 type SortKey =
@@ -148,6 +193,7 @@ export function ItemsSpreadsheet({
   onDeleteItem,
   on소비하려고_연다,
   on폐기하려고_연다,
+  onUpdateItemMinStock,
   onSelectRoomId,
 }: ItemsSpreadsheetProps) {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
@@ -207,6 +253,9 @@ export function ItemsSpreadsheet({
                 sort={sort}
                 onCycleSort={cycleSort}
               />
+              <th className="w-24 px-3 py-3 align-top text-xs font-medium uppercase tracking-wider text-zinc-500">
+                최소 재고
+              </th>
               <SortableTh
                 label="단위"
                 column="unit"
@@ -241,7 +290,7 @@ export function ItemsSpreadsheet({
             {household.items.length === 0 ? (
               <tr>
                 <td
-                  colSpan={10}
+                  colSpan={11}
                   className="px-3 py-10 text-center text-zinc-500"
                 >
                   물품이 없습니다. 방을 선택한 뒤 아래에서 등록하세요.
@@ -269,6 +318,13 @@ export function ItemsSpreadsheet({
                     </td>
                     <td className="px-3 py-2.5 text-zinc-400">{cols.spec}</td>
                     <td className="px-3 py-2.5 text-zinc-400">{it.quantity}</td>
+                    <td className="px-3 py-2.5 align-middle">
+                      <MinStockInput
+                        itemId={it.id}
+                        initial={it.minStockLevel}
+                        onCommit={onUpdateItemMinStock}
+                      />
+                    </td>
                     <td className="px-3 py-2.5 text-zinc-400">{it.unit}</td>
                     <td className="px-3 py-2.5 align-middle">
                       <InventoryLotExpiryBadge

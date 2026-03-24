@@ -383,18 +383,39 @@ export function setHouseholds(list: Household[]) {
   emitHouseholds();
 }
 
+let appSettingsCache: {
+  raw: string | null | undefined;
+  settings: AppSettings;
+} = { raw: undefined, settings: DEFAULTS };
+
 export function getAppSettings(): AppSettings {
   if (typeof window === "undefined") return DEFAULTS;
-  const s = safeParse<Partial<AppSettings>>(
-    localStorage.getItem(K_SETTINGS),
-    {},
-  );
-  return normalizeAppSettings(s);
+  const raw = localStorage.getItem(K_SETTINGS);
+  if (appSettingsCache.raw === raw) return appSettingsCache.settings;
+  const s = safeParse<Partial<AppSettings>>(raw, {});
+  const settings = normalizeAppSettings(s);
+  appSettingsCache = { raw, settings };
+  return settings;
+}
+
+const appSettingsListeners = new Set<() => void>();
+
+export function subscribeAppSettings(onStoreChange: () => void) {
+  appSettingsListeners.add(onStoreChange);
+  return () => appSettingsListeners.delete(onStoreChange);
+}
+
+function emitAppSettings() {
+  appSettingsListeners.forEach((fn) => fn());
 }
 
 export function setAppSettings(s: AppSettings) {
   if (typeof window === "undefined") return;
-  localStorage.setItem(K_SETTINGS, JSON.stringify(s));
+  const str = JSON.stringify(s);
+  localStorage.setItem(K_SETTINGS, str);
+  const settings = normalizeAppSettings(s);
+  appSettingsCache = { raw: str, settings };
+  emitAppSettings();
 }
 
 let purchasesCache: {

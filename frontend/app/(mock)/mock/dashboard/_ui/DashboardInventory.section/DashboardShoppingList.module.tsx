@@ -19,6 +19,7 @@ import type {
 import Link from "next/link";
 import { useId, useMemo, useState, useSyncExternalStore } from "react";
 import { useDashboard } from "../../_hooks/useDashboard";
+import { ShoppingListSuggestionsCard } from "./ShoppingListSuggestions.module";
 
 function catalogVariantKey(productId: string, variantId: string) {
   return `${productId}\0${variantId}`;
@@ -39,6 +40,8 @@ export type DashboardShoppingListModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   household: Household | null;
+  /** 구매 데이터 소스 — 제안·로트와 동일하게 맞춤 */
+  dataMode?: "mock" | "api";
   /** true면 목록만 표시(구매 완료·삭제 비활성). 필요 시 스토리북·데모용 */
   readOnly?: boolean;
 };
@@ -221,7 +224,13 @@ function ShoppingListAddFromDashboardHint() {
   );
 }
 
-function ShoppingListDetailContent({ household }: { household: Household }) {
+function ShoppingListDetailContent({
+  household,
+  dataMode,
+}: {
+  household: Household;
+  dataMode: "mock" | "api";
+}) {
   const { 재고_장보기_보충을_기록_한다 } = useDashboard();
   const [depletedQty, setDepletedQty] = useState<Record<string, number>>({});
   const { saved, depletedItems } = useShoppingListDerived(household);
@@ -323,6 +332,8 @@ function ShoppingListDetailContent({ household }: { household: Household }) {
         결제가 아니라 살 것·다 쓴 품목을 모아 두는 목록입니다. 사 온 뒤「구매
         완료」하면 재고 수량이 늘고, 이력에는 입고로 남습니다.
       </p>
+
+      <ShoppingListSuggestionsCard household={household} dataMode={dataMode} />
 
       {!hasRows ? (
         <p className="rounded-lg border border-dashed border-zinc-700 bg-zinc-950/40 px-4 py-3 text-center text-sm text-zinc-500">
@@ -655,6 +666,7 @@ export function DashboardShoppingListModal({
   open,
   onOpenChange,
   household,
+  dataMode = "api",
   readOnly = false,
 }: DashboardShoppingListModalProps) {
   const titleId = useId().replace(/:/g, "");
@@ -700,6 +712,7 @@ export function DashboardShoppingListModal({
               <ShoppingListDetailContent
                 key={household.id}
                 household={household}
+                dataMode={dataMode}
               />
             )
           ) : (

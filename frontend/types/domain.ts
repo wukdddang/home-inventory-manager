@@ -113,6 +113,8 @@ export type InventoryRow = {
   /** 용량·포장 표시 스냅샷 (예: 500ml, 5개입) */
   variantCaption?: string;
   quantityPerUnit?: number;
+  /** 이하이면 부족으로 장보기 제안 등에 쓰임(미입력이면 부족 기준 없음) */
+  minStockLevel?: number;
 };
 
 /**

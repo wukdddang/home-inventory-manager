@@ -129,5 +129,27 @@ export function mock구매_시드를_생성한다(): PurchaseRecord[] {
         },
       ],
     },
+    /** 장보기 제안「유통기한 임박」만 — 수량은 최소 재고 이상(min 없음) */
+    {
+      id: "mock-purchase-battery-remote",
+      householdId: "mock-household-home",
+      inventoryItemId: "mock-item-remote",
+      productId: "p-battery",
+      productVariantId: "v-battery-aaa",
+      itemName: "전자·소모품 › 건전지 › AAA 4입",
+      variantCaption: "AAA 4입",
+      unitSymbol: "팩",
+      purchasedOn: 날짜를_YMD_문자열로_한다(날짜에_일수를_더한다(now, -14)),
+      unitPrice: 4800,
+      totalPrice: 9600,
+      supplierName: "다이소",
+      batches: [
+        {
+          id: "mock-lot-battery-a",
+          quantity: 2,
+          expiresOn: 날짜를_YMD_문자열로_한다(날짜에_일수를_더한다(now, 2)),
+        },
+      ],
+    },
   ];
 }

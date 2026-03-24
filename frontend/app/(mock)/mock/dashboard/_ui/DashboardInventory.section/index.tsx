@@ -271,6 +271,16 @@ export function DashboardInventorySection({
               onDeleteItem={handleDeleteItem}
               on소비하려고_연다={handleOpenConsume}
               on폐기하려고_연다={handleOpenWaste}
+              onUpdateItemMinStock={(itemId, min) => {
+                거점을_갱신_한다(selected.id, (h) => ({
+                  ...h,
+                  items: h.items.map((row) =>
+                    row.id === itemId
+                      ? { ...row, minStockLevel: min }
+                      : row,
+                  ),
+                }));
+              }}
               onSelectRoomId={(id) => onRoomSelect(id)}
             />
           </div>
