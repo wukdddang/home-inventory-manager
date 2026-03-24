@@ -44,7 +44,7 @@ export function PurchasesPanel() {
       ) : (
         <motion.div
           key="purchases-main"
-          className="mx-auto flex w-full max-w-6xl min-w-0 flex-col gap-6 pb-16"
+          className="flex min-h-0 w-full min-w-0 max-w-none flex-1 flex-col gap-6 overflow-hidden pb-16"
           initial="initial"
           animate="animate"
           exit="exit"

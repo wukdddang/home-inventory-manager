@@ -13,14 +13,42 @@ import {
 } from "@/lib/purchase-lot-helpers";
 import { PurchaseRegisterModal } from "./PurchaseRegister.module";
 
-function 구매의_최악_만료_일수를_구한다(p: PurchaseRecord): number | null {
-  let min: number | null = null;
-  for (const b of p.batches) {
-    const d = 유통기한까지_일수를_구한다(b.expiresOn);
-    if (d === null) continue;
-    if (min === null || d < min) min = d;
+/** 재고 이력 표와 동일 — `식료품 › 라면 › 1봉` 형태를 분류·이름·규격으로 나눈다 */
+function 품목_라벨을_분해한다(
+  itemLabel: string | undefined,
+  fallbackId: string,
+): { 분류: string; 이름: string; 규격: string } {
+  const raw = (itemLabel ?? "").trim();
+  if (!raw) {
+    return { 분류: "—", 이름: fallbackId, 규격: "—" };
   }
-  return min;
+  const parts = raw
+    .split(/[›>＞]/g)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (parts.length >= 3) {
+    return {
+      분류: parts[0]!,
+      이름: parts[1]!,
+      규격: parts.slice(2).join(" › "),
+    };
+  }
+  if (parts.length === 2) {
+    return { 분류: parts[0]!, 이름: parts[1]!, 규격: "—" };
+  }
+  return { 분류: "—", 이름: parts[0]!, 규격: "—" };
+}
+
+function 구매_용량포장_텍스트를_구한다(p: PurchaseRecord): string {
+  const { 규격 } = 품목_라벨을_분해한다(
+    p.itemName,
+    p.inventoryItemId ?? p.id,
+  );
+  const cap = p.variantCaption?.trim();
+  if (규격 !== "—" && cap) return `${규격} · ${cap}`;
+  if (규격 !== "—") return 규격;
+  if (cap) return cap;
+  return "—";
 }
 
 function 만료_뱃지를_렌더한다(days: number | null) {
@@ -105,6 +133,22 @@ export function PurchaseLotsSection() {
     [purchases, viewingHouseholdId],
   );
 
+  /** 로트마다 한 행 — 재고 이력 표처럼 유통기한별로 행을 나눈다 */
+  const purchaseTableRows = useMemo(() => {
+    const flat = filteredPurchases.flatMap((p) =>
+      p.batches.map((b, bi) => ({
+        purchase: p,
+        batch: b,
+        batchIndex: bi,
+        batchCount: p.batches.length,
+      })),
+    );
+    return flat.map((row, globalIdx) => ({
+      ...row,
+      zebra: globalIdx % 2 === 1,
+    }));
+  }, [filteredPurchases]);
+
   const inventoryItems = selected?.items ?? [];
 
   if (households.length === 0) {
@@ -125,7 +169,7 @@ export function PurchaseLotsSection() {
   }
 
   return (
-    <section className="min-w-0 space-y-4">
+    <section className="flex min-h-0 min-w-0 flex-1 flex-col space-y-4">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0 space-y-2">
           <h2 className="text-lg font-semibold text-white">구매·유통기한 로트</h2>
@@ -185,77 +229,136 @@ export function PurchaseLotsSection() {
           </p>
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-2xl border border-zinc-800">
-          <table className="w-full min-w-[44rem] border-collapse text-left text-sm">
-            <thead>
-              <tr className="border-b border-zinc-800 bg-zinc-900/80 text-xs uppercase tracking-wide text-zinc-500">
-                <th className="px-4 py-3 font-medium">품목</th>
-                <th className="px-4 py-3 font-medium">구매일</th>
-                <th className="px-4 py-3 font-medium">금액</th>
-                <th className="px-4 py-3 font-medium">로트</th>
-                <th className="px-4 py-3 font-medium">임박</th>
-                <th className="px-4 py-3 font-medium text-right">작업</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredPurchases.map((p) => {
-                const worst = 구매의_최악_만료_일수를_구한다(p);
-                return (
-                  <tr
-                    key={p.id}
-                    className="border-b border-zinc-800/90 last:border-0 hover:bg-zinc-900/40"
-                  >
-                    <td className="px-4 py-3 align-top">
-                      <p className="font-medium text-zinc-100">{p.itemName}</p>
-                      {p.variantCaption ? (
-                        <p className="text-xs text-zinc-500">{p.variantCaption}</p>
-                      ) : null}
-                      {p.supplierName ? (
-                        <p className="text-[11px] text-zinc-600">
-                          {p.supplierName}
-                        </p>
-                      ) : null}
-                    </td>
-                    <td className="px-4 py-3 align-top text-zinc-300 tabular-nums">
-                      {p.purchasedOn}
-                    </td>
-                    <td className="px-4 py-3 align-top text-zinc-300 tabular-nums">
-                      <div>₩{p.totalPrice.toLocaleString()}</div>
-                      <div className="text-xs text-zinc-500">
-                        단가 ₩{p.unitPrice.toLocaleString()}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 align-top text-zinc-300">
-                      <ul className="space-y-1 text-xs">
-                        {p.batches.map((b) => (
-                          <li key={b.id} className="tabular-nums">
-                            <span className="text-zinc-400">{b.expiresOn}</span>
-                            <span className="mx-1.5 text-zinc-600">·</span>
-                            <span>
-                              {b.quantity}
-                              {p.unitSymbol}
-                            </span>
-                          </li>
-                        ))}
-                      </ul>
-                    </td>
-                    <td className="px-4 py-3 align-top">
-                      {만료_뱃지를_렌더한다(worst)}
-                    </td>
-                    <td className="px-4 py-3 align-top text-right">
-                      <button
-                        type="button"
-                        onClick={() => setPendingDelete(p)}
-                        className={cn(rowBtnClass, "text-rose-300/90")}
-                      >
-                        삭제
-                      </button>
-                    </td>
+        <div className="flex min-h-0 w-full min-w-0 flex-col overflow-hidden rounded-xl border border-zinc-700 bg-zinc-950/80 shadow-inner ring-1 ring-zinc-800/80">
+          <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-x-auto [scrollbar-width:thin]">
+            <div className="min-h-0 min-w-0 flex-1 overflow-y-auto">
+              <table className="w-full min-w-350 table-fixed border-collapse text-left text-sm">
+                <thead>
+                  <tr className="border-b border-zinc-800 bg-zinc-900">
+                    <th className="w-[9%] px-3 py-2.5 text-left text-xs font-medium text-zinc-500">
+                      분류
+                    </th>
+                    <th className="w-[11%] px-3 py-2.5 text-left text-xs font-medium text-zinc-500">
+                      품목
+                    </th>
+                    <th className="w-[10%] px-3 py-2.5 text-left text-xs font-medium text-zinc-500">
+                      용량/포장
+                    </th>
+                    <th className="w-[8%] whitespace-nowrap px-3 py-2.5 text-left text-xs font-medium text-zinc-500">
+                      구매일
+                    </th>
+                    <th className="w-[10%] px-3 py-2.5 text-left text-xs font-medium text-zinc-500">
+                      금액
+                    </th>
+                    <th className="w-[9%] whitespace-nowrap px-3 py-2.5 text-left text-xs font-medium text-zinc-500">
+                      유통기한
+                    </th>
+                    <th className="w-[7%] whitespace-nowrap px-3 py-2.5 text-left text-xs font-medium text-zinc-500">
+                      수량
+                    </th>
+                    <th className="w-[8%] px-3 py-2.5 text-left text-xs font-medium text-zinc-500">
+                      임박
+                    </th>
+                    <th className="w-[7%] px-3 py-2.5 text-right text-xs font-medium text-zinc-500">
+                      작업
+                    </th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                </thead>
+                <tbody>
+                  {purchaseTableRows.map(
+                    ({ purchase: p, batch: b, batchIndex: bi, batchCount: n, zebra }) => {
+                      const fallbackId = p.inventoryItemId ?? p.id;
+                      const { 분류, 이름 } = 품목_라벨을_분해한다(
+                        p.itemName,
+                        fallbackId,
+                      );
+                      const 용량포장 = 구매_용량포장_텍스트를_구한다(p);
+                      const days = 유통기한까지_일수를_구한다(b.expiresOn);
+                      return (
+                        <tr
+                          key={`${p.id}-${b.id}`}
+                          className={`border-b border-zinc-800/90 ${zebra ? "bg-zinc-900/40" : "bg-transparent"} hover:bg-zinc-800/35`}
+                        >
+                          {bi === 0 ? (
+                            <>
+                              <td
+                                rowSpan={n}
+                                className="px-3 py-2 align-top text-zinc-300"
+                              >
+                                <span className="line-clamp-3 wrap-break-words text-xs">
+                                  {분류}
+                                </span>
+                              </td>
+                              <td
+                                rowSpan={n}
+                                className="px-3 py-2 align-top font-medium text-zinc-100"
+                              >
+                                <span className="line-clamp-3 wrap-break-words">
+                                  {이름}
+                                </span>
+                                {p.supplierName ? (
+                                  <p className="mt-1 text-[11px] font-normal text-zinc-600">
+                                    {p.supplierName}
+                                  </p>
+                                ) : null}
+                              </td>
+                              <td
+                                rowSpan={n}
+                                className="px-3 py-2 align-top tabular-nums text-zinc-400"
+                              >
+                                <span className="line-clamp-3 wrap-break-words text-xs">
+                                  {용량포장}
+                                </span>
+                              </td>
+                              <td
+                                rowSpan={n}
+                                className="whitespace-nowrap px-3 py-2 align-top tabular-nums text-zinc-300"
+                              >
+                                {p.purchasedOn}
+                              </td>
+                              <td
+                                rowSpan={n}
+                                className="px-3 py-2 align-top tabular-nums text-zinc-300"
+                              >
+                                <div>₩{p.totalPrice.toLocaleString()}</div>
+                                <div className="text-xs text-zinc-500">
+                                  단가 ₩{p.unitPrice.toLocaleString()}
+                                </div>
+                              </td>
+                            </>
+                          ) : null}
+                          <td className="whitespace-nowrap px-3 py-2 align-middle tabular-nums text-zinc-300">
+                            {b.expiresOn}
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-2 align-middle tabular-nums text-zinc-200">
+                            {b.quantity}
+                            {p.unitSymbol}
+                          </td>
+                          <td className="px-3 py-2 align-middle">
+                            {만료_뱃지를_렌더한다(days)}
+                          </td>
+                          {bi === 0 ? (
+                            <td
+                              rowSpan={n}
+                              className="px-3 py-2 align-top text-right"
+                            >
+                              <button
+                                type="button"
+                                onClick={() => setPendingDelete(p)}
+                                className={cn(rowBtnClass, "text-rose-300/90")}
+                              >
+                                삭제
+                              </button>
+                            </td>
+                          ) : null}
+                        </tr>
+                      );
+                    },
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       )}
 
