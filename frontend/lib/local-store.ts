@@ -8,6 +8,7 @@ import type {
   Household,
   HouseholdKindDefinition,
   InventoryLedgerRow,
+  NotificationItem,
   ProductCatalog,
   PurchaseBatchLot,
   PurchaseRecord,
@@ -40,6 +41,7 @@ const K_SETTINGS = "him-settings";
 const K_PURCHASES = "him-purchases";
 const K_INVENTORY_LEDGER = "him-inventory-ledger";
 const K_SHOPPING_LIST = "him-shopping-list";
+const K_NOTIFICATIONS = "him-notifications";
 
 function isLedgerTypeString(x: string): x is InventoryLedgerRow["type"] {
   return x === "in" || x === "out" || x === "adjust" || x === "waste";
@@ -570,6 +572,66 @@ export function getInventoryHistoryBundleSnapshot(): {
   const data = { ledger, households, purchases };
   historyBundleCache = { key, data };
   return data;
+}
+
+/* ── Notifications ── */
+
+const VALID_NOTIFICATION_TYPES = new Set([
+  "expiration_soon",
+  "expired",
+  "low_stock",
+  "shopping_reminder",
+  "shopping_list_update",
+]);
+
+function isNotificationItemShape(x: unknown): x is NotificationItem {
+  if (!x || typeof x !== "object") return false;
+  const o = x as Record<string, unknown>;
+  return (
+    typeof o.id === "string" &&
+    typeof o.householdId === "string" &&
+    typeof o.type === "string" &&
+    VALID_NOTIFICATION_TYPES.has(o.type) &&
+    typeof o.title === "string" &&
+    (o.readAt === null || typeof o.readAt === "string") &&
+    typeof o.createdAt === "string"
+  );
+}
+
+let notificationsCache: {
+  raw: string | null | undefined;
+  list: NotificationItem[];
+} = { raw: undefined, list: [] };
+
+const notificationListeners = new Set<() => void>();
+
+export function subscribeNotifications(onStoreChange: () => void) {
+  notificationListeners.add(onStoreChange);
+  return () => notificationListeners.delete(onStoreChange);
+}
+
+function emitNotifications() {
+  notificationListeners.forEach((fn) => fn());
+}
+
+export function getNotifications(): NotificationItem[] {
+  if (typeof window === "undefined") return [];
+  const raw = localStorage.getItem(K_NOTIFICATIONS);
+  if (notificationsCache.raw === raw) return notificationsCache.list;
+  const parsed = safeParse<unknown[]>(raw, []);
+  const list = Array.isArray(parsed)
+    ? parsed.filter(isNotificationItemShape)
+    : [];
+  notificationsCache = { raw, list };
+  return list;
+}
+
+export function setNotifications(list: NotificationItem[]) {
+  if (typeof window === "undefined") return;
+  const str = JSON.stringify(list);
+  localStorage.setItem(K_NOTIFICATIONS, str);
+  notificationsCache = { raw: str, list };
+  emitNotifications();
 }
 
 export { DEFAULTS as DEFAULT_APP_SETTINGS };

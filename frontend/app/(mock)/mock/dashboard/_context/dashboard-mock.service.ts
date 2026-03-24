@@ -3,6 +3,7 @@ import type {
   Household,
   InventoryLedgerRow,
   InventoryLedgerType,
+  NotificationItem,
 } from "@/types/domain";
 import type { DashboardHouseholdsPort } from "./dashboard-households.port";
 
@@ -376,6 +377,88 @@ export const MOCK_SEED_INVENTORY_LEDGER: InventoryLedgerRow[] = [
   ...buildMockInventoryLedgerBase(),
   ...mockInventoryLedgerExtraRows(),
 ];
+
+function buildMockNotifications(): NotificationItem[] {
+  const now = Date.now();
+  const h = (hours: number) => new Date(now - hours * 3_600_000).toISOString();
+  const hId = "mock-household-home";
+
+  return [
+    {
+      id: "notif-1",
+      householdId: hId,
+      type: "expiration_soon",
+      title: "우유 유통기한이 2일 남았습니다",
+      body: "주방 냉장고 · 서울우유 1L",
+      readAt: null,
+      refType: "InventoryItem",
+      refId: "mock-item-milk",
+      createdAt: h(1),
+    },
+    {
+      id: "notif-2",
+      householdId: hId,
+      type: "expired",
+      title: "식빵 유통기한이 지났습니다",
+      body: "주방 선반 · 신라명과 식빵 — 어제 만료",
+      readAt: null,
+      refType: "InventoryItem",
+      refId: "mock-item-bread",
+      createdAt: h(3),
+    },
+    {
+      id: "notif-3",
+      householdId: hId,
+      type: "low_stock",
+      title: "계란 재고가 부족합니다",
+      body: "현재 2개 / 최소 재고 6개",
+      readAt: null,
+      refType: "InventoryItem",
+      refId: "mock-item-egg",
+      createdAt: h(5),
+    },
+    {
+      id: "notif-4",
+      householdId: hId,
+      type: "shopping_reminder",
+      title: "이번 주 장보기 리마인더",
+      body: "장보기 목록에 3개 항목이 있습니다.",
+      readAt: null,
+      createdAt: h(8),
+    },
+    {
+      id: "notif-5",
+      householdId: hId,
+      type: "shopping_list_update",
+      title: "장보기 목록이 변경되었습니다",
+      body: "김데모 님이 '세제'를 추가했습니다.",
+      readAt: h(6),
+      createdAt: h(24),
+    },
+    {
+      id: "notif-6",
+      householdId: hId,
+      type: "expiration_soon",
+      title: "요거트 유통기한이 3일 남았습니다",
+      body: "주방 냉장고 · 플레인 요거트 450g",
+      readAt: h(10),
+      refType: "InventoryItem",
+      createdAt: h(26),
+    },
+    {
+      id: "notif-7",
+      householdId: hId,
+      type: "low_stock",
+      title: "두루마리 화장지 재고 부족",
+      body: "현재 1개 / 최소 재고 4개",
+      readAt: h(20),
+      createdAt: h(48),
+    },
+  ];
+}
+
+export const MOCK_SEED_NOTIFICATIONS: NotificationItem[] =
+  buildMockNotifications();
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => {

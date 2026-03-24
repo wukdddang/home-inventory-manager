@@ -2,6 +2,10 @@
 
 import { DashboardProvider } from "@/app/(mock)/mock/dashboard/_context/DashboardContext";
 import { DashboardShoppingListModal } from "@/app/(mock)/mock/dashboard/_ui/DashboardInventory.section/DashboardShoppingList.module";
+import {
+  NotificationCenterModal,
+  useUnreadNotificationCount,
+} from "@/app/_ui/notification-center.modal";
 import { useAppRoutePrefix } from "@/lib/use-app-route-prefix";
 import {
   getAuthUserSnapshot,
@@ -9,6 +13,7 @@ import {
   subscribeAuthUser,
 } from "@/lib/local-store";
 import {
+  Bell,
   History,
   LayoutDashboard,
   Receipt,
@@ -55,6 +60,8 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
   const prefix = useAppRoutePrefix();
   const { household } = useSelectedHouseholdShell();
   const [shoppingOpen, setShoppingOpen] = useState(false);
+  const [notificationOpen, setNotificationOpen] = useState(false);
+  const unreadCount = useUnreadNotificationCount(household?.id ?? null);
 
   const user = useSyncExternalStore(
     subscribeAuthUser,
@@ -106,6 +113,19 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
               </span>
               <button
                 type="button"
+                onClick={() => setNotificationOpen(true)}
+                className="relative flex size-8 cursor-pointer items-center justify-center rounded-lg border border-zinc-700 text-zinc-300 transition-colors hover:border-teal-500/40 hover:bg-zinc-800 hover:text-teal-300"
+                aria-label="알림"
+              >
+                <Bell className="size-4" />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-teal-500 text-[10px] font-bold text-zinc-950">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </button>
+              <button
+                type="button"
                 onClick={() => setShoppingOpen(true)}
                 className="flex size-8 cursor-pointer items-center justify-center rounded-lg border border-zinc-700 text-zinc-300 transition-colors hover:border-teal-500/40 hover:bg-zinc-800 hover:text-teal-300"
                 aria-label="장보기 목록"
@@ -130,6 +150,11 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           onOpenChange={setShoppingOpen}
           household={household}
           dataMode={dataMode}
+        />
+        <NotificationCenterModal
+          open={notificationOpen}
+          onOpenChange={setNotificationOpen}
+          householdId={household?.id ?? null}
         />
       </div>
     </DashboardProvider>

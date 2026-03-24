@@ -4,7 +4,8 @@
       "Bash(pnpm dev:frontend)",
       "Bash(find:*)",
       "Bash(ls:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(pnpm build:*)"
     ]
   }
 }

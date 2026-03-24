@@ -17,8 +17,10 @@ import {
 } from "@/lib/household-kind-defaults";
 import {
   appendInventoryLedgerRow,
+  getNotifications,
   getSharedHouseholdKindDefinitions,
   getSharedProductCatalog,
+  setNotifications,
   setSharedHouseholdKindDefinitions,
   setSharedProductCatalog,
 } from "@/lib/local-store";
@@ -31,7 +33,10 @@ import type {
 import { newEntityId } from "../_lib/dashboard-helpers";
 import { dashboardApiHouseholdsClient } from "./dashboard-api.service";
 import type { DashboardHouseholdsPort } from "./dashboard-households.port";
-import { createDashboardMockHouseholdsService } from "./dashboard-mock.service";
+import {
+  createDashboardMockHouseholdsService,
+  MOCK_SEED_NOTIFICATIONS,
+} from "./dashboard-mock.service";
 
 function normalizeHouseholdKinds(
   list: Household[],
@@ -161,6 +166,13 @@ export function DashboardProvider({
     setHouseholdKindDefinitions(getSharedHouseholdKindDefinitions());
     setHouseholdKindsHydrated(true);
   }, []);
+
+  useEffect(() => {
+    if (dataMode !== "mock") return;
+    if (getNotifications().length === 0) {
+      setNotifications(MOCK_SEED_NOTIFICATIONS);
+    }
+  }, [dataMode]);
 
   useEffect(() => {
     if (!householdKindsHydrated) return;

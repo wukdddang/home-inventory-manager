@@ -273,6 +273,27 @@ export type AppSettings = {
   notificationDetail: NotificationDetailPreferences;
 };
 
+/** ERD §19 Notification — 알림 수신 항목(클라이언트·로컬 저장용) */
+export type NotificationType =
+  | "expiration_soon"
+  | "expired"
+  | "low_stock"
+  | "shopping_reminder"
+  | "shopping_list_update";
+
+export type NotificationItem = {
+  id: string;
+  householdId: string;
+  type: NotificationType;
+  title: string;
+  body?: string;
+  readAt: string | null;
+  /** 연관 엔티티(InventoryItem, PurchaseBatch 등) */
+  refType?: string;
+  refId?: string;
+  createdAt: string;
+};
+
 export const DEFAULT_NOTIFICATION_DETAIL: NotificationDetailPreferences = {
   expirationDaysBefore: 3,
   expirationRuleScope: "household",
