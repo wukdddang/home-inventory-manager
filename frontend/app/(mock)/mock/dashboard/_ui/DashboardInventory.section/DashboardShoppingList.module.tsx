@@ -2,6 +2,8 @@
 
 import { MotionModalLayer } from "@/app/_ui/motion-modal-layer";
 import { toast } from "@/hooks/use-toast";
+import { formatShoppingListTargetStorage } from "@/lib/household-location";
+import { useAppRoutePrefix } from "@/lib/use-app-route-prefix";
 import {
   getShoppingList,
   setShoppingList,
@@ -14,6 +16,7 @@ import type {
   ProductCatalog,
   ShoppingListEntry,
 } from "@/types/domain";
+import Link from "next/link";
 import { useId, useMemo, useState, useSyncExternalStore } from "react";
 import { useDashboard } from "../../_hooks/useDashboard";
 
@@ -36,7 +39,7 @@ export type DashboardShoppingListModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   household: Household | null;
-  /** true면 목록만 표시(항목 추가·구매 완료 등 비활성). 셸 등 Provider 밖에서 사용 */
+  /** true면 목록만 표시(구매 완료·삭제 비활성). 필요 시 스토리북·데모용 */
   readOnly?: boolean;
 };
 
@@ -98,7 +101,7 @@ function useShoppingListDerived(household: Household) {
   return { saved, depletedItems };
 }
 
-/** 상단 앱 셸 등 `DashboardProvider` 밖에서 열 때 — 로컬·재고만 표시, `useDashboard` 없음 */
+/** `readOnly` 모드 — 목록만 표시 */
 function ShoppingListDetailReadOnly({ household }: { household: Household }) {
   const { saved, depletedItems } = useShoppingListDerived(household);
   const hasRows = depletedItems.length > 0 || saved.length > 0;
@@ -106,8 +109,8 @@ function ShoppingListDetailReadOnly({ household }: { household: Household }) {
   return (
     <div className="flex min-w-0 flex-col gap-4" aria-label="장보기 목록 (읽기)">
       <p className="text-sm leading-relaxed text-zinc-400">
-        결제가 아니라 살 것·다 쓴 품목을 모아 두는 목록입니다. 이 창에서는 목록만
-        보입니다. 항목 추가·구매 완료·삭제는 대시보드에서 진행할 수 있습니다.
+        결제가 아니라 살 것·다 쓴 품목을 모아 두는 목록입니다. 이 모드에서는 목록만
+        보입니다.
       </p>
 
       {!hasRows ? (
@@ -167,6 +170,15 @@ function ShoppingListDetailReadOnly({ household }: { household: Household }) {
                     </span>
                   )}
                 </p>
+                {entry.targetStorageLocationId ? (
+                  <p className="truncate text-[11px] text-teal-400/85">
+                    넣을 칸 ·{" "}
+                    {formatShoppingListTargetStorage(
+                      household,
+                      entry.targetStorageLocationId,
+                    )}
+                  </p>
+                ) : null}
                 <p className="truncate text-[11px] text-zinc-500">
                   {entry.variantCaption ? `${entry.variantCaption} · ` : ""}
                   보충 수량 {entry.restockQuantity}
@@ -185,18 +197,34 @@ function ShoppingListDetailReadOnly({ household }: { household: Household }) {
   );
 }
 
+function ShoppingListAddFromDashboardHint() {
+  const prefix = useAppRoutePrefix();
+  return (
+    <div className="border-t border-zinc-800 pt-4">
+      <p className="text-xs font-medium text-zinc-300">항목 추가</p>
+      <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+        목록에 품목을 담으려면 메인(대시보드)에서 거점·방을 선택한 뒤, 화면의
+        <span className="font-medium text-zinc-200">「물품 등록」</span> 패널에서
+        카탈로그를 고르고
+        <span className="font-medium text-zinc-200">「장보기에만 담기」</span>를
+        사용하세요.
+      </p>
+      <p className="mt-2 text-[11px] text-zinc-500">
+        <Link
+          href={`${prefix}/dashboard`}
+          className="font-medium text-teal-400/90 underline-offset-2 hover:underline"
+        >
+          메인(대시보드)으로 이동
+        </Link>
+      </p>
+    </div>
+  );
+}
+
 function ShoppingListDetailContent({ household }: { household: Household }) {
   const { 재고_장보기_보충을_기록_한다 } = useDashboard();
-  const [freeText, setFreeText] = useState("");
-  const [pickItemId, setPickItemId] = useState("");
   const [depletedQty, setDepletedQty] = useState<Record<string, number>>({});
   const { saved, depletedItems } = useShoppingListDerived(household);
-
-  const pickCandidates = useMemo(() => {
-    return household.items
-      .slice()
-      .sort((a, b) => a.name.localeCompare(b.name, "ko"));
-  }, [household.items]);
 
   const getDepletedRestock = (itemId: string) => {
     const q = depletedQty[itemId];
@@ -220,80 +248,6 @@ function ShoppingListDetailContent({ household }: { household: Household }) {
 
   const removeSaved = (entryId: string) => {
     setShoppingList(getShoppingList().filter((e) => e.id !== entryId));
-  };
-
-  const addFreeText = () => {
-    const label = freeText.trim();
-    if (!label) {
-      toast({
-        title: "이름을 입력하세요",
-        variant: "warning",
-      });
-      return;
-    }
-    const row: ShoppingListEntry = {
-      id: crypto.randomUUID(),
-      householdId: household.id,
-      inventoryItemId: null,
-      label,
-      restockQuantity: 1,
-      createdAt: new Date().toISOString(),
-    };
-    setShoppingList([...getShoppingList(), row]);
-    setFreeText("");
-    toast({ title: "장보기에 담았습니다", description: label });
-  };
-
-  const addFromInventory = () => {
-    if (!pickItemId) {
-      toast({
-        title: "품목을 고르세요",
-        variant: "warning",
-      });
-      return;
-    }
-    const it = household.items.find((i) => i.id === pickItemId);
-    if (!it) return;
-    if (saved.some((e) => e.inventoryItemId === pickItemId)) {
-      toast({
-        title: "이미 목록에 있습니다",
-        description: "같은 재고 품목은 한 줄로 합쳐 주세요.",
-        variant: "warning",
-      });
-      return;
-    }
-    if (
-      it.productId &&
-      it.productVariantId &&
-      saved.some(
-        (e) =>
-          e.productId === it.productId &&
-          e.productVariantId === it.productVariantId,
-      )
-    ) {
-      toast({
-        title: "이미 목록에 있습니다",
-        description: "같은 품목·용량이 장보기에 담겨 있습니다.",
-        variant: "warning",
-      });
-      return;
-    }
-    const row: ShoppingListEntry = {
-      id: crypto.randomUUID(),
-      householdId: household.id,
-      inventoryItemId: it.id,
-      label: it.name,
-      unit: it.unit,
-      variantCaption: it.variantCaption,
-      categoryId: it.categoryId,
-      productId: it.productId,
-      productVariantId: it.productVariantId,
-      restockQuantity: 1,
-      createdAt: new Date().toISOString(),
-    };
-    setShoppingList([...getShoppingList(), row]);
-    setPickItemId("");
-    toast({ title: "장보기에 담았습니다", description: it.name });
   };
 
   const completeLinked = (
@@ -372,8 +326,8 @@ function ShoppingListDetailContent({ household }: { household: Household }) {
 
       {!hasRows ? (
         <p className="rounded-lg border border-dashed border-zinc-700 bg-zinc-950/40 px-4 py-3 text-center text-sm text-zinc-500">
-          목록이 비어 있어요. 아래에서 메모를 넣거나 재고 품목을 담아 보세요.
-          수량이 0인 품목은 자동으로 표시됩니다.
+          목록이 비어 있어요. 항목을 담는 방법은 아래에 안내해 두었습니다. 수량이
+          0인 품목은 자동으로 표시됩니다.
         </p>
       ) : null}
 
@@ -451,6 +405,15 @@ function ShoppingListDetailContent({ household }: { household: Household }) {
                       </span>
                     )}
                   </p>
+                  {entry.targetStorageLocationId ? (
+                    <p className="truncate text-[11px] text-teal-400/85">
+                      넣을 칸 ·{" "}
+                      {formatShoppingListTargetStorage(
+                        household,
+                        entry.targetStorageLocationId,
+                      )}
+                    </p>
+                  ) : null}
                   <p className="truncate text-[11px] text-zinc-500">
                     {entry.variantCaption ? `${entry.variantCaption} · ` : ""}
                     {entry.inventoryItemId
@@ -502,67 +465,7 @@ function ShoppingListDetailContent({ household }: { household: Household }) {
         </div>
       ) : null}
 
-      <div className="border-t border-zinc-800 pt-4">
-        <p className="text-xs font-medium text-zinc-300">항목 추가</p>
-        <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-          <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <label className="text-[10px] text-zinc-500">
-              메모만 (장바구니 표시용)
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={freeText}
-                onChange={(ev) => setFreeText(ev.target.value)}
-                placeholder="예: 우유, 빵"
-                className="min-w-0 flex-1 rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-100 placeholder:text-zinc-600"
-                onKeyDown={(ev) => {
-                  if (ev.key === "Enter") {
-                    ev.preventDefault();
-                    addFreeText();
-                  }
-                }}
-              />
-              <button
-                type="button"
-                onClick={addFreeText}
-                className="shrink-0 cursor-pointer rounded-lg border border-zinc-600 px-2.5 py-1.5 text-xs font-medium text-zinc-200 hover:bg-zinc-800"
-              >
-                담기
-              </button>
-            </div>
-          </div>
-          <div className="flex min-w-0 flex-1 flex-col gap-1 sm:max-w-sm">
-            <label className="text-[10px] text-zinc-500">
-              재고 품목에서 담기 (완료 시 수량 반영)
-            </label>
-            <div className="flex gap-2">
-              <select
-                value={pickItemId}
-                onChange={(ev) => setPickItemId(ev.target.value)}
-                className="min-w-0 flex-1 cursor-pointer rounded-lg border border-zinc-700 bg-zinc-900 px-2 py-1.5 text-sm text-zinc-100"
-              >
-                <option value="">품목 선택…</option>
-                {pickCandidates.map((it) => (
-                  <option key={it.id} value={it.id}>
-                    {it.name}
-                    {it.quantity > 0
-                      ? ` (${it.quantity}${it.unit})`
-                      : " (0)"}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                onClick={addFromInventory}
-                className="shrink-0 cursor-pointer rounded-lg border border-teal-600/50 bg-teal-900/30 px-2.5 py-1.5 text-xs font-medium text-teal-200 hover:bg-teal-900/50"
-              >
-                담기
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <ShoppingListAddFromDashboardHint />
     </div>
   );
 }
@@ -680,8 +583,8 @@ export function ShoppingListQuickAddFromCatalogModal({
           장보기에 담기
         </h2>
         <p id={descId} className="mt-2 text-sm leading-relaxed text-zinc-400">
-          칸·수량·유통기한 없이 목록에만 남깁니다. 나중에 헤더의「장보기」에서
-          구매 완료하거나, 이어서「칸에 물품 추가」로 넣을 수 있습니다.
+          칸·수량·유통기한 없이 목록에만 남깁니다. 헤더「장보기」에서 구매 완료·
+          삭제를 할 수 있습니다.
         </p>
 
         {resolved ? (

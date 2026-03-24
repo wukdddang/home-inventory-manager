@@ -140,6 +140,24 @@ export function groupInventoryByStorageForRoom(
   }));
 }
 
+/** 장보기 줄에 보관 위치 힌트 — `storageLocationId`만 있으면 방은 슬롯에서 해석 */
+export function formatShoppingListTargetStorage(
+  h: Household,
+  storageLocationId: string | undefined,
+): string | null {
+  if (!storageLocationId) return null;
+  const roomId = resolveRoomIdForStorageLocation(h, storageLocationId) ?? "";
+  const stub: InventoryRow = {
+    id: "_shopping_hint",
+    name: "",
+    quantity: 0,
+    unit: "",
+    roomId,
+    storageLocationId,
+  };
+  return formatLocationBreadcrumb(h, stub);
+}
+
 export function formatLocationBreadcrumb(
   h: Household,
   item: InventoryRow,

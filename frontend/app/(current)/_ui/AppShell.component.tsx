@@ -1,5 +1,6 @@
 "use client";
 
+import { DashboardProvider } from "@/app/(mock)/mock/dashboard/_context/DashboardContext";
 import { DashboardShoppingListModal } from "@/app/(mock)/mock/dashboard/_ui/DashboardInventory.section/DashboardShoppingList.module";
 import { useAppRoutePrefix } from "@/lib/use-app-route-prefix";
 import {
@@ -66,68 +67,71 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     router.replace(`${prefix}/login`);
   };
 
+  const dataMode = pathname.startsWith("/mock") ? "mock" : "api";
+
   return (
-    <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-zinc-950 text-zinc-100">
-      <header className="z-40 shrink-0 border-b border-zinc-800/80 bg-zinc-950/90 backdrop-blur-md">
-        <div className="flex h-14 w-full items-center justify-between gap-3 px-3 sm:px-4">
-          <Link
-            href={`${prefix}/dashboard`}
-            className="cursor-pointer font-semibold tracking-tight text-teal-400"
-          >
-            집비치기
-          </Link>
-          <nav className="flex flex-1 items-center justify-center gap-1 sm:gap-2">
-            {navPaths.map((n) => {
-              const href = `${prefix}${n.path}`;
-              const Icon = n.Icon;
-              return (
-                <Link
-                  key={n.path}
-                  href={href}
-                  className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                    pathname === href
-                      ? "bg-teal-500/15 text-teal-300"
-                      : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
-                  }`}
-                >
-                  <Icon className="size-4 shrink-0 opacity-90" aria-hidden />
-                  {n.label}
-                </Link>
-              );
-            })}
-          </nav>
-          <div className="flex items-center gap-2 text-sm sm:gap-3">
-            <span className="hidden max-w-35 truncate text-zinc-500 sm:inline">
-              {user?.displayName ?? user?.email}
-            </span>
-            <button
-              type="button"
-              onClick={() => setShoppingOpen(true)}
-              className="flex size-8 cursor-pointer items-center justify-center rounded-lg border border-zinc-700 text-zinc-400 transition-colors hover:border-teal-500/40 hover:bg-zinc-800 hover:text-teal-300"
-              aria-label="장보기 목록"
+    <DashboardProvider dataMode={dataMode}>
+      <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-zinc-950 text-zinc-100">
+        <header className="z-40 shrink-0 border-b border-zinc-800/80 bg-zinc-950/90 backdrop-blur-md">
+          <div className="flex h-14 w-full items-center justify-between gap-3 px-3 sm:px-4">
+            <Link
+              href={`${prefix}/dashboard`}
+              className="cursor-pointer font-semibold tracking-tight text-teal-400"
             >
-              <ShoppingCartIcon className="size-4.5" />
-            </button>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="cursor-pointer rounded-lg border border-zinc-700 px-2 py-1 text-xs text-zinc-300 hover:border-zinc-500"
-            >
-              로그아웃
-            </button>
+              집비치기
+            </Link>
+            <nav className="flex flex-1 items-center justify-center gap-1 sm:gap-2">
+              {navPaths.map((n) => {
+                const href = `${prefix}${n.path}`;
+                const Icon = n.Icon;
+                return (
+                  <Link
+                    key={n.path}
+                    href={href}
+                    className={`inline-flex cursor-pointer items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
+                      pathname === href
+                        ? "bg-teal-500/15 text-teal-300"
+                        : "text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200"
+                    }`}
+                  >
+                    <Icon className="size-4 shrink-0 opacity-90" aria-hidden />
+                    {n.label}
+                  </Link>
+                );
+              })}
+            </nav>
+            <div className="flex items-center gap-2 text-sm sm:gap-3">
+              <span className="hidden max-w-35 truncate text-zinc-500 sm:inline">
+                {user?.displayName ?? user?.email}
+              </span>
+              <button
+                type="button"
+                onClick={() => setShoppingOpen(true)}
+                className="flex size-8 cursor-pointer items-center justify-center rounded-lg border border-zinc-700 text-zinc-400 transition-colors hover:border-teal-500/40 hover:bg-zinc-800 hover:text-teal-300"
+                aria-label="장보기 목록"
+              >
+                <ShoppingCartIcon className="size-4.5" />
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="cursor-pointer rounded-lg border border-zinc-700 px-2 py-1 text-xs text-zinc-300 hover:border-zinc-500"
+              >
+                로그아웃
+              </button>
+            </div>
           </div>
-        </div>
-      </header>
-      <main className="flex min-h-0 w-full flex-1 flex-col overflow-y-auto overscroll-y-contain px-3 py-4 sm:px-4">
-        {children}
-      </main>
-      <DashboardShoppingListModal
-        open={shoppingOpen}
-        onOpenChange={setShoppingOpen}
-        household={household}
-        readOnly
-      />
-    </div>
+        </header>
+        <main className="flex min-h-0 w-full flex-1 flex-col overflow-y-auto overscroll-y-contain px-3 py-4 sm:px-4">
+          {children}
+        </main>
+        <DashboardShoppingListModal
+          open={shoppingOpen}
+          onOpenChange={setShoppingOpen}
+          household={household}
+        />
+      </div>
+    </DashboardProvider>
   );
 }
 

@@ -167,6 +167,8 @@ export type ShoppingListEntry = {
   /** 구매 완료 시 더할 수량(재고 연결 시) */
   restockQuantity: number;
   createdAt: string;
+  /** 장보기에서 미리 고른 넣을 칸(선택) — 목록 표시·이후 칸에 넣을 때 참고 */
+  targetStorageLocationId?: string;
 };
 
 /** 논리 설계 §15 InventoryLog.type */

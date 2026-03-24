@@ -175,7 +175,14 @@ function StepEmbedBlock({
 }
 
 /** 플로팅 패널용 — 상단에서 흐름을 한눈에 */
-function ItemAddProcessStepsRail({ source }: { source: ItemAddSource }) {
+export function ItemAddProcessStepsRail({
+  source,
+  ariaLabel = "물품 추가 단계 안내",
+}: {
+  source: ItemAddSource;
+  /** 다른 맥락에 맞게 접근성 라벨만 바꿀 때 */
+  ariaLabel?: string;
+}) {
   const steps =
     source === "catalog"
       ? ([
@@ -194,7 +201,7 @@ function ItemAddProcessStepsRail({ source }: { source: ItemAddSource }) {
   return (
     <nav
       className="mb-3 flex flex-wrap items-center gap-x-1.5 gap-y-2"
-      aria-label="물품 추가 단계 안내"
+      aria-label={ariaLabel}
     >
       {steps.map((s, i) => (
         <Fragment key={s.n}>
@@ -220,7 +227,7 @@ function ItemAddProcessStepsRail({ source }: { source: ItemAddSource }) {
   );
 }
 
-function CatalogHintLink() {
+export function CatalogHintLink() {
   const prefix = useAppRoutePrefix();
   return (
     <p className="text-[11px] leading-snug text-zinc-600">
