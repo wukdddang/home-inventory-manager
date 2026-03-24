@@ -38,6 +38,8 @@ type StructureRoomData = {
   roomId: string;
   label: string;
   active: boolean;
+  /** 이 방에 속한 부족 재고 물품 수 */
+  lowStockCount: number;
 };
 
 /** 방 직속 보관 칸 1개 = 노드 1개 */
@@ -87,6 +89,14 @@ const StructureRoomNode = memo(function StructureRoomNode({
       <span className="line-clamp-2 text-sm font-semibold leading-tight">
         {data.label}
       </span>
+      {data.lowStockCount > 0 ? (
+        <span
+          className="absolute -right-1.5 -top-1.5 flex h-4.5 min-w-4.5 items-center justify-center rounded-full bg-amber-500 px-1 text-xs font-bold text-zinc-950"
+          title={`부족 재고 ${data.lowStockCount}건`}
+        >
+          {data.lowStockCount}
+        </span>
+      ) : null}
     </div>
   );
 });
@@ -218,6 +228,18 @@ function buildStructureGraph(
   const nodes: Node<StructureNodeData>[] = [];
   const edges: Edge[] = [];
 
+  /** 방별 부족 재고 수 미리 계산 */
+  const lowStockByRoom = new Map<string, number>();
+  for (const item of household.items) {
+    if (
+      item.minStockLevel != null &&
+      Number.isFinite(item.minStockLevel) &&
+      item.quantity <= item.minStockLevel
+    ) {
+      lowStockByRoom.set(item.roomId, (lowStockByRoom.get(item.roomId) ?? 0) + 1);
+    }
+  }
+
   for (const r of household.rooms) {
     const directSlots = storage
       .filter(
@@ -269,6 +291,7 @@ function buildStructureGraph(
         roomId: r.id,
         label: r.name,
         active: r.id === selectedRoomId,
+        lowStockCount: lowStockByRoom.get(r.id) ?? 0,
       },
       style: { width: roomW, height: ROOM_NODE_H },
       draggable: true,

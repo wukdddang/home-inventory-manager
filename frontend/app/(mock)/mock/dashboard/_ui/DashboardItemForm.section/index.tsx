@@ -655,6 +655,14 @@ export function RoomItemAddWidget({
         ? catalog.units.find((u) => u.id === variant.unitId)
         : undefined;
 
+    const parsedMinP = minStockText.trim()
+      ? Math.floor(Number(minStockText))
+      : undefined;
+    const minStockP =
+      parsedMinP !== undefined && Number.isFinite(parsedMinP) && parsedMinP >= 0
+        ? parsedMinP
+        : undefined;
+
     const row: InventoryRow = {
       id: newEntityId(),
       name: "",
@@ -667,6 +675,7 @@ export function RoomItemAddWidget({
       productVariantId: purchase.productVariantId,
       variantCaption: purchase.variantCaption,
       quantityPerUnit: variant && unit ? variant.quantityPerUnit : undefined,
+      minStockLevel: minStockP,
     };
 
     if (catalog && product && variant && unit) {
@@ -697,6 +706,7 @@ export function RoomItemAddWidget({
 
     setPurchasePickId("");
     setStockQty("1");
+    setMinStockText("");
 
     const locLabel =
       storageOptions.find((o) => o.id === slotId)?.label ?? room.name;
@@ -1100,60 +1110,79 @@ export function RoomItemAddWidget({
       <>
         <div
           className={cn(
-            "w-full",
-            embedInFloatingPanel ? "max-w-full space-y-2" : "space-y-3 sm:max-w-56",
+            "w-full space-y-2.5",
+            embedInFloatingPanel ? "max-w-full" : "sm:max-w-72",
           )}
         >
-          <div className="space-y-1">
-            <label
-              htmlFor={`purchase-stock-qty-${roomId}`}
-              className="text-xs font-medium text-zinc-300"
-            >
-              이 칸에 둘 수량
-              {purchaseLotMaxQty > 0 ? (
-                <span className="text-zinc-300">
-                  {" "}
-                  (최대 {purchaseLotMaxQty}
-                  {selectedPlaceablePurchase?.unitSymbol ?? ""} — 구매 로트 합)
-                </span>
-              ) : null}
-            </label>
-            <input
-              id={`purchase-stock-qty-${roomId}`}
-              type="number"
-              min={1}
-              max={purchaseLotMaxQty > 0 ? purchaseLotMaxQty : undefined}
-              disabled={purchaseLotMaxQty < 1}
-              value={stockQty}
-              onChange={(e) => {
-                const raw = e.target.value.trim();
-                if (raw === "") {
-                  setStockQty("");
-                  return;
-                }
-                const n = Number(raw);
-                if (!Number.isFinite(n)) {
-                  setStockQty(raw);
-                  return;
-                }
-                if (purchaseLotMaxQty < 1) return;
-                const clamped = Math.min(
-                  Math.max(1, Math.floor(n)),
-                  purchaseLotMaxQty,
-                );
-                setStockQty(String(clamped));
-              }}
-              className={cn(
-                inputClass,
-                purchaseLotMaxQty < 1 ? "opacity-50" : "",
-              )}
-            />
-            <p className="text-xs leading-snug text-zinc-300">
-              유통기한·로트 구성은 구매·로트에 적힌 그대로 유지되며, 이 재고
-              행과 구매 기록이 연결됩니다. 수량은 구매에 적은 로트 합을 넘을 수
-              없습니다.
-            </p>
+          <div className="flex gap-2">
+            <div className="min-w-0 flex-1 space-y-1">
+              <label
+                htmlFor={`purchase-stock-qty-${roomId}`}
+                className="text-xs font-medium text-zinc-300"
+              >
+                이 칸에 둘 수량
+                {purchaseLotMaxQty > 0 ? (
+                  <span className="ml-1 font-normal text-zinc-500">
+                    (최대 {purchaseLotMaxQty}
+                    {selectedPlaceablePurchase?.unitSymbol ?? ""})
+                  </span>
+                ) : null}
+              </label>
+              <input
+                id={`purchase-stock-qty-${roomId}`}
+                type="number"
+                min={1}
+                max={purchaseLotMaxQty > 0 ? purchaseLotMaxQty : undefined}
+                disabled={purchaseLotMaxQty < 1}
+                value={stockQty}
+                onChange={(e) => {
+                  const raw = e.target.value.trim();
+                  if (raw === "") {
+                    setStockQty("");
+                    return;
+                  }
+                  const n = Number(raw);
+                  if (!Number.isFinite(n)) {
+                    setStockQty(raw);
+                    return;
+                  }
+                  if (purchaseLotMaxQty < 1) return;
+                  const clamped = Math.min(
+                    Math.max(1, Math.floor(n)),
+                    purchaseLotMaxQty,
+                  );
+                  setStockQty(String(clamped));
+                }}
+                className={cn(
+                  inputClass,
+                  purchaseLotMaxQty < 1 ? "opacity-50" : "",
+                )}
+              />
+            </div>
+            <div className="min-w-0 flex-1 space-y-1">
+              <label
+                htmlFor={`purchase-minstock-${roomId}`}
+                className="text-xs font-medium text-zinc-300"
+              >
+                최소 재고
+                <span className="ml-1 font-normal text-zinc-500">(선택)</span>
+              </label>
+              <input
+                id={`purchase-minstock-${roomId}`}
+                type="number"
+                min={0}
+                step={1}
+                placeholder="미설정"
+                value={minStockText}
+                onChange={(e) => setMinStockText(e.target.value)}
+                className={inputClass}
+              />
+            </div>
           </div>
+          <p className="text-xs leading-snug text-zinc-500">
+            로트 구성은 구매에 적힌 그대로 유지. 수량은 로트 합 이하. 최소 재고
+            이하이면 부족 표시 + 장보기 제안.
+          </p>
         </div>
         <button
           type="button"
