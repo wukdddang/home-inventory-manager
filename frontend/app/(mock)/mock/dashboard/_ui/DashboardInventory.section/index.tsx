@@ -2,7 +2,12 @@
 
 import { toast } from "@/hooks/use-toast";
 import { resolveItemRoomId } from "@/lib/household-location";
-import { getPurchases, subscribePurchases } from "@/lib/local-store";
+import {
+  getInventoryLedger,
+  getPurchases,
+  subscribeInventoryLedger,
+  subscribePurchases,
+} from "@/lib/local-store";
 import {
   getMockPurchasesSession,
   subscribeMockPurchasesSession,
@@ -21,6 +26,7 @@ import {
   InventoryConsumeWasteModal,
   type InventoryConsumeWasteMode,
 } from "./InventoryConsumeWaste.module";
+import { ItemDetailDrawer } from "./ItemDetailDrawer.module";
 import { ItemsSpreadsheet } from "./ItemsSpreadsheet.module";
 import { RoomItemsPanel } from "./RoomItemsPanel.module";
 import { RoomItemAddPanel } from "./RoomItemAddFloatingPanel.module";
@@ -85,9 +91,18 @@ export function DashboardInventorySection({
     () => [],
   );
 
+  const inventoryLedger = useSyncExternalStore(
+    subscribeInventoryLedger,
+    getInventoryLedger,
+    () => [],
+  );
+
   const [cwOpen, setCwOpen] = useState(false);
   const [cwItem, setCwItem] = useState<InventoryRow | null>(null);
   const [cwMode, setCwMode] = useState<InventoryConsumeWasteMode>("consume");
+
+  const [drawerItem, setDrawerItem] = useState<InventoryRow | null>(null);
+  const drawerOpen = drawerItem !== null;
 
   const roomItems = useMemo(() => {
     if (!selected || !selectedRoomId) return [];
@@ -254,8 +269,10 @@ export function DashboardInventorySection({
                 selectedRoomId={selectedRoomId}
                 roomItems={roomItems}
                 purchases={purchases}
+                catalog={productCatalog}
                 on소비하려고_연다={handleOpenConsume}
                 on폐기하려고_연다={handleOpenWaste}
+                onItemClick={setDrawerItem}
               />
             </div>
           </div>
@@ -271,6 +288,7 @@ export function DashboardInventorySection({
               onDeleteItem={handleDeleteItem}
               on소비하려고_연다={handleOpenConsume}
               on폐기하려고_연다={handleOpenWaste}
+              onItemClick={setDrawerItem}
               onUpdateItemMinStock={(itemId, min) => {
                 거점을_갱신_한다(selected.id, (h) => ({
                   ...h,
@@ -307,6 +325,18 @@ export function DashboardInventorySection({
         item={cwItem}
         maxQuantity={cwItem?.quantity ?? 0}
         on확인한다={handleCwConfirm}
+      />
+
+      <ItemDetailDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerItem(null)}
+        item={drawerItem}
+        household={selected}
+        catalog={productCatalog}
+        purchases={purchases}
+        ledger={inventoryLedger}
+        on소비하려고_연다={handleOpenConsume}
+        on폐기하려고_연다={handleOpenWaste}
       />
     </div>
   );

@@ -28,30 +28,35 @@ export const DEFAULT_PRODUCT_CATALOG: ProductCatalog = {
       categoryId: "c-food",
       name: "우유",
       isConsumable: true,
+      imageUrl: "https://images.unsplash.com/photo-1563636619-e9143da7973b?w=128&h=128&fit=crop&q=80",
     },
     {
       id: "p-ramen",
       categoryId: "c-food",
       name: "라면",
       isConsumable: true,
+      imageUrl: "https://images.unsplash.com/photo-1612929633738-8fe44f7ec841?w=128&h=128&fit=crop&q=80",
     },
     {
       id: "p-tissue",
       categoryId: "c-life",
       name: "티슈",
       isConsumable: true,
+      imageUrl: "https://images.unsplash.com/photo-1584556812952-905ffd0c611a?w=128&h=128&fit=crop&q=80",
     },
     {
       id: "p-a4",
       categoryId: "c-office",
       name: "A4 용지",
       isConsumable: true,
+      imageUrl: "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?w=128&h=128&fit=crop&q=80",
     },
     {
       id: "p-battery",
       categoryId: "c-electronics",
       name: "건전지",
       isConsumable: true,
+      imageUrl: "https://images.unsplash.com/photo-1619641805634-98e5c37150f1?w=128&h=128&fit=crop&q=80",
     },
   ],
   variants: [
@@ -128,6 +133,15 @@ export function inventoryDisplayLine(
   const v = catalog.variants.find((x) => x.id === row.productVariantId);
   const cap = row.variantCaption ?? v?.name ?? `${v?.quantityPerUnit ?? ""}`;
   return [c?.name, p?.name, cap].filter(Boolean).join(" › ");
+}
+
+/** 카탈로그에서 productId로 이미지 URL 찾기 */
+export function resolveProductImageUrl(
+  catalog: ProductCatalog,
+  productId: string | undefined,
+): string | undefined {
+  if (!productId) return undefined;
+  return catalog.products.find((p) => p.id === productId)?.imageUrl;
 }
 
 /** 표 컬럼용 — id 없으면 `name`의 「 › 」로 추정 */

@@ -6,10 +6,14 @@ import {
 } from "@/app/_ui/app-view-transition.motion";
 import { FormModal } from "@/app/_ui/form-modal";
 import { PeriodFilterToolbar } from "@/app/_ui/table-period-filter-row";
+import { getSharedProductCatalog } from "@/lib/local-store";
+import { resolveProductImageUrl } from "@/lib/product-catalog-defaults";
 import { useAppRoutePrefix } from "@/lib/use-app-route-prefix";
 import { motion } from "framer-motion";
 import { Search } from "lucide-react";
 import Link from "next/link";
+import { useState } from "react";
+import type { ProductCatalog } from "@/types/domain";
 import { useInventoryHistory } from "../../_hooks/useInventoryHistory";
 import {
   LEDGER_PAGE_SIZE,
@@ -22,9 +26,22 @@ import { LedgerPagination } from "../LedgerPagination.component";
 import { LedgerSortFilterHeader } from "../LedgerTableHeader.component";
 import { LedgerTableRow } from "../LedgerTableRow.component";
 
+function resolveProductIdForLedgerRow(
+  households: import("@/types/domain").Household[],
+  row: import("@/types/domain").InventoryLedgerRow,
+): string | undefined {
+  for (const h of households) {
+    if (h.id !== row.householdId) continue;
+    const item = h.items.find((it) => it.id === row.inventoryItemId);
+    if (item?.productId) return item.productId;
+  }
+  return undefined;
+}
+
 export function InventoryHistoryPanel() {
   const prefix = useAppRoutePrefix();
   const ctx = useInventoryHistory();
+  const [catalog] = useState<ProductCatalog | null>(() => getSharedProductCatalog());
 
   const {
     households,
@@ -341,6 +358,10 @@ export function InventoryHistoryPanel() {
                               memoOverrides,
                             )}
                             onEditMemo={() => 비고_수정_모달을_연다(row)}
+                            productImageUrl={catalog ? resolveProductImageUrl(
+                              catalog,
+                              resolveProductIdForLedgerRow(households, row),
+                            ) : undefined}
                           />
                         ))}
                       </tbody>

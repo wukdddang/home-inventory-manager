@@ -18,12 +18,14 @@ export function LedgerTableRow({
   zebra,
   memoValue,
   onEditMemo,
+  productImageUrl,
 }: {
   row: InventoryLedgerRow;
   households: Household[];
   zebra: boolean;
   memoValue: string;
   onEditMemo: () => void;
+  productImageUrl?: string;
 }) {
   const { 날짜, 시각 } = 일시_문자열을_구한다(row.createdAt);
   const delta = row.quantityDelta;
@@ -69,7 +71,13 @@ export function LedgerTableRow({
         <span className="line-clamp-2 wrap-break-words">{분류}</span>
       </td>
       <td className="w-[9%] px-3 py-2 align-middle font-medium text-zinc-100">
-        <span className="line-clamp-2 wrap-break-words">{이름}</span>
+        <div className="flex items-center gap-1.5">
+          {productImageUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={productImageUrl} alt="" className="size-5 shrink-0 rounded border border-zinc-700 object-cover" />
+          ) : null}
+          <span className="line-clamp-2 wrap-break-words">{이름}</span>
+        </div>
       </td>
       <td className="w-[7%] px-3 py-2 align-middle tabular-nums text-zinc-300">
         <span className="line-clamp-2 wrap-break-words">{규격}</span>

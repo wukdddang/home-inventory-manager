@@ -30,7 +30,7 @@ export function InventoryLotExpiryBadge({
     return (
       <span
         className={cn(
-          "rounded-full bg-zinc-800 px-2 py-0.5 text-xs text-zinc-300",
+          "whitespace-nowrap rounded-full bg-zinc-800 px-2 py-0.5 text-xs text-zinc-300",
           className,
         )}
       >
@@ -42,7 +42,7 @@ export function InventoryLotExpiryBadge({
     return (
       <span
         className={cn(
-          "rounded-full bg-rose-500/20 px-2 py-0.5 text-xs font-medium text-rose-200 ring-1 ring-rose-500/40",
+          "whitespace-nowrap rounded-full bg-rose-500/20 px-2 py-0.5 text-xs font-medium text-rose-200 ring-1 ring-rose-500/40",
           className,
         )}
       >
@@ -54,7 +54,7 @@ export function InventoryLotExpiryBadge({
     return (
       <span
         className={cn(
-          "rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-medium text-amber-100 ring-1 ring-amber-500/35",
+          "whitespace-nowrap rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-medium text-amber-100 ring-1 ring-amber-500/35",
           className,
         )}
       >
@@ -66,7 +66,7 @@ export function InventoryLotExpiryBadge({
     return (
       <span
         className={cn(
-          "rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-100 ring-1 ring-amber-500/30",
+          "whitespace-nowrap rounded-full bg-amber-500/15 px-2 py-0.5 text-xs font-medium text-amber-100 ring-1 ring-amber-500/30",
           className,
         )}
       >
@@ -77,7 +77,7 @@ export function InventoryLotExpiryBadge({
   return (
     <span
       className={cn(
-        "rounded-full bg-zinc-800 px-2 py-0.5 text-xs text-zinc-300",
+        "whitespace-nowrap rounded-full bg-zinc-800 px-2 py-0.5 text-xs text-zinc-300",
         className,
       )}
     >

@@ -3,8 +3,10 @@
 import { InventoryLotExpiryBadge } from "@/app/_ui/inventory-lot-expiry-badge";
 import { groupInventoryByStorageForRoom } from "@/lib/household-location";
 import { 구매목록에서_품목_로트_요약을_구한다 } from "@/lib/inventory-lot-from-purchases";
+import { resolveProductImageUrl } from "@/lib/product-catalog-defaults";
 import { cn } from "@/lib/utils";
-import type { Household, InventoryRow, PurchaseRecord } from "@/types/domain";
+import type { Household, InventoryRow, ProductCatalog, PurchaseRecord } from "@/types/domain";
+import { Package } from "lucide-react";
 import { useMemo } from "react";
 
 function isLowStock(item: InventoryRow): boolean {
@@ -20,8 +22,10 @@ type RoomItemsPanelProps = {
   selectedRoomId: string | null;
   roomItems: InventoryRow[];
   purchases: PurchaseRecord[];
+  catalog: ProductCatalog;
   on소비하려고_연다: (item: InventoryRow) => void;
   on폐기하려고_연다: (item: InventoryRow) => void;
+  onItemClick?: (item: InventoryRow) => void;
 };
 
 export function RoomItemsPanel({
@@ -29,8 +33,10 @@ export function RoomItemsPanel({
   selectedRoomId,
   roomItems,
   purchases,
+  catalog,
   on소비하려고_연다,
   on폐기하려고_연다,
+  onItemClick,
 }: RoomItemsPanelProps) {
   const roomName = useMemo(() => {
     if (!selectedRoomId) return null;
@@ -98,40 +104,71 @@ export function RoomItemsPanel({
                         <li
                           key={it.id}
                           className={cn(
-                            "flex flex-col gap-2 px-3 py-2.5 text-sm sm:flex-row sm:items-start sm:justify-between",
+                            "space-y-1.5 px-3 py-2.5 text-sm",
                             low && "bg-amber-500/5",
                           )}
                         >
-                          <div className="min-w-0 flex-1">
-                            <span className="block truncate leading-snug text-zinc-200">
-                              {it.name}
-                            </span>
-                            {it.variantCaption ? (
-                              <span className="mt-0.5 block truncate text-xs text-zinc-300">
-                                {it.variantCaption}
+                          {/* 1행: 이미지 + 이름 + 수량 */}
+                          <div className="flex items-start gap-2">
+                            {(() => {
+                              const imgUrl = resolveProductImageUrl(catalog, it.productId);
+                              return imgUrl ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={imgUrl}
+                                  alt=""
+                                  className="size-8 shrink-0 rounded-lg border border-zinc-700 object-cover"
+                                />
+                              ) : (
+                                <div className="flex size-8 shrink-0 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900">
+                                  <Package className="size-3.5 text-zinc-600" />
+                                </div>
+                              );
+                            })()}
+                            <div
+                              className={cn(
+                                "min-w-0 flex-1",
+                                onItemClick && "cursor-pointer",
+                              )}
+                              onClick={() => onItemClick?.(it)}
+                            >
+                              <span className={cn(
+                                "block truncate leading-snug text-zinc-200",
+                                onItemClick && "hover:text-teal-300 transition-colors",
+                              )}>
+                                {it.name}
                               </span>
-                            ) : null}
-                            <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                              <InventoryLotExpiryBadge
-                                worstExpiryDays={lot.worstExpiryDays}
-                                lotCount={lot.lotCount}
-                              />
-                              {low ? (
-                                <span className="inline-flex items-center rounded-md border border-amber-500/30 bg-amber-500/15 px-1.5 py-0.5 text-xs font-medium text-amber-300">
-                                  부족 ({it.quantity}/{it.minStockLevel})
+                              {it.variantCaption ? (
+                                <span className="mt-0.5 block truncate text-xs text-zinc-300">
+                                  {it.variantCaption}
                                 </span>
                               ) : null}
                             </div>
-                          </div>
-                          <div className="flex shrink-0 flex-col items-stretch gap-1.5 sm:items-end">
                             <span className={cn(
-                              "tabular-nums sm:text-right",
+                              "shrink-0 tabular-nums",
                               low ? "text-amber-300" : "text-zinc-300",
                             )}>
                               {it.quantity}
                               {it.unit}
                             </span>
-                            <div className="flex flex-wrap justify-end gap-1">
+                          </div>
+                          {/* 2행: 뱃지 + 버튼 */}
+                          <div className="flex items-center gap-1.5">
+                            <div className="min-w-0 flex-1 overflow-hidden">
+                              <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+                                <InventoryLotExpiryBadge
+                                  worstExpiryDays={lot.worstExpiryDays}
+                                  lotCount={lot.lotCount}
+                                  className="shrink-0"
+                                />
+                                {low ? (
+                                  <span className="inline-flex shrink-0 items-center rounded-md border border-amber-500/30 bg-amber-500/15 px-1.5 py-0.5 text-xs font-medium whitespace-nowrap text-amber-300">
+                                    부족 ({it.quantity}/{it.minStockLevel})
+                                  </span>
+                                ) : null}
+                              </div>
+                            </div>
+                            <div className="flex shrink-0 gap-1">
                               <button
                                 type="button"
                                 disabled={it.quantity < 1}

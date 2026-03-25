@@ -4,7 +4,7 @@ import { AlertModal } from "@/app/_ui/alert-modal";
 import { InventoryLotExpiryBadge } from "@/app/_ui/inventory-lot-expiry-badge";
 import { formatLocationBreadcrumb } from "@/lib/household-location";
 import { 구매목록에서_품목_로트_요약을_구한다 } from "@/lib/inventory-lot-from-purchases";
-import { resolveInventoryRowColumns } from "@/lib/product-catalog-defaults";
+import { resolveInventoryRowColumns, resolveProductImageUrl } from "@/lib/product-catalog-defaults";
 import { cn } from "@/lib/utils";
 import { useEffect, useMemo, useState } from "react";
 import type {
@@ -25,6 +25,8 @@ type ItemsSpreadsheetProps = {
   onUpdateItemMinStock: (itemId: string, min: number | undefined) => void;
   /** 표에서 방 셀 클릭 시 조회 영역의 선택 방·등록 위젯과 동기 */
   onSelectRoomId?: (roomId: string) => void;
+  /** 품목 행 클릭 시 상세 드로어 열기 */
+  onItemClick?: (item: InventoryRow) => void;
 };
 
 function MinStockInput({
@@ -195,6 +197,7 @@ export function ItemsSpreadsheet({
   on폐기하려고_연다,
   onUpdateItemMinStock,
   onSelectRoomId,
+  onItemClick,
 }: ItemsSpreadsheetProps) {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
   const [sort, setSort] = useState<SortState>({ key: null, dir: "asc" });
@@ -320,8 +323,23 @@ export function ItemsSpreadsheet({
                     <td className="px-3 py-2.5 text-zinc-300">
                       {cols.category}
                     </td>
-                    <td className="px-3 py-2.5 text-zinc-200">
-                      {cols.product}
+                    <td
+                      className={cn(
+                        "px-3 py-2.5 text-zinc-200",
+                        onItemClick && "cursor-pointer hover:text-teal-300 transition-colors",
+                      )}
+                      onClick={() => onItemClick?.(it)}
+                    >
+                      <div className="flex items-center gap-2">
+                        {(() => {
+                          const imgUrl = resolveProductImageUrl(catalog, it.productId);
+                          return imgUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={imgUrl} alt="" className="size-6 shrink-0 rounded border border-zinc-700 object-cover" />
+                          ) : null;
+                        })()}
+                        <span className="truncate">{cols.product}</span>
+                      </div>
                     </td>
                     <td className="px-3 py-2.5 text-zinc-300">{cols.spec}</td>
                     <td className={cn("px-3 py-2.5", low ? "font-medium text-amber-300" : "text-zinc-300")}>{it.quantity}</td>

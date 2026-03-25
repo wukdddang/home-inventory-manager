@@ -4,11 +4,13 @@ import { AlertModal } from "@/app/_ui/alert-modal";
 import { PeriodFilterToolbar } from "@/app/_ui/table-period-filter-row";
 import { useAppRoutePrefix } from "@/lib/use-app-route-prefix";
 import { 날짜키가_기간에_포함되는가 } from "@/lib/table-period-filter";
+import { resolveProductImageUrl } from "@/lib/product-catalog-defaults";
+import { getSharedProductCatalog } from "@/lib/local-store";
 import { cn } from "@/lib/utils";
 import type { PurchaseBatchLot, PurchaseRecord } from "@/types/domain";
 import { ArrowDown, ArrowUp, Search } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { usePurchases } from "../../_hooks/usePurchases";
 import {
   구매_로트_행_배분_총액을_구한다,
@@ -438,6 +440,8 @@ export function PurchaseLotsSection() {
     구매를_삭제_한다,
   } = usePurchases();
 
+  const [catalog] = useState<import("@/types/domain").ProductCatalog | null>(() => getSharedProductCatalog());
+
   const [selectedHouseholdId, setSelectedHouseholdId] = useState<string | null>(
     null,
   );
@@ -478,13 +482,15 @@ export function PurchaseLotsSection() {
     [purchases, viewingHouseholdId],
   );
 
-  useEffect(() => {
+  const prevHouseholdIdRef = useRef(viewingHouseholdId);
+  if (prevHouseholdIdRef.current !== viewingHouseholdId) {
+    prevHouseholdIdRef.current = viewingHouseholdId;
     setSearchQuery("");
     setColumnFilters({});
     setSortPhase({ scope: "default" });
     setPeriodStart("");
     setPeriodEnd("");
-  }, [viewingHouseholdId]);
+  }
 
   const baseLotRows = useMemo((): PurchaseLotRow[] => {
     return filteredPurchases.flatMap((p) =>
@@ -908,9 +914,18 @@ export function PurchaseLotsSection() {
                               </span>
                             </td>
                             <td className="px-3 py-2 align-middle font-medium text-zinc-100">
-                              <span className="line-clamp-3 wrap-break-words">
-                                {이름}
-                              </span>
+                              <div className="flex items-center gap-2">
+                                {(() => {
+                                  const imgUrl = catalog ? resolveProductImageUrl(catalog, p.productId) : undefined;
+                                  return imgUrl ? (
+                                    // eslint-disable-next-line @next/next/no-img-element
+                                    <img src={imgUrl} alt="" className="size-6 shrink-0 rounded border border-zinc-700 object-cover" />
+                                  ) : null;
+                                })()}
+                                <span className="line-clamp-3 wrap-break-words">
+                                  {이름}
+                                </span>
+                              </div>
                             </td>
                             <td className="px-3 py-2 align-middle text-zinc-300">
                               <span className="line-clamp-2 wrap-break-words text-xs">
