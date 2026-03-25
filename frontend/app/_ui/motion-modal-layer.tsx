@@ -37,6 +37,8 @@ export type MotionModalLayerProps = {
   panelRole?: "dialog" | "alertdialog";
   ariaLabelledBy?: string;
   ariaDescribedBy?: string;
+  /** 중첩 모달일 때 z-index를 올려 부모 모달 위에 backdrop을 깔기 위한 오프셋 (기본 0) */
+  zOffset?: number;
 };
 
 /**
@@ -52,6 +54,7 @@ export function MotionModalLayer({
   panelRole = "dialog",
   ariaLabelledBy,
   ariaDescribedBy,
+  zOffset = 0,
 }: MotionModalLayerProps) {
   const baseKey = useId().replace(/:/g, "");
   const [mounted, setMounted] = useState(false);
@@ -75,7 +78,8 @@ export function MotionModalLayer({
         <>
           <motion.div
             key={`${baseKey}-overlay`}
-            className="fixed inset-0 z-10040 bg-black/60"
+            className="fixed inset-0 bg-black/60"
+            style={{ zIndex: 10040 + zOffset }}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0, transition: motionModalOverlayTransition }}
@@ -97,6 +101,7 @@ export function MotionModalLayer({
             aria-labelledby={ariaLabelledBy}
             aria-describedby={ariaDescribedBy}
             className={panelClassName}
+            {...(zOffset ? { style: { zIndex: 10041 + zOffset } } : {})}
             initial={{ opacity: 0, scale: 0.98, y: 4 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{

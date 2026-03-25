@@ -18,7 +18,12 @@
       "Bash(ls -la app/\\\\\\(mock\\\\\\)/mock/login/_ui/)",
       "Bash(ls -la app/\\\\\\(mock\\\\\\)/mock/signup/_ui/)",
       "Bash(xargs wc:*)",
-      "Bash(echo \"EXIT: $?\")"
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(grep -E \"\\\\.\\(tsx|ts\\)$\")",
+      "Bash(ls -la /c/Users/wukdd/dev/home-inventory-manager/frontend/app/\\\\\\(current\\\\\\)/dashboard/_ui/)",
+      "Bash(grep -r \"EditVariant\\\\|VariantEdit\\\\|variant.*edit\\\\|variant.*수정\" /c/Users/wukdd/dev/home-inventory-manager/frontend --include=*.tsx --include=*.ts)",
+      "Bash(cat \"/c/Users/wukdd/dev/home-inventory-manager/frontend/app/\\(mock\\)/mock/settings/_ui/CatalogSettings.section/index.tsx\")",
+      "Bash(pnpm --filter frontend build)"
     ]
   }
 }

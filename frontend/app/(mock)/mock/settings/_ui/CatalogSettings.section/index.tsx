@@ -80,6 +80,7 @@ function ProductEditModal({
   onDraftChange,
   onSubmit,
   categories,
+  zOffset,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -87,6 +88,7 @@ function ProductEditModal({
   onDraftChange: (d: EditProductDraft) => void;
   onSubmit: () => void;
   categories: ProductCatalog["categories"];
+  zOffset?: number;
 }) {
   return (
     <FormModal
@@ -96,6 +98,7 @@ function ProductEditModal({
       onSubmit={onSubmit}
       submitLabel="저장"
       submitDisabled={!draft.name.trim()}
+      zOffset={zOffset}
     >
       <div className="space-y-4">
         <div>
@@ -544,18 +547,17 @@ function CatalogListBody({
       </div>
 
       {/* 품목 수정 모달 */}
-      {editDraft && (
-        <ProductEditModal
-          open
-          onOpenChange={(v) => {
-            if (!v) setEditDraft(null);
-          }}
-          draft={editDraft}
-          onDraftChange={setEditDraft}
-          onSubmit={handleSaveEdit}
-          categories={catalog.categories}
-        />
-      )}
+      <ProductEditModal
+        open={editDraft !== null}
+        onOpenChange={(v) => {
+          if (!v) setEditDraft(null);
+        }}
+        draft={editDraft ?? { id: "", name: "", description: "", isConsumable: true, categoryId: "" }}
+        onDraftChange={setEditDraft}
+        onSubmit={handleSaveEdit}
+        categories={catalog.categories}
+        zOffset={10}
+      />
 
       {/* 삭제 확인 모달 */}
       <AlertModal
@@ -577,6 +579,7 @@ function CatalogListBody({
         cancelLabel="취소"
         variant="danger"
         onConfirm={handleConfirmDelete}
+        zOffset={10}
       />
     </div>
   );

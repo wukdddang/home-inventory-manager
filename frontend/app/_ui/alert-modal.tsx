@@ -13,6 +13,8 @@ export type AlertModalProps = {
   cancelLabel?: string;
   onConfirm: () => void;
   variant?: "default" | "danger";
+  /** 중첩 모달 z-index 오프셋 (MotionModalLayer에 전달) */
+  zOffset?: number;
 };
 
 /**
@@ -27,6 +29,7 @@ export function AlertModal({
   cancelLabel = "취소",
   onConfirm,
   variant = "default",
+  zOffset,
 }: AlertModalProps) {
   const uid = useId().replace(/:/g, "");
   const titleId = `motion-alert-title-${uid}`;
@@ -46,6 +49,7 @@ export function AlertModal({
       panelClassName="fixed left-1/2 top-1/2 z-10041 w-[min(100vw-2rem,28rem)] -translate-x-1/2 -translate-y-1/2 outline-none"
       ariaLabelledBy={titleId}
       ariaDescribedBy={description ? descId : undefined}
+      zOffset={zOffset}
     >
       <div
         className={cn(

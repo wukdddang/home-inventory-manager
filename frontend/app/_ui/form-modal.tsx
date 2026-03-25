@@ -14,6 +14,8 @@ export type FormModalProps = {
   cancelLabel?: string;
   onSubmit?: () => void;
   submitDisabled?: boolean;
+  /** 중첩 모달 z-index 오프셋 (MotionModalLayer에 전달) */
+  zOffset?: number;
 };
 
 /**
@@ -29,6 +31,7 @@ export function FormModal({
   cancelLabel = "취소",
   onSubmit,
   submitDisabled = false,
+  zOffset,
 }: FormModalProps) {
   const uid = useId().replace(/:/g, "");
   const titleId = `motion-form-title-${uid}`;
@@ -42,6 +45,7 @@ export function FormModal({
       panelClassName="fixed left-1/2 top-1/2 z-10041 max-h-[min(100dvh-2rem,40rem)] w-[min(100vw-2rem,26rem)] -translate-x-1/2 -translate-y-1/2 outline-none"
       ariaLabelledBy={titleId}
       ariaDescribedBy={description ? descId : undefined}
+      zOffset={zOffset}
     >
       <div className="flex max-h-[min(100dvh-2rem,40rem)] flex-col rounded-2xl border border-zinc-700 bg-zinc-900 shadow-xl">
         <div className="shrink-0 border-b border-zinc-800 p-5 pb-4">

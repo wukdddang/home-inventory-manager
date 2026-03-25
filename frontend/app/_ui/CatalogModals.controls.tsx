@@ -515,17 +515,18 @@ function CatalogListModal({
       </div>
 
       {/* 품목 수정 모달 */}
-      {editDraft && (
-        <FormModal
-          open
-          onOpenChange={(v) => {
-            if (!v) setEditDraft(null);
-          }}
-          title="품목 수정"
-          onSubmit={handleSaveEdit}
-          submitLabel="저장"
-          submitDisabled={!editDraft.name.trim()}
-        >
+      <FormModal
+        open={editDraft !== null}
+        onOpenChange={(v) => {
+          if (!v) setEditDraft(null);
+        }}
+        title="품목 수정"
+        onSubmit={handleSaveEdit}
+        submitLabel="저장"
+        submitDisabled={!editDraft?.name.trim()}
+        zOffset={10}
+      >
+        {editDraft && (
           <div className="space-y-4">
             <div>
               <label
@@ -598,8 +599,8 @@ function CatalogListModal({
               소비재 (사용하면 수량이 줄어드는 품목)
             </label>
           </div>
-        </FormModal>
-      )}
+        )}
+      </FormModal>
 
       {/* 삭제 확인 모달 */}
       <AlertModal
@@ -621,6 +622,7 @@ function CatalogListModal({
         cancelLabel="취소"
         variant="danger"
         onConfirm={handleConfirmDelete}
+        zOffset={10}
       />
     </MotionModalLayer>
   );
