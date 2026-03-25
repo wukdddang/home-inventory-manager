@@ -12,8 +12,8 @@ import { useAppRoutePrefix } from "@/lib/use-app-route-prefix";
 import { motion } from "framer-motion";
 import { Search } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
-import type { ProductCatalog } from "@/types/domain";
+import { useSyncExternalStore } from "react";
+
 import { useInventoryHistory } from "../../_hooks/useInventoryHistory";
 import {
   LEDGER_PAGE_SIZE,
@@ -41,7 +41,11 @@ function resolveProductIdForLedgerRow(
 export function InventoryHistoryPanel() {
   const prefix = useAppRoutePrefix();
   const ctx = useInventoryHistory();
-  const [catalog] = useState<ProductCatalog | null>(() => getSharedProductCatalog());
+  const catalog = useSyncExternalStore(
+    () => () => {},
+    () => getSharedProductCatalog(),
+    () => null,
+  );
 
   const {
     households,

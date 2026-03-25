@@ -10,7 +10,15 @@
       "Bash(npx next:*)",
       "Bash(npm run:*)",
       "Bash(npx tsc:*)",
-      "Bash(pnpm lint:*)"
+      "Bash(pnpm lint:*)",
+      "Bash(ls -la app/\\\\\\(mock\\\\\\)/mock/dashboard/_ui/)",
+      "Bash(ls -la app/\\\\\\(mock\\\\\\)/mock/settings/_ui/)",
+      "Bash(grep -E \"\\\\.ts$\")",
+      "Bash(grep -E \"\\\\.tsx?$\")",
+      "Bash(ls -la app/\\\\\\(mock\\\\\\)/mock/login/_ui/)",
+      "Bash(ls -la app/\\\\\\(mock\\\\\\)/mock/signup/_ui/)",
+      "Bash(xargs wc:*)",
+      "Bash(echo \"EXIT: $?\")"
     ]
   }
 }

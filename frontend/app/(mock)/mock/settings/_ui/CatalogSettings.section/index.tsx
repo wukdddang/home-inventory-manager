@@ -1,6 +1,8 @@
 "use client";
 
+import { AlertModal } from "@/app/_ui/alert-modal";
 import { AppLoadingState } from "@/app/_ui/app-loading-state";
+import { FormModal } from "@/app/_ui/form-modal";
 import { MotionModalLayer } from "@/app/_ui/motion-modal-layer";
 import { useDashboard } from "../../../dashboard/_hooks/useDashboard";
 import { CatalogModalsControls } from "@/app/(current)/dashboard/_ui/CatalogModals.controls";
@@ -10,14 +12,16 @@ import type {
   ProductCatalog,
 } from "@/types/domain";
 import { cn } from "@/lib/utils";
-import { useState, useMemo, useId, useRef, useEffect } from "react";
+import { useState, useMemo, useId, useRef, useEffect, useCallback } from "react";
 import {
   ChevronDown,
   FolderTree,
   List,
   Package,
   PackagePlus,
+  Pencil,
   Search,
+  Trash2,
   X,
 } from "lucide-react";
 
@@ -59,15 +63,136 @@ function matchesQuery(product: EnrichedProduct, q: string): boolean {
   return false;
 }
 
+/* ── 품목 수정 모달 ── */
+
+type EditProductDraft = {
+  id: string;
+  name: string;
+  description: string;
+  isConsumable: boolean;
+  categoryId: string;
+};
+
+function ProductEditModal({
+  open,
+  onOpenChange,
+  draft,
+  onDraftChange,
+  onSubmit,
+  categories,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  draft: EditProductDraft;
+  onDraftChange: (d: EditProductDraft) => void;
+  onSubmit: () => void;
+  categories: ProductCatalog["categories"];
+}) {
+  return (
+    <FormModal
+      open={open}
+      onOpenChange={onOpenChange}
+      title="품목 수정"
+      onSubmit={onSubmit}
+      submitLabel="저장"
+      submitDisabled={!draft.name.trim()}
+    >
+      <div className="space-y-4">
+        <div>
+          <label
+            htmlFor="edit-prod-name"
+            className="text-xs font-medium text-zinc-400"
+          >
+            품목명
+          </label>
+          <input
+            id="edit-prod-name"
+            type="text"
+            value={draft.name}
+            onChange={(e) => onDraftChange({ ...draft, name: e.target.value })}
+            className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-teal-500"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="edit-prod-category"
+            className="text-xs font-medium text-zinc-400"
+          >
+            카테고리
+          </label>
+          <select
+            id="edit-prod-category"
+            value={draft.categoryId}
+            onChange={(e) =>
+              onDraftChange({ ...draft, categoryId: e.target.value })
+            }
+            className="mt-1 w-full cursor-pointer rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-teal-500"
+          >
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label
+            htmlFor="edit-prod-desc"
+            className="text-xs font-medium text-zinc-400"
+          >
+            설명 (선택)
+          </label>
+          <input
+            id="edit-prod-desc"
+            type="text"
+            value={draft.description}
+            onChange={(e) =>
+              onDraftChange({ ...draft, description: e.target.value })
+            }
+            className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-teal-500"
+          />
+        </div>
+        <label className="flex items-center gap-2 text-sm text-zinc-300">
+          <input
+            type="checkbox"
+            checked={draft.isConsumable}
+            onChange={(e) =>
+              onDraftChange({ ...draft, isConsumable: e.target.checked })
+            }
+            className="size-4 rounded border-zinc-600 bg-zinc-900"
+          />
+          소비재 (사용하면 수량이 줄어드는 품목)
+        </label>
+      </div>
+    </FormModal>
+  );
+}
+
 /* ── 카탈로그 목록 모달 본문 ── */
 
-function CatalogListBody({ catalog }: { catalog: ProductCatalog }) {
+function CatalogListBody({
+  catalog,
+  onCatalogUpdate,
+}: {
+  catalog: ProductCatalog;
+  onCatalogUpdate: (updater: (c: ProductCatalog) => ProductCatalog) => void;
+}) {
   const [query, setQuery] = useState("");
   const [filterCategoryId, setFilterCategoryId] = useState<string>("");
   const [openCategoryIds, setOpenCategoryIds] = useState<Set<string>>(
     () => new Set(catalog.categories.map((c) => c.id)),
   );
   const searchRef = useRef<HTMLInputElement>(null);
+
+  /* 수정 모달 상태 */
+  const [editDraft, setEditDraft] = useState<EditProductDraft | null>(null);
+
+  /* 삭제 확인 상태 */
+  const [deleteTarget, setDeleteTarget] = useState<{
+    type: "product" | "variant";
+    id: string;
+    label: string;
+  } | null>(null);
 
   useEffect(() => {
     searchRef.current?.focus();
@@ -132,6 +257,54 @@ function CatalogListBody({ catalog }: { catalog: ProductCatalog }) {
       setOpenCategoryIds(new Set(visibleCategories.map((c) => c.id)));
     }
   };
+
+  const handleStartEdit = useCallback((prod: EnrichedProduct) => {
+    setEditDraft({
+      id: prod.id,
+      name: prod.name,
+      description: prod.description ?? "",
+      isConsumable: prod.isConsumable,
+      categoryId: prod.categoryId,
+    });
+  }, []);
+
+  const handleSaveEdit = useCallback(() => {
+    if (!editDraft || !editDraft.name.trim()) return;
+    const d = editDraft;
+    onCatalogUpdate((c) => ({
+      ...c,
+      products: c.products.map((p) =>
+        p.id === d.id
+          ? {
+              ...p,
+              name: d.name.trim(),
+              description: d.description.trim() || undefined,
+              isConsumable: d.isConsumable,
+              categoryId: d.categoryId,
+            }
+          : p,
+      ),
+    }));
+    setEditDraft(null);
+  }, [editDraft, onCatalogUpdate]);
+
+  const handleConfirmDelete = useCallback(() => {
+    if (!deleteTarget) return;
+    const { type, id } = deleteTarget;
+    if (type === "product") {
+      onCatalogUpdate((c) => ({
+        ...c,
+        products: c.products.filter((p) => p.id !== id),
+        variants: c.variants.filter((v) => v.productId !== id),
+      }));
+    } else {
+      onCatalogUpdate((c) => ({
+        ...c,
+        variants: c.variants.filter((v) => v.id !== id),
+      }));
+    }
+    setDeleteTarget(null);
+  }, [deleteTarget, onCatalogUpdate]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -302,19 +475,59 @@ function CatalogListBody({ catalog }: { catalog: ProductCatalog }) {
                                     비소비
                                   </span>
                                 )}
+                                <button
+                                  type="button"
+                                  onClick={() => handleStartEdit(prod)}
+                                  className="shrink-0 rounded-lg p-1.5 text-zinc-500 transition hover:bg-zinc-800 hover:text-teal-300"
+                                  aria-label={`${prod.name} 수정`}
+                                >
+                                  <Pencil className="size-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setDeleteTarget({
+                                      type: "product",
+                                      id: prod.id,
+                                      label: prod.name,
+                                    })
+                                  }
+                                  className="shrink-0 rounded-lg p-1.5 text-zinc-500 transition hover:bg-zinc-800 hover:text-rose-400"
+                                  aria-label={`${prod.name} 삭제`}
+                                >
+                                  <Trash2 className="size-3.5" />
+                                </button>
                               </div>
                               {prod.variants.length > 0 && (
                                 <div className="mt-2.5 flex flex-wrap gap-2 pl-12">
-                                  {prod.variants.map((v) => (
-                                    <span
-                                      key={v.id}
-                                      className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-700/80 bg-zinc-800/60 px-2.5 py-1 text-sm text-zinc-300"
-                                    >
-                                      <PackagePlus className="size-3.5 shrink-0 text-zinc-500" />
-                                      {v.name ||
-                                        `${v.quantityPerUnit}${v.unitSymbol}`}
-                                    </span>
-                                  ))}
+                                  {prod.variants.map((v) => {
+                                    const label =
+                                      v.name ||
+                                      `${v.quantityPerUnit}${v.unitSymbol}`;
+                                    return (
+                                      <span
+                                        key={v.id}
+                                        className="group inline-flex items-center gap-1.5 rounded-lg border border-zinc-700/80 bg-zinc-800/60 px-2.5 py-1 text-sm text-zinc-300"
+                                      >
+                                        <PackagePlus className="size-3.5 shrink-0 text-zinc-500" />
+                                        {label}
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            setDeleteTarget({
+                                              type: "variant",
+                                              id: v.id,
+                                              label: `${prod.name} › ${label}`,
+                                            })
+                                          }
+                                          className="ml-0.5 shrink-0 rounded p-0.5 text-zinc-600 opacity-0 transition hover:text-rose-400 group-hover:opacity-100"
+                                          aria-label={`${label} 변형 삭제`}
+                                        >
+                                          <X className="size-3" />
+                                        </button>
+                                      </span>
+                                    );
+                                  })}
                                 </div>
                               )}
                             </div>
@@ -329,6 +542,42 @@ function CatalogListBody({ catalog }: { catalog: ProductCatalog }) {
           </div>
         )}
       </div>
+
+      {/* 품목 수정 모달 */}
+      {editDraft && (
+        <ProductEditModal
+          open
+          onOpenChange={(v) => {
+            if (!v) setEditDraft(null);
+          }}
+          draft={editDraft}
+          onDraftChange={setEditDraft}
+          onSubmit={handleSaveEdit}
+          categories={catalog.categories}
+        />
+      )}
+
+      {/* 삭제 확인 모달 */}
+      <AlertModal
+        open={deleteTarget !== null}
+        onOpenChange={(v) => {
+          if (!v) setDeleteTarget(null);
+        }}
+        title={
+          deleteTarget?.type === "product" ? "품목 삭제" : "용량·포장 삭제"
+        }
+        description={
+          deleteTarget
+            ? deleteTarget.type === "product"
+              ? `「${deleteTarget.label}」 품목과 연결된 모든 용량·포장을 삭제합니다.`
+              : `「${deleteTarget.label}」 용량·포장을 삭제합니다.`
+            : undefined
+        }
+        confirmLabel="삭제"
+        cancelLabel="취소"
+        variant="danger"
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }
@@ -339,10 +588,12 @@ function CatalogListModal({
   open,
   onClose,
   catalog,
+  onCatalogUpdate,
 }: {
   open: boolean;
   onClose: () => void;
   catalog: ProductCatalog;
+  onCatalogUpdate: (updater: (c: ProductCatalog) => ProductCatalog) => void;
 }) {
   const uid = useId().replace(/:/g, "");
   const titleId = `catalog-list-title-${uid}`;
@@ -380,8 +631,11 @@ function CatalogListModal({
             <X className="size-4" />
           </button>
         </div>
-        {/* body: 검색/필터(고정) + 목록(스크롤)은 CatalogListBody 내부에서 처리 */}
-        <CatalogListBody catalog={catalog} />
+        {/* body */}
+        <CatalogListBody
+          catalog={catalog}
+          onCatalogUpdate={onCatalogUpdate}
+        />
         {/* footer */}
         <div className="flex shrink-0 justify-end border-t border-zinc-800 p-4">
           <button
@@ -464,6 +718,7 @@ export function CatalogSettingsSection() {
         open={listOpen}
         onClose={() => setListOpen(false)}
         catalog={productCatalog}
+        onCatalogUpdate={카탈로그를_갱신_한다}
       />
     </>
   );
