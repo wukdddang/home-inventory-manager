@@ -26,7 +26,7 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { createPortal } from "react-dom";
 
 /* ── animation config ── */
@@ -186,9 +186,7 @@ export function ItemDetailDrawer({
   on소비하려고_연다,
   on폐기하려고_연다,
 }: ItemDetailDrawerProps) {
-  const [mounted, setMounted] = useState(() =>
-    typeof window !== "undefined",
-  );
+  const mounted = typeof window !== "undefined";
 
   useEffect(() => {
     if (!open) return;
@@ -205,16 +203,20 @@ export function ItemDetailDrawer({
   }, [item, household]);
 
   const lotSummary = useMemo(() => {
-    if (!item) return { lotCount: 0, worstExpiryDays: null, nearestExpiresOn: null };
-    return 구매목록에서_품목_로트_요약을_구한다(purchases, household.id, item.id);
+    if (!item)
+      return { lotCount: 0, worstExpiryDays: null, nearestExpiresOn: null };
+    return 구매목록에서_품목_로트_요약을_구한다(
+      purchases,
+      household.id,
+      item.id,
+    );
   }, [item, purchases, household.id]);
 
   const itemPurchases = useMemo(() => {
     if (!item) return [];
     return purchases
       .filter(
-        (p) =>
-          p.householdId === household.id && p.inventoryItemId === item.id,
+        (p) => p.householdId === household.id && p.inventoryItemId === item.id,
       )
       .sort(
         (a, b) =>
@@ -223,26 +225,27 @@ export function ItemDetailDrawer({
   }, [item, purchases, household.id]);
 
   const allLots = useMemo(() => {
-    return itemPurchases.flatMap((p) =>
-      p.batches.map((b) => ({
-        ...b,
-        purchasedOn: p.purchasedOn,
-        days: 유통기한까지_일수를_구한다(b.expiresOn),
-      })),
-    ).sort((a, b) => {
-      if (a.days === null && b.days === null) return 0;
-      if (a.days === null) return 1;
-      if (b.days === null) return -1;
-      return a.days - b.days;
-    });
+    return itemPurchases
+      .flatMap((p) =>
+        p.batches.map((b) => ({
+          ...b,
+          purchasedOn: p.purchasedOn,
+          days: 유통기한까지_일수를_구한다(b.expiresOn),
+        })),
+      )
+      .sort((a, b) => {
+        if (a.days === null && b.days === null) return 0;
+        if (a.days === null) return 1;
+        if (b.days === null) return -1;
+        return a.days - b.days;
+      });
   }, [itemPurchases]);
 
   const itemLedger = useMemo(() => {
     if (!item) return [];
     return ledger
       .filter(
-        (r) =>
-          r.inventoryItemId === item.id && r.householdId === household.id,
+        (r) => r.inventoryItemId === item.id && r.householdId === household.id,
       )
       .sort(
         (a, b) =>
@@ -277,7 +280,7 @@ export function ItemDetailDrawer({
             role="dialog"
             aria-modal="true"
             aria-label={`${item.name} 상세`}
-            className="fixed inset-y-0 right-0 z-10041 flex w-full max-w-md flex-col bg-zinc-950 shadow-2xl shadow-black/40 outline-none sm:max-w-[26rem]"
+            className="fixed inset-y-0 right-0 z-10041 flex w-full max-w-md flex-col bg-zinc-950 shadow-2xl shadow-black/40 outline-none sm:max-w-104"
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
@@ -295,10 +298,17 @@ export function ItemDetailDrawer({
               </button>
               <div className="flex items-start gap-3 pr-10">
                 {(() => {
-                  const imgUrl = resolveProductImageUrl(catalog, item.productId);
+                  const imgUrl = resolveProductImageUrl(
+                    catalog,
+                    item.productId,
+                  );
                   return imgUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
-                    <img src={imgUrl} alt="" className="size-10 shrink-0 rounded-xl border border-zinc-800 object-cover" />
+                    <img
+                      src={imgUrl}
+                      alt=""
+                      className="size-10 shrink-0 rounded-xl border border-zinc-800 object-cover"
+                    />
                   ) : (
                     <div className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900">
                       <Package className="size-5 text-zinc-500" />
@@ -439,9 +449,7 @@ export function ItemDetailDrawer({
                                 meta.bgColor,
                               )}
                             >
-                              <Icon
-                                className={cn("size-3.5", meta.color)}
-                              />
+                              <Icon className={cn("size-3.5", meta.color)} />
                             </div>
                             <div className="min-w-0 flex-1">
                               <div className="flex items-center gap-1.5">
@@ -478,10 +486,7 @@ export function ItemDetailDrawer({
                 </DrawerSection>
 
                 {/* purchase history */}
-                <DrawerSection
-                  title="구매 내역"
-                  count={itemPurchases.length}
-                >
+                <DrawerSection title="구매 내역" count={itemPurchases.length}>
                   {itemPurchases.length === 0 ? (
                     <p className="py-3 text-center text-sm text-zinc-600">
                       구매 기록이 없습니다

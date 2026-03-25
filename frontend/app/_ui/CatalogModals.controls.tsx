@@ -1,5 +1,6 @@
 "use client";
 
+import { AlertModal } from "@/app/_ui/alert-modal";
 import { FormModal } from "@/app/_ui/form-modal";
 import { newEntityId } from "@/app/(mock)/mock/dashboard/_lib/dashboard-helpers";
 import { MAX_CATALOG_IMAGE_BYTES, readImageFileAsDataUrl } from "@/lib/image-upload";
@@ -9,7 +10,7 @@ import type {
   CatalogProductVariant,
   ProductCatalog,
 } from "@/types/domain";
-import { ChevronDown, FolderTree, List, Package, PackagePlus, Search, X } from "lucide-react";
+import { ChevronDown, FolderTree, List, Package, PackagePlus, Pencil, Search, Trash2, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState, useId, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
@@ -76,23 +77,40 @@ function buildListProducts(catalog: ProductCatalog): EnrichedListProduct[] {
   }));
 }
 
-function CatalogReadOnlyListModal({
+type EditProductDraft = {
+  id: string;
+  name: string;
+  description: string;
+  isConsumable: boolean;
+  categoryId: string;
+};
+
+function CatalogListModal({
   open,
   onClose,
   catalog,
+  onCatalogUpdate,
 }: {
   open: boolean;
   onClose: () => void;
   catalog: ProductCatalog;
+  onCatalogUpdate: (fn: (c: ProductCatalog) => ProductCatalog) => void;
 }) {
   const uid = useId().replace(/:/g, "");
-  const titleId = `catalog-ro-title-${uid}`;
+  const titleId = `catalog-list-title-${uid}`;
   const [query, setQuery] = useState("");
   const [filterCategoryId, setFilterCategoryId] = useState("");
   const [openCategoryIds, setOpenCategoryIds] = useState<Set<string>>(
     () => new Set(catalog.categories.map((c) => c.id)),
   );
   const searchRef = useRef<HTMLInputElement>(null);
+
+  const [editDraft, setEditDraft] = useState<EditProductDraft | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<{
+    type: "product" | "variant";
+    id: string;
+    label: string;
+  } | null>(null);
 
   useEffect(() => {
     if (open) searchRef.current?.focus();
@@ -163,6 +181,54 @@ function CatalogReadOnlyListModal({
     if (allOpen) setOpenCategoryIds(new Set());
     else setOpenCategoryIds(new Set(visibleCategories.map((c) => c.id)));
   };
+
+  const handleStartEdit = useCallback((prod: EnrichedListProduct) => {
+    setEditDraft({
+      id: prod.id,
+      name: prod.name,
+      description: prod.description ?? "",
+      isConsumable: prod.isConsumable,
+      categoryId: prod.categoryId,
+    });
+  }, []);
+
+  const handleSaveEdit = useCallback(() => {
+    if (!editDraft || !editDraft.name.trim()) return;
+    const d = editDraft;
+    onCatalogUpdate((c) => ({
+      ...c,
+      products: c.products.map((p) =>
+        p.id === d.id
+          ? {
+              ...p,
+              name: d.name.trim(),
+              description: d.description.trim() || undefined,
+              isConsumable: d.isConsumable,
+              categoryId: d.categoryId,
+            }
+          : p,
+      ),
+    }));
+    setEditDraft(null);
+  }, [editDraft, onCatalogUpdate]);
+
+  const handleConfirmDelete = useCallback(() => {
+    if (!deleteTarget) return;
+    const { type, id } = deleteTarget;
+    if (type === "product") {
+      onCatalogUpdate((c) => ({
+        ...c,
+        products: c.products.filter((p) => p.id !== id),
+        variants: c.variants.filter((v) => v.productId !== id),
+      }));
+    } else {
+      onCatalogUpdate((c) => ({
+        ...c,
+        variants: c.variants.filter((v) => v.id !== id),
+      }));
+    }
+    setDeleteTarget(null);
+  }, [deleteTarget, onCatalogUpdate]);
 
   return (
     <MotionModalLayer
@@ -367,19 +433,59 @@ function CatalogReadOnlyListModal({
                                         비소비
                                       </span>
                                     )}
+                                    <button
+                                      type="button"
+                                      onClick={() => handleStartEdit(prod)}
+                                      className="shrink-0 rounded-lg p-1.5 text-zinc-500 transition hover:bg-zinc-800 hover:text-teal-300"
+                                      aria-label={`${prod.name} 수정`}
+                                    >
+                                      <Pencil className="size-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setDeleteTarget({
+                                          type: "product",
+                                          id: prod.id,
+                                          label: prod.name,
+                                        })
+                                      }
+                                      className="shrink-0 rounded-lg p-1.5 text-zinc-500 transition hover:bg-zinc-800 hover:text-rose-400"
+                                      aria-label={`${prod.name} 삭제`}
+                                    >
+                                      <Trash2 className="size-3.5" />
+                                    </button>
                                   </div>
                                   {prod.variants.length > 0 && (
                                     <div className="mt-2.5 flex flex-wrap gap-2 pl-12">
-                                      {prod.variants.map((v) => (
-                                        <span
-                                          key={v.id}
-                                          className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-700/80 bg-zinc-800/60 px-2.5 py-1 text-sm text-zinc-300"
-                                        >
-                                          <PackagePlus className="size-3.5 shrink-0 text-zinc-500" />
-                                          {v.name ||
-                                            `${v.quantityPerUnit}${v.unitSymbol}`}
-                                        </span>
-                                      ))}
+                                      {prod.variants.map((v) => {
+                                        const label =
+                                          v.name ||
+                                          `${v.quantityPerUnit}${v.unitSymbol}`;
+                                        return (
+                                          <span
+                                            key={v.id}
+                                            className="group inline-flex items-center gap-1.5 rounded-lg border border-zinc-700/80 bg-zinc-800/60 px-2.5 py-1 text-sm text-zinc-300"
+                                          >
+                                            <PackagePlus className="size-3.5 shrink-0 text-zinc-500" />
+                                            {label}
+                                            <button
+                                              type="button"
+                                              onClick={() =>
+                                                setDeleteTarget({
+                                                  type: "variant",
+                                                  id: v.id,
+                                                  label: `${prod.name} › ${label}`,
+                                                })
+                                              }
+                                              className="ml-0.5 shrink-0 rounded p-0.5 text-zinc-600 opacity-0 transition hover:text-rose-400 group-hover:opacity-100"
+                                              aria-label={`${label} 변형 삭제`}
+                                            >
+                                              <X className="size-3" />
+                                            </button>
+                                          </span>
+                                        );
+                                      })}
                                     </div>
                                   )}
                                 </div>
@@ -407,6 +513,115 @@ function CatalogReadOnlyListModal({
           </button>
         </div>
       </div>
+
+      {/* 품목 수정 모달 */}
+      {editDraft && (
+        <FormModal
+          open
+          onOpenChange={(v) => {
+            if (!v) setEditDraft(null);
+          }}
+          title="품목 수정"
+          onSubmit={handleSaveEdit}
+          submitLabel="저장"
+          submitDisabled={!editDraft.name.trim()}
+        >
+          <div className="space-y-4">
+            <div>
+              <label
+                htmlFor="edit-prod-name"
+                className="text-xs font-medium text-zinc-400"
+              >
+                품목명
+              </label>
+              <input
+                id="edit-prod-name"
+                type="text"
+                value={editDraft.name}
+                onChange={(e) =>
+                  setEditDraft({ ...editDraft, name: e.target.value })
+                }
+                className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-teal-500"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="edit-prod-category"
+                className="text-xs font-medium text-zinc-400"
+              >
+                카테고리
+              </label>
+              <select
+                id="edit-prod-category"
+                value={editDraft.categoryId}
+                onChange={(e) =>
+                  setEditDraft({ ...editDraft, categoryId: e.target.value })
+                }
+                className="mt-1 w-full cursor-pointer rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-teal-500"
+              >
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label
+                htmlFor="edit-prod-desc"
+                className="text-xs font-medium text-zinc-400"
+              >
+                설명 (선택)
+              </label>
+              <input
+                id="edit-prod-desc"
+                type="text"
+                value={editDraft.description}
+                onChange={(e) =>
+                  setEditDraft({ ...editDraft, description: e.target.value })
+                }
+                className="mt-1 w-full rounded-lg border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-teal-500"
+              />
+            </div>
+            <label className="flex items-center gap-2 text-sm text-zinc-300">
+              <input
+                type="checkbox"
+                checked={editDraft.isConsumable}
+                onChange={(e) =>
+                  setEditDraft({
+                    ...editDraft,
+                    isConsumable: e.target.checked,
+                  })
+                }
+                className="size-4 rounded border-zinc-600 bg-zinc-900"
+              />
+              소비재 (사용하면 수량이 줄어드는 품목)
+            </label>
+          </div>
+        </FormModal>
+      )}
+
+      {/* 삭제 확인 모달 */}
+      <AlertModal
+        open={deleteTarget !== null}
+        onOpenChange={(v) => {
+          if (!v) setDeleteTarget(null);
+        }}
+        title={
+          deleteTarget?.type === "product" ? "품목 삭제" : "용량·포장 삭제"
+        }
+        description={
+          deleteTarget
+            ? deleteTarget.type === "product"
+              ? `「${deleteTarget.label}」 품목과 연결된 모든 용량·포장을 삭제합니다.`
+              : `「${deleteTarget.label}」 용량·포장을 삭제합니다.`
+            : undefined
+        }
+        confirmLabel="삭제"
+        cancelLabel="취소"
+        variant="danger"
+        onConfirm={handleConfirmDelete}
+      />
     </MotionModalLayer>
   );
 }
@@ -617,7 +832,12 @@ export function CatalogModalsControls({
         {showListButton && (
           <button
             type="button"
-            className={cn(btnClass, "inline-flex items-center justify-center gap-1.5")}
+            className={cn(
+              layout === "panel"
+                ? "cursor-pointer rounded-lg border border-teal-500/40 bg-teal-500/10 px-2 py-1 text-xs font-medium whitespace-nowrap text-teal-300 hover:bg-teal-500/20 sm:px-2.5"
+                : "cursor-pointer rounded-xl border border-teal-500/40 bg-teal-500/10 px-4 py-2 text-sm font-medium text-teal-300 hover:bg-teal-500/20",
+              "inline-flex items-center justify-center gap-1.5",
+            )}
             onClick={() => setListOpen(true)}
           >
             <List className={catalogBtnIconClass} aria-hidden />
@@ -920,10 +1140,11 @@ export function CatalogModalsControls({
       </FormModal>
 
       {showListButton && (
-        <CatalogReadOnlyListModal
+        <CatalogListModal
           open={listOpen}
           onClose={() => setListOpen(false)}
           catalog={catalog}
+          onCatalogUpdate={onCatalogUpdate}
         />
       )}
     </>
