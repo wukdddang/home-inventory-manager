@@ -3,7 +3,7 @@
 import { InventoryLotExpiryBadge } from "@/app/_ui/inventory-lot-expiry-badge";
 import { groupInventoryByStorageForRoom } from "@/lib/household-location";
 import { 구매목록에서_품목_로트_요약을_구한다 } from "@/lib/inventory-lot-from-purchases";
-import { resolveProductImageUrl } from "@/lib/product-catalog-defaults";
+import { resolveProductImageUrl } from "@/lib/product-catalog-helpers";
 import { cn } from "@/lib/utils";
 import type { Household, InventoryRow, ProductCatalog, PurchaseRecord } from "@/types/domain";
 import { Package } from "lucide-react";

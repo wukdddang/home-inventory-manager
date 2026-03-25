@@ -24,7 +24,7 @@ import {
   setSharedHouseholdKindDefinitions,
   setSharedProductCatalog,
 } from "@/lib/local-store";
-import { cloneDefaultCatalog } from "@/lib/product-catalog-defaults";
+import { cloneDefaultCatalog } from "./dashboard-mock.service";
 import type {
   Household,
   HouseholdKindDefinition,

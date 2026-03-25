@@ -27,7 +27,7 @@ import { useMemo, useSyncExternalStore } from "react";
 import {
   getMockPurchasesSession,
   subscribeMockPurchasesSession,
-} from "../../../purchases/_lib/mock-purchases-session-store";
+} from "../../../purchases/_context/purchases-mock.service";
 
 function reasonLabel(r: ShoppingSuggestion["reasons"][number]): string {
   if (r === "expiring_soon") return "유통기한 임박";

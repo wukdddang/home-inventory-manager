@@ -9,7 +9,7 @@ import {
   setShoppingList,
   subscribeShoppingList,
 } from "@/lib/local-store";
-import { inventoryDisplayLine } from "@/lib/product-catalog-defaults";
+import { inventoryDisplayLine } from "@/lib/product-catalog-helpers";
 import type {
   Household,
   InventoryRow,

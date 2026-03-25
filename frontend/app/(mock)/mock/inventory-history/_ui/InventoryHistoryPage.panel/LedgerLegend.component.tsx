@@ -5,7 +5,7 @@ import {
   구분_뱃지_클래스를_구한다,
   이력_유형_라벨을_구한다,
   증감_뱃지_클래스를_구한다,
-} from "../_lib/inventory-history-helpers";
+} from "../../_context/inventory-history-helpers.service";
 
 const 구분_순서: InventoryLedgerType[] = ["in", "out", "adjust", "waste"];
 

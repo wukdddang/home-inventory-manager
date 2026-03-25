@@ -10,7 +10,7 @@ import {
   증감_뱃지_클래스를_구한다,
   품목_라벨을_분해한다,
   폐기_사유_열_텍스트를_구한다,
-} from "../_lib/inventory-history-helpers";
+} from "../../_context/inventory-history-helpers.service";
 
 export function LedgerTableRow({
   row,

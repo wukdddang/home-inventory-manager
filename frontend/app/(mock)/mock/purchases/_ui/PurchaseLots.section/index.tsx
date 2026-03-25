@@ -4,7 +4,7 @@ import { AlertModal } from "@/app/_ui/alert-modal";
 import { PeriodFilterToolbar } from "@/app/_ui/table-period-filter-row";
 import { useAppRoutePrefix } from "@/lib/use-app-route-prefix";
 import { 날짜키가_기간에_포함되는가 } from "@/lib/table-period-filter";
-import { resolveProductImageUrl } from "@/lib/product-catalog-defaults";
+import { resolveProductImageUrl } from "@/lib/product-catalog-helpers";
 import { getSharedProductCatalog } from "@/lib/local-store";
 import { cn } from "@/lib/utils";
 import type { PurchaseBatchLot, PurchaseRecord } from "@/types/domain";

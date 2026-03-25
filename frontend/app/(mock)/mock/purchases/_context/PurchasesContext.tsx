@@ -9,10 +9,9 @@ import {
 import { MOCK_SEED_HOUSEHOLDS } from "../../dashboard/_context/dashboard-mock.service";
 import {
   getMockPurchasesSession,
-  setMockPurchasesSession,
   subscribeMockPurchasesSession,
   updateMockPurchasesSession,
-} from "../_lib/mock-purchases-session-store";
+} from "./purchases-mock.service";
 import { APP_PAGE_MIN_LOADING_MS } from "@/app/_ui/app-loading-state";
 import type {
   Household,

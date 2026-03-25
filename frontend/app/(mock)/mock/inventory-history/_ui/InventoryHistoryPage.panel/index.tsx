@@ -7,7 +7,7 @@ import {
 import { FormModal } from "@/app/_ui/form-modal";
 import { PeriodFilterToolbar } from "@/app/_ui/table-period-filter-row";
 import { getSharedProductCatalog } from "@/lib/local-store";
-import { resolveProductImageUrl } from "@/lib/product-catalog-defaults";
+import { resolveProductImageUrl } from "@/lib/product-catalog-helpers";
 import { useAppRoutePrefix } from "@/lib/use-app-route-prefix";
 import { motion } from "framer-motion";
 import { Search } from "lucide-react";
@@ -20,11 +20,11 @@ import {
   LEDGER_TABLE_COL_COUNT,
   행_메모_문자열을_구한다,
   폐기_사유_라벨을_구한다,
-} from "../../_lib/inventory-history-helpers";
-import { LedgerLegend } from "../LedgerLegend.component";
-import { LedgerPagination } from "../LedgerPagination.component";
-import { LedgerSortFilterHeader } from "../LedgerTableHeader.component";
-import { LedgerTableRow } from "../LedgerTableRow.component";
+} from "../../_context/inventory-history-helpers.service";
+import { LedgerLegend } from "./LedgerLegend.component";
+import { LedgerPagination } from "./LedgerPagination.component";
+import { LedgerSortFilterHeader } from "./LedgerTableHeader.component";
+import { LedgerTableRow } from "./LedgerTableRow.component";
 
 function resolveProductIdForLedgerRow(
   households: import("@/types/domain").Household[],

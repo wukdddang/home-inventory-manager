@@ -1,7 +1,7 @@
 "use client";
 
 import { cloneDefaultHouseholdKindDefinitions } from "@/lib/household-kind-defaults";
-import { cloneDefaultCatalog } from "@/lib/product-catalog-defaults";
+import { cloneDefaultCatalog } from "@/app/(mock)/mock/dashboard/_context/dashboard-mock.service";
 import type {
   AppSettings,
   AuthUser,

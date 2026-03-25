@@ -29,7 +29,7 @@ import {
   type ColumnFilterOptions,
   type SortColumn,
   type SortPhase,
-} from "../_lib/inventory-history-helpers";
+} from "./inventory-history-helpers.service";
 
 export type InventoryHistoryContextType = {
   /* ── 데이터 ── */

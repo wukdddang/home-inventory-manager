@@ -23,7 +23,9 @@
       "Bash(ls -la /c/Users/wukdd/dev/home-inventory-manager/frontend/app/\\\\\\(current\\\\\\)/dashboard/_ui/)",
       "Bash(grep -r \"EditVariant\\\\|VariantEdit\\\\|variant.*edit\\\\|variant.*수정\" /c/Users/wukdd/dev/home-inventory-manager/frontend --include=*.tsx --include=*.ts)",
       "Bash(cat \"/c/Users/wukdd/dev/home-inventory-manager/frontend/app/\\(mock\\)/mock/settings/_ui/CatalogSettings.section/index.tsx\")",
-      "Bash(pnpm --filter frontend build)"
+      "Bash(pnpm --filter frontend build)",
+      "Bash(cd:*)",
+      "Bash(find \"C:/Users/wukdd/dev/home-inventory-manager/frontend/app/\\(mock\\)/mock/dashboard\" -type d)"
     ]
   }
 }

@@ -11,7 +11,7 @@ import {
 import {
   getMockPurchasesSession,
   subscribeMockPurchasesSession,
-} from "../../../purchases/_lib/mock-purchases-session-store";
+} from "../../../purchases/_context/purchases-mock.service";
 import { cn } from "@/lib/utils";
 import { useAppRoutePrefix } from "@/lib/use-app-route-prefix";
 import type { Household, InventoryRow } from "@/types/domain";

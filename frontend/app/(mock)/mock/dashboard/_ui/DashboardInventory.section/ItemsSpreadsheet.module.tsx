@@ -4,7 +4,7 @@ import { AlertModal } from "@/app/_ui/alert-modal";
 import { InventoryLotExpiryBadge } from "@/app/_ui/inventory-lot-expiry-badge";
 import { formatLocationBreadcrumb } from "@/lib/household-location";
 import { 구매목록에서_품목_로트_요약을_구한다 } from "@/lib/inventory-lot-from-purchases";
-import { resolveInventoryRowColumns, resolveProductImageUrl } from "@/lib/product-catalog-defaults";
+import { resolveInventoryRowColumns, resolveProductImageUrl } from "@/lib/product-catalog-helpers";
 import { cn } from "@/lib/utils";
 import { useEffect, useMemo, useState } from "react";
 import type {

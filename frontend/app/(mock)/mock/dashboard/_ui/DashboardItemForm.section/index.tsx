@@ -19,14 +19,14 @@ import {
   subscribePurchases,
 } from "@/lib/local-store";
 import { 오늘_날짜_문자열을_구한다 } from "@/lib/purchase-lot-helpers";
-import { inventoryDisplayLine } from "@/lib/product-catalog-defaults";
+import { inventoryDisplayLine } from "@/lib/product-catalog-helpers";
 import type { Household, InventoryRow, PurchaseRecord } from "@/types/domain";
 import {
   getMockPurchasesSession,
   setMockPurchasesSession,
   subscribeMockPurchasesSession,
   updateMockPurchasesSession,
-} from "../../../purchases/_lib/mock-purchases-session-store";
+} from "../../../purchases/_context/purchases-mock.service";
 import {
   ArrowDownToLine,
   BookOpen,

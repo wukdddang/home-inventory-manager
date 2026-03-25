@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowDown, ArrowUp } from "lucide-react";
-import type { SortColumn, SortPhase } from "../_lib/inventory-history-helpers";
+import type { SortColumn, SortPhase } from "../../_context/inventory-history-helpers.service";
 
 function 헤더_열_필터_셀렉트({
   열이름,
