@@ -6,7 +6,9 @@
       "Bash(ls:*)",
       "Bash(curl:*)",
       "Bash(pnpm build:*)",
-      "Bash(netstat -ano)"
+      "Bash(netstat -ano)",
+      "Bash(npx next:*)",
+      "Bash(npm run:*)"
     ]
   }
 }

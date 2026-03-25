@@ -28,6 +28,9 @@ function normalizeAppSettings(partial: Partial<AppSettings>): AppSettings {
       ...DEFAULT_NOTIFICATION_DETAIL,
       ...(partial.notificationDetail ?? {}),
     },
+    expirationAlertRules: Array.isArray(partial.expirationAlertRules)
+      ? partial.expirationAlertRules
+      : [],
   };
 }
 

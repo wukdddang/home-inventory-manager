@@ -13,6 +13,7 @@ import { getAppSettings, setAppSettings as persistSettings } from "@/lib/local-s
 import {
   DEFAULT_NOTIFICATION_DETAIL,
   type AppSettings,
+  type ExpirationAlertRule,
   type GroupMember,
   type NotificationDetailPreferences,
 } from "@/types/domain";
@@ -35,6 +36,10 @@ export type SettingsContextType = {
   ) => void;
   /** §17·§18 정렬 알림 상세(만료 일수·스코프 등)를 부분 갱신한다 */
   알림_상세를_갱신한다: (patch: Partial<NotificationDetailPreferences>) => void;
+  /** §20 품목별 만료 알림 규칙을 추가·갱신한다 */
+  만료_규칙을_저장한다: (rule: ExpirationAlertRule) => void;
+  /** §20 품목별 만료 알림 규칙을 삭제한다 */
+  만료_규칙을_삭제한다: (ruleId: string) => void;
 };
 
 export type SettingsProviderProps = { children: ReactNode };
@@ -160,6 +165,29 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
     [],
   );
 
+  const 만료_규칙을_저장한다 = useCallback((rule: ExpirationAlertRule) => {
+    setSettings((s) => {
+      if (!s) return s;
+      const rules = s.expirationAlertRules ?? [];
+      const idx = rules.findIndex((r) => r.id === rule.id);
+      const next = idx >= 0 ? rules.map((r) => (r.id === rule.id ? rule : r)) : [...rules, rule];
+      return { ...s, expirationAlertRules: next };
+    });
+  }, []);
+
+  const 만료_규칙을_삭제한다 = useCallback((ruleId: string) => {
+    setSettings((s) =>
+      s
+        ? {
+            ...s,
+            expirationAlertRules: (s.expirationAlertRules ?? []).filter(
+              (r) => r.id !== ruleId,
+            ),
+          }
+        : s,
+    );
+  }, []);
+
   const value = useMemo<SettingsContextType>(
     () => ({
       settings,
@@ -171,6 +199,8 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
       그룹_멤버를_제거_한다,
       알림_플래그를_토글_한다,
       알림_상세를_갱신한다,
+      만료_규칙을_저장한다,
+      만료_규칙을_삭제한다,
     }),
     [
       settings,
@@ -182,6 +212,8 @@ export function SettingsProvider({ children }: SettingsProviderProps) {
       그룹_멤버를_제거_한다,
       알림_플래그를_토글_한다,
       알림_상세를_갱신한다,
+      만료_규칙을_저장한다,
+      만료_규칙을_삭제한다,
     ],
   );
 

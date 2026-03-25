@@ -293,12 +293,7 @@ export function CatalogModalsControls({
         </button>
       </div>
 
-      {layout === "settings" ? (
-        <p className="mt-4 text-xs text-zinc-300">
-          현재 카테고리 {catalog.categories.length}개 · 품목{" "}
-          {catalog.products.length}개 · 용량·포장 {catalog.variants.length}개
-        </p>
-      ) : null}
+      {/* 카운트 요약은 settings 레이아웃에서 CatalogListView가 표시 */}
 
       <FormModal
         open={catOpen}

@@ -265,12 +265,27 @@ export type NotificationDetailPreferences = {
   lowStockRespectMinLevel: boolean;
 };
 
+/**
+ * ERD §20 ExpirationAlertRule — 품목별 유통기한 알림 일수 오버라이드(클라이언트·로컬 저장용).
+ * 전역 기본값(`NotificationDetailPreferences.expirationDaysBefore`)과 다른 품목만 등록.
+ */
+export type ExpirationAlertRule = {
+  id: string;
+  /** CatalogProduct.id */
+  productId: string;
+  /** 유통기한 N일 전 알림 */
+  daysBefore: number;
+  isActive: boolean;
+};
+
 export type AppSettings = {
   notifyExpiration: boolean;
   notifyShopping: boolean;
   notifyLowStock: boolean;
   groups: GroupMember[];
   notificationDetail: NotificationDetailPreferences;
+  /** 품목별 만료 알림 일수 오버라이드 */
+  expirationAlertRules: ExpirationAlertRule[];
 };
 
 /** ERD §19 Notification — 알림 수신 항목(클라이언트·로컬 저장용) */
@@ -311,4 +326,5 @@ export const DEFAULT_SETTINGS: AppSettings = {
   notifyLowStock: false,
   groups: [],
   notificationDetail: DEFAULT_NOTIFICATION_DETAIL,
+  expirationAlertRules: [],
 };
