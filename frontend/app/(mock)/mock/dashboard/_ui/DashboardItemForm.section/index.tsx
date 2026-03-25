@@ -1268,14 +1268,12 @@ export function RoomItemAddWidget({
             <ItemAddProcessStepsRail source={addSource} />
             <div
               className={cn(
-                "grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,2.35fr)_minmax(0,1fr)] lg:gap-4",
-                addSource === "purchase" ? "lg:items-start" : "lg:items-stretch",
+                "grid grid-cols-1 gap-3 lg:grid-cols-[minmax(0,2.35fr)_minmax(0,1fr)] lg:items-stretch lg:gap-4",
               )}
             >
               <div
                 className={cn(
-                  "flex h-auto min-h-0 min-w-0 flex-col overflow-hidden",
-                  addSource === "catalog" ? "lg:h-full" : "lg:h-auto",
+                  "flex h-auto min-h-0 min-w-0 flex-col overflow-hidden lg:h-full",
                 )}
               >
                 {addSource === "catalog" ? (
@@ -1379,10 +1377,10 @@ export function RoomItemAddWidget({
               </div>
               <div
                 className={cn(
-                  "flex h-auto min-h-0 min-w-0 flex-col rounded-xl border border-teal-500/25 bg-zinc-950/50 ring-1 ring-teal-500/10",
+                  "flex h-auto min-h-0 min-w-0 flex-col rounded-xl border border-teal-500/25 bg-zinc-950/50 ring-1 ring-teal-500/10 lg:h-full",
                   addSource === "catalog"
-                    ? "p-3 sm:p-4 lg:h-full"
-                    : "p-2.5 sm:p-3 lg:h-auto",
+                    ? "p-3 sm:p-4"
+                    : "p-2.5 sm:p-3",
                 )}
               >
                 <div
