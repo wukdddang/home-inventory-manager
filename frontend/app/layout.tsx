@@ -19,7 +19,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "집비치기 — 가정 재고 관리",
   description:
-    "Household·StorageLocation·InventoryItem 도메인에 맞춘 집 구조·물품 관리 UI",
+    "Household·StorageLocation·InventoryItem 도메인에 맞춘 집 구조·재고 관리 UI",
 };
 
 export default function RootLayout({

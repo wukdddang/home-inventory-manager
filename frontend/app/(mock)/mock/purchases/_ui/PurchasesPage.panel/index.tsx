@@ -55,11 +55,11 @@ export function PurchasesPanel() {
             <h1 className="text-2xl font-semibold text-white">구매·로트</h1>
             <p className="mt-1 text-sm text-zinc-300">
               <span className="text-zinc-300">
-                장만 하고 아직 어디 칸에 둘지 정리 전일 때
+                장만 하고 아직 어디에 둘지 정리 전일 때
               </span>
-              는 여기서 구매·유통기한 로트만 먼저 적어 두면 됩니다. 이미 칸에
+              는 여기서 구매·로트만 먼저 적어 두면 됩니다. 이미 보관 장소에
               넣었다면{" "}
-              <span className="text-zinc-300">메인</span>에서 방·보관 칸·물품을
+              <span className="text-zinc-300">메인</span>에서 방·보관 장소·재고를
               함께 등록하는 편이 한 번에 맞습니다. 데이터는 브라우저{" "}
               <span className="text-zinc-300">him-purchases</span>에 저장됩니다.
               API 연동 시 동일 필드를 서버 DTO에 매핑하면 됩니다.

@@ -439,7 +439,7 @@ function emitPurchases() {
   purchaseListeners.forEach((fn) => fn());
 }
 
-/** 구매·유통기한 로트 화면용 (거점별 `householdId` 필터는 UI에서 처리) */
+/** 구매·로트 화면용 (거점별 `householdId` 필터는 UI에서 처리) */
 export function getPurchases(): PurchaseRecord[] {
   if (typeof window === "undefined") return [];
   const raw = localStorage.getItem(K_PURCHASES);

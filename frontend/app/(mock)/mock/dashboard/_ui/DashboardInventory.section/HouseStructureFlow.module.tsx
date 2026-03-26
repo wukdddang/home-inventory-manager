@@ -38,11 +38,11 @@ type StructureRoomData = {
   roomId: string;
   label: string;
   active: boolean;
-  /** 이 방에 속한 부족 재고 물품 수 */
+  /** 이 방에 속한 부족 재고 수 */
   lowStockCount: number;
 };
 
-/** 방 직속 보관 칸 1개 = 노드 1개 */
+/** 방 직속 보관 장소 1개 = 노드 1개 */
 type DirectSlotData = {
   kind: "directSlot";
   roomId: string;
@@ -153,7 +153,7 @@ const FurniturePlacementNode = memo(function FurniturePlacementNode({
       </div>
       <div className="nopan nowheel min-h-0 flex-1 overflow-y-auto overscroll-y-contain p-1.5">
         {data.slots.length === 0 ? (
-          <p className="text-xs text-zinc-400">하위 보관 칸 없음</p>
+          <p className="text-xs text-zinc-400">하위 보관 장소 없음</p>
         ) : (
           <ul className="space-y-0.5 border-l border-teal-500/25 pl-1.5">
             {data.slots.map((s) => (
@@ -675,7 +675,7 @@ function HouseStructureFlowInner({
       <p className="border-t border-zinc-800 px-1 py-2 text-xs text-zinc-300">
         팁:{" "}
         <span className="text-zinc-300">
-          방 → 직속 보관 칸(각각) → 그 칸에 연결된 가구 → 가구 아래 칸
+          방 → 직속 보관 장소(각각) → 그 보관 장소에 연결된 가구 → 가구 아래 보관 장소
         </span>
         . 방·직속·가구 블록을 각각 드래그해 배치할 수 있으며 위치는 저장됩니다.
         방을 드래그하면 같은 방의 직속·가구가 함께 움직입니다.

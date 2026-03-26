@@ -11,7 +11,7 @@ export type InventoryLotExpiryBadgeProps = {
 };
 
 /**
- * 물품 목록·표에서 구매 연동 로트의 가장 급한 유통기한을 뱃지로 표시한다.
+ * 재고 목록·표에서 구매 연동 로트의 가장 급한 유통기한을 뱃지로 표시한다.
  */
 export function InventoryLotExpiryBadge({
   worstExpiryDays,

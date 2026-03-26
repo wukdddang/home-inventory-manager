@@ -296,7 +296,7 @@ export function ItemsSpreadsheet({
                   colSpan={11}
                   className="px-3 py-10 text-center text-zinc-300"
                 >
-                  물품이 없습니다. 방을 선택한 뒤 아래에서 등록하세요.
+                  재고가 없습니다. 방을 선택한 뒤 아래에서 등록하세요.
                 </td>
               </tr>
             ) : (
@@ -415,7 +415,7 @@ export function ItemsSpreadsheet({
         onOpenChange={(open) => {
           if (!open) setPendingDeleteId(null);
         }}
-        title="물품 삭제"
+        title="재고 삭제"
         description={
           pendingItem
             ? `삭제하시겠습니까? 「${pendingItem.name}」을(를) 목록에서 제거합니다.`

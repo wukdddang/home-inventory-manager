@@ -30,7 +30,7 @@ export type ShoppingListQuickAddFromCatalogModalProps = {
   onOpenChange: (open: boolean) => void;
   household: Household;
   catalog: ProductCatalog;
-  /** 물품 추가 폼과 동기화된 선택값(이미 해석된 id) */
+  /** 재고 추가 폼과 동기화된 선택값(이미 해석된 id) */
   categoryId: string;
   productId: string;
   variantId: string;
@@ -175,7 +175,7 @@ function ShoppingListDetailReadOnly({ household }: { household: Household }) {
                 </p>
                 {entry.targetStorageLocationId ? (
                   <p className="truncate text-xs text-teal-400/85">
-                    넣을 칸 ·{" "}
+                    넣을 보관 장소 ·{" "}
                     {formatShoppingListTargetStorage(
                       household,
                       entry.targetStorageLocationId,
@@ -207,7 +207,7 @@ function ShoppingListAddFromDashboardHint() {
       <p className="text-xs font-medium text-zinc-300">항목 추가</p>
       <p className="mt-2 text-sm leading-relaxed text-zinc-300">
         목록에 품목을 담으려면 메인(대시보드)에서 거점·방을 선택한 뒤, 화면의
-        <span className="font-medium text-zinc-200">「물품 등록」</span> 패널에서
+        <span className="font-medium text-zinc-200">「재고 등록」</span> 패널에서
         카탈로그를 고르고
         <span className="font-medium text-zinc-200">「장보기에만 담기」</span>를
         사용하세요.
@@ -313,7 +313,7 @@ function ShoppingListDetailContent({
     removeSaved(entry.id);
     toast({
       title: "목록에서 뺐습니다",
-      description: `${entry.label} — 재고에 같은 품목이 없어 수량은 바뀌지 않습니다. 물품 추가로 넣은 뒤 다시 완료하세요.`,
+      description: `${entry.label} — 재고에 같은 품목이 없어 수량은 바뀌지 않습니다. 재고 추가로 넣은 뒤 다시 완료하세요.`,
     });
   };
 
@@ -418,7 +418,7 @@ function ShoppingListDetailContent({
                   </p>
                   {entry.targetStorageLocationId ? (
                     <p className="truncate text-xs text-teal-400/85">
-                      넣을 칸 ·{" "}
+                      넣을 보관 장소 ·{" "}
                       {formatShoppingListTargetStorage(
                         household,
                         entry.targetStorageLocationId,
@@ -594,7 +594,7 @@ export function ShoppingListQuickAddFromCatalogModal({
           장보기에 담기
         </h2>
         <p id={descId} className="mt-2 text-sm leading-relaxed text-zinc-300">
-          칸·수량·유통기한 없이 목록에만 남깁니다. 헤더「장보기」에서 구매 완료·
+          보관 장소·수량·유통기한 없이 목록에만 남깁니다. 헤더「장보기」에서 구매 완료·
           삭제를 할 수 있습니다.
         </p>
 

@@ -13,8 +13,8 @@ const STEPS: Step[] = ["rooms", "furniture", "storage", "done"];
 
 const STEP_META: Record<Step, { label: string; icon: typeof Home }> = {
   rooms: { label: "방 추가", icon: Home },
-  furniture: { label: "가구 배치", icon: Layers3 },
-  storage: { label: "보관 칸", icon: MapPin },
+  furniture: { label: "가구", icon: Layers3 },
+  storage: { label: "보관 장소", icon: MapPin },
   done: { label: "완료", icon: Check },
 };
 
@@ -78,7 +78,7 @@ function RoomsStep({
   return (
     <div className="space-y-4">
       <p className="text-sm text-zinc-300">
-        거점에 방을 추가하세요. 거실, 주방, 안방 등 물품을 보관하는 공간을 나눕니다.
+        거점에 방을 추가하세요. 거실, 주방, 안방 등 재고를 보관하는 공간을 나눕니다.
       </p>
       <div className="flex gap-2">
         <input
@@ -145,7 +145,7 @@ function FurnitureStep({
   return (
     <div className="space-y-4">
       <p className="text-sm text-zinc-300">
-        방에 가구를 배치하세요. 냉장고, 책장, 서랍장 등 물품을 담는 가구입니다.
+        방에 가구를 배치하세요. 냉장고, 책장, 서랍장 등 재고를 담는 가구입니다.
         나중에 추가해도 됩니다.
       </p>
       <div className="flex flex-wrap gap-2">
@@ -230,7 +230,7 @@ function StorageStep({
   return (
     <div className="space-y-4">
       <p className="text-sm text-zinc-300">
-        물품을 넣을 보관 칸을 추가하세요. 방 직속이거나 가구 아래에 둘 수 있습니다.
+        재고를 넣을 보관 장소를 추가하세요. 방 직속이거나 가구 아래에 둘 수 있습니다.
         나중에 추가해도 됩니다.
       </p>
       <div className="flex flex-wrap gap-2">
@@ -260,7 +260,7 @@ function StorageStep({
       <div className="flex gap-2">
         <input
           type="text"
-          placeholder="보관 칸 이름 (예: 냉장실 상단)"
+          placeholder="보관 장소 이름 (예: 냉장실 상단)"
           value={name}
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleAdd()}
@@ -317,10 +317,10 @@ function DoneStep({ household }: { household: Household }) {
       <div className="flex justify-center gap-4 text-xs text-zinc-400">
         <span>방 {rooms}개</span>
         <span>가구 {furniture}개</span>
-        <span>보관 칸 {storage}개</span>
+        <span>보관 장소 {storage}개</span>
       </div>
       <p className="text-xs text-zinc-500">
-        왼쪽 방·가구 배치 패널에서 언제든 수정할 수 있습니다.
+        왼쪽 방·가구 패널에서 언제든 수정할 수 있습니다.
       </p>
     </div>
   );
@@ -328,7 +328,7 @@ function DoneStep({ household }: { household: Household }) {
 
 /**
  * 좌측 컬럼에 인라인으로 끼워 넣는 온보딩 패널.
- * 구조도(우측)를 가리지 않고, 추가한 방·가구·칸이 실시간 반영되는 것을 함께 볼 수 있다.
+ * 구조도(우측)를 가리지 않고, 추가한 방·가구·보관 장소가 실시간 반영되는 것을 함께 볼 수 있다.
  */
 export function HouseholdOnboardingPanel({
   open,

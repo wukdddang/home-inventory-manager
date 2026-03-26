@@ -400,7 +400,7 @@ export function ItemDetailDrawer({
                 )}
 
                 {/* lots & expiry */}
-                <DrawerSection title="유통기한 로트" count={allLots.length}>
+                <DrawerSection title="로트" count={allLots.length}>
                   {allLots.length === 0 ? (
                     <p className="py-3 text-center text-sm text-zinc-600">
                       연결된 로트가 없습니다

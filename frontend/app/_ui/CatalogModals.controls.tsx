@@ -41,7 +41,7 @@ const inputClass =
 const btnOutline =
   "cursor-pointer rounded-xl border border-zinc-600 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800";
 
-/** 물품 추가 패널 헤더 등 —「접기」와 동일 높이·타이포 */
+/** 재고 추가 패널 헤더 등 —「접기」와 동일 높이·타이포 */
 const btnPanel =
   "cursor-pointer rounded-lg border border-zinc-600 px-2 py-1 text-xs font-medium whitespace-nowrap text-zinc-300 hover:bg-zinc-800 sm:px-2.5";
 
@@ -631,7 +631,7 @@ function CatalogListModal({
 export type CatalogModalsControlsProps = {
   catalog: ProductCatalog;
   onCatalogUpdate: (fn: (c: ProductCatalog) => ProductCatalog) => void;
-  /** 설정 카드 / 대시보드 상단 / 물품 추가 패널 */
+  /** 설정 카드 / 대시보드 상단 / 재고 추가 패널 */
   layout: "settings" | "toolbar" | "panel";
   /** 버튼 줄에 추가 클래스 (예: `justify-end`) */
   buttonRowClassName?: string;

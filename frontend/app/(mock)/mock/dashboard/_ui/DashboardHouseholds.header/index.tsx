@@ -156,7 +156,7 @@ function DashboardScreenHelpHint() {
           className="absolute left-0 top-full z-50 mt-1.5 w-[min(calc(100vw-2rem),22rem)] rounded-lg border border-zinc-600 bg-zinc-900 p-2.5 text-xs leading-relaxed text-zinc-300 shadow-xl ring-1 ring-black/40 sm:text-sm"
         >
           <span className="font-medium text-zinc-200">이 화면</span>에서는 방·보관
-          칸에 물품을 바로 맞춥니다. 장만 하고 칸 정리는 나중이면{" "}
+          장소에 재고를 바로 맞춥니다. 장만 하고 보관 장소 정리는 나중이면{" "}
           <Link
             href={`${prefix}/purchases`}
             className="font-medium text-teal-400 underline-offset-2 hover:underline"
@@ -387,7 +387,7 @@ export function DashboardHouseholdsHeader({
         title="거점 삭제"
         description={
           pendingDeleteHousehold
-            ? `삭제하시겠습니까? 「${pendingDeleteHousehold.name}」과(와) 소속 방·물품 데이터가 함께 제거됩니다. 이 작업은 되돌릴 수 없습니다.`
+            ? `삭제하시겠습니까? 「${pendingDeleteHousehold.name}」과(와) 소속 방·재고 데이터가 함께 제거됩니다. 이 작업은 되돌릴 수 없습니다.`
             : "삭제하시겠습니까?"
         }
         confirmLabel="삭제"

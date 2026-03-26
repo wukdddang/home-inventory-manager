@@ -178,7 +178,7 @@ export function InventoryHistoryPanel() {
         {totalBase === 0 ? (
           <div className="flex min-h-0 flex-1 flex-col justify-center rounded-xl border border-dashed border-zinc-700 px-4 py-10">
             <p className="text-center text-sm text-zinc-300">
-              아직 기록이 없습니다. 대시보드 물품 목록에서 소비·폐기를 남기면
+              아직 기록이 없습니다. 대시보드 재고 목록에서 소비·폐기를 남기면
               여기에 쌓입니다.
             </p>
             <p className="mt-6 text-right text-xs text-zinc-300">총 0행</p>

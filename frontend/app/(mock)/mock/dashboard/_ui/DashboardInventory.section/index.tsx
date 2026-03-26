@@ -214,12 +214,12 @@ export function DashboardInventorySection({
     <p className="shrink-0 rounded-xl border border-dashed border-zinc-700 bg-zinc-950/50 px-4 py-3 text-center text-sm text-zinc-300">
       {viewMode === "structure" ? (
         <>
-          물품을 추가하려면 구조도에서 방을 선택하세요. 보관 칸은 왼쪽「가구
-          배치·보관 장소」에서 정한 뒤, 아래「물품 추가」에서 재고를 넣습니다.
+          재고를 추가하려면 구조도에서 방을 선택하세요. 보관 장소는 왼쪽「가구
+          배치·보관 장소」에서 정한 뒤, 아래「재고 추가」에서 재고를 넣습니다.
         </>
       ) : (
         <>
-          표에서 방을 참고한 뒤 왼쪽에서 방을 선택하면, 이 섹션 아래「물품
+          표에서 방을 참고한 뒤 왼쪽에서 방을 선택하면, 이 섹션 아래「재고
           추가」에서 등록할 수 있습니다.
         </>
       )}
@@ -236,7 +236,7 @@ export function DashboardInventorySection({
           </h2>
           <p className="mt-1 text-sm text-zinc-300">
             구조도에서 방·직속·가구 블록을 드래그해 배치하거나, 표로 전환해
-            물품을 확인합니다. 구매와 연결된 품목은 로트·임박이 표시됩니다.
+            재고를 확인합니다. 구매와 연결된 품목은 로트·임박이 표시됩니다.
           </p>
           <Link
             href={`${prefix}/inventory-history`}

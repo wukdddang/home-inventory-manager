@@ -10,7 +10,7 @@ const features = [
     tag: "구조",
   },
   {
-    title: "물품 스프레드시트",
+    title: "재고 스프레드시트",
     desc: "엑셀처럼 빠르게 재고(InventoryItem)를 조회·등록합니다.",
     tag: "목록",
   },
@@ -74,7 +74,7 @@ export function LoginShowcaseSection() {
           <span aria-hidden>→</span>
           <span className="rounded-lg bg-zinc-800 px-2 py-1">구조 / 표</span>
           <span aria-hidden>→</span>
-          <span className="rounded-lg bg-zinc-800 px-2 py-1">물품 등록</span>
+          <span className="rounded-lg bg-zinc-800 px-2 py-1">재고 등록</span>
         </div>
       </div>
     </section>

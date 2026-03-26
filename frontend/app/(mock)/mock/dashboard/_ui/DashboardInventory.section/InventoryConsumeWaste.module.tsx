@@ -32,7 +32,7 @@ export function InventoryConsumeWasteModal({
   >("expired");
 
   const title =
-    mode === "consume" ? "물품 소비(사용)" : "물품 폐기";
+    mode === "consume" ? "재고 소비(사용)" : "재고 폐기";
   const submitLabel = mode === "consume" ? "소비 기록" : "폐기 기록";
 
   const handleSubmit = () => {

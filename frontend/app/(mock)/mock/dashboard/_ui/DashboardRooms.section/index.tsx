@@ -406,7 +406,7 @@ export function DashboardRoomsSection({
         title="방 삭제"
         description={
           pendingDeleteRoom
-            ? `삭제하시겠습니까? 「${pendingDeleteRoom.name}」과(와) 그 방의 가구·보관 칸·물품도 함께 제거됩니다.`
+            ? `삭제하시겠습니까? 「${pendingDeleteRoom.name}」과(와) 그 방의 가구·보관 장소·재고도 함께 제거됩니다.`
             : "삭제하시겠습니까?"
         }
         confirmLabel="삭제"

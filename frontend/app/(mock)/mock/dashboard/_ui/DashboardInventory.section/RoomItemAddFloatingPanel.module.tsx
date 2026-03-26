@@ -10,12 +10,12 @@ import {
 export type RoomItemAddPanelProps = {
   selected: Household;
   roomId: string;
-  /** 왼쪽에서「물품 추가 패널」등으로 스크롤 타깃 */
+  /** 왼쪽에서「재고 추가 패널」등으로 스크롤 타깃 */
   anchorId?: string;
 };
 
 /**
- * 조회 모드 카드 하단에 붙는 물품 추가 패널 (항상 펼침).
+ * 조회 모드 카드 하단에 붙는 재고 추가 패널 (항상 펼침).
  */
 export function RoomItemAddPanel({
   selected,
@@ -30,14 +30,14 @@ export function RoomItemAddPanel({
       className={cn(
         "scroll-mt-4 flex min-w-0 flex-col overflow-hidden rounded-xl bg-zinc-950/90",
       )}
-      aria-label={`${room?.name ?? "방"}에 물품 추가`}
+      aria-label={`${room?.name ?? "방"}에 재고 추가`}
     >
       <div className="flex min-w-0 flex-col">
         <div className="flex min-w-0 shrink-0 flex-nowrap items-center gap-2 overflow-x-auto border-b border-zinc-800/90 px-2 py-2.5 sm:gap-3 sm:px-3">
           <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1 pr-1">
             <span className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold leading-none text-teal-400">
               <PackagePlus className="size-4 shrink-0 text-teal-400/95" aria-hidden />
-              물품 추가
+              재고 추가
             </span>
             <span
               className="max-w-[min(100%,10rem)] shrink-0 truncate text-sm font-semibold leading-none text-zinc-100 sm:max-w-56"

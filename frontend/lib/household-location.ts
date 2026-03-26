@@ -30,7 +30,7 @@ export function resolveItemRoomId(h: Household, item: InventoryRow): string {
 
 export type StorageOption = { id: string; label: string };
 
-/** 물품 등록 드롭다운용 — 방 직속 칸 다음, 가구별 칸 순 */
+/** 재고 등록 드롭다운용 — 방 직속 보관 장소 다음, 가구별 보관 장소 순 */
 export function listStorageOptionsForRoom(
   h: Household,
   roomId: string,
@@ -75,18 +75,18 @@ export function listStorageOptionsForRoom(
 }
 
 /**
- * 방이 이미 선택된 UI에서 — ERD상 보관 블록만 표시 (가구 › 칸 또는 방 직속 칸 이름).
+ * 방이 이미 선택된 UI에서 — ERD상 보관 블록만 표시 (가구 › 보관 장소 또는 방 직속 보관 장소 이름).
  */
 export function formatStorageBlockHeading(
   h: Household,
   storageLocationId: string | undefined,
 ): string {
   if (!storageLocationId) {
-    return "보관 칸 미지정";
+    return "보관 장소 미지정";
   }
   const slot = (h.storageLocations ?? []).find((s) => s.id === storageLocationId);
   if (!slot) {
-    return "알 수 없는 보관 칸";
+    return "알 수 없는 보관 장소";
   }
   if (slot.furniturePlacementId) {
     const fp = (h.furniturePlacements ?? []).find(
@@ -104,7 +104,7 @@ export type StorageItemGroup = {
   items: InventoryRow[];
 };
 
-/** 같은 방 안 재고를 보관 칸(블록)별로 묶는다 — `listStorageOptionsForRoom` 순서를 따름 */
+/** 같은 방 안 재고를 보관 장소(블록)별로 묶는다 — `listStorageOptionsForRoom` 순서를 따름 */
 export function groupInventoryByStorageForRoom(
   h: Household,
   roomId: string,
@@ -183,13 +183,13 @@ export function formatLocationBreadcrumb(
   return `${roomName} › ${slot.name}`;
 }
 
-/** 재고 이력 표 — 거점 / 방 / 장소(직속 칸 또는 가구) / 세부장소(가구 칸) */
+/** 재고 이력 표 — 거점 / 방 / 장소(직속 보관 장소 또는 가구) / 세부장소(가구 아래 보관 장소) */
 export type LedgerLocationColumns = {
   householdName: string;
   roomName: string;
-  /** 방 직속 보관 칸 이름, 또는 가구 배치 라벨 */
+  /** 방 직속 보관 장소 이름, 또는 가구 라벨 */
   placeLabel: string;
-  /** 가구 아래 칸만; 직속 보관이면 "-" */
+  /** 가구 아래 보관 장소만; 직속 보관이면 "-" */
   detailLabel: string;
 };
 
@@ -267,7 +267,7 @@ export function formatLedgerLocationLabel(
 }
 
 /**
- * 방마다 직속 보관 칸이 하나도 없으면 「방(기본)」 슬롯을 둔다 (idempotent).
+ * 방마다 직속 보관 장소가 하나도 없으면 「방(기본)」 슬롯을 둔다 (idempotent).
  */
 export function ensureDefaultRoomStorageSlots(h: Household): Household {
   const slots = [...(h.storageLocations ?? [])];

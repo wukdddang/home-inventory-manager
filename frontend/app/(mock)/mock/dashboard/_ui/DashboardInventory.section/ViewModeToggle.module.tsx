@@ -33,7 +33,7 @@ export function ViewModeToggle({
             : "text-zinc-300 hover:text-white"
         }`}
       >
-        물품 목록 (표)
+        재고 목록 (표)
       </button>
     </div>
   );

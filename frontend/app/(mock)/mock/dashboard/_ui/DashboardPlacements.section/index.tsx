@@ -19,11 +19,11 @@ const inputClass =
 const selectClass =
   "w-full rounded-lg border border-zinc-700 bg-zinc-950 px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500";
 
-/** 주요 추가 동작 — 틸(가구·세부 칸·옮기기) */
+/** 주요 추가 동작 — 틸(가구·세부 보관 장소·옮기기) */
 const btnAdd =
   "inline-flex cursor-pointer shrink-0 items-center justify-center gap-1 rounded-md border border-teal-600/60 bg-teal-950/40 px-2 py-0.5 text-xs font-medium leading-tight text-teal-100 hover:bg-teal-900/35";
 
-/** 직속 칸 추가 — 직속 탭·패널과 동일 앰버 톤 */
+/** 직속 보관 장소 추가 — 직속 탭·패널과 동일 앰버 톤 */
 const btnAddDirectSlot =
   "inline-flex cursor-pointer shrink-0 items-center justify-center gap-1 rounded-md border border-amber-500/45 bg-amber-950/35 px-2 py-0.5 text-xs font-medium leading-tight text-amber-100/95 hover:border-amber-400/55 hover:bg-amber-500/[0.12]";
 
@@ -114,7 +114,7 @@ type DashboardPlacementsSectionProps = {
   selected: Household | null;
   /** 방 관리에서 선택한 방만 이 섹션에 표시 */
   selectedRoomId: string | null;
-  /** 제목 클릭 시 오른쪽 물품 추가 패널을 펼치고 스크롤 */
+  /** 제목 클릭 시 오른쪽 재고 추가 패널을 펼치고 스크롤 */
   onFocusItemAddPanel?: () => void;
 };
 
@@ -127,7 +127,7 @@ export function DashboardPlacementsSection({
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(
     null,
   );
-  /** 사용자가 탭으로 고른 직속 칸(없거나 무효하면 아래 파생 id로 폴백) */
+  /** 사용자가 탭으로 고른 직속 보관 장소(없거나 무효하면 아래 파생 id로 폴백) */
   const [userDirectSlotPick, setUserDirectSlotPick] = useState<string | null>(
     null,
   );
@@ -151,7 +151,7 @@ export function DashboardPlacementsSection({
     string | null
   >(null);
   const [subSlotModalDraft, setSubSlotModalDraft] = useState("");
-  /** 직속 칸 하위 가구 중 한 번에 하나만 펼쳐 볼 때 선택한 가구 id */
+  /** 직속 보관 장소 하위 가구 중 한 번에 하나만 펼쳐 볼 때 선택한 가구 id */
   const [focusedFurnitureId, setFocusedFurnitureId] = useState<string | null>(
     null,
   );
@@ -232,7 +232,7 @@ export function DashboardPlacementsSection({
     if (!name) {
       toast({
         title: "이름을 입력하세요",
-        description: "직속 보관 칸 이름을 적어 주세요.",
+        description: "직속 보관 장소 이름을 적어 주세요.",
         variant: "warning",
       });
       return;
@@ -258,7 +258,7 @@ export function DashboardPlacementsSection({
     setDirectSlotModalOpen(false);
     setDirectSlotModalDraft("");
     setDirectSlotModalRoomId(null);
-    toast({ title: "직속 칸이 추가되었습니다", description: name });
+    toast({ title: "직속 보관 장소가 추가되었습니다", description: name });
   };
 
   const handleAddFurnitureToSlot = (
@@ -277,7 +277,7 @@ export function DashboardPlacementsSection({
     }
     if (!roomDirectSlots(roomId).some((s) => s.id === slotId)) {
       toast({
-        title: "직속 칸을 확인하세요",
+        title: "직속 보관 장소를 확인하세요",
         variant: "warning",
       });
       return false;
@@ -297,7 +297,7 @@ export function DashboardPlacementsSection({
       furniturePlacements: [...(h.furniturePlacements ?? []), fp],
     }));
     setFocusedFurnitureId(id);
-    toast({ title: "가구가 이 직속 칸에 연결되었습니다", description: label });
+    toast({ title: "가구가 이 직속 보관 장소에 연결되었습니다", description: label });
     return true;
   };
 
@@ -339,7 +339,7 @@ export function DashboardPlacementsSection({
     if (!fp || fp.anchorDirectStorageId === nextSlotId) return false;
     const ok = roomDirectSlots(fp.roomId).some((s) => s.id === nextSlotId);
     if (!ok) {
-      toast({ title: "직속 칸을 확인하세요", variant: "warning" });
+      toast({ title: "직속 보관 장소를 확인하세요", variant: "warning" });
       return false;
     }
     거점을_갱신_한다(selected.id, (h) => ({
@@ -369,8 +369,8 @@ export function DashboardPlacementsSection({
     if (!fp) return;
     if (fp.anchorDirectStorageId === reanchorModalTargetSlotId) {
       toast({
-        title: "다른 직속 칸을 선택하세요",
-        description: "옮기려면 현재와 다른 칸을 고릅니다.",
+        title: "다른 직속 보관 장소를 선택하세요",
+        description: "옮기려면 현재와 다른 보관 장소를 고릅니다.",
         variant: "warning",
       });
       return;
@@ -398,8 +398,8 @@ export function DashboardPlacementsSection({
     const name = nameRaw.trim();
     if (!name) {
       toast({
-        title: "칸 이름을 입력하세요",
-        description: "모달에서 세부 칸 이름을 적고「추가」를 누르세요.",
+        title: "보관 장소 이름을 입력하세요",
+        description: "모달에서 세부 보관 장소 이름을 적고「추가」를 누르세요.",
         variant: "warning",
       });
       return false;
@@ -418,7 +418,7 @@ export function DashboardPlacementsSection({
       ...h,
       storageLocations: [...(h.storageLocations ?? []), row],
     }));
-    toast({ title: "세부 보관 칸이 추가되었습니다", description: name });
+    toast({ title: "세부 보관 장소가 추가되었습니다", description: name });
     return true;
   };
 
@@ -433,7 +433,7 @@ export function DashboardPlacementsSection({
     const name = subSlotModalDraft.trim();
     if (!name) {
       toast({
-        title: "칸 이름을 입력하세요",
+        title: "보관 장소 이름을 입력하세요",
         description: "이름을 입력해 주세요.",
         variant: "warning",
       });
@@ -459,9 +459,9 @@ export function DashboardPlacementsSection({
       const anchored = furnitureOnSlot(s.roomId, storageId);
       if (anchored.length > 0 && others.length === 0) {
         toast({
-          title: "이 칸은 지금 삭제할 수 없습니다",
+          title: "이 보관 장소는 지금 삭제할 수 없습니다",
           description:
-            "연결된 가구가 있습니다. 다른 직속 칸을 먼저 만든 뒤 가구를 옮기거나 삭제하세요.",
+            "연결된 가구가 있습니다. 다른 직속 보관 장소를 먼저 만든 뒤 가구를 옮기거나 삭제하세요.",
           variant: "warning",
         });
         return;
@@ -506,7 +506,7 @@ export function DashboardPlacementsSection({
         items: h.items.filter((i) => i.storageLocationId !== storageId),
       };
     });
-    toast({ title: "보관 칸이 삭제되었습니다", variant: "success" });
+    toast({ title: "보관 장소가 삭제되었습니다", variant: "success" });
   };
 
   const confirmDeleteFurniture = (furnitureId: string) => {
@@ -528,8 +528,8 @@ export function DashboardPlacementsSection({
       ),
     }));
     toast({
-      title: "가구 배치가 삭제되었습니다",
-      description: "연결된 세부 칸·재고도 함께 정리되었습니다.",
+      title: "가구가 삭제되었습니다",
+      description: "연결된 세부 보관 장소·재고도 함께 정리되었습니다.",
       variant: "success",
     });
   };
@@ -546,12 +546,12 @@ export function DashboardPlacementsSection({
     if (pendingDelete.kind === "storage") {
       const s = slots.find((x) => x.id === pendingDelete.id);
       return s
-        ? `「${s.name}」을(를) 삭제합니다. 이 칸에만 있던 재고도 함께 제거됩니다.`
+        ? `「${s.name}」을(를) 삭제합니다. 이 보관 장소에만 있던 재고도 함께 제거됩니다.`
         : "삭제하시겠습니까?";
     }
     const f = placements.find((x) => x.id === pendingDelete.id);
     return f
-      ? `「${f.label}」 가구를 삭제합니다. 그 아래 세부 칸과 재고도 함께 제거됩니다.`
+      ? `「${f.label}」 가구를 삭제합니다. 그 아래 세부 보관 장소와 재고도 함께 제거됩니다.`
       : "삭제하시겠습니까?";
   };
 
@@ -577,21 +577,21 @@ export function DashboardPlacementsSection({
     <div className="cursor-default rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
       <button
         type="button"
-        title="오른쪽 아래 물품 추가 패널을 펼칩니다"
+        title="오른쪽 아래 재고 추가 패널을 펼칩니다"
         className="-mx-1 -mt-1 w-full cursor-default! rounded-lg px-1 py-1 text-left outline-none focus-visible:ring-2 focus-visible:ring-teal-500/40 focus-visible:ring-offset-2 focus-visible:ring-offset-zinc-900"
         onClick={() => onFocusItemAddPanel?.()}
       >
         <h2 className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-semibold text-white">
           <PlacementsFurnitureIcon />
-          가구 배치 · 보관 장소
+          가구 · 보관 장소
         </h2>
         <p className="mt-1 text-xs leading-relaxed text-zinc-300">
-          <span className="text-zinc-300">직속 칸</span>마다 탭으로 나뉩니다.
-          탭을 고른 뒤 그 칸에만 가구·세부 칸을 추가하세요. 새 직속 칸은「직속
-          칸 추가하기」로 만듭니다.
+          <span className="text-zinc-300">직속 보관 장소</span>마다 탭으로 나뉩니다.
+          탭을 고른 뒤 그 보관 장소에만 가구·세부 보관 장소를 추가하세요. 새 직속 보관 장소는「직속
+          보관 장소 추가하기」로 만듭니다.
         </p>
         <p className="mt-1.5 text-xs text-teal-500/75">
-          이 제목 영역을 누르면 오른쪽「물품 추가」패널이 펼쳐집니다.
+          이 제목 영역을 누르면 오른쪽「재고 추가」패널이 펼쳐집니다.
         </p>
       </button>
 
@@ -638,7 +638,7 @@ export function DashboardPlacementsSection({
                 {directs.length === 0 ? (
                   <div className="mt-4 space-y-3">
                     <p className="rounded-lg border border-dashed border-zinc-700/80 bg-zinc-900/30 px-3 py-4 text-center text-xs text-zinc-300">
-                      직속 칸이 없습니다. 아래 버튼으로 첫 칸을 만드세요.
+                      직속 보관 장소가 없습니다. 아래 버튼으로 첫 보관 장소를 만드세요.
                     </p>
                     <button
                       type="button"
@@ -646,7 +646,7 @@ export function DashboardPlacementsSection({
                       onClick={() => openDirectSlotModal(room.id)}
                     >
                       <PlusMiniIcon />
-                      직속 칸 추가하기
+                      직속 보관 장소 추가하기
                     </button>
                   </div>
                 ) : (
@@ -655,7 +655,7 @@ export function DashboardPlacementsSection({
                       <div
                         className="min-w-0 flex-1"
                         role="tablist"
-                        aria-label="직속 보관 칸"
+                        aria-label="직속 보관 장소"
                       >
                         <div className="flex flex-wrap gap-1 border-b border-zinc-800 pb-px">
                           {directs.map((s) => {
@@ -694,8 +694,8 @@ export function DashboardPlacementsSection({
                                       ? "text-amber-200/75 hover:bg-rose-500/20 hover:text-rose-300"
                                       : "text-zinc-300 hover:bg-zinc-800/70 hover:text-rose-300",
                                   )}
-                                  title="이 직속 칸과 이 칸에만 묶인 설정을 삭제합니다"
-                                  aria-label={`「${s.name}」 직속 칸 삭제`}
+                                  title="이 직속 보관 장소와 여기에만 묶인 설정을 삭제합니다"
+                                  aria-label={`「${s.name}」 직속 보관 장소 삭제`}
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     requestDeleteStorage(s.id);
@@ -714,7 +714,7 @@ export function DashboardPlacementsSection({
                         onClick={() => openDirectSlotModal(room.id)}
                       >
                         <PlusMiniIcon />
-                        직속 칸 추가하기
+                        직속 보관 장소 추가하기
                       </button>
                     </div>
 
@@ -726,7 +726,7 @@ export function DashboardPlacementsSection({
                       >
                         <div className="border-b border-amber-500/20 pb-2">
                           <p className="text-xs font-medium text-amber-200/85">
-                            현재 직속 칸
+                            현재 직속 보관 장소
                           </p>
                           <p
                             id={`tab-${activeSlot.id}`}
@@ -738,7 +738,7 @@ export function DashboardPlacementsSection({
 
                         <div className="mt-3">
                           <p className="text-xs text-zinc-300">
-                            이 직속 칸에 붙은 가구는 아래 뱃지로 고르면 한 번에
+                            이 직속 보관 장소에 붙은 가구는 아래 뱃지로 고르면 한 번에
                             하나의 상세만 펼쳐집니다.
                           </p>
 
@@ -755,7 +755,7 @@ export function DashboardPlacementsSection({
                                 <div
                                   className="flex flex-wrap gap-1.5"
                                   role="tablist"
-                                  aria-label="이 직속 칸의 가구"
+                                  aria-label="이 직속 보관 장소의 가구"
                                 >
                                   {fpsForSlot.map((fp) => {
                                     const sel = focusedFurniture?.id === fp.id;
@@ -816,14 +816,14 @@ export function DashboardPlacementsSection({
                                             }
                                           >
                                             <ArrowsRightLeftMiniIcon />
-                                            다른 직속 칸으로 옮기기
+                                            다른 직속 보관 장소로 옮기기
                                           </button>
                                         ) : null}
                                       </div>
                                       <button
                                         type="button"
                                         className={`${btnDangerIcon} shrink-0`}
-                                        title="이 가구와 그 아래 세부 칸·재고를 삭제합니다"
+                                        title="이 가구와 그 아래 세부 보관 장소·재고를 삭제합니다"
                                         aria-label={`「${focusedFurniture.label}」 가구 삭제`}
                                         onClick={() =>
                                           setPendingDelete({
@@ -839,11 +839,11 @@ export function DashboardPlacementsSection({
                                     <div className="mt-2 border-t border-zinc-800/70 pt-2">
                                       <p className="text-xs text-zinc-300">
                                         <span className="text-zinc-300">
-                                          물품 등록
+                                          재고 등록
                                         </span>
                                         시{" "}
                                         <span className="text-zinc-300">
-                                          여기서 만든 칸
+                                          여기서 만든 보관 장소
                                         </span>
                                         까지 고를 수 있습니다.
                                       </p>
@@ -852,7 +852,7 @@ export function DashboardPlacementsSection({
                                           focusedFurniture.id,
                                         ).length === 0 ? (
                                           <li className="text-xs text-zinc-300">
-                                            세부 칸이 없습니다.
+                                            세부 보관 장소가 없습니다.
                                           </li>
                                         ) : (
                                           slotsUnderFurniture(
@@ -866,8 +866,8 @@ export function DashboardPlacementsSection({
                                               <button
                                                 type="button"
                                                 className={`${btnDangerIcon} shrink-0`}
-                                                title="이 세부 칸과 이 칸에만 묶인 재고를 삭제합니다"
-                                                aria-label={`「${s.name}」 세부 칸 삭제`}
+                                                title="이 세부 보관 장소와 여기에만 묶인 재고를 삭제합니다"
+                                                aria-label={`「${s.name}」 세부 보관 장소 삭제`}
                                                 onClick={() =>
                                                   requestDeleteStorage(s.id)
                                                 }
@@ -889,7 +889,7 @@ export function DashboardPlacementsSection({
                                           }
                                         >
                                           <PlusMiniIcon />
-                                          세부 칸 추가
+                                          세부 보관 장소 추가
                                         </button>
                                       </div>
                                     </div>
@@ -916,7 +916,7 @@ export function DashboardPlacementsSection({
             setDirectSlotModalRoomId(null);
           }
         }}
-        title="직속 보관 칸 추가"
+        title="직속 보관 장소 추가"
         description={
           directModalRoomName
             ? `「${directModalRoomName}」에 붙는 보관 블록 이름을 정합니다. (예: 냉장고, 벽면장)`
@@ -928,7 +928,7 @@ export function DashboardPlacementsSection({
         onSubmit={submitDirectSlotModal}
       >
         <label className="block text-xs font-medium text-zinc-300">
-          칸 이름
+          보관 장소 이름
         </label>
         <input
           value={directSlotModalDraft}
@@ -952,8 +952,8 @@ export function DashboardPlacementsSection({
         title="가구 연결"
         description={
           furnitureModalRoomName && furnitureModalSlotName
-            ? `「${furnitureModalRoomName}」의 직속 칸「${furnitureModalSlotName}」에 붙일 가구 이름을 정합니다.`
-            : "직속 칸에 붙일 가구 이름을 입력합니다."
+            ? `「${furnitureModalRoomName}」의 직속 보관 장소「${furnitureModalSlotName}」에 붙일 가구 이름을 정합니다.`
+            : "직속 보관 장소에 붙일 가구 이름을 입력합니다."
         }
         submitLabel="추가"
         cancelLabel="취소"
@@ -981,11 +981,11 @@ export function DashboardPlacementsSection({
             setSubSlotModalFurnitureId(null);
           }
         }}
-        title="세부 보관 칸 추가"
+        title="세부 보관 장소 추가"
         description={
           subSlotModalFurnitureLabel
-            ? `「${subSlotModalFurnitureLabel}」 아래에 나눌 보관 칸 이름을 정합니다.`
-            : "가구 아래 세부 칸 이름을 입력합니다."
+            ? `「${subSlotModalFurnitureLabel}」 아래에 나눌 보관 장소 이름을 정합니다.`
+            : "가구 아래 세부 보관 장소 이름을 입력합니다."
         }
         submitLabel="추가"
         cancelLabel="취소"
@@ -993,7 +993,7 @@ export function DashboardPlacementsSection({
         onSubmit={submitSubSlotModal}
       >
         <label className="block text-xs font-medium text-zinc-300">
-          세부 칸 이름
+          세부 보관 장소 이름
         </label>
         <input
           value={subSlotModalDraft}
@@ -1013,11 +1013,11 @@ export function DashboardPlacementsSection({
             setReanchorModalTargetSlotId("");
           }
         }}
-        title="다른 직속 칸으로 옮기기"
+        title="다른 직속 보관 장소로 옮기기"
         description={
           reanchorModalFurniture
-            ? `「${reanchorModalFurniture.label}」가 붙어 있는 직속 칸을 바꿉니다.`
-            : "가구가 연결될 직속 칸을 고릅니다."
+            ? `「${reanchorModalFurniture.label}」가 붙어 있는 직속 보관 장소를 바꿉니다.`
+            : "가구가 연결될 직속 보관 장소를 고릅니다."
         }
         submitLabel="옮기기"
         cancelLabel="취소"
@@ -1033,7 +1033,7 @@ export function DashboardPlacementsSection({
           className="block text-xs font-medium text-zinc-300"
           htmlFor="reanchor-modal-slot"
         >
-          옮길 직속 칸
+          옮길 직속 보관 장소
         </label>
         <select
           id="reanchor-modal-slot"
@@ -1055,7 +1055,7 @@ export function DashboardPlacementsSection({
           if (!open) setPendingDelete(null);
         }}
         title={
-          pendingDelete?.kind === "furniture" ? "가구 삭제" : "보관 칸 삭제"
+          pendingDelete?.kind === "furniture" ? "가구 삭제" : "보관 장소 삭제"
         }
         description={pendingDescription()}
         confirmLabel="삭제"

@@ -55,11 +55,11 @@ export function RoomItemsPanel({
   return (
     <aside className="flex h-full min-h-0 min-w-0 flex-1 flex-col rounded-xl border border-zinc-800 bg-zinc-950/80">
       <div className="shrink-0 border-b border-zinc-800/80 px-4 py-3">
-        <h3 className="text-sm font-semibold text-white">선택한 방의 물품</h3>
+        <h3 className="text-sm font-semibold text-white">선택한 방의 재고</h3>
         {selectedRoomId && roomName ? (
           <p className="mt-1 text-xs text-zinc-300">
             <span className="font-medium text-teal-200/90">{roomName}</span>
-            에 연결된 보관 칸(블록)마다 묶어 표시합니다. 구매와 연결된 품목은
+            에 연결된 보관 장소(블록)마다 묶어 표시합니다. 구매와 연결된 품목은
             로트·임박이 보입니다.
           </p>
         ) : (
@@ -75,7 +75,7 @@ export function RoomItemsPanel({
         <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3">
           {roomItems.length === 0 ? (
             <p className="px-1 py-2 text-sm text-zinc-300">
-              등록된 물품이 없습니다.
+              등록된 재고가 없습니다.
             </p>
           ) : (
             <div className="space-y-4">

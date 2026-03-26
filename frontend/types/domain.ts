@@ -29,7 +29,7 @@ export type FurniturePlacement = {
   label: string;
   sortOrder?: number;
   /**
-   * 구조도·편집 UI: 이 방 직속 보관 칸(StorageLocation) 아래에 가구를 매단다.
+   * 구조도·편집 UI: 이 방 직속 보관 장소(StorageLocation) 아래에 가구를 매단다.
    * 없으면 방에서 곧바로 가구로만 이어진다.
    */
   anchorDirectStorageId?: string | null;
@@ -162,14 +162,14 @@ export type ShoppingListEntry = {
   label: string;
   unit?: string;
   variantCaption?: string;
-  /** 카탈로그만 연결(아직 칸에 안 넣음) — 구매 완료 시 동일 품목·변형 재고가 있으면 보충 */
+  /** 카탈로그만 연결(아직 보관 장소 미지정) — 구매 완료 시 동일 품목·변형 재고가 있으면 보충 */
   categoryId?: string;
   productId?: string;
   productVariantId?: string;
   /** 구매 완료 시 더할 수량(재고 연결 시) */
   restockQuantity: number;
   createdAt: string;
-  /** 장보기에서 미리 고른 넣을 칸(선택) — 목록 표시·이후 칸에 넣을 때 참고 */
+  /** 장보기에서 미리 고른 넣을 보관 장소(선택) — 목록 표시·이후 보관 장소에 넣을 때 참고 */
   targetStorageLocationId?: string;
 };
 
@@ -199,7 +199,7 @@ export type InventoryLedgerRow = {
 
 /**
  * 구조도 캔버스에서 옮긴 노드 좌표.
- * 키: `slot:{storageLocationId}`(방 직속 칸) · `fp:{furniturePlacementId}`(가구)
+ * 키: `slot:{storageLocationId}`(방 직속 보관 장소) · `fp:{furniturePlacementId}`(가구)
  */
 export type HouseholdStructureDiagramLayout = Record<
   string,
@@ -228,7 +228,7 @@ export type Household = {
   kind: string;
   rooms: StructureRoom[];
   items: InventoryRow[];
-  /** 방별 가구 배치 — 없으면 UI에서 빈 배열로 취급 */
+  /** 방별 가구 — 없으면 UI에서 빈 배열로 취급 */
   furniturePlacements?: FurniturePlacement[];
   /** 보관 슬롯(방 직속 또는 가구 하위) */
   storageLocations?: StorageLocationRow[];

@@ -153,13 +153,13 @@ export function PurchaseRegisterModal({
       <div className="flex max-h-[min(100dvh-2rem,42rem)] flex-col rounded-2xl border border-zinc-700 bg-zinc-900 shadow-xl">
         <div className="shrink-0 border-b border-zinc-800 p-5 pb-4">
           <h2 id={titleId} className="text-lg font-semibold text-white">
-            구매·유통기한 로트 등록
+            구매·로트 등록
           </h2>
           <p className="mt-2 text-sm text-zinc-300">
-            한 번의 구매에 여러 유통기한 로트를 나누어 넣을 수 있습니다.{" "}
+            한 번의 구매에 여러 로트를 나누어 넣을 수 있습니다.{" "}
             <span className="text-zinc-300">
               장보기 직후·정리 전에는 재고 연결 없이 적어 두었다가, 나중에 메인에서
-              물품을 만들고 연결해도 됩니다.
+              재고를 만들고 연결해도 됩니다.
             </span>{" "}
             데이터는 브라우저 `him-purchases`에 저장됩니다.
           </p>
@@ -259,7 +259,7 @@ export function PurchaseRegisterModal({
 
           <div className="rounded-xl border border-zinc-800 bg-zinc-950/50 p-3">
             <div className="flex items-center justify-between gap-2">
-              <p className="text-sm font-medium text-zinc-200">유통기한 로트</p>
+              <p className="text-sm font-medium text-zinc-200">로트</p>
               <button
                 type="button"
                 onClick={handleAddLot}

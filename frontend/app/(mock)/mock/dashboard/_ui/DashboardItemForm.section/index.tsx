@@ -177,7 +177,7 @@ function StepEmbedBlock({
 /** 플로팅 패널용 — 상단에서 흐름을 한눈에 */
 export function ItemAddProcessStepsRail({
   source,
-  ariaLabel = "물품 추가 단계 안내",
+  ariaLabel = "재고 추가 단계 안내",
 }: {
   source: ItemAddSource;
   /** 다른 맥락에 맞게 접근성 라벨만 바꿀 때 */
@@ -243,7 +243,7 @@ export function CatalogHintLink() {
   );
 }
 
-/** 물품 추가 패널 — 카탈로그에 없을 때 안내(헤더·장보기 구역 등에서 재사용) */
+/** 재고 추가 패널 — 카탈로그에 없을 때 안내(헤더·장보기 구역 등에서 재사용) */
 export function ItemAddPanelHeaderCatalogHint({
   className,
 }: {
@@ -269,7 +269,7 @@ export function ItemAddPanelHeaderCatalogHint({
   );
 }
 
-/** 방 선택 후 — 보관 칸 → Category → Product → 용량·포장 → 수량 (카탈로그는 패널·상단·설정) */
+/** 방 선택 후 — 보관 장소 → Category → Product → 용량·포장 → 수량 (카탈로그는 패널·상단·설정) */
 export function RoomItemAddWidget({
   selected,
   roomId,
@@ -316,7 +316,7 @@ export function RoomItemAddWidget({
     return storageOptions[0]?.id ?? "";
   }, [storageOptions, pickedStorageId]);
 
-  /** 셀렉트와 동일한 기준으로 표시용 보관 칸 이름 */
+  /** 셀렉트와 동일한 기준으로 표시용 보관 장소 이름 */
   const displayPickedStorageLabel = useMemo(
     () => storageOptions.find((o) => o.id === resolvedStorageId)?.label ?? null,
     [storageOptions, resolvedStorageId],
@@ -492,9 +492,9 @@ export function RoomItemAddWidget({
 
     if (storageOptions.length === 0) {
       toast({
-        title: "보관 칸이 없습니다",
+        title: "보관 장소가 없습니다",
         description:
-          "왼쪽「가구 배치·보관 장소」에서 이 방에 보관 칸을 먼저 추가하세요.",
+          "왼쪽「가구·보관 장소」에서 이 방에 보관 장소를 먼저 추가하세요.",
         variant: "warning",
       });
       return;
@@ -574,7 +574,7 @@ export function RoomItemAddWidget({
           ],
         };
         구매_스냅샷을_저장한다([...prevP, purchaseRow]);
-        lotNote = ` · 유통기한 로트(${expRaw}, ${qty}${unit.symbol}) 기록`;
+        lotNote = ` · 로트(${expRaw}, ${qty}${unit.symbol}) 기록`;
       }
     }
     setExpiresOn("");
@@ -582,7 +582,7 @@ export function RoomItemAddWidget({
     const locLabel =
       storageOptions.find((o) => o.id === slotId)?.label ?? room.name;
     toast({
-      title: "물품 추가됨",
+      title: "재고 추가됨",
       description: `${row.name} → ${locLabel}${lotNote}`,
       variant: "success",
     });
@@ -602,9 +602,9 @@ export function RoomItemAddWidget({
 
     if (storageOptions.length === 0) {
       toast({
-        title: "보관 칸이 없습니다",
+        title: "보관 장소가 없습니다",
         description:
-          "왼쪽「가구 배치·보관 장소」에서 이 방에 보관 칸을 먼저 추가하세요.",
+          "왼쪽「가구·보관 장소」에서 이 방에 보관 장소를 먼저 추가하세요.",
         variant: "warning",
       });
       return;
@@ -711,7 +711,7 @@ export function RoomItemAddWidget({
     const locLabel =
       storageOptions.find((o) => o.id === slotId)?.label ?? room.name;
     toast({
-      title: "구매·로트를 칸에 반영했습니다",
+      title: "구매·로트를 보관 장소에 반영했습니다",
       description: `${row.name} → ${locLabel} · 구매 기록과 연결됨`,
       variant: "success",
     });
@@ -728,12 +728,12 @@ export function RoomItemAddWidget({
   const storageSelectContent =
     storageOptions.length === 0 ? (
       <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-200/90">
-        이 방에 등록된 보관 칸이 없습니다.「가구 배치·보관 장소」에서 방 직속 칸
-        또는 가구·칸을 추가하세요.
+        이 방에 등록된 보관 장소가 없습니다.「가구·보관 장소」에서 방 직속 보관 장소
+        또는 가구 아래 보관 장소를 추가하세요.
       </p>
     ) : (
       <select
-        aria-label="보관 칸 선택"
+        aria-label="보관 장소 선택"
         value={resolvedStorageId}
         onChange={(e) => setPickedStorageId(e.target.value)}
         className={inputClass}
@@ -851,7 +851,7 @@ export function RoomItemAddWidget({
       <StepShell
         step={1}
         title="보관 위치"
-        subtitle="이 방 안의 직속 칸 또는 가구 아래 칸을 고릅니다."
+        subtitle="이 방 안의 직속 보관 장소 또는 가구 아래 보관 장소를 고릅니다."
         compact={embedInFloatingPanel}
         listItemClassName={
           embedInFloatingPanel ? "break-inside-avoid pb-1" : undefined
@@ -977,7 +977,7 @@ export function RoomItemAddWidget({
       <StepShell
         step={1}
         title="보관 위치"
-        subtitle="이 구매 재고를 둘 칸을 고릅니다."
+        subtitle="이 구매 재고를 둘 보관 장소를 고릅니다."
         compact={embedInFloatingPanel}
         listItemClassName={
           embedInFloatingPanel ? "break-inside-avoid pb-1" : undefined
@@ -1021,7 +1021,7 @@ export function RoomItemAddWidget({
       className="inline-flex w-full shrink-0 cursor-pointer items-center justify-center gap-2 rounded-lg bg-teal-500 px-4 py-2 text-sm font-semibold text-zinc-950 shadow-md shadow-teal-500/15 transition hover:bg-teal-400"
     >
       <PackagePlus className="size-4 shrink-0" aria-hidden />
-      선택한 칸에 물품 추가
+      선택한 보관 장소에 재고 추가
     </button>
   );
 
@@ -1120,7 +1120,7 @@ export function RoomItemAddWidget({
                 htmlFor={`purchase-stock-qty-${roomId}`}
                 className="text-xs font-medium text-zinc-300"
               >
-                이 칸에 둘 수량
+                이 보관 장소에 둘 수량
                 {purchaseLotMaxQty > 0 ? (
                   <span className="ml-1 font-normal text-zinc-500">
                     (최대 {purchaseLotMaxQty}
@@ -1195,7 +1195,7 @@ export function RoomItemAddWidget({
           )}
         >
           <ArrowDownToLine className="size-4 shrink-0" aria-hidden />
-          구매·로트를 이 칸에 반영
+          구매·로트를 이 보관 장소에 반영
         </button>
       </>
     );
@@ -1215,7 +1215,7 @@ export function RoomItemAddWidget({
         embedInFloatingPanel ? "mb-3 w-full" : "mb-4",
       )}
       role="tablist"
-      aria-label="물품 추가 방식"
+      aria-label="재고 추가 방식"
     >
       <button
         type="button"
@@ -1252,10 +1252,10 @@ export function RoomItemAddWidget({
         {!embedInFloatingPanel ? (
           <header className="border-b border-zinc-800/80 pb-4">
             <h2 className="text-base font-semibold tracking-tight text-teal-200">
-              물품 등록 · {room.name}
+              재고 등록 · {room.name}
             </h2>
             <p className="mt-1 max-w-prose text-xs leading-relaxed text-zinc-300">
-              카탈로그에서 새로 넣거나, 구매·로트에만 적어 둔 기록을 이 방·칸에
+              카탈로그에서 새로 넣거나, 구매·로트에만 적어 둔 기록을 이 방·보관 장소에
               연결할 수 있습니다.
             </p>
           </header>
@@ -1298,7 +1298,7 @@ export function RoomItemAddWidget({
                           <StepEmbedBlock
                               step={1}
                               title="보관 위치"
-                              subtitle="이 방 안의 직속 칸 또는 가구 아래 칸을 고릅니다."
+                              subtitle="이 방 안의 직속 보관 장소 또는 가구 아래 보관 장소를 고릅니다."
                             >
                               {storageSelectContent}
                             </StepEmbedBlock>
@@ -1358,7 +1358,7 @@ export function RoomItemAddWidget({
                           dense
                           step={1}
                           title="보관 위치"
-                          subtitle="이 구매 재고를 둘 칸을 고릅니다."
+                          subtitle="이 구매 재고를 둘 보관 장소를 고릅니다."
                         >
                           {purchaseLotStep1Fields}
                         </StepEmbedBlock>
@@ -1400,11 +1400,11 @@ export function RoomItemAddWidget({
                       <h3 className="text-xs font-semibold text-zinc-100">
                         {addSource === "catalog"
                           ? "수량·유통기한 확인 후 추가"
-                          : "수량 확인 후 칸에 반영"}
+                          : "수량 확인 후 보관 장소에 반영"}
                       </h3>
                       {storageOptions.length === 0 ? (
                         <p className="text-xs leading-snug text-amber-200/85">
-                          보관 칸이 없으면 먼저「가구 배치·보관 장소」에서 칸을
+                          보관 장소가 없으면 먼저「가구·보관 장소」에서 보관 장소를
                           추가하세요.
                         </p>
                       ) : displayPickedStorageLabel ? (
