@@ -2,13 +2,14 @@
 
 **목적**: 프론트엔드 UI 구현 현황과 docs(ERD·논리 설계·기능 체크리스트)를 대조하여, 백엔드 개발 시 **반영·조정·결정**해야 할 사항을 정리한 문서입니다.
 
-**현재 버전**: **v1.2** — docs v2 문서 생성 완료
+**현재 버전**: **v1.3** — §2 필드 추가 11건 결정 완료
 
 | 버전 | 날짜 | 단계 | 요약 |
 |------|------|------|------|
 | v1.0 | 2026-03-26 | 간극 분석 | 프론트 구현과 docs 대조 완료. 결정 항목 31건 도출 |
 | v1.1 | 2026-03-26 | 설계 결정 | §1 엔티티 병합/단순화 4건 결정 확정 |
-| **v1.2** | 2026-03-26 | docs 수정 | docs/v2/ 문서 4건 생성. §6 체크리스트 18/19건 완료 (categoryId nullable 미결) |
+| v1.2 | 2026-03-26 | docs 수정 | docs/v2/ 문서 4건 생성. §6 체크리스트 18/19건 완료 |
+| **v1.3** | 2026-03-26 | 설계 결정 | §2 필드 추가/변경 11건 결정 확정. Purchase 스냅샷 3컬럼 추가, categoryId nullable 확정 등 |
 | v2.0 | — | 물리적 설계 | TypeORM 엔티티·마이그레이션 확정 |
 | v2.1 | — | API 설계 | 엔드포인트·DTO 명세 확정 |
 | v3.0 | — | 구현 완료 | 1차 백엔드 개발 완료, 프론트 연동 시작 |
@@ -83,23 +84,23 @@
 
 ---
 
-## 2. 프론트에 있지만 docs ERD에 없는 필드/개념
+## 2. 프론트에 있지만 docs ERD에 없는 필드/개념 — 설계 결정 (v1.3 확정)
 
-프론트엔드가 **docs보다 확장하여 구현**한 부분입니다. docs(ERD·논리 설계)를 수정하거나, 백엔드에 새 컬럼/엔티티를 추가해야 합니다.
+프론트엔드가 **docs보다 확장하여 구현**한 부분입니다. 아래 11건 모두 **v1.3에서 결정 확정**되었습니다.
 
-| # | 프론트 타입 | 추가 필드/개념 | 설명 | 필요한 조치 | 중요도 | 상태 |
-|---|------------|---------------|------|------------|--------|------|
-| 2-1 | `Household` | **`kind: string`** | 거점 유형 (home, office, vehicle, other + 사용자 정의). `HouseholdKindDefinition`으로 관리 | Household 테이블에 `kind varchar` 컬럼 추가. 또는 별도 `HouseholdKind` 마스터 테이블 | **P1** | 미결정 |
-| 2-2 | `Household` | **`structureDiagramLayout`** | 구조도 2D 좌표 `Record<string, {x,y}>`. HouseStructure.structurePayload와 별도 | HouseStructure에 `diagramLayout jsonb` 컬럼 추가 | **P2** | 미결정 |
-| 2-3 | `FurniturePlacement` | **`anchorDirectStorageId`** | 가구 배치의 대표 보관 슬롯 ID (UI 앵커링용) | FurniturePlacement 테이블에 `anchorDirectStorageId bigint FK nullable` 추가 | **P2** | 미결정 |
-| 2-4 | `PurchaseRecord` | **`supplierName`** | 구매처 이름 | Purchase 테이블에 `supplierName varchar nullable` 추가. 개념 설계에는 "구매처 이름(선택)" 기술 있으므로 논리 설계에 반영 | **P1** | 미결정 |
-| 2-5 | `PurchaseRecord` | **`inventoryItemId` optional** | 구매 기록이 재고에 연결되지 않을 수 있음 ("구매만 먼저, 재고 연결은 나중에") | Purchase.inventoryItemId FK를 **nullable**로 변경. ERD 원안(필수 FK)과 다름 — docs 수정 필요 | **P0** | 미결정 |
-| 2-6 | `PurchaseRecord` | **`itemName`, `variantCaption`, `unitSymbol`** | 조회용 비정규화 스냅샷 문자열 | **방안 A**: Purchase 테이블에 스냅샷 컬럼 추가 / **방안 B**: API 응답에서 join으로 해결 (프론트 타입만 맞추면 됨). **B 권장** — 단, 재고 미연결 구매(2-5)는 스냅샷 필요 | **P1** | 미결정 |
-| 2-7 | `InventoryRow` | **`name`, `unit`, `categoryId`, `variantCaption` 등** | 재고 품목의 조회용 비정규화 필드 | API 응답 DTO에서 ProductVariant → Product → Category join 결과를 포함. 테이블 변경 불필요 | **P0** | 미결정 |
-| 2-8 | `NotificationItem` | **`householdId`** (userId 대신) | 알림의 소유 기준이 ERD(userId)와 다름 | Notification 테이블에 `householdId bigint FK nullable` 추가. userId도 유지. 프론트는 householdId 기준으로 필터 | **P1** | 미결정 |
-| 2-9 | `InventoryLedgerRow` | **`itemLabel`** | 이력 행에 품목명 스냅샷 | InventoryLog에 `itemLabel varchar nullable` 추가. 또는 API join 응답으로 대체 | **P2** | 미결정 |
-| 2-10 | `ShoppingListEntry` | **`targetStorageLocationId`** | 장보기 항목에 "넣을 칸 힌트" | ShoppingListItem에 `targetStorageLocationId bigint FK nullable` 추가 | **P2** | 미결정 |
-| 2-11 | `ShoppingListEntry` | **`categoryId` optional** | docs에서는 categoryId 필수, 프론트는 선택 | docs 수정: categoryId를 nullable로 변경. 또는 프론트 수정. 결정 필요 | **P1** | 미결정 |
+| # | 프론트 타입 | 추가 필드/개념 | 결정 | 근거 | 중요도 | 상태 |
+|---|------------|---------------|------|------|--------|------|
+| 2-1 | `Household` | **`kind`** | Household에 `kind varchar nullable` 추가 | 프론트가 거점 유형(home/office/vehicle/other)으로 적극 사용 중. 별도 HouseholdKind 마스터 테이블은 과설계 — 라벨 관리는 프론트 로컬에서 충분 | **P1** | **확정** |
+| 2-2 | `Household` | **`structureDiagramLayout`** | HouseStructure에 `diagramLayout jsonb nullable` 추가 | structurePayload(방·슬롯 정의)와 용도가 다름 — diagramLayout은 구조도 2D 렌더링 좌표 전용 | **P2** | **확정** |
+| 2-3 | `FurniturePlacement` | **`anchorDirectStorageId`** | `anchorDirectStorageId bigint FK nullable` 추가 | 가구 배치의 대표 보관 슬롯을 지정하여 UI에서 앵커 포인트로 사용. 프론트 UX에 필요한 메타 정보 | **P2** | **확정** |
+| 2-4 | `PurchaseRecord` | **`supplierName`** | Purchase에 `supplierName varchar nullable` 추가 (수기 입력) | 개념 설계에 "구매처 이름(선택)" 이미 기술됨. 1차는 수기 입력으로 시작. **Supplier 별도 테이블은 통계 기능 구현 시(다음 버전) 추가** 예정 | **P1** | **확정** |
+| 2-5 | `PurchaseRecord` | **`inventoryItemId` optional** | Purchase.inventoryItemId FK를 **nullable**로 변경 | 프론트 `/purchases`에서 "구매만 먼저, 재고 연결은 나중에" 플로우가 구현됨. 영수증 기록 후 집에서 정리하는 실사용 패턴 반영 | **P0** | **확정** |
+| 2-6 | `PurchaseRecord` | **`itemName`, `variantCaption`, `unitSymbol`** | Purchase에 스냅샷 **3컬럼 항상 저장** (`itemName`, `variantCaption`, `unitSymbol` 모두 varchar nullable) | 품목(Product/ProductVariant)이 삭제되어도 구매 내역에 품목명이 표시되어야 함. join만으로는 원본 삭제 시 복원 불가. 재고 미연결 구매(§2-5)에서도 필수 | **P1** | **확정** |
+| 2-7 | `InventoryRow` | **`name`, `unit`, `categoryId` 등** | API 응답 DTO에서 join으로 해결. **테이블 변경 없음** | InventoryItem은 ProductVariant FK를 통해 Product→Category까지 join 가능. 재고는 삭제보다 수량 0 관리가 일반적이므로 스냅샷 불필요 | **P0** | **확정** |
+| 2-8 | `NotificationItem` | **`householdId`** | Notification에 `householdId bigint FK nullable` 추가. userId 유지 | 프론트는 householdId 기준으로 알림을 필터. 같은 가족 그룹의 알림을 모아 볼 수 있어야 함. userId는 개인 알림·수신자 식별에 필요 | **P1** | **확정** |
+| 2-9 | `InventoryLedgerRow` | **`itemLabel`** | InventoryLog에 `itemLabel varchar nullable` **유지** | 품목(Product)이 삭제되어도 이력에 "식료품 › 우유 › 500ml" 같은 품목명이 표시되어야 함. 이력은 "그 시점에 무슨 일이 있었는지"를 기록하는 성격 — 원본 삭제와 무관하게 읽을 수 있어야 함 | **P2** | **확정** |
+| 2-10 | `ShoppingListEntry` | **`targetStorageLocationId`** | ShoppingListItem에 `targetStorageLocationId bigint FK nullable` 추가 | 장보기 제안에서 "담기" 시 기존 품목의 보관 칸(storageLocationId)을 자동 복사. 구매 후 "어디에 넣을지" 힌트 표시("넣을 칸 · 부엌 › 냉장고 › 윗칸"). 수동 추가 시에는 미설정(nullable) | **P2** | **확정** |
+| 2-11 | `ShoppingListEntry` | **`categoryId` optional** | ShoppingListItem.categoryId를 **nullable**로 변경 | 현재 프론트에서는 카탈로그 선택·제안 담기 두 경로 모두 categoryId를 채우지만, 타입은 optional으로 선언. 향후 "우유 사야 함" 같은 자유 텍스트 장보기 항목 지원 시 nullable이 필요. 현재 UI에서 categoryId 기반 필터/그룹핑은 사용하지 않음 | **P1** | **확정** |
 
 ---
 
@@ -168,17 +169,22 @@ v1 원본은 `docs/v1/`에 보존, v2 문서는 `docs/v2/`에 생성했습니다
 - [x] `feature-checklist.md` — Consumption, WasteRecord 항목을 InventoryLog 항목으로 통합 (§1-3)
 - [x] `feature-checklist.md` — ShoppingList 항목 제거, ShoppingListItem 항목에 병합 (§1-2)
 
-### §2 필드 추가에 따른 docs 수정 (v1.2 반영 완료)
+### §2 필드 추가에 따른 docs 수정 (v1.2 반영 + v1.3 추가분)
 
 - [x] `entity-logical-design.md` — Purchase.inventoryItemId를 nullable로 변경 (§2-5)
 - [x] `entity-logical-design.md` — Purchase에 `supplierName varchar nullable` 추가 (§2-4)
 - [x] `entity-logical-design.md` — Notification에 `householdId bigint FK nullable` 추가 (§2-8)
-- [ ] `entity-logical-design.md` — ShoppingListItem.categoryId nullable 여부 결정 (§2-11) **미결정**
+- [x] `entity-logical-design.md` — ShoppingListItem.categoryId를 nullable로 변경 (§2-11) **v1.3 확정**
 - [x] `er-diagram.md` — Household에 `kind` 속성 추가 (§2-1)
 - [x] `er-diagram.md` — HouseStructure에 `diagramLayout` 속성 추가 (§2-2)
 - [x] `er-diagram.md` — FurniturePlacement에 `anchorDirectStorageId` 추가 (§2-3)
 - [x] `er-diagram.md` — ShoppingListItem에 `targetStorageLocationId` 추가 (§2-10)
 - [x] `entity-conceptual-design.md` — 위 필드 추가 사항 중 개념 수준에서 반영할 것 동기화
+- [x] `entity-logical-design.md` — Purchase에 스냅샷 3컬럼 추가: `itemName`, `variantCaption`, `unitSymbol` (§2-6) **v1.3 반영 완료**
+- [x] `entity-conceptual-design.md` — Purchase 스냅샷 필드 개념 수준 반영 (§2-6) **v1.3 반영 완료**
+- [x] `er-diagram.md` — Purchase 엔티티 목록에 스냅샷 3컬럼 명시 (§2-6) **v1.3 반영 완료**
+- [x] `entity-logical-design.md` — ShoppingListItem.categoryId nullable 확정 (§2-11) **v1.3 반영 완료**
+- [x] `entity-conceptual-design.md` — ShoppingListItem categoryId nullable 반영 (§2-11) **v1.3 반영 완료**
 
 ### §4 추가 기능에 따른 docs 수정 (v1.2 반영 완료)
 

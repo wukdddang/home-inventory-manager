@@ -213,6 +213,9 @@ erDiagram
         decimal totalPrice
         timestamp purchasedAt
         string supplierName
+        string itemName
+        string variantCaption
+        string unitSymbol
         string memo
         bigint userId FK
         timestamp createdAt
@@ -506,14 +509,17 @@ erDiagram
 | **필수** | unitPrice           | decimal                      | 구매 시점 단가                            |
 | **필수** | totalPrice          | decimal                      | 구매 시점 총액                            |
 | **선택** | purchasedAt         | timestamp                    | 구매일 (기본 now)                         |
-| **v2**   | **supplierName**    | string, nullable             | **v2 추가**: 구매처 이름                  |
+| **v2**   | **supplierName**    | string, nullable             | **v2 추가**: 구매처 이름. 1차는 수기 입력. Supplier 테이블은 통계 기능 시 추가 예정 |
+| **v2**   | **itemName**        | string, nullable             | **v2 추가**: 품목명 스냅샷. 품목 삭제 시에도 구매 내역 표시용 |
+| **v2**   | **variantCaption**  | string, nullable             | **v2 추가**: 용량·변형명 스냅샷 (예: "500ml") |
+| **v2**   | **unitSymbol**      | string, nullable             | **v2 추가**: 단위 기호 스냅샷 (예: "ml", "개") |
 | **선택** | memo                | string, nullable             | —                                         |
 | **선택** | userId              | FK → User, nullable          | 누가 구매했는지                           |
 | **선택** | createdAt           | timestamp                    | —                                         |
 
 **관계**: InventoryItem (N:1, nullable), PurchaseBatch (1:N), User (선택 N:1)
 
-**비고**: 재고 미연결 구매(`inventoryItemId = NULL`)의 경우, 조회용 품목명은 API 응답에서 스냅샷 또는 별도 필드로 제공.
+**스냅샷 정책**: `itemName`, `variantCaption`, `unitSymbol`은 구매 등록 시점의 Product/ProductVariant 정보를 복사하여 저장. 원본 품목이 삭제되어도 구매 내역에 품목명이 표시되어야 하므로 join 대신 스냅샷 방식 채택. 재고 연결된 구매(`inventoryItemId` NOT NULL)에서도 동일하게 저장.
 
 ---
 
@@ -575,7 +581,7 @@ erDiagram
 | -------- | -------------------------- | ------------------------------------ | --------------------------------------------- |
 | **필수** | id                         | PK                                   | —                                             |
 | **v2**   | **householdId**            | FK → Household                       | **v2 변경**: ShoppingList FK 대신 Household 직접 연결 |
-| **미결** | categoryId                 | FK → Category, **nullable 미결정**   | v1: 필수. 프론트: 선택. 결정 필요             |
+| **v2**   | categoryId                 | FK → Category, **nullable**          | **v2 변경**: v1 필수 → nullable. 현재 프론트는 항상 채우지만, 향후 자유 텍스트 장보기 항목 지원 대비. UI에서 categoryId 기반 필터/그룹핑 미사용 |
 | **선택** | productId                  | FK → Product                         | 품목 힌트                                     |
 | **선택** | productVariantId           | FK → ProductVariant                  | 용량 힌트                                     |
 | **선택** | sourceInventoryItemId      | FK → InventoryItem, nullable         | 알림 출처 재고 줄                             |
@@ -659,15 +665,18 @@ erDiagram
 | **추가** | Household.kind | 거점 유형 (string, nullable) |
 | **추가** | HouseStructure.diagramLayout | 구조도 2D 좌표 (jsonb, nullable) |
 | **추가** | FurniturePlacement.anchorDirectStorageId | 대표 보관 슬롯 FK (nullable) |
-| **추가** | Purchase.supplierName | 구매처 이름 (string, nullable) |
+| **추가** | Purchase.supplierName | 구매처 이름 (string, nullable). 1차 수기 입력, Supplier 테이블은 통계 기능 시 추가 예정 |
+| **추가** | Purchase.itemName | 품목명 스냅샷 (string, nullable). 품목 삭제 시에도 구매 내역 표시용 |
+| **추가** | Purchase.variantCaption | 용량·변형명 스냅샷 (string, nullable) |
+| **추가** | Purchase.unitSymbol | 단위 기호 스냅샷 (string, nullable) |
 | **추가** | InventoryLog.reason | 폐기 사유 (string, nullable) |
 | **추가** | InventoryLog.itemLabel | 품목명 스냅샷 (string, nullable) |
 | **추가** | ShoppingListItem.householdId | Household 직접 FK |
 | **추가** | ShoppingListItem.targetStorageLocationId | 넣을 칸 힌트 FK (nullable) |
 | **추가** | Notification.householdId | 거점 기준 필터용 FK (nullable) |
 | **변경** | Purchase.inventoryItemId | 필수 → **nullable** |
-| **미결** | ShoppingListItem.categoryId | 필수 → nullable 여부 미결정 |
+| **변경** | ShoppingListItem.categoryId | 필수 → **nullable**. 현재 프론트는 항상 채우지만, 자유 텍스트 장보기 항목 확장 대비 |
 
 ---
 
-*본 문서는 [frontend-backend-alignment.md](../backend/docs/frontend-backend-alignment.md) §1 결정에 따라 v1에서 갱신되었습니다.*
+*본 문서는 [frontend-backend-alignment.md](../backend/docs/frontend-backend-alignment.md) §1·§2 결정에 따라 v1에서 갱신되었습니다.*

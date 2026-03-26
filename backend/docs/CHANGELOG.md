@@ -4,6 +4,41 @@
 
 ---
 
+## v1.3 — §2 필드 추가/변경 11건 결정 확정 (2026-03-26)
+
+**단계**: §2 전체 결정 완료 + docs/v2 반영
+
+### 확정된 결정
+
+| # | 항목 | 결정 | 근거 |
+|---|------|------|------|
+| 2-1 | Household.kind | `kind varchar nullable` 추가 | 프론트가 거점 유형으로 적극 사용. 별도 마스터 테이블은 과설계 |
+| 2-2 | HouseStructure.diagramLayout | `diagramLayout jsonb nullable` 추가 | structurePayload와 용도 분리 (렌더링 좌표 전용) |
+| 2-3 | FurniturePlacement.anchorDirectStorageId | `anchorDirectStorageId FK nullable` 추가 | UI 앵커 포인트용 메타 정보 |
+| 2-4 | Purchase.supplierName | `supplierName varchar nullable` 추가 | 1차 수기 입력. Supplier 테이블은 **통계 기능 구현 시(다음 버전) 추가** 예정 |
+| 2-5 | Purchase.inventoryItemId | **nullable 확정** | "구매만 먼저, 재고 연결은 나중에" 플로우 (영수증 → 나중에 정리) |
+| 2-6 | Purchase 스냅샷 | `itemName`, `variantCaption`, `unitSymbol` **3컬럼 항상 저장** | 품목 삭제 시에도 구매 내역 표시 필요. join만으로는 원본 삭제 시 복원 불가 |
+| 2-7 | InventoryRow 비정규화 | **API DTO join으로 해결. 테이블 변경 없음** | ProductVariant FK 통해 join 가능. 재고는 삭제보다 수량 0 관리가 일반적 |
+| 2-8 | Notification.householdId | `householdId FK nullable` 추가 | 프론트가 householdId 기준으로 알림 필터. userId도 유지 |
+| 2-9 | InventoryLog.itemLabel | `itemLabel varchar nullable` **유지** | 품목 삭제 시에도 이력에 품목명 표시 필요. 이력은 시점 기록 성격 |
+| 2-10 | ShoppingListItem.targetStorageLocationId | `targetStorageLocationId FK nullable` 추가 | 장보기 제안 "담기" 시 기존 보관 칸 자동 복사. 구매 후 "어디에 넣을지" 힌트 |
+| 2-11 | ShoppingListItem.categoryId | **nullable 확정** | 현재 프론트는 항상 채우지만 타입은 optional. 자유 텍스트 장보기 확장 대비 |
+
+### docs/v2 반영 사항
+- `entity-logical-design.md`: Purchase §12에 스냅샷 3컬럼 추가, ShoppingListItem §15 categoryId nullable 확정, v2 변경 요약 테이블 갱신
+- `er-diagram.md`: Purchase 엔티티 목록에 스냅샷 명시, ShoppingListItem categoryId nullable 반영
+- `entity-conceptual-design.md`: Purchase 스냅샷 필드·ShoppingListItem categoryId 반영
+
+### 설계 메모: 스냅샷 vs join 정책
+- **스냅샷 저장**: Purchase(itemName/variantCaption/unitSymbol), InventoryLog(itemLabel) — 원본 삭제 대비
+- **join 조회**: InventoryRow(name/unit/categoryId 등) — 재고 품목은 삭제보다 수량 0으로 관리, join 충분
+- **Supplier 테이블**: 1차는 supplierName 수기 입력. 구매처별 지출 통계·가격 비교 필요 시 다음 버전에서 Supplier 마스터 테이블 추가 예정
+
+### 남은 미결정 사항
+- [ ] ProductCatalog 스코프: Household-scoped vs global (§4-4)
+
+---
+
 ## v1.2 — docs v2 문서 생성 (2026-03-26)
 
 **단계**: §6 docs 수정 체크리스트 수행 완료 (18/19건)

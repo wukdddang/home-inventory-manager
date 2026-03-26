@@ -6,7 +6,7 @@
 - Consumption, WasteRecord 제거 → InventoryLog로 통합
 - ShoppingList 제거 → ShoppingListItem이 Household에 직접 연결
 - Household에 `거점 유형(kind)` 추가
-- Purchase에 `구매처 이름`, `inventoryItemId 선택` 변경
+- Purchase에 `구매처 이름`, `inventoryItemId 선택`, `품목명 스냅샷 3필드` 추가
 - Notification에 `소속 가족·공유 그룹` 추가
 
 **v1 원본**: [v1/entity-conceptual-design.md](../v1/entity-conceptual-design.md)
@@ -180,7 +180,8 @@ erDiagram
 - 구매 일시
 - 단가
 - 총액
-- **구매처 이름(선택)** **(v2 추가)**
+- **구매처 이름(선택)** **(v2 추가)** — 1차 수기 입력, Supplier 테이블은 통계 기능 시 추가 예정
+- **품목명 스냅샷** **(v2 추가)** — 품목 삭제 시에도 구매 내역 표시용 (itemName, variantCaption, unitSymbol)
 - 메모
 - 구매 수행 사용자(선택)
 
@@ -223,7 +224,7 @@ erDiagram
 > **v2 변경**: ShoppingList(부모) 제거. Household에 직접 연결. checked 제거 (구매 완료 시 행 삭제).
 
 - **소속 가족·공유 그룹** (v1: 장보기 리스트 → v2: Household 직접)
-- 카테고리 **(nullable 여부 미결정)**
+- 카테고리 **(v2 변경: nullable)** — 현재 프론트는 항상 채우지만, 자유 텍스트 장보기 항목 확장 대비
 - (선택) 상품·상품 변형 — 부족/만료 알림에서 넘어오면 제안값
 - (선택) 알림이 가리킨 재고 품목
 - **(선택) 넣을 칸 힌트** — 보관 장소 **(v2 추가)**

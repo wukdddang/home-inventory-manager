@@ -30,10 +30,10 @@
 | 6    | Product             | 상품 마스터 (소모품·비소모품)                                              | Category                             | P0       | — |
 | 7    | ProductVariant      | 용량/포장 단위별 정보                                                      | Product                              | P0       | — |
 | 8    | InventoryItem       | 실제 보유 재고(물품)                                                       | ProductVariant, StorageLocation      | P0       | — |
-| 9    | Purchase            | 구매 기록                                                                  | InventoryItem (nullable)             | P0       | `inventoryItemId` nullable, `supplierName` 추가 |
+| 9    | Purchase            | 구매 기록                                                                  | InventoryItem (nullable)             | P0       | `inventoryItemId` nullable, `supplierName` 추가, 스냅샷 3컬럼(`itemName`/`variantCaption`/`unitSymbol`) 추가 |
 | 10   | PurchaseBatch       | 로트별 유통기한                                                            | Purchase                             | P0       | — |
 | 11   | InventoryLog        | 재고 변경 이력 (**소비·폐기 통합**)                                        | InventoryItem                        | P0       | **Consumption·WasteRecord 통합**, `reason`·`itemLabel` 추가 |
-| 12   | ShoppingListItem    | 장보기 항목 (**Household 직접 연결**)                                      | Household, Category                  | P1       | **ShoppingList 제거**, `householdId` FK, `targetStorageLocationId` 추가 |
+| 12   | ShoppingListItem    | 장보기 항목 (**Household 직접 연결**)                                      | Household, Category (nullable)       | P1       | **ShoppingList 제거**, `householdId` FK, `targetStorageLocationId` 추가, `categoryId` nullable |
 | 13   | Notification        | 알림                                                                       | User, Household                      | P1       | `householdId` 추가 |
 | 14   | ExpirationAlertRule | 만료 알림 설정(품목별 일수)                                                | User 또는 Household, Product         | P1       | — |
 | 15   | ReportPreset        | 리포트 설정 저장                                                           | User                                 | P3       | — |
