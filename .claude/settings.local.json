@@ -25,7 +25,12 @@
       "Bash(cat \"/c/Users/wukdd/dev/home-inventory-manager/frontend/app/\\(mock\\)/mock/settings/_ui/CatalogSettings.section/index.tsx\")",
       "Bash(pnpm --filter frontend build)",
       "Bash(cd:*)",
-      "Bash(find \"C:/Users/wukdd/dev/home-inventory-manager/frontend/app/\\(mock\\)/mock/dashboard\" -type d)"
+      "Bash(find \"C:/Users/wukdd/dev/home-inventory-manager/frontend/app/\\(mock\\)/mock/dashboard\" -type d)",
+      "Read(//c/Users/USER/bin/**)",
+      "Read(//c/Users/USER/.claude/**)",
+      "Bash(powershell -ExecutionPolicy Bypass -File \"C:\\\\\\\\Users\\\\\\\\USER\\\\\\\\bin\\\\\\\\auto-notification.ps1\" -Title \"Claude Code\" -Message \"테스트 알림입니다!\")",
+      "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
+      "Bash(find /c/Users/USER/dev/home-inventory-manager/frontend/app/\\\\\\(mock\\\\\\)/mock -type d -name '_hooks' -exec find {} -type f -name \"*.ts*\")"
     ]
   }
 }
