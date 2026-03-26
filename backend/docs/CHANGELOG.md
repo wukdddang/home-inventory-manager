@@ -4,6 +4,36 @@
 
 ---
 
+## v1.4 — 카탈로그 Household-scoped + NotificationPreference + Purchase.userId 확정 (2026-03-26)
+
+**단계**: §3-6, §4-2, §4-4 결정 확정 + docs/v2.1 반영
+
+### 확정된 결정
+
+| # | 항목 | 결정 | 근거 |
+|---|------|------|------|
+| 4-4 | ProductCatalog 스코프 | **Household-scoped** — Category, Unit, Product에 `householdId FK` 추가 | 거점별로 카탈로그 분리. 같은 거점 멤버끼리 공유. "다른 거점에서 카탈로그 가져오기"로 거점 간 복사 가능. ProductVariant는 Product를 통해 간접 스코프 |
+| 4-2 | NotificationDetailPreferences | **별도 NotificationPreference 테이블** (userId FK + householdId FK nullable) | null이면 사용자 기본값, 값이 있으면 거점별 오버라이드. 향후 알림 채널(이메일/푸시), 시간대, 알림 유형별 세분화 등 확장 대비 |
+| 3-6 | Purchase.userId | **유지 확정** (nullable FK) | 이미 v2 ERD에 존재. 백엔드에서 인증 토큰 기반 자동 기록. 프론트 입력 불필요 |
+
+### docs/v2.1 반영 사항
+- `entity-logical-design.md`: §3 Category, §8 Unit, §9 Product에 householdId FK 추가. §19 NotificationPreference 신규 섹션 추가. ERD Mermaid 갱신. v2 변경 요약 테이블에 v2.1 항목 추가. 정합성 제약 테이블 추가
+- `er-diagram.md`: 엔티티 목록에 Category/Unit/Product householdId 명시, NotificationPreference 추가. 관계 요약·Mermaid ERD 갱신
+- `entity-conceptual-design.md`: Category, Unit, Product에 소속 거점 추가. NotificationPreference 엔티티 추가. 개념적 설계 메모 갱신
+- `feature-checklist.md`: Category/Unit/Product 섹션에 거점별 표기·가져오기 기능 추가. NotificationPreference CRUD 섹션 추가
+
+### 연쇄 영향 (카탈로그 Household-scoped)
+카탈로그가 거점별로 분리됨에 따라, 아래 FK 참조 시 같은 household 소속이어야 함 (앱 레벨 제약):
+- ShoppingListItem: categoryId, productId, productVariantId
+- FurniturePlacement: productId, productVariantId
+- ExpirationAlertRule: productId
+- InventoryItem: productVariantId (StorageLocation.householdId 통해)
+
+### 남은 미결정 사항
+- §4 나머지 API/로직 항목 (4-1, 4-3, 4-5, 4-6, 4-7, 4-8) → API 설계(v2.1) 단계에서 결정
+
+---
+
 ## v1.3 — §2 필드 추가/변경 11건 결정 확정 (2026-03-26)
 
 **단계**: §2 전체 결정 완료 + docs/v2 반영
@@ -35,7 +65,7 @@
 - **Supplier 테이블**: 1차는 supplierName 수기 입력. 구매처별 지출 통계·가격 비교 필요 시 다음 버전에서 Supplier 마스터 테이블 추가 예정
 
 ### 남은 미결정 사항
-- [ ] ProductCatalog 스코프: Household-scoped vs global (§4-4)
+- [x] ProductCatalog 스코프: Household-scoped vs global (§4-4) → **v1.4 확정: Household-scoped**
 
 ---
 

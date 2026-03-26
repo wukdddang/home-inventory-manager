@@ -1,15 +1,21 @@
 # 엔티티 논리적 설계 v2 (ERD·구현용)
 
-**버전**: v2 — 프론트 구현 피드백 반영 (2026-03-26)
+**버전**: v2.1 — 카탈로그 Household-scoped + NotificationPreference 테이블 추가 (2026-03-26)
 
-**v1 대비 주요 변경**:
+**v2.1 변경**:
+- Category, Unit, Product에 `householdId FK` 추가 (카탈로그 Household-scoped)
+- NotificationPreference 신규 테이블 추가 (userId + householdId nullable)
+- Purchase.userId 유지 확정 (§3-6)
+- "다른 거점 카탈로그 가져오기" 기능 예정
+
+**v2 변경**:
 - Consumption(§14), WasteRecord(§16) 제거 → InventoryLog(§15)로 통합
 - ShoppingList(§17) 제거 → ShoppingListItem이 Household에 직접 연결
 - ShoppingListItem.checked 제거 (구매 완료 시 행 삭제)
 - Purchase.inventoryItemId nullable로 변경
 - Purchase.supplierName 추가
 - Notification.householdId 추가
-- 변경 근거: [frontend-backend-alignment.md](../backend/docs/frontend-backend-alignment.md) §1 참조
+- 변경 근거: [frontend-backend-alignment.md](../../backend/docs/frontend-backend-alignment.md) §1~§4 참조
 
 **상위 문서**: [개념적 설계 v2](./entity-conceptual-design.md)
 **v1 원본**: [v1/entity-logical-design.md](../v1/entity-logical-design.md)
@@ -25,6 +31,9 @@ erDiagram
     User ||--o{ HouseholdMember : "userId"
     Household ||--o{ HouseholdMember : "householdId"
 
+    Household ||--o{ Category : "householdId"
+    Household ||--o{ Unit : "householdId"
+    Household ||--o{ Product : "householdId"
     Category ||--o{ Product : "categoryId"
 
     Household ||--o| HouseStructure : "householdId"
@@ -58,8 +67,9 @@ erDiagram
 
     User ||--o{ Notification : "userId"
     Notification }o--o| Household : "householdId"
+    User ||--o{ NotificationPreference : "userId"
+    NotificationPreference }o--o| Household : "householdId"
     User ||--o{ ExpirationAlertRule : "userId"
-    User ||--o{ ReportPreset : "userId"
 ```
 
 ---
@@ -68,7 +78,7 @@ erDiagram
 
 > Mermaid 블록은 **다이어그램용 속성 요약**입니다. **정본(필수/선택·비고·제약)** 은 아래 §1~§19 표를 따릅니다.
 
-### 인증·가족·공유 그룹
+### 인증·거점
 
 ```mermaid
 erDiagram
@@ -98,7 +108,7 @@ erDiagram
     }
 ```
 
-### 집 구조·방·가구 배치·보관 장소
+### 집 구조·방·가구·보관 장소
 
 ```mermaid
 erDiagram
@@ -157,6 +167,7 @@ erDiagram
 erDiagram
     Category {
         bigint id PK
+        bigint householdId FK
         string name
         int sortOrder
         timestamp createdAt
@@ -164,12 +175,14 @@ erDiagram
     }
     Unit {
         bigint id PK
-        string symbol UK
+        bigint householdId FK
+        string symbol
         string name
         int sortOrder
     }
     Product {
         bigint id PK
+        bigint householdId FK
         bigint categoryId FK
         string name
         boolean isConsumable
@@ -267,7 +280,7 @@ erDiagram
 ```
 
 - **v2 변경**: ShoppingList(부모) 테이블 제거. `shoppingListId FK` → `householdId FK`로 변경. `checked` 컬럼 제거 (구매 완료 시 행 삭제). `targetStorageLocationId` **추가** (넣을 칸 힌트, nullable).
-- **`categoryId`**: v1에서는 필수. **nullable 여부 미결정** — [frontend-backend-alignment.md §2-11](../backend/docs/frontend-backend-alignment.md) 참조.
+- **`categoryId`**: v1에서는 필수. **v1.3에서 nullable 확정** — 현재 프론트는 항상 채우지만, 자유 텍스트 장보기 항목 확장 대비.
 
 ### 알림·만료 규칙·리포트
 
@@ -284,6 +297,21 @@ erDiagram
         string refType
         string refId
         timestamp createdAt
+    }
+    NotificationPreference {
+        bigint id PK
+        bigint userId FK
+        bigint householdId FK
+        int expirationDaysBefore
+        string expirationRuleScope
+        boolean notifyExpiredLots
+        boolean expirationSameDayReminder
+        boolean shoppingNotifyListUpdates
+        boolean shoppingTripReminder
+        int shoppingTripReminderWeekday
+        boolean lowStockRespectMinLevel
+        timestamp createdAt
+        timestamp updatedAt
     }
     ExpirationAlertRule {
         bigint id PK
@@ -329,12 +357,12 @@ erDiagram
 
 ---
 
-## 2. Household (가족/공유 그룹)
+## 2. Household (거점)
 
 | 구분     | 항목                 | 타입/비고        | 검토                                        |
 | -------- | -------------------- | ---------------- | ------------------------------------------- |
 | **필수** | id                   | PK               | —                                           |
-| **필수** | name                 | string           | "우리 가족", "1인" 등 (가족·공유 그룹 이름) |
+| **필수** | name                 | string           | "우리 가족", "1인" 등 (거점 이름) |
 | **v2**   | **kind**             | string, nullable | **거점 유형** (home, office, vehicle, other + 사용자 정의) |
 | **선택** | createdAt, updatedAt | timestamp        | —                                           |
 
@@ -353,14 +381,17 @@ erDiagram
 
 ## 3. Category (대분류)
 
-| 구분     | 항목                 | 타입/비고 | 검토                                                              |
-| -------- | -------------------- | --------- | ----------------------------------------------------------------- |
-| **필수** | id                   | PK        | —                                                                 |
-| **필수** | name                 | string    | "식료품", "생활용품", "의약품", "전자제품", "식기류", "가구류" 등 |
-| **선택** | sortOrder            | int       | 표시 순서                                                         |
-| **선택** | createdAt, updatedAt | timestamp | —                                                                 |
+| 구분     | 항목                 | 타입/비고        | 검토                                                              |
+| -------- | -------------------- | ---------------- | ----------------------------------------------------------------- |
+| **필수** | id                   | PK               | —                                                                 |
+| **v2.1** | **householdId**      | FK → Household   | **거점별 카탈로그** — 같은 거점 멤버끼리 공유                     |
+| **필수** | name                 | string           | "식료품", "생활용품", "의약품", "전자제품", "식기류", "가구류" 등 |
+| **선택** | sortOrder            | int              | 표시 순서                                                         |
+| **선택** | createdAt, updatedAt | timestamp        | —                                                                 |
 
-**관계**: Product (1:N), ShoppingListItem (1:N) — **플랫(1단계) 카테고리만** 사용, 계층(parent) 없음.
+**관계**: Household (N:1), Product (1:N), ShoppingListItem (1:N) — **플랫(1단계) 카테고리만** 사용, 계층(parent) 없음.
+
+**v2.1 변경**: `householdId FK` 추가. 카탈로그가 Household-scoped로 변경됨. "다른 거점에서 카테고리 가져오기" 기능으로 거점 간 복사 가능.
 
 ---
 
@@ -401,7 +432,7 @@ erDiagram
 
 ---
 
-## 6. FurniturePlacement (가구 배치)
+## 6. FurniturePlacement (가구)
 
 | 구분     | 항목                       | 타입/비고                            | 검토                                                                 |
 | -------- | -------------------------- | ------------------------------------ | -------------------------------------------------------------------- |
@@ -439,14 +470,21 @@ erDiagram
 
 ## 8. Unit (단위 마스터)
 
-| 구분     | 항목      | 타입/비고      | 검토                        |
-| -------- | --------- | -------------- | --------------------------- |
-| **필수** | id        | PK             | —                           |
-| **필수** | symbol    | string, unique | "ml", "g", "개", "병", "팩" |
-| **선택** | name      | string         | "밀리리터", "그램"          |
-| **선택** | sortOrder | int            | —                           |
+| 구분     | 항목            | 타입/비고      | 검토                        |
+| -------- | --------------- | -------------- | --------------------------- |
+| **필수** | id              | PK             | —                           |
+| **v2.1** | **householdId** | FK → Household | **거점별 카탈로그**         |
+| **필수** | symbol          | string         | "ml", "g", "개", "병", "팩" |
+| **선택** | name            | string         | "밀리리터", "그램"          |
+| **선택** | sortOrder       | int            | —                           |
 
-**관계**: ProductVariant (N:1, 단위 참조)
+**관계**: Household (N:1), ProductVariant (N:1, 단위 참조)
+
+**v2.1 변경**: `householdId FK` 추가. `symbol` unique 제약은 거점 내 유일(`householdId + symbol` 복합 unique) 권장.
+
+### 식별·제약 (권장)
+
+- `(householdId, symbol)` **유일**(UNIQUE) — 같은 거점 내 단위 기호 중복 방지.
 
 ---
 
@@ -455,6 +493,7 @@ erDiagram
 | 구분     | 항목                 | 타입/비고        | 검토                                                          |
 | -------- | -------------------- | ---------------- | ------------------------------------------------------------- |
 | **필수** | id                   | PK               | —                                                             |
+| **v2.1** | **householdId**      | FK → Household   | **거점별 카탈로그** (비정규화 — 쿼리 편의)                    |
 | **필수** | categoryId           | FK → Category    | —                                                             |
 | **필수** | name                 | string           | 상품명                                                        |
 | **필수** | isConsumable         | boolean          | true: 소비형 / false: 사용형                                  |
@@ -462,7 +501,9 @@ erDiagram
 | **선택** | description          | text, nullable   | —                                                             |
 | **선택** | createdAt, updatedAt | timestamp        | —                                                             |
 
-**관계**: Category (N:1), ProductVariant (1:N), ExpirationAlertRule (1:N), FurniturePlacement (선택), ShoppingListItem (선택 힌트)
+**관계**: Household (N:1), Category (N:1), ProductVariant (1:N), ExpirationAlertRule (1:N), FurniturePlacement (선택), ShoppingListItem (선택 힌트)
+
+**v2.1 변경**: `householdId FK` 추가. Category를 통해 간접 스코프되지만, "거점의 모든 상품 조회" 쿼리 편의를 위해 비정규화. Category.householdId와 일치해야 함 (앱 레벨 제약).
 
 ---
 
@@ -523,7 +564,7 @@ erDiagram
 
 ---
 
-## 13. PurchaseBatch (유통기한 로트)
+## 13. PurchaseBatch (로트)
 
 > **로트(lot)**: 한 번에 구매한 같은 품목 묶음. 같은 유통기한을 공유하는 단위.
 
@@ -636,20 +677,38 @@ erDiagram
 
 ---
 
-## 18. ReportPreset (리포트 설정 저장)
+## 18. NotificationPreference (알림 설정) — v2.1 신규
 
-| 구분     | 항목                 | 타입/비고 | 검토                |
-| -------- | -------------------- | --------- | ------------------- |
-| **필수** | id                   | PK        | —                   |
-| **필수** | userId               | FK → User | —                   |
-| **필수** | name                 | string    | "지난 30일 TOP10"   |
-| **선택** | config               | jsonb     | 필터, 기간, 정렬 등 |
-| **선택** | sortOrder            | int       | —                   |
-| **선택** | createdAt, updatedAt | timestamp | —                   |
+> **v2.1 추가**: 사용자별·거점별 알림 상세 설정. 프론트 `NotificationDetailPreferences` 타입과 대응.
 
-**관계**: User (N:1)
+| 구분     | 항목                          | 타입/비고                    | 검토                                             |
+| -------- | ----------------------------- | ---------------------------- | ------------------------------------------------ |
+| **필수** | id                            | PK                           | —                                                |
+| **필수** | userId                        | FK → User                    | —                                                |
+| **선택** | householdId                   | FK → Household, nullable     | **null이면 사용자 기본 설정**, 값이 있으면 해당 거점 오버라이드 |
+| **필수** | expirationDaysBefore          | int                          | 유통기한 N일 전 알림 (기본 3)                    |
+| **필수** | expirationRuleScope           | string                       | `'household'` \| `'personal'`                    |
+| **필수** | notifyExpiredLots             | boolean                      | 이미 만료된 로트 알림 여부                       |
+| **필수** | expirationSameDayReminder     | boolean                      | 만료 당일 리마인더                               |
+| **필수** | shoppingNotifyListUpdates     | boolean                      | 장보기 리스트 변경 알림                          |
+| **필수** | shoppingTripReminder          | boolean                      | 주간 장보기 리마인더                             |
+| **선택** | shoppingTripReminderWeekday   | int, nullable                | 0=일 … 6=토, null이면 요일 고정 없음            |
+| **필수** | lowStockRespectMinLevel       | boolean                      | minStockLevel 설정된 재고만 부족 알림            |
+| **선택** | createdAt, updatedAt          | timestamp                    | —                                                |
 
-**비고**: 1차 개발 범위 외 (P3). 필요 시 추가.
+**관계**: User (N:1), Household (선택 N:1)
+
+### 식별·제약 (권장)
+
+- `(userId, householdId)` **유일**(UNIQUE) — 같은 사용자가 같은 거점에 대해 설정 중복 생성 방지.
+- `householdId`가 NULL인 행은 사용자당 **최대 1건** — `(userId)` partial unique (householdId IS NULL).
+
+### 확장 가능 방향
+
+- **Household 단위 설정 분리**: "우리집은 3일 전, 사무실은 7일 전" — householdId로 이미 지원
+- **알림 채널 확장**: `channel` 컬럼 추가 (in_app / email / push)
+- **알림 유형별 세분화**: `notificationType` 컬럼으로 분리
+- **시간대/조용한 시간**: `quietHoursStart`, `quietHoursEnd`, `timezone` 컬럼 추가
 
 ---
 
@@ -676,7 +735,46 @@ erDiagram
 | **추가** | Notification.householdId | 거점 기준 필터용 FK (nullable) |
 | **변경** | Purchase.inventoryItemId | 필수 → **nullable** |
 | **변경** | ShoppingListItem.categoryId | 필수 → **nullable**. 현재 프론트는 항상 채우지만, 자유 텍스트 장보기 항목 확장 대비 |
+| **v2.1 추가** | Category.householdId | 거점별 카탈로그 FK |
+| **v2.1 추가** | Unit.householdId | 거점별 카탈로그 FK |
+| **v2.1 추가** | Product.householdId | 거점별 카탈로그 FK (비정규화) |
+| **v2.1 추가** | NotificationPreference (§19) | 신규 테이블. 사용자별·거점별 알림 상세 설정 |
+| **v2.1 확정** | Purchase.userId | 유지 확정 (백엔드 인증 토큰 기반 자동 기록) |
+
+### 정합성 제약 (v2.1 — 카탈로그 Household-scoped)
+
+카탈로그가 거점별로 분리됨에 따라, 아래 FK 참조 시 **같은 household** 소속이어야 함 (앱 레벨 제약):
+
+| 엔티티 | FK | 같은 household 검증 대상 |
+|--------|-----|------------------------|
+| ShoppingListItem | categoryId, productId, productVariantId | householdId와 일치 |
+| FurniturePlacement | productId, productVariantId | Room → HouseStructure → Household 경로 |
+| ExpirationAlertRule | productId | householdId와 일치 |
+| InventoryItem | productVariantId | StorageLocation.householdId와 일치 |
 
 ---
 
-*본 문서는 [frontend-backend-alignment.md](../backend/docs/frontend-backend-alignment.md) §1·§2 결정에 따라 v1에서 갱신되었습니다.*
+## 사용하지 않음 (P3 — 1차 개발 범위 외)
+
+> 아래 엔티티는 현재 프론트엔드 UI가 없거나, 기존 기능으로 대체 가능하여 1차 개발에서 제외합니다. 필요 시 추후 추가.
+
+### ReportPreset (리포트 설정 저장)
+
+| 구분     | 항목                 | 타입/비고 | 검토                |
+| -------- | -------------------- | --------- | ------------------- |
+| **필수** | id                   | PK        | —                   |
+| **필수** | userId               | FK → User | —                   |
+| **필수** | name                 | string    | "지난 30일 TOP10"   |
+| **선택** | config               | jsonb     | 필터, 기간, 정렬 등 |
+| **선택** | sortOrder            | int       | —                   |
+| **선택** | createdAt, updatedAt | timestamp | —                   |
+
+**관계**: User (N:1)
+
+### Tag (태그)
+
+> 카테고리로 대체 가능. 프론트 UI 없음.
+
+---
+
+*본 문서는 [frontend-backend-alignment.md](../../backend/docs/frontend-backend-alignment.md) §1~§4 결정에 따라 v1에서 갱신되었습니다.*

@@ -2,14 +2,15 @@
 
 **목적**: 프론트엔드 UI 구현 현황과 docs(ERD·논리 설계·기능 체크리스트)를 대조하여, 백엔드 개발 시 **반영·조정·결정**해야 할 사항을 정리한 문서입니다.
 
-**현재 버전**: **v1.3** — §2 필드 추가 11건 결정 완료
+**현재 버전**: **v1.4** — §3-6, §4-2, §4-4 결정 확정 + docs/v2.1 반영
 
 | 버전 | 날짜 | 단계 | 요약 |
 |------|------|------|------|
 | v1.0 | 2026-03-26 | 간극 분석 | 프론트 구현과 docs 대조 완료. 결정 항목 31건 도출 |
 | v1.1 | 2026-03-26 | 설계 결정 | §1 엔티티 병합/단순화 4건 결정 확정 |
 | v1.2 | 2026-03-26 | docs 수정 | docs/v2/ 문서 4건 생성. §6 체크리스트 18/19건 완료 |
-| **v1.3** | 2026-03-26 | 설계 결정 | §2 필드 추가/변경 11건 결정 확정. Purchase 스냅샷 3컬럼 추가, categoryId nullable 확정 등 |
+| v1.3 | 2026-03-26 | 설계 결정 | §2 필드 추가/변경 11건 결정 확정. Purchase 스냅샷 3컬럼 추가, categoryId nullable 확정 등 |
+| **v1.4** | 2026-03-26 | 설계 결정 | §4-4 카탈로그 Household-scoped 확정, §4-2 NotificationPreference 별도 테이블 확정, §3-6 Purchase.userId 유지 확정 |
 | v2.0 | — | 물리적 설계 | TypeORM 엔티티·마이그레이션 확정 |
 | v2.1 | — | API 설계 | 엔드포인트·DTO 명세 확정 |
 | v3.0 | — | 구현 완료 | 1차 백엔드 개발 완료, 프론트 연동 시작 |
@@ -115,7 +116,7 @@
 | 3-3 | **HouseStructure** | 별도 타입 없음 | 테이블 유지, API DTO에서 Household에 병합 (§1-1 확정) | **P0** | **확정** (§1-1) |
 | 3-4 | **ReportPreset** | UI 없음 | ui-roadmap.md에서도 우선순위 낮음. 1차 개발 제외 | **P3** | 보류 |
 | 3-5 | **Tag** | UI 없음 | feature-checklist.md에 있으나 카테고리로 대체 가능. 1차 개발 제외 | **P3** | 보류 |
-| 3-6 | **Purchase.userId** | 프론트 타입에 없음 | 구매 수행 사용자 FK. 백엔드에서 인증 토큰 기반 자동 기록 가능 — 프론트 입력 불필요 | **P2** | 미결정 |
+| 3-6 | **Purchase.userId** | 프론트 타입에 없음 | 구매 수행 사용자 FK. 백엔드에서 인증 토큰 기반 자동 기록. 프론트 입력 불필요 | **P2** | **확정** (v1.4) |
 | 3-7 | **ShoppingList (부모)** | UI 없음 | 테이블 제거 (§1-2 확정). ShoppingListItem이 Household에 직접 연결 | **P1** | **확정** (§1-2) |
 | 3-8 | **ShoppingListItem.checked** | 프론트에 없음 | 컬럼 제거 (§1-2 확정). 구매 완료 시 행 삭제 방식 | **P2** | **확정** (§1-2) |
 
@@ -127,14 +128,14 @@
 
 | # | 기능 | 현재 구현 | 백엔드 필요 사항 | 중요도 | 상태 |
 |---|------|----------|-----------------|--------|------|
-| 4-1 | **Shopping Suggestions (장보기 제안)** | `shopping-suggestions.ts` — 유통기한 임박 + minStockLevel 미달 품목 자동 제안, 이미 장보기에 있는 품목 제외, 보충 수량 계산 | `GET /api/shopping-suggestions?householdId=` API. 프론트 로직과 동일한 쿼리: PurchaseBatch 만료 임박 + InventoryItem.quantity < minStockLevel | **P1** | 미결정 |
-| 4-2 | **NotificationDetailPreferences** | `AppSettings` 안에 12개 필드 (expirationDaysBefore, scope, 요일 등) | User 또는 Household 단위 설정 테이블. `notification_preferences jsonb` 또는 정규화 컬럼 | **P1** | 미결정 |
-| 4-3 | **HouseholdKindDefinition 관리** | `household-kind-defaults.ts` + 설정 화면에서 CRUD | **방안 A**: Household.kind만 varchar로 저장 (프론트에서 관리) / **방안 B**: HouseholdKind 마스터 테이블 추가. 현재 프론트는 로컬에서 관리하므로 **A로 시작** 가능 | **P2** | 미결정 |
-| 4-4 | **ProductCatalog 공유 스토어** | `him-catalog` 로컬스토리지 키로 전역 관리. Household에서 분리됨 | Catalog(Unit, Category, Product, ProductVariant)가 **Household-scoped인지 global인지** 결정 필요. 프론트는 현재 global처럼 사용 | **P0** | 미결정 |
-| 4-5 | **구매 → 재고 자동 반영** | 프론트 미구현 (ui-roadmap.md에서 "백엔드 API에서 처리"로 명시) | Purchase 생성 시 InventoryItem.quantity 자동 증가 + InventoryLog(type="in") 자동 생성. 트랜잭션 처리 | **P1** | 미결정 |
-| 4-6 | **온보딩 마법사 지원 API** | 프론트에서 4단계 위자드 (Household → Room → FurniturePlacement → StorageLocation) | 각 엔티티 생성 API가 순차적으로 호출됨. 벌크 생성 API 제공 시 UX 개선 가능 | **P2** | 미결정 |
-| 4-7 | **알림 생성 (서버 사이드)** | 프론트에서 mock 시드 7건. 실제 알림 생성 로직 없음 | 스케줄러/크론: 유통기한 임박, 재고 부족, 장보기 리마인더 체크 후 Notification 생성 | **P1** | 미결정 |
-| 4-8 | **소비·폐기 처리** | 대시보드에서 수량·메모·사유 입력 → InventoryLedgerRow 생성 + 수량 감소 | API: `POST /api/inventory-logs` (type="out"/"waste") → InventoryItem.quantity 감소 + InventoryLog 생성. 트랜잭션 | **P0** | 미결정 |
+| 4-1 | **Shopping Suggestions (장보기 제안)** | `shopping-suggestions.ts` — 유통기한 임박 + minStockLevel 미달 품목 자동 제안, 이미 장보기에 있는 품목 제외, 보충 수량 계산 | `GET /api/shopping-suggestions?householdId=` API. 프론트 로직과 동일한 쿼리: PurchaseBatch 만료 임박 + InventoryItem.quantity < minStockLevel | **P1** | **해결** (API 설계 시 처리 예정) |
+| 4-2 | **NotificationDetailPreferences** | `AppSettings` 안에 8개 필드 (expirationDaysBefore, scope, 요일 등) | **별도 NotificationPreference 테이블** (userId FK + householdId FK nullable). null이면 사용자 기본값, 값이 있으면 거점별 오버라이드. 확장 대비 (채널, 시간대 등) | **P1** | **확정** (v1.4) |
+| 4-3 | **HouseholdKindDefinition 관리** | `household-kind-defaults.ts` + 설정 화면에서 CRUD | **방안 A**: Household.kind만 varchar로 저장 (프론트에서 관리) / **방안 B**: HouseholdKind 마스터 테이블 추가. 현재 프론트는 로컬에서 관리하므로 **A로 시작** 가능 | **P2** | **해결** (API 설계 시 처리 예정) |
+| 4-4 | **ProductCatalog 공유 스토어** | `him-catalog` 로컬스토리지 키로 전역 관리. Household에서 분리됨 | **Household-scoped 확정**. Category, Unit, Product에 `householdId FK` 추가. 같은 거점 멤버끼리 공유. "다른 거점에서 카탈로그 가져오기" 기능으로 거점 간 복사 가능. ProductVariant는 Product를 통해 간접 스코프 | **P0** | **확정** (v1.4) |
+| 4-5 | **구매 → 재고 자동 반영** | 프론트 미구현 (ui-roadmap.md에서 "백엔드 API에서 처리"로 명시) | Purchase 생성 시 InventoryItem.quantity 자동 증가 + InventoryLog(type="in") 자동 생성. 트랜잭션 처리 | **P1** | **해결** (API 설계 시 처리 예정) |
+| 4-6 | **온보딩 마법사 지원 API** | 프론트에서 4단계 위자드 (Household → Room → FurniturePlacement → StorageLocation) | 각 엔티티 생성 API가 순차적으로 호출됨. 벌크 생성 API 제공 시 UX 개선 가능 | **P2** | **해결** (API 설계 시 처리 예정) |
+| 4-7 | **알림 생성 (서버 사이드)** | 프론트에서 mock 시드 7건. 실제 알림 생성 로직 없음 | 스케줄러/크론: 유통기한 임박, 재고 부족, 장보기 리마인더 체크 후 Notification 생성 | **P1** | **해결** (API 설계 시 처리 예정) |
+| 4-8 | **소비·폐기 처리** | 대시보드에서 수량·메모·사유 입력 → InventoryLedgerRow 생성 + 수량 감소 | API: `POST /api/inventory-logs` (type="out"/"waste") → InventoryItem.quantity 감소 + InventoryLog 생성. 트랜잭션 | **P0** | **해결** (API 설계 시 처리 예정) |
 
 ---
 
@@ -201,14 +202,14 @@ v1 원본은 `docs/v1/`에 보존, v2 문서는 `docs/v2/`에 생성했습니다
 2. ~~Household + HouseStructure → 2테이블 유지, **API DTO에서 병합**~~ (1-1) **확정**
 3. Purchase.inventoryItemId → **nullable** (2-5)
 4. InventoryRow 조회 DTO → **join 기반 응답** (2-7)
-5. ProductCatalog 스코프 결정 → **Household-scoped vs global** (4-4)
+5. ~~ProductCatalog 스코프 결정 → **Household-scoped**~~ (4-4) **확정**
 6. 소비·폐기 API + 수량 자동 감소 트랜잭션 (4-8)
 
 ### 스키마 추가 (P1) — v1.1 확정 포함
 7. Household.kind 컬럼 (2-1)
 8. Purchase.supplierName 컬럼 (2-4)
 9. Notification.householdId 컬럼 (2-8)
-10. ShoppingListItem.categoryId nullable 여부 결정 (2-11)
+10. ~~ShoppingListItem.categoryId nullable 여부 결정~~ (2-11) **확정**
 11. ~~ShoppingList 테이블 제거, ShoppingListItem → Household 직접 연결~~ (1-2) **확정**
 12. ~~HouseholdMember 테이블 유지, API에서 email 포함 DTO 반환~~ (1-4) **확정**
 
@@ -216,8 +217,8 @@ v1 원본은 `docs/v1/`에 보존, v2 문서는 `docs/v2/`에 생성했습니다
 13. Shopping Suggestions API (4-1)
 14. 구매 → 재고 자동 반영 트랜잭션 (4-5)
 15. 알림 생성 스케줄러 (4-7)
-16. NotificationDetailPreferences 저장 (4-2)
-17. PurchaseRecord 스냅샷 vs join 정책 결정 (2-6)
+16. ~~NotificationDetailPreferences 저장~~ (4-2) **확정 — 별도 NotificationPreference 테이블**
+17. ~~PurchaseRecord 스냅샷 vs join 정책 결정~~ (2-6) **확정**
 
 ---
 

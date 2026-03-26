@@ -30,7 +30,9 @@
       "Read(//c/Users/USER/.claude/**)",
       "Bash(powershell -ExecutionPolicy Bypass -File \"C:\\\\\\\\Users\\\\\\\\USER\\\\\\\\bin\\\\\\\\auto-notification.ps1\" -Title \"Claude Code\" -Message \"테스트 알림입니다!\")",
       "Bash(grep -E \"\\\\.\\(ts|tsx\\)$\")",
-      "Bash(find /c/Users/USER/dev/home-inventory-manager/frontend/app/\\\\\\(mock\\\\\\)/mock -type d -name '_hooks' -exec find {} -type f -name \"*.ts*\")"
+      "Bash(find /c/Users/USER/dev/home-inventory-manager/frontend/app/\\\\\\(mock\\\\\\)/mock -type d -name '_hooks' -exec find {} -type f -name \"*.ts*\")",
+      "Bash(find \"C:\\\\Users\\\\wukdd\\\\dev\\\\home-inventory-manager\\\\frontend\\\\app\\\\\\(mock\\)\\\\mock\" -name \"*.tsx\" -type f)",
+      "Bash(xargs grep:*)"
     ]
   }
 }
