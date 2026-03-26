@@ -2,7 +2,18 @@
 
 **목적**: 프론트엔드 UI 구현 현황과 docs(ERD·논리 설계·기능 체크리스트)를 대조하여, 백엔드 개발 시 **반영·조정·결정**해야 할 사항을 정리한 문서입니다.
 
-**기준 시점**: 2026-03-26
+**현재 버전**: **v1.2** — docs v2 문서 생성 완료
+
+| 버전 | 날짜 | 단계 | 요약 |
+|------|------|------|------|
+| v1.0 | 2026-03-26 | 간극 분석 | 프론트 구현과 docs 대조 완료. 결정 항목 31건 도출 |
+| v1.1 | 2026-03-26 | 설계 결정 | §1 엔티티 병합/단순화 4건 결정 확정 |
+| **v1.2** | 2026-03-26 | docs 수정 | docs/v2/ 문서 4건 생성. §6 체크리스트 18/19건 완료 (categoryId nullable 미결) |
+| v2.0 | — | 물리적 설계 | TypeORM 엔티티·마이그레이션 확정 |
+| v2.1 | — | API 설계 | 엔드포인트·DTO 명세 확정 |
+| v3.0 | — | 구현 완료 | 1차 백엔드 개발 완료, 프론트 연동 시작 |
+
+> 각 버전의 상세 변경 내역은 [CHANGELOG.md](./CHANGELOG.md) 참조
 
 **참조 문서**:
 - 루트: [ER 다이어그램](../../docs/er-diagram.md) · [개념적 설계](../../docs/entity-conceptual-design.md) · [논리적 설계](../../docs/entity-logical-design.md) · [기능 체크리스트](../../docs/feature-checklist.md)
@@ -59,16 +70,16 @@
 
 ---
 
-## 1. 엔티티 병합/단순화 — 백엔드 설계 결정 필요
+## 1. 엔티티 병합/단순화 — 설계 결정 (v1.1 확정)
 
-프론트엔드가 docs 원안보다 **단순화한 구조**로 구현된 부분입니다. 백엔드 테이블 설계와 API DTO 설계 시 방향을 정해야 합니다.
+프론트엔드가 docs 원안보다 **단순화한 구조**로 구현된 부분입니다. 아래 4건 모두 **v1.1에서 결정 확정**되었습니다.
 
-| # | 항목 | docs 설계 | 프론트 구현 | 권장 방향 | 중요도 |
-|---|------|-----------|------------|-----------|--------|
-| 1-1 | **Household + HouseStructure 병합** | 별도 엔티티 (Household ↔ HouseStructure 1:1) | `Household` 하나에 rooms, items, furniturePlacements, storageLocations, structureDiagramLayout 전부 내장 | 백엔드는 2테이블 유지, **API 응답 DTO에서 join하여 flat하게** 내려줌. 프론트 Household 타입에 맞춘 응답 shape 필요 | **P0** |
-| 1-2 | **ShoppingList + ShoppingListItem 병합** | ShoppingList(부모) → ShoppingListItem(자식) 2단 구조 | `ShoppingListEntry` 하나로 flat화. 부모 ShoppingList 개념 없음, `checked` 필드 없음(구매 완료 시 삭제) | **방안 A**: 백엔드 2테이블 유지 + API에서 flat DTO 제공 / **방안 B**: ShoppingList 제거, ShoppingListItem만 Household에 직접 연결. 프론트는 "리스트 이름·마감일" 개념이 없으므로 B가 현실적 | **P1** |
-| 1-3 | **InventoryLog + WasteRecord + Consumption 통합** | 3개 별도 엔티티 | `InventoryLedgerRow` 하나로 통합. `type: "in"\|"out"\|"adjust"\|"waste"` + `reason` 필드로 구분 | **방안 A**: 백엔드도 단일 `InventoryLog` 테이블로 통합 (reason, refType, refId로 출처 구분) / **방안 B**: 3테이블 유지 + API DTO 통합. **A 권장** — 프론트 타입과 일치하고, 이력 조회 쿼리가 단순해짐 | **P0** |
-| 1-4 | **HouseholdMember → GroupMember 단순화** | HouseholdMember(id, userId, householdId, role, joinedAt) | `GroupMember`(id, email, role, label?) — userId 대신 email 기반, joinedAt 없음 | 백엔드는 HouseholdMember 테이블 유지. API 응답에서 User를 join하여 email 포함한 DTO 반환 | **P1** |
+| # | 항목 | 결정 | 상세 | 중요도 | 상태 |
+|---|------|------|------|--------|------|
+| 1-1 | **Household + HouseStructure** | **2테이블 유지 + API DTO flat 병합** | 백엔드는 Household, HouseStructure 2테이블 유지. API 응답 DTO에서 join하여 프론트 `Household` 타입에 맞는 flat shape로 내려줌 (rooms, furniturePlacements, storageLocations, items, structureDiagramLayout 포함) | **P0** | **확정** |
+| 1-2 | **ShoppingList 구조** | **방안 B — ShoppingList 테이블 제거** | ShoppingList(부모) 테이블을 제거하고, ShoppingListItem을 Household에 직접 연결 (`householdId FK`). 프론트에 "리스트 이름·마감일" 개념이 없으므로 부모 테이블은 불필요. `checked` 컬럼도 제거 — 구매 완료 시 행 삭제 방식 | **P1** | **확정** |
+| 1-3 | **InventoryLog + WasteRecord + Consumption** | **방안 A — 단일 InventoryLog 테이블로 통합** | Consumption, WasteRecord 테이블을 제거하고 InventoryLog 하나로 통합. `type: "in"\|"out"\|"adjust"\|"waste"`, `reason varchar nullable`(폐기 사유), `refType`/`refId`(출처 참조)로 구분. 프론트 `InventoryLedgerRow` 타입과 1:1 대응. 이력 조회 쿼리가 단순해짐 | **P0** | **확정** |
+| 1-4 | **HouseholdMember** | **테이블 유지 + API DTO에서 email 포함** | HouseholdMember 테이블(id, userId, householdId, role, joinedAt) 유지. API 응답에서 User를 join하여 프론트 `GroupMember`(id, email, role, label?) 형태의 DTO로 반환 | **P1** | **확정** |
 
 ---
 
@@ -76,19 +87,19 @@
 
 프론트엔드가 **docs보다 확장하여 구현**한 부분입니다. docs(ERD·논리 설계)를 수정하거나, 백엔드에 새 컬럼/엔티티를 추가해야 합니다.
 
-| # | 프론트 타입 | 추가 필드/개념 | 설명 | 필요한 조치 | 중요도 |
-|---|------------|---------------|------|------------|--------|
-| 2-1 | `Household` | **`kind: string`** | 거점 유형 (home, office, vehicle, other + 사용자 정의). `HouseholdKindDefinition`으로 관리 | Household 테이블에 `kind varchar` 컬럼 추가. 또는 별도 `HouseholdKind` 마스터 테이블 | **P1** |
-| 2-2 | `Household` | **`structureDiagramLayout`** | 구조도 2D 좌표 `Record<string, {x,y}>`. HouseStructure.structurePayload와 별도 | HouseStructure에 `diagramLayout jsonb` 컬럼 추가 | **P2** |
-| 2-3 | `FurniturePlacement` | **`anchorDirectStorageId`** | 가구 배치의 대표 보관 슬롯 ID (UI 앵커링용) | FurniturePlacement 테이블에 `anchorDirectStorageId bigint FK nullable` 추가 | **P2** |
-| 2-4 | `PurchaseRecord` | **`supplierName`** | 구매처 이름 | Purchase 테이블에 `supplierName varchar nullable` 추가. 개념 설계에는 "구매처 이름(선택)" 기술 있으므로 논리 설계에 반영 | **P1** |
-| 2-5 | `PurchaseRecord` | **`inventoryItemId` optional** | 구매 기록이 재고에 연결되지 않을 수 있음 ("구매만 먼저, 재고 연결은 나중에") | Purchase.inventoryItemId FK를 **nullable**로 변경. ERD 원안(필수 FK)과 다름 — docs 수정 필요 | **P0** |
-| 2-6 | `PurchaseRecord` | **`itemName`, `variantCaption`, `unitSymbol`** | 조회용 비정규화 스냅샷 문자열 | **방안 A**: Purchase 테이블에 스냅샷 컬럼 추가 / **방안 B**: API 응답에서 join으로 해결 (프론트 타입만 맞추면 됨). **B 권장** — 단, 재고 미연결 구매(2-5)는 스냅샷 필요 | **P1** |
-| 2-7 | `InventoryRow` | **`name`, `unit`, `categoryId`, `variantCaption` 등** | 재고 품목의 조회용 비정규화 필드 | API 응답 DTO에서 ProductVariant → Product → Category join 결과를 포함. 테이블 변경 불필요 | **P0** |
-| 2-8 | `NotificationItem` | **`householdId`** (userId 대신) | 알림의 소유 기준이 ERD(userId)와 다름 | Notification 테이블에 `householdId bigint FK nullable` 추가. userId도 유지. 프론트는 householdId 기준으로 필터 | **P1** |
-| 2-9 | `InventoryLedgerRow` | **`itemLabel`** | 이력 행에 품목명 스냅샷 | InventoryLog에 `itemLabel varchar nullable` 추가. 또는 API join 응답으로 대체 | **P2** |
-| 2-10 | `ShoppingListEntry` | **`targetStorageLocationId`** | 장보기 항목에 "넣을 칸 힌트" | ShoppingListItem에 `targetStorageLocationId bigint FK nullable` 추가 | **P2** |
-| 2-11 | `ShoppingListEntry` | **`categoryId` optional** | docs에서는 categoryId 필수, 프론트는 선택 | docs 수정: categoryId를 nullable로 변경. 또는 프론트 수정. 결정 필요 | **P1** |
+| # | 프론트 타입 | 추가 필드/개념 | 설명 | 필요한 조치 | 중요도 | 상태 |
+|---|------------|---------------|------|------------|--------|------|
+| 2-1 | `Household` | **`kind: string`** | 거점 유형 (home, office, vehicle, other + 사용자 정의). `HouseholdKindDefinition`으로 관리 | Household 테이블에 `kind varchar` 컬럼 추가. 또는 별도 `HouseholdKind` 마스터 테이블 | **P1** | 미결정 |
+| 2-2 | `Household` | **`structureDiagramLayout`** | 구조도 2D 좌표 `Record<string, {x,y}>`. HouseStructure.structurePayload와 별도 | HouseStructure에 `diagramLayout jsonb` 컬럼 추가 | **P2** | 미결정 |
+| 2-3 | `FurniturePlacement` | **`anchorDirectStorageId`** | 가구 배치의 대표 보관 슬롯 ID (UI 앵커링용) | FurniturePlacement 테이블에 `anchorDirectStorageId bigint FK nullable` 추가 | **P2** | 미결정 |
+| 2-4 | `PurchaseRecord` | **`supplierName`** | 구매처 이름 | Purchase 테이블에 `supplierName varchar nullable` 추가. 개념 설계에는 "구매처 이름(선택)" 기술 있으므로 논리 설계에 반영 | **P1** | 미결정 |
+| 2-5 | `PurchaseRecord` | **`inventoryItemId` optional** | 구매 기록이 재고에 연결되지 않을 수 있음 ("구매만 먼저, 재고 연결은 나중에") | Purchase.inventoryItemId FK를 **nullable**로 변경. ERD 원안(필수 FK)과 다름 — docs 수정 필요 | **P0** | 미결정 |
+| 2-6 | `PurchaseRecord` | **`itemName`, `variantCaption`, `unitSymbol`** | 조회용 비정규화 스냅샷 문자열 | **방안 A**: Purchase 테이블에 스냅샷 컬럼 추가 / **방안 B**: API 응답에서 join으로 해결 (프론트 타입만 맞추면 됨). **B 권장** — 단, 재고 미연결 구매(2-5)는 스냅샷 필요 | **P1** | 미결정 |
+| 2-7 | `InventoryRow` | **`name`, `unit`, `categoryId`, `variantCaption` 등** | 재고 품목의 조회용 비정규화 필드 | API 응답 DTO에서 ProductVariant → Product → Category join 결과를 포함. 테이블 변경 불필요 | **P0** | 미결정 |
+| 2-8 | `NotificationItem` | **`householdId`** (userId 대신) | 알림의 소유 기준이 ERD(userId)와 다름 | Notification 테이블에 `householdId bigint FK nullable` 추가. userId도 유지. 프론트는 householdId 기준으로 필터 | **P1** | 미결정 |
+| 2-9 | `InventoryLedgerRow` | **`itemLabel`** | 이력 행에 품목명 스냅샷 | InventoryLog에 `itemLabel varchar nullable` 추가. 또는 API join 응답으로 대체 | **P2** | 미결정 |
+| 2-10 | `ShoppingListEntry` | **`targetStorageLocationId`** | 장보기 항목에 "넣을 칸 힌트" | ShoppingListItem에 `targetStorageLocationId bigint FK nullable` 추가 | **P2** | 미결정 |
+| 2-11 | `ShoppingListEntry` | **`categoryId` optional** | docs에서는 categoryId 필수, 프론트는 선택 | docs 수정: categoryId를 nullable로 변경. 또는 프론트 수정. 결정 필요 | **P1** | 미결정 |
 
 ---
 
@@ -96,16 +107,16 @@
 
 프론트에서 **별도 타입/UI가 없는** docs 엔티티입니다. 백엔드 1차 개발 범위에서 제외하거나 후순위로 미룰 수 있습니다.
 
-| # | docs 엔티티 | 프론트 상태 | 비고 | 중요도 |
-|---|-------------|------------|------|--------|
-| 3-1 | **Consumption** | 별도 타입 없음 | `InventoryLedgerRow(type="out")`으로 흡수. 1-3 결정에 따라 처리 | **P0** (1-3과 연동) |
-| 3-2 | **WasteRecord** | 별도 타입 없음 | `InventoryLedgerRow(type="waste")`으로 흡수. 1-3 결정에 따라 처리 | **P0** (1-3과 연동) |
-| 3-3 | **HouseStructure** | 별도 타입 없음 | Household에 병합됨. 1-1 결정에 따라 처리 | **P0** (1-1과 연동) |
-| 3-4 | **ReportPreset** | UI 없음 | ui-roadmap.md에서도 우선순위 낮음. 1차 개발 제외 권장 | **P3** |
-| 3-5 | **Tag** | UI 없음 | feature-checklist.md에 있으나 카테고리로 대체 가능. 1차 개발 제외 권장 | **P3** |
-| 3-6 | **Purchase.userId** | 프론트 타입에 없음 | 구매 수행 사용자 FK. 백엔드에서 인증 토큰 기반 자동 기록 가능 — 프론트 입력 불필요 | **P2** |
-| 3-7 | **ShoppingList (부모)** | UI 없음 | 1-2 결정에 따라 처리 | **P1** (1-2와 연동) |
-| 3-8 | **ShoppingListItem.checked** | 프론트에 없음 | "구매 완료 시 삭제" 방식으로 대체됨. 백엔드에서 soft-delete 또는 checked 컬럼 유지 여부 결정 | **P2** |
+| # | docs 엔티티 | 프론트 상태 | 비고 | 중요도 | 상태 |
+|---|-------------|------------|------|--------|------|
+| 3-1 | **Consumption** | 별도 타입 없음 | InventoryLog로 통합 (§1-3 확정). 테이블 제거, `type="out"`으로 표현 | **P0** | **확정** (§1-3) |
+| 3-2 | **WasteRecord** | 별도 타입 없음 | InventoryLog로 통합 (§1-3 확정). 테이블 제거, `type="waste"` + `reason`으로 표현 | **P0** | **확정** (§1-3) |
+| 3-3 | **HouseStructure** | 별도 타입 없음 | 테이블 유지, API DTO에서 Household에 병합 (§1-1 확정) | **P0** | **확정** (§1-1) |
+| 3-4 | **ReportPreset** | UI 없음 | ui-roadmap.md에서도 우선순위 낮음. 1차 개발 제외 | **P3** | 보류 |
+| 3-5 | **Tag** | UI 없음 | feature-checklist.md에 있으나 카테고리로 대체 가능. 1차 개발 제외 | **P3** | 보류 |
+| 3-6 | **Purchase.userId** | 프론트 타입에 없음 | 구매 수행 사용자 FK. 백엔드에서 인증 토큰 기반 자동 기록 가능 — 프론트 입력 불필요 | **P2** | 미결정 |
+| 3-7 | **ShoppingList (부모)** | UI 없음 | 테이블 제거 (§1-2 확정). ShoppingListItem이 Household에 직접 연결 | **P1** | **확정** (§1-2) |
+| 3-8 | **ShoppingListItem.checked** | 프론트에 없음 | 컬럼 제거 (§1-2 확정). 구매 완료 시 행 삭제 방식 | **P2** | **확정** (§1-2) |
 
 ---
 
@@ -113,16 +124,16 @@
 
 프론트엔드가 현재 클라이언트 로직으로 구현한 기능 중, 백엔드 API로 이관해야 할 것들입니다.
 
-| # | 기능 | 현재 구현 | 백엔드 필요 사항 | 중요도 |
-|---|------|----------|-----------------|--------|
-| 4-1 | **Shopping Suggestions (장보기 제안)** | `shopping-suggestions.ts` — 유통기한 임박 + minStockLevel 미달 품목 자동 제안, 이미 장보기에 있는 품목 제외, 보충 수량 계산 | `GET /api/shopping-suggestions?householdId=` API. 프론트 로직과 동일한 쿼리: PurchaseBatch 만료 임박 + InventoryItem.quantity < minStockLevel | **P1** |
-| 4-2 | **NotificationDetailPreferences** | `AppSettings` 안에 12개 필드 (expirationDaysBefore, scope, 요일 등) | User 또는 Household 단위 설정 테이블. `notification_preferences jsonb` 또는 정규화 컬럼 | **P1** |
-| 4-3 | **HouseholdKindDefinition 관리** | `household-kind-defaults.ts` + 설정 화면에서 CRUD | **방안 A**: Household.kind만 varchar로 저장 (프론트에서 관리) / **방안 B**: HouseholdKind 마스터 테이블 추가. 현재 프론트는 로컬에서 관리하므로 **A로 시작** 가능 | **P2** |
-| 4-4 | **ProductCatalog 공유 스토어** | `him-catalog` 로컬스토리지 키로 전역 관리. Household에서 분리됨 | Catalog(Unit, Category, Product, ProductVariant)가 **Household-scoped인지 global인지** 결정 필요. 프론트는 현재 global처럼 사용 | **P0** |
-| 4-5 | **구매 → 재고 자동 반영** | 프론트 미구현 (ui-roadmap.md에서 "백엔드 API에서 처리"로 명시) | Purchase 생성 시 InventoryItem.quantity 자동 증가 + InventoryLog(type="in") 자동 생성. 트랜잭션 처리 | **P1** |
-| 4-6 | **온보딩 마법사 지원 API** | 프론트에서 4단계 위자드 (Household → Room → FurniturePlacement → StorageLocation) | 각 엔티티 생성 API가 순차적으로 호출됨. 벌크 생성 API 제공 시 UX 개선 가능 | **P2** |
-| 4-7 | **알림 생성 (서버 사이드)** | 프론트에서 mock 시드 7건. 실제 알림 생성 로직 없음 | 스케줄러/크론: 유통기한 임박, 재고 부족, 장보기 리마인더 체크 후 Notification 생성 | **P1** |
-| 4-8 | **소비·폐기 처리** | 대시보드에서 수량·메모·사유 입력 → InventoryLedgerRow 생성 + 수량 감소 | API: `POST /api/inventory-logs` (type="out"/"waste") → InventoryItem.quantity 감소 + InventoryLog 생성. 트랜잭션 | **P0** |
+| # | 기능 | 현재 구현 | 백엔드 필요 사항 | 중요도 | 상태 |
+|---|------|----------|-----------------|--------|------|
+| 4-1 | **Shopping Suggestions (장보기 제안)** | `shopping-suggestions.ts` — 유통기한 임박 + minStockLevel 미달 품목 자동 제안, 이미 장보기에 있는 품목 제외, 보충 수량 계산 | `GET /api/shopping-suggestions?householdId=` API. 프론트 로직과 동일한 쿼리: PurchaseBatch 만료 임박 + InventoryItem.quantity < minStockLevel | **P1** | 미결정 |
+| 4-2 | **NotificationDetailPreferences** | `AppSettings` 안에 12개 필드 (expirationDaysBefore, scope, 요일 등) | User 또는 Household 단위 설정 테이블. `notification_preferences jsonb` 또는 정규화 컬럼 | **P1** | 미결정 |
+| 4-3 | **HouseholdKindDefinition 관리** | `household-kind-defaults.ts` + 설정 화면에서 CRUD | **방안 A**: Household.kind만 varchar로 저장 (프론트에서 관리) / **방안 B**: HouseholdKind 마스터 테이블 추가. 현재 프론트는 로컬에서 관리하므로 **A로 시작** 가능 | **P2** | 미결정 |
+| 4-4 | **ProductCatalog 공유 스토어** | `him-catalog` 로컬스토리지 키로 전역 관리. Household에서 분리됨 | Catalog(Unit, Category, Product, ProductVariant)가 **Household-scoped인지 global인지** 결정 필요. 프론트는 현재 global처럼 사용 | **P0** | 미결정 |
+| 4-5 | **구매 → 재고 자동 반영** | 프론트 미구현 (ui-roadmap.md에서 "백엔드 API에서 처리"로 명시) | Purchase 생성 시 InventoryItem.quantity 자동 증가 + InventoryLog(type="in") 자동 생성. 트랜잭션 처리 | **P1** | 미결정 |
+| 4-6 | **온보딩 마법사 지원 API** | 프론트에서 4단계 위자드 (Household → Room → FurniturePlacement → StorageLocation) | 각 엔티티 생성 API가 순차적으로 호출됨. 벌크 생성 API 제공 시 UX 개선 가능 | **P2** | 미결정 |
+| 4-7 | **알림 생성 (서버 사이드)** | 프론트에서 mock 시드 7건. 실제 알림 생성 로직 없음 | 스케줄러/크론: 유통기한 임박, 재고 부족, 장보기 리마인더 체크 후 Notification 생성 | **P1** | 미결정 |
+| 4-8 | **소비·폐기 처리** | 대시보드에서 수량·메모·사유 입력 → InventoryLedgerRow 생성 + 수량 감소 | API: `POST /api/inventory-logs` (type="out"/"waste") → InventoryItem.quantity 감소 + InventoryLog 생성. 트랜잭션 | **P0** | 미결정 |
 
 ---
 
@@ -143,18 +154,35 @@
 
 ## 6. docs 수정 체크리스트
 
-위 분석 결과를 반영하여 **루트 docs 문서를 수정**해야 할 항목입니다.
+v1 원본은 `docs/v1/`에 보존, v2 문서는 `docs/v2/`에 생성했습니다.
 
-- [ ] `entity-logical-design.md` — Purchase.inventoryItemId를 nullable로 변경 (§2-5)
-- [ ] `entity-logical-design.md` — Purchase에 `supplierName varchar nullable` 추가 (§2-4)
-- [ ] `entity-logical-design.md` — Notification에 `householdId bigint FK nullable` 추가 (§2-8)
-- [ ] `entity-logical-design.md` — ShoppingListItem.categoryId nullable 여부 결정 (§2-11)
-- [ ] `er-diagram.md` — Household에 `kind` 속성 추가 (§2-1)
-- [ ] `er-diagram.md` — HouseStructure에 `diagramLayout` 속성 추가 (§2-2)
-- [ ] `er-diagram.md` — FurniturePlacement에 `anchorDirectStorageId` 추가 (§2-3)
-- [ ] `er-diagram.md` — ShoppingListItem에 `targetStorageLocationId` 추가 (§2-10)
-- [ ] `entity-conceptual-design.md` — 위 변경 사항 중 개념 수준에서 반영할 것 동기화
-- [ ] `feature-checklist.md` — Shopping Suggestions, 소비·폐기 처리, 구매→재고 자동 반영 등 추가 기능 항목 추가
+### §1 결정에 따른 docs 수정 (v1.1 확정 → v1.2 반영 완료)
+
+- [x] `entity-logical-design.md` — Consumption 엔티티 섹션 제거, InventoryLog에 통합 명시 (§1-3)
+- [x] `entity-logical-design.md` — WasteRecord 엔티티 섹션 제거, InventoryLog에 `reason`, `refType`, `refId` 명시 (§1-3)
+- [x] `entity-logical-design.md` — ShoppingList 엔티티 섹션 제거 (§1-2)
+- [x] `entity-logical-design.md` — ShoppingListItem에 `householdId FK` 추가, `shoppingListId FK` 제거, `checked` 컬럼 제거 (§1-2)
+- [x] `er-diagram.md` — Consumption, WasteRecord 엔티티 제거, InventoryLog 통합 반영 (§1-3)
+- [x] `er-diagram.md` — ShoppingList 엔티티 제거, ShoppingListItem → Household 직접 연결 (§1-2)
+- [x] `entity-conceptual-design.md` — 위 통합/제거 사항 동기화 (§1-2, §1-3)
+- [x] `feature-checklist.md` — Consumption, WasteRecord 항목을 InventoryLog 항목으로 통합 (§1-3)
+- [x] `feature-checklist.md` — ShoppingList 항목 제거, ShoppingListItem 항목에 병합 (§1-2)
+
+### §2 필드 추가에 따른 docs 수정 (v1.2 반영 완료)
+
+- [x] `entity-logical-design.md` — Purchase.inventoryItemId를 nullable로 변경 (§2-5)
+- [x] `entity-logical-design.md` — Purchase에 `supplierName varchar nullable` 추가 (§2-4)
+- [x] `entity-logical-design.md` — Notification에 `householdId bigint FK nullable` 추가 (§2-8)
+- [ ] `entity-logical-design.md` — ShoppingListItem.categoryId nullable 여부 결정 (§2-11) **미결정**
+- [x] `er-diagram.md` — Household에 `kind` 속성 추가 (§2-1)
+- [x] `er-diagram.md` — HouseStructure에 `diagramLayout` 속성 추가 (§2-2)
+- [x] `er-diagram.md` — FurniturePlacement에 `anchorDirectStorageId` 추가 (§2-3)
+- [x] `er-diagram.md` — ShoppingListItem에 `targetStorageLocationId` 추가 (§2-10)
+- [x] `entity-conceptual-design.md` — 위 필드 추가 사항 중 개념 수준에서 반영할 것 동기화
+
+### §4 추가 기능에 따른 docs 수정 (v1.2 반영 완료)
+
+- [x] `feature-checklist.md` — Shopping Suggestions, 소비·폐기 처리, 구매→재고 자동 반영 등 추가 기능 항목 추가
 
 ---
 
@@ -162,21 +190,21 @@
 
 아래는 중요도 P0·P1 항목만 모은 **1차 백엔드 개발 범위**입니다.
 
-### 엔티티/스키마 결정 (P0)
-1. InventoryLog + WasteRecord + Consumption → **단일 InventoryLog 테이블로 통합** (1-3)
-2. Household + HouseStructure → 2테이블 유지, **API DTO에서 병합** (1-1)
+### 엔티티/스키마 결정 (P0) — v1.1 확정 포함
+1. ~~InventoryLog + WasteRecord + Consumption → **단일 InventoryLog 테이블로 통합**~~ (1-3) **확정**
+2. ~~Household + HouseStructure → 2테이블 유지, **API DTO에서 병합**~~ (1-1) **확정**
 3. Purchase.inventoryItemId → **nullable** (2-5)
 4. InventoryRow 조회 DTO → **join 기반 응답** (2-7)
 5. ProductCatalog 스코프 결정 → **Household-scoped vs global** (4-4)
 6. 소비·폐기 API + 수량 자동 감소 트랜잭션 (4-8)
 
-### 스키마 추가 (P1)
+### 스키마 추가 (P1) — v1.1 확정 포함
 7. Household.kind 컬럼 (2-1)
 8. Purchase.supplierName 컬럼 (2-4)
 9. Notification.householdId 컬럼 (2-8)
 10. ShoppingListItem.categoryId nullable 여부 결정 (2-11)
-11. ShoppingList 부모 테이블 유지 여부 결정 (1-2)
-12. HouseholdMember API → email 포함 DTO (1-4)
+11. ~~ShoppingList 테이블 제거, ShoppingListItem → Household 직접 연결~~ (1-2) **확정**
+12. ~~HouseholdMember 테이블 유지, API에서 email 포함 DTO 반환~~ (1-4) **확정**
 
 ### API/로직 (P1)
 13. Shopping Suggestions API (4-1)
