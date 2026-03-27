@@ -44,7 +44,8 @@
       "Bash(grep -r \"newMemberId\\\\|MembershipRoleBadge\" /c/Users/USER/dev/home-inventory-manager/frontend --include=*.tsx --include=*.ts)",
       "Bash(git add:*)",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(pnpm add:*)"
     ]
   }
 }

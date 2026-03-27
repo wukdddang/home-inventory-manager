@@ -1,10 +1,19 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { ConfigModule } from '@nestjs/config';
+import { DatabaseModule } from './database/database.module.js';
+import { HouseholdModule } from './domain/household/household.module.js';
+import { CategoryInterfaceModule } from './interface/category/category.module.js';
 
 @Module({
-    imports: [],
-    controllers: [AppController],
-    providers: [AppService],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    DatabaseModule,
+
+    // Domain
+    HouseholdModule,
+
+    // Interface (각 Interface 모듈이 Business → Context → Domain 의존성을 자체 포함)
+    CategoryInterfaceModule,
+  ],
 })
 export class AppModule {}
