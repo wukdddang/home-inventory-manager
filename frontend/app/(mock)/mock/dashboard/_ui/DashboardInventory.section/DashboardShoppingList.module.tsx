@@ -292,7 +292,7 @@ function ShoppingListDetailContent({
     if (entry.inventoryItemId) {
       completeLinked(entry.inventoryItemId, entry.restockQuantity, {
         removeEntryId: entry.id,
-        label: entry.label,
+        label: entry.label ?? "",
       });
       return;
     }
@@ -305,7 +305,7 @@ function ShoppingListDetailContent({
       if (matches.length >= 1) {
         completeLinked(matches[0].id, entry.restockQuantity, {
           removeEntryId: entry.id,
-          label: entry.label,
+          label: entry.label ?? "",
         });
         return;
       }
@@ -313,7 +313,7 @@ function ShoppingListDetailContent({
     removeSaved(entry.id);
     toast({
       title: "목록에서 뺐습니다",
-      description: `${entry.label} — 재고에 같은 품목이 없어 수량은 바뀌지 않습니다. 재고 추가로 넣은 뒤 다시 완료하세요.`,
+      description: `${entry.label ?? ""} — 재고에 같은 품목이 없어 수량은 바뀌지 않습니다. 재고 추가로 넣은 뒤 다시 완료하세요.`,
     });
   };
 

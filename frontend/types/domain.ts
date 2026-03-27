@@ -159,7 +159,8 @@ export type ShoppingListEntry = {
   householdId: string;
   /** 연결 재고 — 없으면 메모·카탈로그만 연결 */
   inventoryItemId: string | null;
-  label: string;
+  /** 표시용 이름 — 카탈로그/재고에서 파생. 없으면 productId join으로 도출 */
+  label?: string;
   unit?: string;
   variantCaption?: string;
   /** 카탈로그만 연결(아직 보관 장소 미지정) — 구매 완료 시 동일 품목·변형 재고가 있으면 보충 */
