@@ -350,7 +350,10 @@ function ExpirationModalBody() {
 function PerProductExpirationRules() {
   const { settings, 만료_규칙을_저장한다, 만료_규칙을_삭제한다 } =
     useSettings();
-  const { productCatalog } = useDashboard();
+  const { households, 거점_카탈로그를_가져온다 } = useDashboard();
+  const productCatalog = households[0]
+    ? 거점_카탈로그를_가져온다(households[0].id)
+    : { units: [], categories: [], products: [], variants: [] };
   const [addingProductId, setAddingProductId] = useState("");
   const [addingDays, setAddingDays] = useState(3);
   const selectId = useId();

@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Fragment, useMemo, useState, useSyncExternalStore } from "react";
+import { Fragment, useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { CatalogModalsControls } from "@/app/(current)/dashboard/_ui/CatalogModals.controls";
 import { useDashboard } from "../../_hooks/useDashboard";
@@ -20,7 +20,7 @@ import {
 } from "@/lib/local-store";
 import { 오늘_날짜_문자열을_구한다 } from "@/lib/purchase-lot-helpers";
 import { inventoryDisplayLine } from "@/lib/product-catalog-helpers";
-import type { Household, InventoryRow, PurchaseRecord } from "@/types/domain";
+import type { Household, InventoryRow, ProductCatalog, PurchaseRecord } from "@/types/domain";
 import {
   getMockPurchasesSession,
   setMockPurchasesSession,
@@ -279,10 +279,17 @@ export function RoomItemAddWidget({
   const {
     dataMode,
     거점을_갱신_한다,
-    productCatalog: catalog,
+    거점_카탈로그를_가져온다,
     카탈로그를_갱신_한다,
-    catalogHydrated,
   } = useDashboard();
+  const catalog = 거점_카탈로그를_가져온다(selected.id);
+  const catalogHydrated = true; // 거점 하이드레이션이 완료되면 카탈로그도 포함됨
+  const 거점_카탈로그를_갱신_한다 = useCallback(
+    (updater: (c: ProductCatalog) => ProductCatalog) => {
+      카탈로그를_갱신_한다(selected.id, updater);
+    },
+    [카탈로그를_갱신_한다, selected.id],
+  );
 
   const [addSource, setAddSource] = useState<ItemAddSource>("catalog");
   const [pickedStorageId, setPickedStorageId] = useState("");
@@ -1332,7 +1339,7 @@ export function RoomItemAddWidget({
                           <div className="min-w-0 flex-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                             <CatalogModalsControls
                               catalog={catalog}
-                              onCatalogUpdate={카탈로그를_갱신_한다}
+                              onCatalogUpdate={거점_카탈로그를_갱신_한다}
                               layout="panel"
                               buttonRowClassName="flex-nowrap items-center gap-2"
                               showListButton
@@ -1457,7 +1464,7 @@ export function RoomItemAddWidget({
               >
                 <CatalogModalsControls
                   catalog={catalog}
-                  onCatalogUpdate={카탈로그를_갱신_한다}
+                  onCatalogUpdate={거점_카탈로그를_갱신_한다}
                   layout="panel"
                   showListButton
                 />

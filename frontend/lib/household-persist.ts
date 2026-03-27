@@ -1,8 +1,9 @@
 import type { Household } from "@/types/domain";
 
-/** 저장·전송 시 레거시 catalog 필드 제거 (상품 마스터는 공통 카탈로그 키에만 둔다) */
+/**
+ * v2.1 이후 카탈로그는 거점에 귀속되므로 catalog 필드를 보존한다.
+ * 호출처 호환을 위해 함수 시그니처는 유지(패스스루).
+ */
 export function stripHouseholdCatalogForPersist(h: Household): Household {
-  const x = { ...h } as Record<string, unknown>;
-  delete x.catalog;
-  return x as Household;
+  return h;
 }

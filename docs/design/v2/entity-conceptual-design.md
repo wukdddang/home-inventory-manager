@@ -1,6 +1,10 @@
 # 개념적 설계 v2 — 엔티티와 속성
 
-**버전**: v2.1 — 카탈로그 Household-scoped + NotificationPreference 추가 (2026-03-26)
+**버전**: v2.2 — HouseholdInvitation 추가 + MemberRole 3단계 확장 (2026-03-27)
+
+**v2.2 변경**:
+- HouseholdInvitation 신규 엔티티 추가 (초대 링크·이메일 초대 지원)
+- HouseholdMember 역할을 3단계로 확장: admin(관리자) / editor(편집자) / viewer(조회자)
 
 **v2.1 변경**:
 - Category, Unit, Product에 `소속 거점` 추가 (카탈로그 Household-scoped)
@@ -25,6 +29,8 @@
 erDiagram
     User ||--o{ HouseholdMember : "소속"
     Household ||--o{ HouseholdMember : "멤버"
+    Household ||--o{ HouseholdInvitation : "초대"
+    User ||--o{ HouseholdInvitation : "초대한 사람"
 
     Household ||--o{ Category : "거점 카탈로그"
     Household ||--o{ Unit : "거점 카탈로그"
@@ -89,8 +95,23 @@ erDiagram
 
 - 사용자 (userId)
 - 거점 (householdId)
-- 역할(소유자, 멤버 등)
+- **역할** — admin(관리자: 전체 + 멤버 관리) / editor(편집자: 조회·추가·수정) / viewer(조회자: 조회만) **(v2.2 확장)**
 - 가입 시각 (joinedAt)
+
+---
+
+## HouseholdInvitation (초대) — v2.2 신규
+
+- 대상 거점 (householdId)
+- 초대한 사용자 (invitedByUserId)
+- 수락 시 역할 (admin / editor / viewer)
+- 고유 토큰 (URL 포함)
+- 상태 (pending / accepted / expired / revoked)
+- (선택) 초대 대상 이메일 — 지정 시 해당 이메일만 수락 가능, 미지정 시 링크 공유형
+- (선택) 수락한 사용자 · 수락 시각
+- 만료 시각
+
+> 초대 수락 시 HouseholdMember 행이 생성된다. 미가입 사용자는 가입 후 토큰으로 수락.
 
 ---
 
@@ -187,6 +208,7 @@ erDiagram
 
 ## Purchase (구매 기록)
 
+- **소속 거점** **(v2.2 추가)** — 거점별 구매 필터링 및 미연결 구매의 거점 귀속
 - 재고 품목 **(v2 변경: 선택 — 구매만 먼저, 재고 연결은 나중에)**
 - 구매 수량
 - 구매 일시
@@ -315,6 +337,7 @@ erDiagram
 
 - **v2 통합 결정**: 소비(Consumption)·폐기(WasteRecord)를 InventoryLog 하나로 합쳤다. 이력 조회가 단일 테이블로 가능하고, 프론트 `InventoryLedgerRow` 타입과 1:1 대응.
 - **v2 구조 단순화**: 장보기 리스트(ShoppingList)의 부모-자식 2단 구조를 제거하고, 항목(ShoppingListItem)이 Household에 직접 연결. 프론트에 리스트 이름·마감일 개념이 없었기 때문.
+- **v2.2 초대·권한 확장**: HouseholdInvitation 테이블 추가로 링크/이메일 초대 플로우 지원. HouseholdMember.role을 admin/editor/viewer 3단계로 세분화하여 거점별 접근 제어 실현.
 - **v2.1 카탈로그 Household-scoped**: Category·Unit·Product가 거점에 귀속. 같은 거점 멤버끼리 공유하며, "다른 거점 카탈로그 가져오기"로 거점 간 복사 가능.
 - **v2.1 알림 설정 테이블화**: NotificationPreference를 별도 테이블로 분리. 사용자 기본값 + 거점별 오버라이드 구조.
 - **위치 계층(권장)**: `Room`(방) → `FurniturePlacement`(가구) → `StorageLocation`(보관 슬롯) → `InventoryItem`(재고).

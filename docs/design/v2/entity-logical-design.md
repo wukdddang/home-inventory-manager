@@ -1,6 +1,11 @@
 # 엔티티 논리적 설계 v2 (ERD·구현용)
 
-**버전**: v2.1 — 카탈로그 Household-scoped + NotificationPreference 테이블 추가 (2026-03-26)
+**버전**: v2.2 — HouseholdInvitation 추가 + MemberRole 3단계 확장 (2026-03-27)
+
+**v2.2 변경**:
+- HouseholdInvitation 신규 테이블 추가 (초대 링크·이메일 초대 지원)
+- HouseholdMember.role을 `'admin' | 'editor' | 'viewer'` 3단계로 확장 (기존 `'owner' | 'member'` 대체)
+- 변경 근거: 프론트엔드 멤버 권한 세분화 및 초대 기능 구현 반영
 
 **v2.1 변경**:
 - Category, Unit, Product에 `householdId FK` 추가 (카탈로그 Household-scoped)
@@ -30,6 +35,8 @@
 erDiagram
     User ||--o{ HouseholdMember : "userId"
     Household ||--o{ HouseholdMember : "householdId"
+    Household ||--o{ HouseholdInvitation : "householdId"
+    User ||--o{ HouseholdInvitation : "invitedByUserId"
 
     Household ||--o{ Category : "householdId"
     Household ||--o{ Unit : "householdId"
@@ -103,8 +110,21 @@ erDiagram
         bigint id PK
         bigint userId FK
         bigint householdId FK
-        string role
+        string role "admin | editor | viewer"
         timestamp joinedAt
+    }
+    HouseholdInvitation {
+        bigint id PK
+        bigint householdId FK
+        bigint invitedByUserId FK
+        string role "admin | editor | viewer"
+        string token UK
+        string status "pending | accepted | expired | revoked"
+        string inviteeEmail "nullable"
+        bigint acceptedByUserId "FK nullable"
+        timestamp acceptedAt "nullable"
+        timestamp expiresAt
+        timestamp createdAt
     }
 ```
 
@@ -372,10 +392,53 @@ erDiagram
 | 구분 | 항목 | 비고 |
 |------|------|------|
 | 필수 | userId, householdId | 복합 PK 또는 PK + unique |
-| 선택 | role | 'owner' \| 'member' |
+| **v2.2** | role | **'admin' \| 'editor' \| 'viewer'** (기존 'owner' → admin, 'member' → editor) |
 | 선택 | joinedAt | timestamp |
 
+**역할 권한 매트릭스**:
+| 역할 | 조회 | 추가 | 수정 | 삭제 | 멤버 관리 |
+|------|:----:|:----:|:----:|:----:|:---------:|
+| admin | O | O | O | O | O |
+| editor | O | O | O | — | — |
+| viewer | O | — | — | — | — |
+
 **API DTO**: HouseholdMember는 User를 join하여 `GroupMember`(id, email, role, label?) 형태로 반환 — [frontend-backend-alignment.md §1-4](../../alignment/frontend-backend-alignment.md).
+
+---
+
+## 2-1. HouseholdInvitation (초대) — v2.2 신규
+
+| 구분     | 항목              | 타입/비고                         | 검토                                                    |
+| -------- | ----------------- | --------------------------------- | ------------------------------------------------------- |
+| **필수** | id                | PK                                | —                                                       |
+| **필수** | householdId       | FK → Household                    | 초대 대상 거점                                          |
+| **필수** | invitedByUserId   | FK → User                         | 초대한 사용자                                           |
+| **필수** | role              | string                            | 수락 시 부여할 역할 ('admin' \| 'editor' \| 'viewer')   |
+| **필수** | token             | string, unique                    | URL에 포함되는 고유 토큰                                |
+| **필수** | status            | string                            | 'pending' \| 'accepted' \| 'expired' \| 'revoked'      |
+| **선택** | inviteeEmail      | string, nullable                  | 특정 이메일 대상 초대 (null이면 링크 공유형)            |
+| **선택** | acceptedByUserId  | FK → User, nullable               | 수락한 사용자 (수락 시 기록)                            |
+| **선택** | acceptedAt        | timestamp, nullable               | 수락 시각                                               |
+| **필수** | expiresAt         | timestamp                         | 만료 시각 (기본 7일)                                    |
+| **필수** | createdAt         | timestamp                         | —                                                       |
+
+**관계**: Household (N:1), User — invitedByUserId (N:1), User — acceptedByUserId (N:1, nullable)
+
+**동작**:
+- **링크 초대**: `inviteeEmail = null`. token 기반 URL 공유. 누구나 수락 가능
+- **이메일 초대**: `inviteeEmail` 지정. 해당 이메일로 가입한 사용자만 수락 가능
+- 수락 시: status → 'accepted', `acceptedByUserId`·`acceptedAt` 설정, HouseholdMember 행 생성
+- 관리자가 취소 시: status → 'revoked'
+- 만료: 스케줄러 또는 조회 시 `expiresAt < now()` 이면 status → 'expired'로 처리
+
+**API 엔드포인트** (예정):
+```
+POST   /api/households/:id/invitations       — 초대 생성 (링크형 or 이메일 지정)
+GET    /api/households/:id/invitations       — 대기 중인 초대 목록 (admin 전용)
+DELETE /api/households/:id/invitations/:invId — 초대 취소 (admin 전용)
+GET    /api/invitations/:token               — 토큰으로 초대 정보 조회 (비인증 가능)
+POST   /api/invitations/:token/accept        — 초대 수락 → HouseholdMember 생성
+```
 
 ---
 
@@ -545,6 +608,7 @@ erDiagram
 | 구분     | 항목                | 타입/비고                    | 검토                                      |
 | -------- | ------------------- | ---------------------------- | ----------------------------------------- |
 | **필수** | id                  | PK                           | —                                         |
+| **v2.2** | **householdId**     | FK → Household, NOT NULL     | **v2.2 추가**: 거점 귀속. `inventoryItemId` nullable이므로 거점 추적에 필수 |
 | **v2**   | **inventoryItemId** | FK → InventoryItem, **nullable** | **v2 변경**: nullable. 구매만 먼저, 재고 연결은 나중에 |
 | **필수** | quantity            | decimal                      | 구매 수량                                 |
 | **필수** | unitPrice           | decimal                      | 구매 시점 단가                            |
@@ -558,7 +622,7 @@ erDiagram
 | **선택** | userId              | FK → User, nullable          | 누가 구매했는지                           |
 | **선택** | createdAt           | timestamp                    | —                                         |
 
-**관계**: InventoryItem (N:1, nullable), PurchaseBatch (1:N), User (선택 N:1)
+**관계**: Household (N:1), InventoryItem (N:1, nullable), PurchaseBatch (1:N), User (선택 N:1)
 
 **스냅샷 정책**: `itemName`, `variantCaption`, `unitSymbol`은 구매 등록 시점의 Product/ProductVariant 정보를 복사하여 저장. 원본 품목이 삭제되어도 구매 내역에 품목명이 표시되어야 하므로 join 대신 스냅샷 방식 채택. 재고 연결된 구매(`inventoryItemId` NOT NULL)에서도 동일하게 저장.
 

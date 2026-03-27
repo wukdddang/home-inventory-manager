@@ -80,10 +80,13 @@ export function DashboardInventorySection({
   const {
     dataMode,
     거점을_갱신_한다,
-    productCatalog,
+    거점_카탈로그를_가져온다,
     재고_소비를_기록_한다,
     재고_폐기를_기록_한다,
   } = useDashboard();
+  const productCatalog = selected
+    ? 거점_카탈로그를_가져온다(selected.id)
+    : { units: [], categories: [], products: [], variants: [] };
 
   const purchases = useSyncExternalStore(
     dataMode === "mock" ? subscribeMockPurchasesSession : subscribePurchases,

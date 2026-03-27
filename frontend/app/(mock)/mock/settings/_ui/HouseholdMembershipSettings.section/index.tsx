@@ -5,7 +5,7 @@ import { FormModal } from "@/app/_ui/form-modal";
 import { toast } from "@/hooks/use-toast";
 import { getHouseholdKindLabel } from "@/lib/household-kind-defaults";
 import { cn } from "@/lib/utils";
-import type { GroupMember, Household } from "@/types/domain";
+import type { GroupMember, Household, MemberRole } from "@/types/domain";
 import { useEffect, useMemo, useState } from "react";
 import { useDashboard } from "../../../dashboard/_hooks/useDashboard";
 
@@ -17,12 +17,32 @@ function membersOf(h: Household): GroupMember[] {
   return h.members ?? [];
 }
 
-function ownerCount(list: GroupMember[]) {
-  return list.filter((m) => m.role === "owner").length;
+function adminCount(list: GroupMember[]) {
+  return list.filter((m) => m.role === "admin").length;
 }
+
+const ROLE_LABELS: Record<MemberRole, string> = {
+  admin: "관리자",
+  editor: "편집자",
+  viewer: "조회자",
+};
+
+const ROLE_BADGE_STYLES: Record<MemberRole, string> = {
+  admin: "bg-amber-500/15 text-amber-100 ring-amber-500/45 hover:bg-amber-500/25",
+  editor: "bg-blue-500/15 text-blue-100 ring-blue-500/45 hover:bg-blue-500/25",
+  viewer: "bg-zinc-700/55 text-zinc-200 ring-zinc-600 hover:bg-zinc-600/70",
+};
+
+const ROLE_DOT_ACTIVE: Record<MemberRole, string> = {
+  admin: "bg-amber-400",
+  editor: "bg-blue-400",
+  viewer: "bg-teal-400",
+};
 
 const inputClass =
   "w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/30";
+
+const ALL_ROLES: MemberRole[] = ["admin", "editor", "viewer"];
 
 function MembershipRoleBadgePicker({
   member,
@@ -35,10 +55,10 @@ function MembershipRoleBadgePicker({
   list: GroupMember[];
   isOpen: boolean;
   onToggle: () => void;
-  onSelectRole: (role: "owner" | "member") => boolean;
+  onSelectRole: (role: MemberRole) => boolean;
 }) {
-  const isLastSoleOwner =
-    member.role === "owner" && ownerCount(list) <= 1;
+  const isLastSoleAdmin =
+    member.role === "admin" && adminCount(list) <= 1;
 
   return (
     <div
@@ -51,15 +71,13 @@ function MembershipRoleBadgePicker({
         onClick={onToggle}
         className={cn(
           "cursor-pointer rounded-full px-2.5 py-1 text-xs font-semibold ring-1 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-teal-500/50",
-          member.role === "owner"
-            ? "bg-amber-500/15 text-amber-100 ring-amber-500/45 hover:bg-amber-500/25"
-            : "bg-zinc-700/55 text-zinc-200 ring-zinc-600 hover:bg-zinc-600/70",
+          ROLE_BADGE_STYLES[member.role],
         )}
         aria-expanded={isOpen}
         aria-haspopup="dialog"
-        aria-label={`역할: ${member.role === "owner" ? "소유자" : "멤버"}. 클릭하여 변경`}
+        aria-label={`역할: ${ROLE_LABELS[member.role]}. 클릭하여 변경`}
       >
-        {member.role === "owner" ? "소유자" : "멤버"}
+        {ROLE_LABELS[member.role]}
       </button>
       {isOpen ? (
         <div
@@ -70,56 +88,41 @@ function MembershipRoleBadgePicker({
           <p className="px-3 pb-1 text-xs font-medium tracking-wide text-zinc-300 uppercase">
             역할 선택
           </p>
-          <button
-            type="button"
-            className={cn(
-              "flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm",
-              member.role === "owner"
-                ? "bg-amber-500/10 text-amber-100"
-                : "text-zinc-200 hover:bg-zinc-800",
-            )}
-            onClick={() => {
-              if (onSelectRole("owner")) onToggle();
-            }}
-          >
-            <span
-              className={cn(
-                "size-1.5 shrink-0 rounded-full",
-                member.role === "owner" ? "bg-amber-400" : "bg-zinc-600",
-              )}
-            />
-            소유자
-          </button>
-          <button
-            type="button"
-            disabled={isLastSoleOwner}
-            title={
-              isLastSoleOwner
-                ? "마지막 소유자는 멤버로 바꿀 수 없습니다"
-                : undefined
-            }
-            className={cn(
-              "flex w-full items-center gap-2 px-3 py-2 text-left text-sm",
-              isLastSoleOwner
-                ? "cursor-not-allowed text-zinc-300"
-                : "cursor-pointer text-zinc-200 hover:bg-zinc-800",
-              member.role === "member" && !isLastSoleOwner
-                ? "bg-zinc-800/60"
-                : "",
-            )}
-            onClick={() => {
-              if (isLastSoleOwner) return;
-              if (onSelectRole("member")) onToggle();
-            }}
-          >
-            <span
-              className={cn(
-                "size-1.5 shrink-0 rounded-full",
-                member.role === "member" ? "bg-teal-400" : "bg-zinc-600",
-              )}
-            />
-            멤버
-          </button>
+          {ALL_ROLES.map((role) => {
+            const isCurrent = member.role === role;
+            const disabled = isLastSoleAdmin && role !== "admin";
+            return (
+              <button
+                key={role}
+                type="button"
+                disabled={disabled}
+                title={
+                  disabled
+                    ? "마지막 관리자의 역할은 변경할 수 없습니다"
+                    : undefined
+                }
+                className={cn(
+                  "flex w-full items-center gap-2 px-3 py-2 text-left text-sm",
+                  disabled
+                    ? "cursor-not-allowed text-zinc-300"
+                    : "cursor-pointer text-zinc-200 hover:bg-zinc-800",
+                  isCurrent && !disabled ? "bg-zinc-800/60" : "",
+                )}
+                onClick={() => {
+                  if (disabled) return;
+                  if (onSelectRole(role)) onToggle();
+                }}
+              >
+                <span
+                  className={cn(
+                    "size-1.5 shrink-0 rounded-full",
+                    isCurrent ? ROLE_DOT_ACTIVE[role] : "bg-zinc-600",
+                  )}
+                />
+                {ROLE_LABELS[role]}
+              </button>
+            );
+          })}
         </div>
       ) : null}
     </div>
@@ -138,7 +141,7 @@ export function HouseholdMembershipSettingsSection() {
   );
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteLabel, setInviteLabel] = useState("");
-  const [inviteRole, setInviteRole] = useState<"owner" | "member">("member");
+  const [inviteRole, setInviteRole] = useState<MemberRole>("editor");
   const [pendingRemoveMemberId, setPendingRemoveMemberId] = useState<
     string | null
   >(null);
@@ -146,6 +149,8 @@ export function HouseholdMembershipSettingsSection() {
     null,
   );
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [inviteLinkRole, setInviteLinkRole] = useState<MemberRole>("editor");
+  const [inviteLinkUrl, setInviteLinkUrl] = useState<string | null>(null);
 
   const selectedId = useMemo(() => {
     if (households.length === 0) return null;
@@ -173,7 +178,7 @@ export function HouseholdMembershipSettingsSection() {
   const resetInviteFields = () => {
     setInviteEmail("");
     setInviteLabel("");
-    setInviteRole("member");
+    setInviteRole("editor");
   };
 
   const handleInviteModalSubmit = () => {
@@ -198,9 +203,9 @@ export function HouseholdMembershipSettingsSection() {
       label: inviteLabel.trim() || undefined,
     };
     const next = [...list, m];
-    if (ownerCount(next) < 1) {
+    if (adminCount(next) < 1) {
       toast({
-        title: "소유자가 한 명 이상 필요합니다",
+        title: "관리자가 한 명 이상 필요합니다",
         variant: "warning",
       });
       return;
@@ -219,15 +224,15 @@ export function HouseholdMembershipSettingsSection() {
 
   const handleRoleChange = (
     memberId: string,
-    role: "owner" | "member",
+    role: MemberRole,
   ): boolean => {
     if (!selected) return false;
     const list = membersOf(selected);
     const target = list.find((m) => m.id === memberId);
     if (!target || target.role === role) return false;
-    if (target.role === "owner" && ownerCount(list) <= 1 && role === "member") {
+    if (target.role === "admin" && adminCount(list) <= 1 && role !== "admin") {
       toast({
-        title: "마지막 소유자는 멤버로 바꿀 수 없습니다",
+        title: "마지막 관리자의 역할은 변경할 수 없습니다",
         variant: "warning",
       });
       return false;
@@ -264,9 +269,9 @@ export function HouseholdMembershipSettingsSection() {
     const list = membersOf(selected);
     const target = list.find((m) => m.id === pendingRemoveMemberId);
     if (!target) return;
-    if (target.role === "owner" && ownerCount(list) <= 1) {
+    if (target.role === "admin" && adminCount(list) <= 1) {
       toast({
-        title: "마지막 소유자는 제거할 수 없습니다",
+        title: "마지막 관리자는 제거할 수 없습니다",
         variant: "warning",
       });
       setPendingRemoveMemberId(null);
@@ -387,12 +392,13 @@ export function HouseholdMembershipSettingsSection() {
             <select
               value={inviteRole}
               onChange={(e) =>
-                setInviteRole(e.target.value as "owner" | "member")
+                setInviteRole(e.target.value as MemberRole)
               }
               className={inputClass}
             >
-              <option value="member">멤버</option>
-              <option value="owner">소유자</option>
+              <option value="viewer">조회자 — 조회만</option>
+              <option value="editor">편집자 — 조회 · 추가 · 수정</option>
+              <option value="admin">관리자 — 전체 + 멤버 관리</option>
             </select>
           </div>
         </div>
@@ -402,7 +408,7 @@ export function HouseholdMembershipSettingsSection() {
         {members.length === 0 ? (
           <li className="px-4 py-8 text-center text-sm text-zinc-300">
             아직 멤버가 없습니다. 첫 멤버는{" "}
-            <span className="text-zinc-300">소유자</span>로 두는 것을
+            <span className="text-zinc-300">관리자</span>로 두는 것을
             권장합니다.
           </li>
         ) : (
@@ -441,6 +447,46 @@ export function HouseholdMembershipSettingsSection() {
           ))
         )}
       </ul>
+
+      {/* 초대 링크 */}
+      <div className="mt-4 rounded-xl border border-zinc-800 p-4">
+        <p className="text-xs font-medium text-zinc-300">초대 링크 생성 (모의)</p>
+        <p className="mt-0.5 text-xs text-zinc-500">
+          링크를 받은 사람이 거점에 참여할 수 있습니다. 백엔드 연동 전 데모입니다.
+        </p>
+        <div className="mt-3 flex items-center gap-2">
+          <select
+            value={inviteLinkRole}
+            onChange={(e) => {
+              setInviteLinkRole(e.target.value as MemberRole);
+              setInviteLinkUrl(null);
+            }}
+            className={cn(inputClass, "max-w-40")}
+          >
+            <option value="viewer">조회자</option>
+            <option value="editor">편집자</option>
+            <option value="admin">관리자</option>
+          </select>
+          <button
+            type="button"
+            onClick={() => {
+              const token = crypto.randomUUID().slice(0, 8);
+              const url = `${typeof window !== "undefined" ? window.location.origin : ""}/mock/invite/${token}`;
+              setInviteLinkUrl(url);
+              void navigator.clipboard.writeText(url);
+              toast({ title: "초대 링크를 클립보드에 복사했습니다" });
+            }}
+            className="shrink-0 cursor-pointer rounded-xl border border-teal-500/40 bg-teal-500/10 px-3 py-2 text-xs font-semibold text-teal-300 transition-colors hover:bg-teal-500/20"
+          >
+            {inviteLinkUrl ? "다시 생성" : "링크 생성"}
+          </button>
+        </div>
+        {inviteLinkUrl && (
+          <p className="mt-2 break-all rounded-lg bg-zinc-950 px-3 py-1.5 text-xs text-zinc-400">
+            {inviteLinkUrl}
+          </p>
+        )}
+      </div>
 
       <AlertModal
         open={pendingRemoveMemberId !== null}

@@ -1,5 +1,5 @@
-import { stripHouseholdCatalogForPersist } from "@/lib/household-persist";
 import type {
+  GroupMember,
   Household,
   InventoryLedgerRow,
   InventoryLedgerType,
@@ -82,6 +82,17 @@ export function cloneDefaultCatalog(): ProductCatalog {
 
 /* ── 거점 mock ── */
 
+const MOCK_HOME_MEMBERS: GroupMember[] = [
+  { id: "m-home-admin", email: "kim.demo@household.mock", role: "admin", label: "김데모" },
+  { id: "m-home-editor", email: "lee.family@household.mock", role: "editor", label: "이가족" },
+  { id: "m-home-viewer", email: "park.guest@household.mock", role: "viewer", label: "박손님" },
+];
+
+const MOCK_OFFICE_MEMBERS: GroupMember[] = [
+  { id: "m-office-admin", email: "kim.demo@household.mock", role: "admin", label: "김데모" },
+  { id: "m-office-editor", email: "choi.work@household.mock", role: "editor", label: "최동료" },
+];
+
 /** 네트워크 지연을 흉내 낸다 (Route Handler 연동 시 제거·단축 가능) */
 const MOCK_LATENCY_MS = 200;
 
@@ -92,6 +103,8 @@ export const MOCK_SEED_HOUSEHOLDS: Household[] = [
     name: "우리 집",
     kind: "home",
     createdAt: "2025-01-10T08:00:00.000Z",
+    catalog: cloneDefaultCatalog(),
+    members: MOCK_HOME_MEMBERS,
     rooms: [
       {
         id: "mock-room-living",
@@ -231,6 +244,8 @@ export const MOCK_SEED_HOUSEHOLDS: Household[] = [
     name: "사무실 창고",
     kind: "office",
     createdAt: "2025-02-01T10:30:00.000Z",
+    catalog: cloneDefaultCatalog(),
+    members: MOCK_OFFICE_MEMBERS,
     rooms: [
       {
         id: "mock-room-office-shelf",
@@ -563,7 +578,7 @@ export function createDashboardMockHouseholdsService(): DashboardHouseholdsPort 
 
     async saveAll(households) {
       await delay(Math.min(80, MOCK_LATENCY_MS));
-      cache = cloneHouseholds(households).map(stripHouseholdCatalogForPersist);
+      cache = cloneHouseholds(households);
     },
   };
 }

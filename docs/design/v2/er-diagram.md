@@ -1,6 +1,10 @@
 # ER 다이어그램 & 엔티티 명세 v2 (Home Inventory Manager)
 
-**버전**: v2.1 — 카탈로그 Household-scoped + NotificationPreference 추가 (2026-03-26)
+**버전**: v2.2 — HouseholdInvitation 추가 + MemberRole 3단계 확장 (2026-03-27)
+
+**v2.2 변경**:
+- HouseholdInvitation 신규 엔티티 추가 (초대 링크·이메일 초대 플로우)
+- HouseholdMember.role을 `'admin' | 'editor' | 'viewer'` 3단계로 확장
 
 **v2.1 변경**:
 - Category, Unit, Product에 `householdId` 추가 (카탈로그 Household-scoped)
@@ -35,7 +39,7 @@
 | 6    | Product             | 상품 마스터 (소모품·비소모품)                                              | **Household**, Category              | P0       | `householdId` 추가 **(v2.1)** |
 | 7    | ProductVariant      | 용량/포장 단위별 정보                                                      | Product                              | P0       | — |
 | 8    | InventoryItem       | 실제 보유 재고                                                       | ProductVariant, StorageLocation      | P0       | — |
-| 9    | Purchase            | 구매 기록                                                                  | InventoryItem (nullable)             | P0       | `inventoryItemId` nullable, `supplierName` 추가, 스냅샷 3컬럼(`itemName`/`variantCaption`/`unitSymbol`) 추가 |
+| 9    | Purchase            | 구매 기록                                                                  | **Household**, InventoryItem (nullable) | P0       | `householdId` 추가 **(v2.2)**, `inventoryItemId` nullable, `supplierName` 추가, 스냅샷 3컬럼(`itemName`/`variantCaption`/`unitSymbol`) 추가 |
 | 10   | PurchaseBatch       | 로트별 유통기한                                                            | Purchase                             | P0       | — |
 | 11   | InventoryLog        | 재고 변경 이력 (**소비·폐기 통합**)                                        | InventoryItem                        | P0       | **Consumption·WasteRecord 통합**, `reason`·`itemLabel` 추가 |
 | 12   | ShoppingListItem    | 장보기 항목 (**Household 직접 연결**)                                      | Household, Category (nullable)       | P1       | **ShoppingList 제거**, `householdId` FK, `targetStorageLocationId` 추가, `categoryId` nullable |
@@ -45,6 +49,7 @@
 | 16   | HouseStructure      | 집 구조 — 방·슬롯 정의(JSONB)                                              | Household 1:1                        | P1       | `diagramLayout` 추가 |
 | 17   | Room                | 집 구조 내 방                                                              | HouseStructure                       | P1       | — |
 | 18   | FurniturePlacement  | 방 안 가구(인스턴스)                                                  | Room                                 | P1       | `anchorDirectStorageId` 추가 |
+| 20   | HouseholdInvitation | 거점 초대 (링크·이메일)                                               | Household, User                      | P1       | **신규 (v2.2)** |
 
 ### 사용하지 않음 (P3 — 1차 개발 범위 외)
 
@@ -63,7 +68,8 @@
 
 ### User ↔ Household (다대다)
 
-- 중간 테이블 `HouseholdMember`로 멤버십·역할(소유자/멤버) 관리.
+- 중간 테이블 `HouseholdMember`로 멤버십·역할(admin/editor/viewer) 관리. **(v2.2: 3단계로 확장)**
+- `HouseholdInvitation`으로 초대 링크·이메일 초대 관리. **(v2.2 신규)**
 
 ---
 
@@ -81,10 +87,12 @@ Household (거점)
   ├── Unit (1:N) — 거점 카탈로그 (v2.1)
   ├── Product (1:N) — 거점 카탈로그 (v2.1)
   ├── ShoppingListItem (1:N) — 장보기 항목 (v2: Household 직접 연결)
+  ├── HouseholdInvitation (1:N) — 초대 (v2.2)
   └── ExpirationAlertRule (1:N, 선택)
 
 User
   ├── Household (N:N)
+  ├── HouseholdInvitation (1:N) — 초대한 초대 (v2.2)
   ├── Notification (1:N)
   ├── NotificationPreference (1:N) — 알림 설정 (v2.1, 거점별 오버라이드 가능)
   └── ExpirationAlertRule (1:N, 선택, 품목별)
@@ -108,6 +116,7 @@ InventoryItem
   └── ShoppingListItem (선택: 알림 출처 ref)
 
 Purchase
+  ├── Household (N:1) — v2.2 추가
   └── PurchaseBatch (1:N)
 ```
 
@@ -118,6 +127,8 @@ Purchase
 ```mermaid
 erDiagram
     User }o--o{ Household : "members (N:N)"
+    Household ||--o{ HouseholdInvitation : "invitations"
+    User ||--o{ HouseholdInvitation : "invitedBy"
 
     Household ||--o{ Category : "catalog"
     Household ||--o{ Unit : "catalog"
@@ -147,6 +158,7 @@ erDiagram
     FurniturePlacement }o--o| Product : "optional kind"
     FurniturePlacement }o--o| ProductVariant : "optional variant"
 
+    Household ||--o{ Purchase : "purchases"
     InventoryItem ||--o{ Purchase : "purchases (nullable FK)"
     Purchase ||--o{ PurchaseBatch : batches
     InventoryItem ||--o{ InventoryLog : logs

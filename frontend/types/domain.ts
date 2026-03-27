@@ -207,11 +207,14 @@ export type HouseholdStructureDiagramLayout = Record<
   { x: number; y: number }
 >;
 
+/** ERD HouseholdMember 역할 — admin(관리자) / editor(편집자) / viewer(조회자) */
+export type MemberRole = "admin" | "editor" | "viewer";
+
 /** 거점·설정에서 공유 — ERD HouseholdMember 역할(모의) */
 export type GroupMember = {
   id: string;
   email: string;
-  role: "owner" | "member";
+  role: MemberRole;
   label?: string;
 };
 
@@ -238,6 +241,8 @@ export type Household = {
   createdAt: string;
   /** 거점별 공유 멤버(모의). ERD Household ↔ User 멤버십과 대응 */
   members?: GroupMember[];
+  /** 거점별 상품 카탈로그 — v2.1 Household-scoped (Category·Unit·Product) */
+  catalog?: ProductCatalog;
 };
 
 /**
@@ -307,6 +312,15 @@ export type NotificationItem = {
   /** 연관 엔티티(InventoryItem, PurchaseBatch 등) */
   refType?: string;
   refId?: string;
+  createdAt: string;
+};
+
+/** 모의 초대 링크 — 백엔드 연동 전 로컬 전용 */
+export type MockInvitation = {
+  id: string;
+  householdId: string;
+  role: MemberRole;
+  token: string;
   createdAt: string;
 };
 

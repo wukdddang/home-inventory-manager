@@ -19,10 +19,8 @@ import {
   appendInventoryLedgerRow,
   getNotifications,
   getSharedHouseholdKindDefinitions,
-  getSharedProductCatalog,
   setNotifications,
   setSharedHouseholdKindDefinitions,
-  setSharedProductCatalog,
 } from "@/lib/local-store";
 import { cloneDefaultCatalog } from "./dashboard-mock.service";
 import type {
@@ -58,10 +56,8 @@ export type DashboardContextType = {
   dataMode: DashboardHouseholdsDataMode;
   /** 데이터 소스에서 읽은 거점 목록 */
   households: Household[];
-  /** 전역 공통 상품 카탈로그 (거점과 무관) */
-  productCatalog: ProductCatalog;
-  /** 공통 카탈로그가 로컬에서 하이드레이션됐는지 */
-  catalogHydrated: boolean;
+  /** 거점별 카탈로그를 꺼낸다 (없으면 기본 카탈로그 반환) */
+  거점_카탈로그를_가져온다: (householdId: string) => ProductCatalog;
   /** 거점 유형 정의 (라벨 CRUD, 로컬 공유) */
   householdKindDefinitions: HouseholdKindDefinition[];
   /** 거점 유형 목록이 로컬에서 읽혔는지 (저장 effect 게이트) */
@@ -84,8 +80,9 @@ export type DashboardContextType = {
     householdId: string,
     updater: (h: Household) => Household,
   ) => void;
-  /** 공통 카탈로그 갱신 (저장소 동기화는 effect에서 처리) */
+  /** 거점별 카탈로그 갱신 (거점 상태를 통해 저장) */
   카탈로그를_갱신_한다: (
+    householdId: string,
     updater: (c: ProductCatalog) => ProductCatalog,
   ) => void;
   /** 소비(사용) — 수량 감소 + `him-inventory-ledger` type `out` */
@@ -134,10 +131,6 @@ export function DashboardProvider({
   }, [dataMode]);
 
   const [households, setHouseholds] = useState<Household[]>([]);
-  const [productCatalog, setProductCatalog] = useState<ProductCatalog>(() =>
-    cloneDefaultCatalog(),
-  );
-  const [catalogHydrated, setCatalogHydrated] = useState(false);
   const [householdKindDefinitions, setHouseholdKindDefinitions] = useState<
     HouseholdKindDefinition[]
   >(() => cloneDefaultHouseholdKindDefinitions());
@@ -158,11 +151,6 @@ export function DashboardProvider({
   }, [households]);
 
   useEffect(() => {
-    setProductCatalog(getSharedProductCatalog());
-    setCatalogHydrated(true);
-  }, []);
-
-  useEffect(() => {
     setHouseholdKindDefinitions(getSharedHouseholdKindDefinitions());
     setHouseholdKindsHydrated(true);
   }, []);
@@ -178,11 +166,6 @@ export function DashboardProvider({
     if (!householdKindsHydrated) return;
     setSharedHouseholdKindDefinitions(householdKindDefinitions);
   }, [householdKindDefinitions, householdKindsHydrated]);
-
-  useEffect(() => {
-    if (!catalogHydrated) return;
-    setSharedProductCatalog(productCatalog);
-  }, [productCatalog, catalogHydrated]);
 
   const 거점_목록을_불러온다 = useCallback(() => {
     setLoading(true);
@@ -259,6 +242,7 @@ export function DashboardProvider({
       furniturePlacements: [],
       storageLocations: [],
       createdAt: new Date().toISOString(),
+      catalog: cloneDefaultCatalog(),
     };
     setHouseholds((prev) => [...prev, h]);
     return id;
@@ -385,19 +369,29 @@ export function DashboardProvider({
     [거점을_갱신_한다],
   );
 
-  const 카탈로그를_갱신_한다 = useCallback(
-    (updater: (c: ProductCatalog) => ProductCatalog) => {
-      setProductCatalog((c) => updater(structuredClone(c)));
+  const 거점_카탈로그를_가져온다 = useCallback(
+    (householdId: string): ProductCatalog => {
+      const h = householdsRef.current.find((x) => x.id === householdId);
+      return h?.catalog ?? cloneDefaultCatalog();
     },
     [],
+  );
+
+  const 카탈로그를_갱신_한다 = useCallback(
+    (householdId: string, updater: (c: ProductCatalog) => ProductCatalog) => {
+      거점을_갱신_한다(householdId, (h) => ({
+        ...h,
+        catalog: updater(structuredClone(h.catalog ?? cloneDefaultCatalog())),
+      }));
+    },
+    [거점을_갱신_한다],
   );
 
   const value = useMemo<DashboardContextType>(
     () => ({
       dataMode,
       households,
-      productCatalog,
-      catalogHydrated,
+      거점_카탈로그를_가져온다,
       householdKindDefinitions,
       householdKindsHydrated,
       loading,
@@ -415,8 +409,7 @@ export function DashboardProvider({
     [
       dataMode,
       households,
-      productCatalog,
-      catalogHydrated,
+      거점_카탈로그를_가져온다,
       householdKindDefinitions,
       householdKindsHydrated,
       loading,

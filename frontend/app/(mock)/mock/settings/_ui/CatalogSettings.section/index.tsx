@@ -656,15 +656,44 @@ function CatalogListModal({
 
 /* ── 메인 섹션 ── */
 
+const catalogInputClass =
+  "w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none transition-[border-color,box-shadow] focus:border-teal-500 focus:ring-1 focus:ring-teal-500/30";
+
 export function CatalogSettingsSection() {
   const {
-    productCatalog,
+    households,
+    householdKindDefinitions,
+    거점_카탈로그를_가져온다,
     카탈로그를_갱신_한다,
-    catalogHydrated,
     loading,
     error,
   } = useDashboard();
+  const [pickedHouseholdId, setPickedHouseholdId] = useState<string | null>(
+    null,
+  );
   const [listOpen, setListOpen] = useState(false);
+
+  const selectedId = useMemo(() => {
+    if (households.length === 0) return null;
+    if (
+      pickedHouseholdId &&
+      households.some((h) => h.id === pickedHouseholdId)
+    ) {
+      return pickedHouseholdId;
+    }
+    return households[0]!.id;
+  }, [households, pickedHouseholdId]);
+
+  const productCatalog = selectedId
+    ? 거점_카탈로그를_가져온다(selectedId)
+    : { units: [], categories: [], products: [], variants: [] };
+
+  const onCatalogUpdate = useCallback(
+    (updater: (c: ProductCatalog) => ProductCatalog) => {
+      if (selectedId) 카탈로그를_갱신_한다(selectedId, updater);
+    },
+    [selectedId, 카탈로그를_갱신_한다],
+  );
 
   if (error) {
     return (
@@ -677,7 +706,7 @@ export function CatalogSettingsSection() {
     );
   }
 
-  if (!catalogHydrated && loading) {
+  if (loading && households.length === 0) {
     return (
       <section className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
         <h2 className="text-base font-semibold text-white">상품 카탈로그</h2>
@@ -695,12 +724,35 @@ export function CatalogSettingsSection() {
       <section className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
         <h2 className="text-base font-semibold text-white">상품 카탈로그</h2>
         <p className="mt-1 text-sm text-zinc-300">
-          모든 거점이 같은 카테고리·품목·용량·포장 목록을 공유합니다. 모달로
-          추가하고, 메인「재고 추가」에서는 선택만 하면 됩니다.
+          거점별로 카테고리·품목·용량·포장 목록을 관리합니다. 모달로 추가하고,
+          메인「재고 추가」에서는 선택만 하면 됩니다.
         </p>
+
+        {households.length > 1 && (
+          <div className="mt-3">
+            <select
+              value={selectedId ?? ""}
+              onChange={(e) => setPickedHouseholdId(e.target.value || null)}
+              className={catalogInputClass}
+            >
+              {households.map((h) => {
+                const kindDef = householdKindDefinitions.find(
+                  (d) => d.id === h.kind,
+                );
+                return (
+                  <option key={h.id} value={h.id}>
+                    {h.name}
+                    {kindDef ? ` (${kindDef.label})` : ""}
+                  </option>
+                );
+              })}
+            </select>
+          </div>
+        )}
+
         <CatalogModalsControls
           catalog={productCatalog}
-          onCatalogUpdate={카탈로그를_갱신_한다}
+          onCatalogUpdate={onCatalogUpdate}
           layout="settings"
         />
         <button
@@ -721,7 +773,7 @@ export function CatalogSettingsSection() {
         open={listOpen}
         onClose={() => setListOpen(false)}
         catalog={productCatalog}
-        onCatalogUpdate={카탈로그를_갱신_한다}
+        onCatalogUpdate={onCatalogUpdate}
       />
     </>
   );

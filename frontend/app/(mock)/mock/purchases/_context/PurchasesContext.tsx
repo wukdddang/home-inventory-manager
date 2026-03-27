@@ -3,9 +3,9 @@
 import {
   getHouseholds,
   getPurchases,
-  getSharedProductCatalog,
   setPurchases,
 } from "@/lib/local-store";
+import { cloneDefaultCatalog } from "../../dashboard/_context/dashboard-mock.service";
 import { MOCK_SEED_HOUSEHOLDS } from "../../dashboard/_context/dashboard-mock.service";
 import {
   getMockPurchasesSession,
@@ -63,9 +63,6 @@ export function PurchasesProvider({
   dataMode,
 }: PurchasesProviderProps) {
   const [households, setHouseholds] = useState<Household[]>([]);
-  const [productCatalog, setProductCatalog] = useState<ProductCatalog>(() =>
-    getSharedProductCatalog(),
-  );
   const [purchases, setPurchasesState] = useState<PurchaseRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -87,8 +84,6 @@ export function PurchasesProvider({
           dataMode === "mock"
             ? getMockPurchasesSession()
             : getPurchases();
-        const catalog = getSharedProductCatalog();
-
         const elapsed =
           (typeof performance !== "undefined" ? performance.now() : Date.now()) -
           t0;
@@ -99,7 +94,6 @@ export function PurchasesProvider({
         if (cancelled) return;
 
         setHouseholds(nextHouseholds);
-        setProductCatalog(catalog);
         setPurchasesState(nextPurchases);
         setError(null);
       } catch (e) {
@@ -135,7 +129,6 @@ export function PurchasesProvider({
         ? mock거점_스냅샷을_구한다(fromStore)
         : fromStore,
     );
-    setProductCatalog(getSharedProductCatalog());
   }, [dataMode]);
 
   const 구매_목록을_불러온다 = useCallback(() => {
@@ -180,6 +173,12 @@ export function PurchasesProvider({
       });
     },
     [dataMode],
+  );
+
+  /** 첫 번째 거점의 카탈로그를 대표로 사용 (구매 화면에서 카탈로그 직접 사용 안 함) */
+  const productCatalog = useMemo<ProductCatalog>(
+    () => households[0]?.catalog ?? cloneDefaultCatalog(),
+    [households],
   );
 
   const value = useMemo<PurchasesContextType>(

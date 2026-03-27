@@ -2,7 +2,7 @@
 
 **목적**: 프론트엔드 UI 구현 현황과 docs(ERD·논리 설계·기능 체크리스트)를 대조하여, 백엔드 개발 시 **반영·조정·결정**해야 할 사항을 정리한 문서입니다.
 
-**현재 버전**: **v1.4** — §3-6, §4-2, §4-4 결정 확정 + docs/v2.1 반영
+**현재 버전**: **v1.5** — HouseholdInvitation 추가 + MemberRole 3단계 + docs/v2.2 반영
 
 | 버전 | 날짜 | 단계 | 요약 |
 |------|------|------|------|
@@ -10,7 +10,8 @@
 | v1.1 | 2026-03-26 | 설계 결정 | §1 엔티티 병합/단순화 4건 결정 확정 |
 | v1.2 | 2026-03-26 | docs 수정 | docs/v2/ 문서 4건 생성. §6 체크리스트 18/19건 완료 |
 | v1.3 | 2026-03-26 | 설계 결정 | §2 필드 추가/변경 11건 결정 확정. Purchase 스냅샷 3컬럼 추가, categoryId nullable 확정 등 |
-| **v1.4** | 2026-03-26 | 설계 결정 | §4-4 카탈로그 Household-scoped 확정, §4-2 NotificationPreference 별도 테이블 확정, §3-6 Purchase.userId 유지 확정 |
+| v1.4 | 2026-03-26 | 설계 결정 | §4-4 카탈로그 Household-scoped 확정, §4-2 NotificationPreference 별도 테이블 확정, §3-6 Purchase.userId 유지 확정 |
+| **v1.5** | 2026-03-27 | 설계 결정 | HouseholdInvitation 신규 엔티티 추가 (초대 링크·이메일), HouseholdMember.role 3단계 확장 (admin/editor/viewer), P0 #3 카탈로그 거점별 분리 프론트 해결 |
 | v2.0 | — | 물리적 설계 | TypeORM 엔티티·마이그레이션 확정 |
 | v2.1 | — | API 설계 | 엔드포인트·DTO 명세 확정 |
 | v3.0 | — | 구현 완료 | 1차 백엔드 개발 완료, 프론트 연동 시작 |

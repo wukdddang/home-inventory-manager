@@ -5,9 +5,12 @@ import { cloneDefaultCatalog } from "@/app/(mock)/mock/dashboard/_context/dashbo
 import type {
   AppSettings,
   AuthUser,
+  GroupMember,
   Household,
   HouseholdKindDefinition,
   InventoryLedgerRow,
+  MemberRole,
+  MockInvitation,
   NotificationItem,
   ProductCatalog,
   PurchaseBatchLot,
@@ -45,6 +48,7 @@ const K_PURCHASES = "him-purchases";
 const K_INVENTORY_LEDGER = "him-inventory-ledger";
 const K_SHOPPING_LIST = "him-shopping-list";
 const K_NOTIFICATIONS = "him-notifications";
+const K_INVITATIONS = "him-invitations";
 
 function isLedgerTypeString(x: string): x is InventoryLedgerRow["type"] {
   return x === "in" || x === "out" || x === "adjust" || x === "waste";
@@ -154,18 +158,58 @@ function isProductCatalogShape(x: unknown): x is ProductCatalog {
   );
 }
 
-/** JSON에 남아 있을 수 있는 레거시 catalog 필드 제거 */
-function householdWithoutLegacyCatalog(
-  h: Household & { catalog?: unknown },
-): Household {
-  const rest = { ...h };
-  delete (rest as { catalog?: unknown }).catalog;
-  return rest as Household;
+/* ── 역할 마이그레이션 (owner/member → admin/editor) ── */
+
+const ROLE_MIGRATION: Record<string, MemberRole> = {
+  owner: "admin",
+  member: "editor",
+};
+
+function migrateRole(role: string): MemberRole {
+  return ROLE_MIGRATION[role] ?? (role as MemberRole);
+}
+
+function migrateMemberRoles(members?: GroupMember[]): GroupMember[] | undefined {
+  if (!members) return members;
+  return members.map((m) => ({ ...m, role: migrateRole(m.role) }));
+}
+
+/* ── 카탈로그 마이그레이션 (전역 → 거점별) ── */
+
+/**
+ * v2.1 마이그레이션: 전역 카탈로그(`him-product-catalog`)를 각 거점에 복사한 뒤 전역 키를 삭제한다.
+ * catalog가 없는 거점에는 기본 카탈로그를 할당한다.
+ */
+function migrateGlobalCatalogToHouseholds(
+  households: Household[],
+): Household[] {
+  const rawCat = localStorage.getItem(K_CATALOG);
+  let globalCatalog: ProductCatalog | null = null;
+  if (rawCat) {
+    try {
+      const parsed = JSON.parse(rawCat) as unknown;
+      if (isProductCatalogShape(parsed)) globalCatalog = parsed;
+    } catch {
+      /* ignore */
+    }
+  }
+
+  const catalog = globalCatalog ?? cloneDefaultCatalog();
+  const migrated = households.map((h) => ({
+    ...h,
+    catalog: h.catalog && isProductCatalogShape(h.catalog)
+      ? h.catalog
+      : structuredClone(catalog),
+  }));
+
+  // 전역 키 제거
+  if (rawCat) localStorage.removeItem(K_CATALOG);
+
+  return migrated;
 }
 
 /**
- * 전역 공통 상품 카탈로그 (거점과 분리 저장).
- * 키가 없으면 거점 JSON에 박힌 레거시 catalog를 한 번 옮긴 뒤 제거한다.
+ * @deprecated 전역 카탈로그는 v2.1에서 제거. 마이그레이션 확인용으로만 남겨 둔다.
  */
 export function getSharedProductCatalog(): ProductCatalog {
   if (typeof window === "undefined") return cloneDefaultCatalog();
@@ -178,25 +222,10 @@ export function getSharedProductCatalog(): ProductCatalog {
       /* fallthrough */
     }
   }
-  const rawH = localStorage.getItem(K_HOUSEHOLDS);
-  const households = safeParse<(Household & { catalog?: unknown })[]>(
-    rawH,
-    [],
-  );
-  for (const h of households) {
-    if (h.catalog != null && isProductCatalogShape(h.catalog)) {
-      const c = structuredClone(h.catalog);
-      localStorage.setItem(K_CATALOG, JSON.stringify(c));
-      const stripped = households.map(householdWithoutLegacyCatalog);
-      localStorage.setItem(K_HOUSEHOLDS, JSON.stringify(stripped));
-      return c;
-    }
-  }
-  const d = cloneDefaultCatalog();
-  localStorage.setItem(K_CATALOG, JSON.stringify(d));
-  return d;
+  return cloneDefaultCatalog();
 }
 
+/** @deprecated v2.1에서 카탈로그는 거점에 귀속. 호환용으로 유지. */
 export function setSharedProductCatalog(catalog: ProductCatalog) {
   if (typeof window === "undefined") return;
   localStorage.setItem(K_CATALOG, JSON.stringify(catalog));
@@ -363,11 +392,28 @@ export function setMockSettingsAccountUser(user: AuthUser) {
 
 export function getHouseholds(): Household[] {
   if (typeof window === "undefined") return [];
-  const list = safeParse<(Household & { catalog?: unknown })[]>(
-    localStorage.getItem(K_HOUSEHOLDS),
-    [],
+  const raw = localStorage.getItem(K_HOUSEHOLDS);
+  let list = safeParse<Household[]>(raw, []);
+
+  // v2.1: 전역 카탈로그 → 거점별 마이그레이션
+  const needsCatalogMigration =
+    localStorage.getItem(K_CATALOG) !== null ||
+    list.some((h) => !h.catalog || !isProductCatalogShape(h.catalog));
+  if (needsCatalogMigration && list.length > 0) {
+    list = migrateGlobalCatalogToHouseholds(list);
+    localStorage.setItem(K_HOUSEHOLDS, JSON.stringify(list));
+  }
+
+  // v2.1: 역할 마이그레이션 (owner→admin, member→editor)
+  const needsRoleMigration = list.some((h) =>
+    h.members?.some((m) => m.role === ("owner" as string) || m.role === ("member" as string)),
   );
-  return list.map(householdWithoutLegacyCatalog);
+  if (needsRoleMigration) {
+    list = list.map((h) => ({ ...h, members: migrateMemberRoles(h.members) }));
+    localStorage.setItem(K_HOUSEHOLDS, JSON.stringify(list));
+  }
+
+  return list;
 }
 
 const householdListeners = new Set<() => void>();
@@ -383,8 +429,7 @@ function emitHouseholds() {
 
 export function setHouseholds(list: Household[]) {
   if (typeof window === "undefined") return;
-  const stripped = list.map((h) => householdWithoutLegacyCatalog(h));
-  localStorage.setItem(K_HOUSEHOLDS, JSON.stringify(stripped));
+  localStorage.setItem(K_HOUSEHOLDS, JSON.stringify(list));
   emitHouseholds();
 }
 
@@ -641,6 +686,18 @@ export function setNotifications(list: NotificationItem[]) {
   localStorage.setItem(K_NOTIFICATIONS, str);
   notificationsCache = { raw: str, list };
   emitNotifications();
+}
+
+/* ── Mock Invitations ── */
+
+export function getInvitations(): MockInvitation[] {
+  if (typeof window === "undefined") return [];
+  return safeParse<MockInvitation[]>(localStorage.getItem(K_INVITATIONS), []);
+}
+
+export function setInvitations(list: MockInvitation[]) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(K_INVITATIONS, JSON.stringify(list));
 }
 
 export { DEFAULTS as DEFAULT_APP_SETTINGS };
