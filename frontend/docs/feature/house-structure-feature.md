@@ -1,6 +1,6 @@
 # 집 구조도(2D/3D) 기능 — 프론트엔드 명세
 
-원본: 프로젝트 루트 `docs/house-structure-3d-feature.md`  
+원본: 프로젝트 루트 `docs/feature/house-structure-3d-feature.md`  
 이 문서는 **프론트엔드 구현**에 필요한 요구사항·기술·UX만 정리한 것입니다. 백엔드 API·엔티티는 원본을 참고하세요.
 
 ---
@@ -128,4 +128,4 @@
 
 ---
 
-*원본 문서(docs/house-structure-3d-feature.md)의 백엔드·ERD·전체 플로우는 프로젝트 루트 docs를 참고하세요.*
+*원본 문서(docs/feature/house-structure-3d-feature.md)의 백엔드·ERD·전체 플로우는 프로젝트 루트 docs를 참고하세요.*

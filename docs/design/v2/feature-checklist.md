@@ -216,4 +216,4 @@
 
 ---
 
-*본 문서는 [frontend-backend-alignment.md](../../backend/docs/frontend-backend-alignment.md) §1~§4 결정에 따라 v1에서 갱신되었습니다.*
+*본 문서는 [frontend-backend-alignment.md](../../alignment/frontend-backend-alignment.md) §1~§4 결정에 따라 v1에서 갱신되었습니다.*

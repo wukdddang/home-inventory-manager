@@ -1,7 +1,7 @@
 # 집 구조도(2D/3D) 기능 — 백엔드 명세
 
 집 구조(방·구역)를 서버에 저장하고, 보관 장소(StorageLocation)와 연결해 “어느 방에 어떤 물품이 있는지” 조회할 수 있게 하는 **백엔드** 요구사항·엔티티·API 정리입니다.  
-프론트 관련(2D/3D 렌더링, 라이브러리, UX)은 [frontend/docs/house-structure-feature.md](../frontend/docs/house-structure-feature.md)를 참고하세요.
+프론트 관련(2D/3D 렌더링, 라이브러리, UX)은 [frontend/docs/feature/house-structure-feature.md](../../frontend/docs/feature/house-structure-feature.md)를 참고하세요.
 
 ---
 

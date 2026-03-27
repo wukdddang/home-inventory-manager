@@ -15,7 +15,7 @@
 - Purchase.inventoryItemId nullable로 변경
 - Purchase.supplierName 추가
 - Notification.householdId 추가
-- 변경 근거: [frontend-backend-alignment.md](../../backend/docs/frontend-backend-alignment.md) §1~§4 참조
+- 변경 근거: [frontend-backend-alignment.md](../../alignment/frontend-backend-alignment.md) §1~§4 참조
 
 **상위 문서**: [개념적 설계 v2](./entity-conceptual-design.md)
 **v1 원본**: [v1/entity-logical-design.md](../v1/entity-logical-design.md)
@@ -375,7 +375,7 @@ erDiagram
 | 선택 | role | 'owner' \| 'member' |
 | 선택 | joinedAt | timestamp |
 
-**API DTO**: HouseholdMember는 User를 join하여 `GroupMember`(id, email, role, label?) 형태로 반환 — [frontend-backend-alignment.md §1-4](../backend/docs/frontend-backend-alignment.md).
+**API DTO**: HouseholdMember는 User를 join하여 `GroupMember`(id, email, role, label?) 형태로 반환 — [frontend-backend-alignment.md §1-4](../../alignment/frontend-backend-alignment.md).
 
 ---
 
@@ -409,7 +409,7 @@ erDiagram
 
 **관계**: Household (1:1), Room (1:N)
 
-**API DTO**: Household 응답에 flat 병합하여 rooms, furniturePlacements, storageLocations, items, structureDiagramLayout 포함 — [frontend-backend-alignment.md §1-1](../backend/docs/frontend-backend-alignment.md).
+**API DTO**: Household 응답에 flat 병합하여 rooms, furniturePlacements, storageLocations, items, structureDiagramLayout 포함 — [frontend-backend-alignment.md §1-1](../../alignment/frontend-backend-alignment.md).
 
 ---
 
@@ -777,4 +777,4 @@ erDiagram
 
 ---
 
-*본 문서는 [frontend-backend-alignment.md](../../backend/docs/frontend-backend-alignment.md) §1~§4 결정에 따라 v1에서 갱신되었습니다.*
+*본 문서는 [frontend-backend-alignment.md](../../alignment/frontend-backend-alignment.md) §1~§4 결정에 따라 v1에서 갱신되었습니다.*

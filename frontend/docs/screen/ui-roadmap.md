@@ -3,7 +3,7 @@
 **목적**: 백엔드 API 연동 여부와 무관하게, **화면·인터랙션·플로우**가 얼마나 갖춰졌는지 확인하기 위한 체크리스트입니다.  
 데이터는 로컬스토리지·목 시드로도 동작하며, 여기서는 “그걸로 **어떤 UI가 완성됐는지**”만 다룹니다.
 
-도메인 용어·ERD 정본은 루트 [ER 다이어그램](../../docs/er-diagram.md), [기능 체크리스트](../../docs/feature-checklist.md), [엔티티 논리적 설계](../../docs/entity-logical-design.md)를 참고하면 됩니다.
+도메인 용어·ERD 정본은 루트 [ER 다이어그램](../../../docs/design/er-diagram.md), [기능 체크리스트](../../../docs/feature/feature-checklist.md), [엔티티 논리적 설계](../../../docs/design/entity-logical-design.md)를 참고하면 됩니다.
 
 **표기**: `- [x]` = UI(및 클라이언트 상태)까지 구현됨 · `- [ ]` = 화면·폼·흐름 없음 또는 일부만 있음
 
@@ -38,7 +38,7 @@
 
 - [x] **거점** — 탭 전환, 추가·삭제, 유형 관리 모달, 탭 선택 하이라이트 애니메이션
 - [x] **방** — 탭·추가·이름 수정·삭제, 탭 하이라이트 애니메이션
-- [x] **가구·보관 장소** — 배치 편집, 방 직속/가구 하위 슬롯 UI ([집 구조 UX](./house-structure-feature.md))
+- [x] **가구·보관 장소** — 배치 편집, 방 직속/가구 하위 슬롯 UI ([집 구조 UX](../feature/house-structure-feature.md))
 - [x] **구조도·플로우** — 방·보관 장소·가구·재고 흐름 조회·편집 (`HouseStructureFlow` 등)
 - [x] **재고** — 등록·목록·수량 등, 카탈로그 품목·용량과 연계
 - [x] **카탈로그 빠른 추가** — 카테고리·품목·용량·포장 모달, 재고 추가 패널·모달 모션
@@ -158,7 +158,7 @@
 |------|------|
 | [screens-overview.md](./screens-overview.md) | 라우트·로컬 저장 키 |
 | [domain-data-model.md](./domain-data-model.md) | 루트 ERD 문서 링크 |
-| [house-structure-feature.md](./house-structure-feature.md) | 집 구조·슬롯 UX |
+| [house-structure-feature.md](../feature/house-structure-feature.md) | 집 구조·슬롯 UX |
 | [suggestion/notification-settings-future.md](./suggestion/notification-settings-future.md) | 알림 설정 확장 아이디어 |
 
 ---

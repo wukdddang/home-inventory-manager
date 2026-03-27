@@ -1,8 +1,8 @@
 # 화면·라우트 개요
 
-도메인 참조: [`domain-data-model.md`](./domain-data-model.md), 집 구조 UX: [`house-structure-feature.md`](./house-structure-feature.md).
+도메인 참조: [`domain-data-model.md`](../domain-data-model.md), 집 구조 UX: [`house-structure-feature.md`](../feature/house-structure-feature.md).
 
-UI·상태 패턴은 [`.cursor/react-context-use-rule.mdc`](../.cursor/react-context-use-rule.mdc) 를 따릅니다. 페이지별로 `_context/` · `_ui/`(`.panel` / `.section` / `.module` / `.component`) · `_hooks/` 를 사용합니다.
+UI·상태 패턴은 [`.cursor/react-context-use-rule.mdc`](../../.cursor/react-context-use-rule.mdc) 를 따릅니다. 페이지별로 `_context/` · `_ui/`(`.panel` / `.section` / `.module` / `.component`) · `_hooks/` 를 사용합니다.
 
 ## 앱 구조 (Lumir `(current)` / 목 구현 트리)
 

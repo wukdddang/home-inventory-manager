@@ -16,7 +16,7 @@
 - Purchase.inventoryItemId nullable, supplierName 추가, 스냅샷 3컬럼 추가
 - ShoppingListItem에 `targetStorageLocationId` 추가
 - Notification에 `householdId` 추가
-- 변경 근거: [frontend-backend-alignment.md](../../backend/docs/frontend-backend-alignment.md) §1~§4 참조
+- 변경 근거: [frontend-backend-alignment.md](../../alignment/frontend-backend-alignment.md) §1~§4 참조
 
 **v1 원본**: [v1/er-diagram.md](../v1/er-diagram.md)
 상세 필드는 [엔티티 논리적 설계 v2](./entity-logical-design.md), 개념만 보려면 [개념적 설계 v2](./entity-conceptual-design.md)를 참고하세요.
@@ -166,4 +166,4 @@ erDiagram
 
 ---
 
-*본 문서는 [frontend-backend-alignment.md](../../backend/docs/frontend-backend-alignment.md) §1~§4 결정에 따라 v1에서 갱신되었습니다.*
+*본 문서는 [frontend-backend-alignment.md](../../alignment/frontend-backend-alignment.md) §1~§4 결정에 따라 v1에서 갱신되었습니다.*

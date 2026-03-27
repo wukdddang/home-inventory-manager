@@ -62,13 +62,14 @@ pnpm test              # 전체 테스트
 - 현재 초기 scaffold 상태 (app.controller, app.service, app.module)
 
 ## 도메인 문서
-- `docs/er-diagram.md` — ER 다이어그램
-- `docs/entity-conceptual-design.md` — 개념적 설계
-- `docs/entity-logical-design.md` — 논리적 설계
-- `docs/feature-checklist.md` — 기능 체크리스트
+- `docs/design/er-diagram.md` — ER 다이어그램
+- `docs/design/entity-conceptual-design.md` — 개념적 설계
+- `docs/design/entity-logical-design.md` — 논리적 설계
+- `docs/feature/feature-checklist.md` — 기능 체크리스트
+- `docs/alignment/frontend-backend-alignment.md` — 프론트-백엔드 정합성 정리
 - `frontend/docs/domain-data-model.md` — 프론트엔드용 도메인 데이터 모델
-- `frontend/docs/screens-overview.md` — 화면 설계 개요
-- `frontend/docs/roadmap.md` — 로드맵
+- `frontend/docs/screen/screens-overview.md` — 화면 설계 개요
+- `frontend/docs/screen/ui-roadmap.md` — UI 개발 진행 현황
 
 ## 코드 컨벤션
 - **커밋 메시지**: 한국어로 작성. 형식: `<타입>: <한글 제목>` (타입은 영어: feat, fix, refactor 등)

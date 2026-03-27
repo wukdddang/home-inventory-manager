@@ -18,8 +18,9 @@
 > 각 버전의 상세 변경 내역은 [CHANGELOG.md](./CHANGELOG.md) 참조
 
 **참조 문서**:
-- 루트: [ER 다이어그램](../../docs/er-diagram.md) · [개념적 설계](../../docs/entity-conceptual-design.md) · [논리적 설계](../../docs/entity-logical-design.md) · [기능 체크리스트](../../docs/feature-checklist.md)
-- 프론트: [screens-overview.md](../../frontend/docs/screens-overview.md) · [ui-roadmap.md](../../frontend/docs/ui-roadmap.md) · [types/domain.ts](../../frontend/types/domain.ts)
+- 루트: [ER 다이어그램](../design/er-diagram.md) · [개념적 설계](../design/entity-conceptual-design.md) · [논리적 설계](../design/entity-logical-design.md) · [기능 체크리스트](../feature/feature-checklist.md)
+- 프론트: [screens-overview.md](../../frontend/docs/screen/screens-overview.md) · [ui-roadmap.md](../../frontend/docs/screen/ui-roadmap.md) · [types/domain.ts](../../frontend/types/domain.ts)
+- 변경 내역: [CHANGELOG.md](./CHANGELOG.md)
 
 **중요도 기준**:
 - **P0 — 필수**: 프론트엔드가 이미 이 구조로 동작하므로, 백엔드가 맞추지 않으면 연동 불가
