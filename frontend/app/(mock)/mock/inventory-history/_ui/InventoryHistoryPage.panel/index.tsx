@@ -12,7 +12,7 @@ import { useAppRoutePrefix } from "@/lib/use-app-route-prefix";
 import { motion } from "framer-motion";
 import { Search } from "lucide-react";
 import Link from "next/link";
-import { useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 
 import { useInventoryHistory } from "../../_hooks/useInventoryHistory";
 import {
@@ -41,11 +41,10 @@ function resolveProductIdForLedgerRow(
 export function InventoryHistoryPanel() {
   const prefix = useAppRoutePrefix();
   const ctx = useInventoryHistory();
-  const catalog = useSyncExternalStore(
-    () => () => {},
-    () => getSharedProductCatalog(),
-    () => null,
-  );
+  const [catalog, setCatalog] = useState<import("@/types/domain").ProductCatalog | null>(null);
+  useEffect(() => {
+    setCatalog(getSharedProductCatalog());
+  }, []);
 
   const {
     households,
