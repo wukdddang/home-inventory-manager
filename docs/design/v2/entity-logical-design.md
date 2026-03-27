@@ -107,7 +107,7 @@ erDiagram
 ```mermaid
 erDiagram
     User {
-        bigint id PK
+        uuid id PK
         string email UK
         string passwordHash
         string displayName
@@ -117,35 +117,35 @@ erDiagram
         timestamp updatedAt
     }
     Household {
-        bigint id PK
+        uuid id PK
         string name
         string kind
         timestamp createdAt
         timestamp updatedAt
     }
     HouseholdMember {
-        bigint id PK
-        bigint userId FK
-        bigint householdId FK
+        uuid id PK
+        uuid userId FK
+        uuid householdId FK
         string role "admin | editor | viewer"
         timestamp joinedAt
     }
     HouseholdInvitation {
-        bigint id PK
-        bigint householdId FK
-        bigint invitedByUserId FK
+        uuid id PK
+        uuid householdId FK
+        uuid invitedByUserId FK
         string role "admin | editor | viewer"
         string token UK
         string status "pending | accepted | expired | revoked"
         string inviteeEmail "nullable"
-        bigint acceptedByUserId "FK nullable"
+        uuid acceptedByUserId "FK nullable"
         timestamp acceptedAt "nullable"
         timestamp expiresAt
         timestamp createdAt
     }
     HouseholdKindDefinition {
-        bigint id PK
-        bigint userId FK
+        uuid id PK
+        uuid userId FK
         string kindId
         string label
         int sortOrder
@@ -159,8 +159,8 @@ erDiagram
 ```mermaid
 erDiagram
     HouseStructure {
-        bigint id PK
-        bigint householdId FK
+        uuid id PK
+        uuid householdId FK
         string name
         jsonb structurePayload
         jsonb diagramLayout
@@ -169,8 +169,8 @@ erDiagram
         timestamp updatedAt
     }
     Room {
-        bigint id PK
-        bigint houseStructureId FK
+        uuid id PK
+        uuid houseStructureId FK
         string structureRoomKey
         string displayName
         int sortOrder
@@ -178,24 +178,24 @@ erDiagram
         timestamp updatedAt
     }
     FurniturePlacement {
-        bigint id PK
-        bigint roomId FK
+        uuid id PK
+        uuid roomId FK
         string label
-        bigint productId FK
-        bigint productVariantId FK
-        bigint anchorDirectStorageId FK
+        uuid productId FK
+        uuid productVariantId FK
+        uuid anchorDirectStorageId FK
         int sortOrder
         jsonb placementPayload
         timestamp createdAt
         timestamp updatedAt
     }
     StorageLocation {
-        bigint id PK
-        bigint householdId FK
+        uuid id PK
+        uuid householdId FK
         string name
-        bigint roomId FK
-        bigint furniturePlacementId FK
-        bigint houseStructureId FK
+        uuid roomId FK
+        uuid furniturePlacementId FK
+        uuid houseStructureId FK
         string legacyRoomKey
         int sortOrder
         timestamp createdAt
@@ -212,24 +212,24 @@ erDiagram
 ```mermaid
 erDiagram
     Category {
-        bigint id PK
-        bigint householdId FK
+        uuid id PK
+        uuid householdId FK
         string name
         int sortOrder
         timestamp createdAt
         timestamp updatedAt
     }
     Unit {
-        bigint id PK
-        bigint householdId FK
+        uuid id PK
+        uuid householdId FK
         string symbol
         string name
         int sortOrder
     }
     Product {
-        bigint id PK
-        bigint householdId FK
-        bigint categoryId FK
+        uuid id PK
+        uuid householdId FK
+        uuid categoryId FK
         string name
         boolean isConsumable
         string imageUrl
@@ -238,9 +238,9 @@ erDiagram
         timestamp updatedAt
     }
     ProductVariant {
-        bigint id PK
-        bigint productId FK
-        bigint unitId FK
+        uuid id PK
+        uuid productId FK
+        uuid unitId FK
         decimal quantityPerUnit
         string name
         decimal price
@@ -256,9 +256,9 @@ erDiagram
 ```mermaid
 erDiagram
     InventoryItem {
-        bigint id PK
-        bigint productVariantId FK
-        bigint storageLocationId FK
+        uuid id PK
+        uuid productVariantId FK
+        uuid storageLocationId FK
         decimal quantity
         decimal minStockLevel
         timestamp createdAt
@@ -279,20 +279,20 @@ erDiagram
         timestamp createdAt
     }
     PurchaseBatch {
-        bigint id PK
-        bigint purchaseId FK
+        uuid id PK
+        uuid purchaseId FK
         decimal quantity
         date expirationDate
         timestamp createdAt
     }
     InventoryLog {
-        bigint id PK
-        bigint inventoryItemId FK
+        uuid id PK
+        uuid inventoryItemId FK
         string type
         decimal quantityDelta
         decimal quantityAfter
         string reason
-        bigint userId FK
+        uuid userId FK
         string itemLabel
         string memo
         string refType
@@ -309,13 +309,13 @@ erDiagram
 ```mermaid
 erDiagram
     ShoppingListItem {
-        bigint id PK
-        bigint householdId FK
-        bigint categoryId FK
-        bigint productId FK
-        bigint productVariantId FK
-        bigint sourceInventoryItemId FK
-        bigint targetStorageLocationId FK
+        uuid id PK
+        uuid householdId FK
+        uuid categoryId FK
+        uuid productId FK
+        uuid productVariantId FK
+        uuid sourceInventoryItemId FK
+        uuid targetStorageLocationId FK
         decimal quantity
         int sortOrder
         string memo
@@ -336,7 +336,7 @@ erDiagram
 **요청 Body**:
 ```json
 {
-  "inventoryItemId": "bigint — 보충할 재고 품목 ID",
+  "inventoryItemId": "uuid — 보충할 재고 품목 ID",
   "quantity": "decimal — 보충 수량 (>= 1)",
   "memo": "string? — 메모 (기본: '장보기 구매 완료')"
 }
@@ -369,9 +369,9 @@ erDiagram
 ```mermaid
 erDiagram
     Notification {
-        bigint id PK
-        bigint userId FK
-        bigint householdId FK
+        uuid id PK
+        uuid userId FK
+        uuid householdId FK
         string type
         string title
         string body
@@ -381,9 +381,9 @@ erDiagram
         timestamp createdAt
     }
     NotificationPreference {
-        bigint id PK
-        bigint userId FK
-        bigint householdId FK
+        uuid id PK
+        uuid userId FK
+        uuid householdId FK
         boolean notifyExpiration "default true"
         boolean notifyShopping "default true"
         boolean notifyLowStock "default false"
@@ -399,18 +399,18 @@ erDiagram
         timestamp updatedAt
     }
     ExpirationAlertRule {
-        bigint id PK
-        bigint productId FK
-        bigint userId FK
-        bigint householdId FK
+        uuid id PK
+        uuid productId FK
+        uuid userId FK
+        uuid householdId FK
         int daysBefore
         boolean isActive
         timestamp createdAt
         timestamp updatedAt
     }
     ReportPreset {
-        bigint id PK
-        bigint userId FK
+        uuid id PK
+        uuid userId FK
         string name
         jsonb config
         int sortOrder
@@ -428,7 +428,7 @@ erDiagram
 
 | 구분     | 항목                 | 타입/비고            | 검토                                       |
 | -------- | -------------------- | -------------------- | ------------------------------------------ |
-| **필수** | id                   | PK, UUID 또는 bigint | —                                          |
+| **필수** | id                   | PK, UUID             | —                                          |
 | **필수** | email                | string, unique       | —                                          |
 | **필수** | passwordHash         | string (bcrypt 등)   | —                                          |
 | **선택** | displayName          | string               | 닉네임/표시 이름                           |

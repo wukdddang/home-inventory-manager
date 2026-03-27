@@ -21,7 +21,7 @@
 | 인증 | JWT + Refresh Token |
 | 파일 저장 | AWS S3 |
 | 빌드 | pnpm workspace + Turborepo |
-| 배포 | 프론트: Vercel / 백엔드: Docker + Cloudflare Tunnel |
+| 배포 | 프론트: Vercel / 백엔드: 로컬 리눅스 서버 + Docker + Cloudflare Tunnel |
 
 ## 모노레포 구조
 

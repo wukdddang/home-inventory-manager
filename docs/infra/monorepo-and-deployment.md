@@ -68,20 +68,64 @@ packages:
 
 ---
 
-## 3. Backend — 홈 서버 + Docker + Cloudflare
+## 3. Backend — 로컬 리눅스 서버 + Docker + Cloudflare
 
-### 3.1 필요한 것
+### 3.1 구성 개요
+
+로컬 리눅스 머신에서 NestJS 백엔드와 PostgreSQL을 함께 운영한다.
 
 | 항목 | 설명 |
 |------|------|
-| **Dockerfile** | `backend/` 기준으로 NestJS 빌드·실행 이미지 정의. |
-| **.dockerignore** | `backend/` 또는 루트에 두어 `node_modules`, `.git`, `frontend` 등 제외로 이미지 경량화. |
-| **Cloudflare Tunnel** | 홈 서버에서 cloudflared로 터널 연결 → Cloudflare가 HTTPS·DNS 제공. (도메인 연결 시 유용.) |
-| **환경 변수** | DB URL, JWT 시크릿 등은 Docker 런타임에 주입 (예: `-e` 또는 env 파일). |
+| **PostgreSQL** | 로컬 리눅스 머신에서 Docker 컨테이너 또는 네이티브로 실행. |
+| **NestJS 백엔드** | Docker 컨테이너로 실행 (포트 4200). |
+| **Cloudflare Tunnel** | `cloudflared`로 터널 연결 → Cloudflare가 HTTPS·DNS 제공. |
+| **환경 변수** | DB URL, JWT 시크릿, AWS S3 키 등은 Docker 런타임에 주입. |
 
-### 3.2 Dockerfile 예시 (backend)
+### 3.2 docker-compose 예시
 
-`backend/Dockerfile` 에 두고, 빌드 컨텍스트를 `backend/`로 두는 방식입니다.
+```yaml
+# docker-compose.yml (루트 또는 backend/)
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: him
+      POSTGRES_USER: him_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "4200:4200"
+    environment:
+      PORT: 4200
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: him
+      DB_USER: him_user
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_REGION: ${AWS_REGION}
+    depends_on:
+      - db
+
+volumes:
+  pgdata:
+```
+
+### 3.3 Dockerfile (backend)
 
 ```dockerfile
 # backend/Dockerfile
@@ -97,13 +141,11 @@ WORKDIR /app
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package*.json ./
-EXPOSE 3000
+EXPOSE 4200
 CMD ["node", "dist/main.js"]
 ```
 
-### 3.3 .dockerignore (backend)
-
-`backend/.dockerignore` 예시:
+### 3.4 .dockerignore (backend)
 
 ```
 node_modules
@@ -116,10 +158,11 @@ coverage
 .nyc_output
 ```
 
-### 3.4 Cloudflare 연동
+### 3.5 Cloudflare 연동
 
-- **Cloudflare Tunnel**: 홈 서버에 `cloudflared` 설치 후 터널 설정 → 백엔드 포트(예: 3000)를 Cloudflare에 노출.
-- **DNS**: 원하는 서브도메인(예: `api.yourdomain.com`)을 터널에 연결하면 됨.
+- **Cloudflare Tunnel**: 리눅스 서버에 `cloudflared` 설치 후 터널 설정 → 백엔드 포트(4200)를 Cloudflare에 노출.
+- **DNS**: 서브도메인(예: `api.yourdomain.com`)을 터널에 연결.
+- 프론트엔드에서 `NEXT_PUBLIC_API_URL`로 이 주소를 사용.
 
 ---
 
@@ -146,8 +189,8 @@ coverage
 | 구분 | 설정 |
 |------|------|
 | **모노레포** | (선택) 루트 `pnpm-workspace.yaml` + 루트 `package.json` 스크립트. |
-| **Backend** | `backend/Dockerfile`, `backend/.dockerignore`, Cloudflare Tunnel, 환경 변수. |
+| **Backend** | `docker-compose.yml` (PostgreSQL + NestJS), `backend/Dockerfile`, Cloudflare Tunnel, 환경 변수. |
 | **Frontend** | Vercel에서 Root Directory = `frontend`, 환경 변수 `NEXT_PUBLIC_API_URL`. |
 | **공통** | `.env.example` 은 루트 또는 frontend/backend 각각에 두고, 실제 `.env`는 .gitignore 유지. |
 
-원본 .gitignore 정리는 완료되었고, 위 설정을 순서대로 적용하면 모노레포 + 홈 서버(Cloudflare) + Vercel 배포 구성이 됩니다.
+위 설정을 순서대로 적용하면 모노레포 + 로컬 리눅스 서버(Docker + Cloudflare) + Vercel 배포 구성이 됩니다.
