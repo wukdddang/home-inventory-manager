@@ -33,8 +33,8 @@
 
 ### P3 — 낮음
 
-- [ ] **#2** ShoppingListItem.label → 현재 UI에서는 join으로 충분. 자유 텍스트 장보기 지원 시 추가
-- [ ] **#9** StructureRoom 좌표 저장 스펙 명확화 → API 문서에 JSONB 파싱 규칙 명시
+- [~] **#2** ShoppingListItem.label → 확인됨, 현재 join으로 충분. 자유 텍스트 장보기 지원 시 추가 예정
+- [~] **#9** StructureRoom 좌표 저장 스펙 명확화 → 확인됨, API 설계 시 JSONB 파싱 규칙 명시 예정
 
 ---
 
@@ -48,7 +48,7 @@
 
 ---
 
-### #2. ShoppingListItem에 `label` 필드 누락 — P3 낮음 (하향 조정)
+### #2. ShoppingListItem에 `label` 필드 누락 — P3 낮음 (확인됨, 추후 반영)
 
 **현상**: 프론트엔드 `ShoppingListEntry`에 `label` 필드가 있으나, 실제 UI에서 사용자가 직접 입력하는 경로는 없다.
 
@@ -145,7 +145,7 @@
 
 ---
 
-### #9. StructureRoom 좌표 저장 방식 차이 — P3 낮음
+### #9. StructureRoom 좌표 저장 방식 차이 — P3 낮음 (확인됨, 추후 반영)
 
 **현상**: 프론트엔드 `StructureRoom`은 `x, y, width, height`를 직접 필드로 가진다.
 
