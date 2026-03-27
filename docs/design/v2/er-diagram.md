@@ -1,6 +1,11 @@
 # ER 다이어그램 & 엔티티 명세 v2 (Home Inventory Manager)
 
-**버전**: v2.4 — NotificationPreference 마스터 토글 추가 + 장보기 완료 API 정의 (2026-03-27)
+**버전**: v2.5 — UUID 확정 + Purchase 파생값 제거 (2026-03-27)
+
+**v2.5 변경**:
+- 모든 엔티티 PK를 UUID로 확정
+- `Purchase.quantity`, `Purchase.totalPrice` 제거 (파생값)
+- `InventoryLog.householdId` 비정규화 불요 확정
 
 **v2.4 변경**:
 - NotificationPreference에 마스터 토글 3컬럼 추가 (`notifyExpiration`, `notifyShopping`, `notifyLowStock`)
@@ -46,7 +51,7 @@
 | 6    | Product             | 상품 마스터 (소모품·비소모품)                                              | **Household**, Category              | P0       | `householdId` 추가 **(v2.1)** |
 | 7    | ProductVariant      | 용량/포장 단위별 정보                                                      | Product                              | P0       | — |
 | 8    | InventoryItem       | 실제 보유 재고                                                       | ProductVariant, StorageLocation      | P0       | — |
-| 9    | Purchase            | 구매 기록                                                                  | **Household**, InventoryItem (nullable) | P0       | `householdId` 추가 **(v2.2)**, `inventoryItemId` nullable, `supplierName` 추가, 스냅샷 3컬럼(`itemName`/`variantCaption`/`unitSymbol`) 추가 |
+| 9    | Purchase            | 구매 기록                                                                  | **Household**, InventoryItem (nullable) | P0       | `householdId` 추가 **(v2.2)**, `inventoryItemId` nullable, `supplierName` 추가, 스냅샷 3컬럼 추가, `quantity`·`totalPrice` 제거 **(v2.5)** |
 | 10   | PurchaseBatch       | 로트별 유통기한                                                            | Purchase                             | P0       | — |
 | 11   | InventoryLog        | 재고 변경 이력 (**소비·폐기 통합**)                                        | InventoryItem                        | P0       | **Consumption·WasteRecord 통합**, `reason`·`itemLabel` 추가 |
 | 12   | ShoppingListItem    | 장보기 항목 (**Household 직접 연결**)                                      | Household, Category (nullable)       | P1       | **ShoppingList 제거**, `householdId` FK, `targetStorageLocationId` 추가, `categoryId` nullable |

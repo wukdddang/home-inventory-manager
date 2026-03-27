@@ -1,6 +1,13 @@
 # 엔티티 논리적 설계 v2 (ERD·구현용)
 
-**버전**: v2.4 — NotificationPreference 마스터 토글 추가 + 장보기 완료 API 정의 (2026-03-27)
+**버전**: v2.5 — UUID 확정 + Purchase 파생값 제거 + InventoryLog 비정규화 불요 (2026-03-27)
+
+**v2.5 변경**:
+- 모든 엔티티 PK를 **UUID**로 확정 (기존 `bigint` → `uuid`)
+- `Purchase.quantity` 제거 (파생값 — `SUM(PurchaseBatch.quantity)`로 대체)
+- `Purchase.totalPrice` 제거 (파생값 — `unitPrice × 총수량`으로 대체)
+- `InventoryLog.householdId` 비정규화 불요 확정 (join으로 충분)
+- 변경 근거: backend-dev-review #6, #10, #12 해결
 
 **v2.4 변경**:
 - NotificationPreference에 마스터 토글 3컬럼 추가 (`notifyExpiration`, `notifyShopping`, `notifyLowStock`)
@@ -258,18 +265,17 @@ erDiagram
         timestamp updatedAt
     }
     Purchase {
-        bigint id PK
-        bigint inventoryItemId FK
-        decimal quantity
+        uuid id PK
+        uuid householdId FK
+        uuid inventoryItemId FK "nullable"
         decimal unitPrice
-        decimal totalPrice
         timestamp purchasedAt
-        string supplierName
-        string itemName
-        string variantCaption
-        string unitSymbol
-        string memo
-        bigint userId FK
+        string supplierName "nullable"
+        string itemName "nullable"
+        string variantCaption "nullable"
+        string unitSymbol "nullable"
+        string memo "nullable"
+        uuid userId FK "nullable"
         timestamp createdAt
     }
     PurchaseBatch {
@@ -697,12 +703,10 @@ PUT    /api/household-kind-definitions         — 유형 목록 전체 교체 (
 
 | 구분     | 항목                | 타입/비고                    | 검토                                      |
 | -------- | ------------------- | ---------------------------- | ----------------------------------------- |
-| **필수** | id                  | PK                           | —                                         |
+| **필수** | id                  | PK (uuid)                    | **v2.5**: uuid 확정                       |
 | **v2.2** | **householdId**     | FK → Household, NOT NULL     | **v2.2 추가**: 거점 귀속. `inventoryItemId` nullable이므로 거점 추적에 필수 |
 | **v2**   | **inventoryItemId** | FK → InventoryItem, **nullable** | **v2 변경**: nullable. 구매만 먼저, 재고 연결은 나중에 |
-| **필수** | quantity            | decimal                      | 구매 수량                                 |
 | **필수** | unitPrice           | decimal                      | 구매 시점 단가                            |
-| **필수** | totalPrice          | decimal                      | 구매 시점 총액                            |
 | **선택** | purchasedAt         | timestamp                    | 구매일 (기본 now)                         |
 | **v2**   | **supplierName**    | string, nullable             | **v2 추가**: 구매처 이름. 1차는 수기 입력. Supplier 테이블은 통계 기능 시 추가 예정 |
 | **v2**   | **itemName**        | string, nullable             | **v2 추가**: 품목명 스냅샷. 품목 삭제 시에도 구매 내역 표시용 |
@@ -715,6 +719,11 @@ PUT    /api/household-kind-definitions         — 유형 목록 전체 교체 (
 **관계**: Household (N:1), InventoryItem (N:1, nullable), PurchaseBatch (1:N), User (선택 N:1)
 
 **스냅샷 정책**: `itemName`, `variantCaption`, `unitSymbol`은 구매 등록 시점의 Product/ProductVariant 정보를 복사하여 저장. 원본 품목이 삭제되어도 구매 내역에 품목명이 표시되어야 하므로 join 대신 스냅샷 방식 채택. 재고 연결된 구매(`inventoryItemId` NOT NULL)에서도 동일하게 저장.
+
+**v2.5 파생값 제거**: `quantity`와 `totalPrice` 컬럼 제거.
+- **총 수량**: `SUM(PurchaseBatch.quantity)` — 프론트 `구매_로트_수량_합을_구한다()` 참조
+- **총액**: `unitPrice × SUM(PurchaseBatch.quantity)` — 프론트 `구매_로트_행_배분_총액을_구한다()` 참조
+- 단일 출처(single source of truth)는 `PurchaseBatch.quantity`와 `Purchase.unitPrice`
 
 ---
 
@@ -900,6 +909,9 @@ PUT    /api/household-kind-definitions         — 유형 목록 전체 교체 (
 | **v2.4 추가** | NotificationPreference.notifyExpiration | 마스터 토글 — 유통기한 알림 전체 켜기/끄기 (default true) |
 | **v2.4 추가** | NotificationPreference.notifyShopping | 마스터 토글 — 장보기 알림 전체 켜기/끄기 (default true) |
 | **v2.4 추가** | NotificationPreference.notifyLowStock | 마스터 토글 — 재고 부족 알림 전체 켜기/끄기 (default false) |
+| **v2.5 변경** | 전체 PK 타입 | `bigint` → `uuid` 확정. 프론트 `crypto.randomUUID()`과 호환 |
+| **v2.5 제거** | Purchase.quantity | 파생값 — `SUM(PurchaseBatch.quantity)`로 대체 |
+| **v2.5 제거** | Purchase.totalPrice | 파생값 — `unitPrice × 총수량`으로 대체 |
 
 ### 정합성 제약 (v2.1 — 카탈로그 Household-scoped)
 

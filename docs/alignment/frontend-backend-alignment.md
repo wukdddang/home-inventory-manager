@@ -2,7 +2,7 @@
 
 **목적**: 프론트엔드 UI 구현 현황과 docs(ERD·논리 설계·기능 체크리스트)를 대조하여, 백엔드 개발 시 **반영·조정·결정**해야 할 사항을 정리한 문서입니다.
 
-**현재 버전**: **v1.7** — NotificationPreference 마스터 토글 + 장보기 완료 API + docs/v2.4 반영
+**현재 버전**: **v1.8** — UUID 확정 + Purchase 파생값 제거 + InventoryLog 비정규화 불요 + docs/v2.5 반영
 
 | 버전 | 날짜 | 단계 | 요약 |
 |------|------|------|------|
@@ -13,7 +13,8 @@
 | v1.4 | 2026-03-26 | 설계 결정 | §4-4 카탈로그 Household-scoped 확정, §4-2 NotificationPreference 별도 테이블 확정, §3-6 Purchase.userId 유지 확정 |
 | v1.5 | 2026-03-27 | 설계 결정 | HouseholdInvitation 신규 엔티티 추가 (초대 링크·이메일), HouseholdMember.role 3단계 확장 (admin/editor/viewer), P0 #3 카탈로그 거점별 분리 프론트 해결 |
 | v1.6 | 2026-03-27 | 설계 결정 | HouseholdKindDefinition 테이블 추가 (사용자별 거점 유형 라벨·순서 관리). §2-1 갱신, §4-3 방안 B 확정. docs/v2.3 반영. backend-dev-review #4 해결 |
-| **v1.7** | 2026-03-27 | 설계 결정 | NotificationPreference 마스터 토글 3컬럼 추가 (#5). 장보기 완료 트랜잭션 API 정의 (#11). docs/v2.4 반영 |
+| v1.7 | 2026-03-27 | 설계 결정 | NotificationPreference 마스터 토글 3컬럼 추가 (#5). 장보기 완료 트랜잭션 API 정의 (#11). docs/v2.4 반영 |
+| **v1.8** | 2026-03-27 | 설계 결정 | UUID 확정 (#6). InventoryLog 비정규화 불요 (#10). Purchase.quantity/totalPrice 제거 (#12). 카탈로그 추가 단가 UI 추가. docs/v2.5 반영 |
 | v2.0 | — | 물리적 설계 | TypeORM 엔티티·마이그레이션 확정 |
 | v2.1 | — | API 설계 | 엔드포인트·DTO 명세 확정 |
 | v3.0 | — | 구현 완료 | 1차 백엔드 개발 완료, 프론트 연동 시작 |

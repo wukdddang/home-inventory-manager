@@ -300,6 +300,8 @@ export function RoomItemAddWidget({
   const [minStockText, setMinStockText] = useState("");
   /** 비어 있으면 구매·로트(`him-purchases`)에는 넣지 않음 */
   const [expiresOn, setExpiresOn] = useState("");
+  /** 단가 — 비워두면 0 */
+  const [unitPriceText, setUnitPriceText] = useState("");
   const [purchasePickId, setPurchasePickId] = useState("");
   const [shoppingQuickOpen, setShoppingQuickOpen] = useState(false);
 
@@ -555,6 +557,14 @@ export function RoomItemAddWidget({
     setMinStockText("");
 
     const expRaw = expiresOn.trim();
+    const parsedUnitPrice = Number.parseFloat(
+      unitPriceText.replace(/,/g, ""),
+    );
+    const unitPriceVal =
+      Number.isFinite(parsedUnitPrice) && parsedUnitPrice >= 0
+        ? parsedUnitPrice
+        : 0;
+
     let lotNote = "";
     if (expRaw.length >= 8 && qty > 0) {
       const expTime = new Date(`${expRaw}T12:00:00`).getTime();
@@ -570,8 +580,8 @@ export function RoomItemAddWidget({
           variantCaption: row.variantCaption,
           unitSymbol: unit.symbol,
           purchasedOn: 오늘_날짜_문자열을_구한다(),
-          unitPrice: 0,
-          totalPrice: 0,
+          unitPrice: unitPriceVal,
+          totalPrice: unitPriceVal * qty,
           batches: [
             {
               id: crypto.randomUUID(),
@@ -585,6 +595,7 @@ export function RoomItemAddWidget({
       }
     }
     setExpiresOn("");
+    setUnitPriceText("");
 
     const locLabel =
       storageOptions.find((o) => o.id === slotId)?.label ?? room.name;
@@ -1079,24 +1090,44 @@ export function RoomItemAddWidget({
       <p className="text-xs leading-snug text-zinc-500">
         최소 재고 이하이면 부족 표시 + 장보기 제안. 비워 두면 기준 없음.
       </p>
-      <div className="space-y-1">
-        <label
-          htmlFor={`stock-expiry-${roomId}`}
-          className="text-xs font-medium text-zinc-300"
-        >
-          유통기한 (선택)
-        </label>
-        <input
-          id={`stock-expiry-${roomId}`}
-          type="date"
-          value={expiresOn}
-          onChange={(e) => setExpiresOn(e.target.value)}
-          className={`${inputClass} cursor-pointer`}
-        />
-        <p className="text-xs leading-snug text-zinc-500">
-          입력하면 위 수량만큼 1개의 로트로 him-purchases에도 남고, 임박 뱃지에 반영됩니다.
-        </p>
+      <div className="flex gap-2">
+        <div className="min-w-0 flex-1 space-y-1">
+          <label
+            htmlFor={`stock-expiry-${roomId}`}
+            className="text-xs font-medium text-zinc-300"
+          >
+            유통기한
+            <span className="ml-1 font-normal text-zinc-500">(선택)</span>
+          </label>
+          <input
+            id={`stock-expiry-${roomId}`}
+            type="date"
+            value={expiresOn}
+            onChange={(e) => setExpiresOn(e.target.value)}
+            className={`${inputClass} cursor-pointer`}
+          />
+        </div>
+        <div className="min-w-0 flex-1 space-y-1">
+          <label
+            htmlFor={`stock-unitprice-${roomId}`}
+            className="text-xs font-medium text-zinc-300"
+          >
+            단가
+            <span className="ml-1 font-normal text-zinc-500">(선택)</span>
+          </label>
+          <input
+            id={`stock-unitprice-${roomId}`}
+            inputMode="decimal"
+            placeholder="0"
+            value={unitPriceText}
+            onChange={(e) => setUnitPriceText(e.target.value)}
+            className={inputClass}
+          />
+        </div>
       </div>
+      <p className="text-xs leading-snug text-zinc-500">
+        유통기한을 입력하면 위 수량만큼 1개의 로트로 구매 기록에도 남고, 임박 뱃지에 반영됩니다.
+      </p>
     </div>
   );
 

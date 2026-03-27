@@ -4,6 +4,37 @@
 
 ---
 
+## v1.8 — UUID 확정 + Purchase 파생값 제거 + InventoryLog 비정규화 불요 (2026-03-27)
+
+**단계**: #6, #7, #8, #10, #12 처리 + docs/v2.5 반영
+
+### 확정된 결정
+
+| #   | 항목                          | 결정                                                                         | 근거                                                                                                                                                |
+| --- | ----------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| #6  | ID 타입                       | **UUID 확정** — 모든 엔티티 PK를 uuid로 통일 | 프론트 `crypto.randomUUID()` 호환, 낙관적 업데이트, 오프라인 생성 지원 |
+| #10 | InventoryLog.householdId      | **비정규화 안 함** — join으로 충분 | 가정 재고 앱 규모에서 3단 join 성능 이슈 없음. 인덱스로 커버. 비정규화 시 데이터 불일치 위험 |
+| #12 | Purchase 파생값               | `Purchase.quantity` **제거**, `Purchase.totalPrice` **제거** | 두 값 모두 `PurchaseBatch.quantity`와 `Purchase.unitPrice`에서 파생. 단일 출처 유지 |
+
+### 확인됨 (API 설계 시 처리)
+
+| #   | 항목                          | 처리 방향 |
+| --- | ----------------------------- | --------- |
+| #7  | InventoryRow.roomId           | DTO에서 StorageLocation의 roomId를 resolve하여 반환. 테이블 변경 없음 |
+| #8  | ShoppingListEntry 필드명      | DTO 매핑 레이어에서 프론트 타입에 맞춰 변환. 테이블 변경 없음 |
+
+### 프론트엔드 수정
+
+- `DashboardItemForm.section/index.tsx`: 카탈로그에서 재고 추가 시 **단가(unitPrice) 입력 필드** 추가. 유통기한 입력 시 자동 생성되는 PurchaseRecord에 사용자 입력 단가 반영 (`totalPrice = unitPrice × qty`)
+
+### docs/v2.5 반영 사항
+
+- `entity-logical-design.md`: 버전 v2.5. Purchase §12에서 quantity·totalPrice 제거. Mermaid ERD Purchase 블록 갱신. 파생값 정책 추가. v2 변경 요약 테이블 갱신
+- `er-diagram.md`: 버전 v2.5. Purchase 엔티티 목록 갱신
+- `entity-conceptual-design.md`: 버전 v2.5. Purchase 개념에서 구매 수량·총액 제거. 설계 메모 추가
+
+---
+
 ## v1.7 — NotificationPreference 마스터 토글 + 장보기 완료 API (2026-03-27)
 
 **단계**: #5, #11 해결 + docs/v2.4 반영

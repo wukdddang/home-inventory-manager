@@ -25,11 +25,11 @@
 
 ### P2 — 보통
 
-- [ ] **#6** ID 타입 (string vs bigint) 결정 → 프로젝트 초기에 확정
-- [ ] **#7** InventoryRow.roomId DTO 매핑 → API 응답 설계 시 반영
-- [ ] **#8** ShoppingListEntry 필드명 불일치 → DTO 매핑 레이어에서 처리
-- [ ] **#10** InventoryLog.householdId 비정규화 → 성능 고려하여 추가 권장
-- [ ] **#12** Purchase.quantity 역할 정리 → 제거 또는 용도 명확화
+- [x] **#6** ID 타입 (string vs bigint) 결정 → **UUID 확정** **(v2.5)**
+- [~] **#7** InventoryRow.roomId DTO 매핑 → 확인됨, API 설계 시 반영 예정
+- [~] **#8** ShoppingListEntry 필드명 불일치 → 확인됨, DTO 매핑 레이어에서 처리 예정
+- [x] **#10** InventoryLog.householdId 비정규화 → **비정규화 안 함, join으로 충분** **(v2.5)**
+- [x] **#12** Purchase.quantity/totalPrice 제거 + 카탈로그 추가 시 단가 입력 UI 추가 **(v2.5)**
 
 ### P3 — 낮음
 
@@ -109,30 +109,29 @@
 
 ---
 
-### #6. ID 타입 불일치 — string vs bigint — P2 보통
+### ~~#6. ID 타입 불일치 — string vs bigint~~ — 해결 (v2.5)
 
-**현상**: 프론트엔드는 모든 엔티티 ID를 `string` (UUID, `crypto.randomUUID()`)으로 생성한다. 백엔드 설계는 `bigint` PK를 사용한다.
+**해결**: 모든 엔티티 PK를 **UUID**로 확정. v2.5 설계 문서 반영됨.
 
-**영향**:
+**결정 근거**:
+- 프론트엔드가 `crypto.randomUUID()`로 클라이언트 사이드 ID 생성 — 낙관적 업데이트 패턴 유지
 - 기존 mock 데이터와의 호환성
-- 클라이언트 사이드 ID 생성이 불가능해짐 (낙관적 업데이트 패턴 변경 필요)
-- FK 참조 시 타입 변환
-
-**제안**: 백엔드도 UUID를 PK로 사용하거나, 프론트엔드에서 서버 응답의 bigint ID를 string으로 변환하는 레이어 추가. UUID 방식이 오프라인 생성, 병합 충돌 방지에 유리.
+- 오프라인 생성·병합 충돌 방지에 유리
+- 가정 재고 앱 규모에서 UUID 성능 오버헤드 무시 가능
 
 ---
 
-### #7. InventoryRow.roomId — 백엔드에 없는 직접 필드 — P2 보통
+### #7. InventoryRow.roomId — 백엔드에 없는 직접 필드 — P2 보통 (확인됨, API 설계 시 처리)
 
 **현상**: 프론트엔드 `InventoryRow`에 `roomId: string`이 필수 필드이다. 대시보드에서 방별로 재고를 그룹핑/필터링한다.
 
 **백엔드 설계**: `InventoryItem`에 `roomId`가 없다. 방 정보는 `StorageLocation → Room` 또는 `StorageLocation → FurniturePlacement → Room` 경로로만 도출 가능하다.
 
-**제안**: API 응답 DTO에서 `StorageLocation`의 `roomId` 또는 `FurniturePlacement.roomId`를 resolve하여 `roomId` 필드로 내려주어야 한다. 쿼리 시 join이 필요하므로 성능 고려.
+**처리 방향**: API 응답 DTO에서 `StorageLocation`의 `roomId` 또는 `FurniturePlacement.roomId`를 resolve하여 `roomId` 필드로 내려준다. 테이블 변경 없음, API 설계(v2.1) 단계에서 DTO 매핑으로 처리.
 
 ---
 
-### #8. ShoppingListEntry 필드명 불일치 — P2 보통
+### #8. ShoppingListEntry 필드명 불일치 — P2 보통 (확인됨, API 설계 시 처리)
 
 | 프론트엔드 | 백엔드 | 비고 |
 |-----------|--------|------|
@@ -142,7 +141,7 @@
 | `unit` | *(join 도출)* | DTO에서 해결 |
 | `variantCaption` | *(join 도출)* | DTO에서 해결 |
 
-DTO 매핑 레이어에서 필드명을 프론트 타입에 맞춰 변환해야 한다.
+**처리 방향**: DTO 매핑 레이어에서 필드명을 프론트 타입에 맞춰 변환한다. 테이블 변경 없음, API 설계(v2.1) 단계에서 처리.
 
 ---
 
@@ -158,13 +157,24 @@ DTO 매핑 레이어에서 필드명을 프론트 타입에 맞춰 변환해야 
 
 ---
 
-### #10. InventoryLog에 `householdId` 비정규화 부재 — P2 보통
+### ~~#10. InventoryLog에 `householdId` 비정규화 부재~~ — 해결 (v2.5)
 
-**현상**: 프론트엔드 `InventoryLedgerRow`에 `householdId`가 있고, 재고 이력 화면에서 거점별 필터링이 핵심 기능이다.
+**해결**: 비정규화하지 않음. join 또는 서브쿼리로 충분.
 
-**백엔드 설계**: `InventoryLog`에 `householdId`가 없다. `InventoryItem → StorageLocation → Household` 경로로 3단 join이 필요하다.
+**결정 근거**:
+- 가정 재고 앱의 데이터 규모에서 3단 join(`InventoryLog → InventoryItem → StorageLocation → Household`)은 성능 이슈가 될 가능성이 극히 낮음
+- 적절한 인덱스(`inventoryItemId`, `storageLocationId`, `householdId`)로 충분히 커버
+- 프론트엔드가 `householdId`를 직접 들고 있는 건 localStorage 기반이라 join 비용이 없어서이고, 백엔드에서는 인덱스가 그 역할을 수행
+- 비정규화 시 데이터 불일치(재고 이동 시 householdId 미갱신) 위험 회피
 
-**제안**: 이력 테이블은 행 수가 빠르게 증가하므로 join 비용이 크다. `InventoryLog`에 `householdId bigint FK` 비정규화 추가를 권장.
+**API 쿼리 패턴** (예시):
+```sql
+SELECT il.* FROM inventory_log il
+  JOIN inventory_item ii ON il.inventoryItemId = ii.id
+  JOIN storage_location sl ON ii.storageLocationId = sl.id
+  WHERE sl.householdId = :householdId
+  ORDER BY il.createdAt DESC
+```
 
 ---
 
@@ -188,11 +198,21 @@ DTO 매핑 레이어에서 필드명을 프론트 타입에 맞춰 변환해야 
 
 ---
 
-### #12. Purchase.quantity의 역할 모호 — P2 보통
+### ~~#12. Purchase.quantity/totalPrice 파생값 제거 + 카탈로그 추가 시 단가 입력 누락~~ — 해결 (v2.5)
 
-**현상**: 백엔드 `Purchase`에 `quantity` 컬럼이 있지만, 프론트엔드 `PurchaseRecord`에는 top-level `quantity`가 없다. 프론트엔드는 `batches[].quantity`의 합으로 총 수량을 계산한다.
+**해결**: `Purchase.quantity`와 `Purchase.totalPrice` 제거. 카탈로그 추가 UI에 단가 입력 필드 추가.
 
-**제안**: `Purchase.quantity`를 제거하거나, `batches` 합계의 비정규화 캐시로 용도를 명확히 정의.
+**제거 대상 (파생값)**:
+- `Purchase.quantity` — `SUM(PurchaseBatch.quantity)`로 항상 계산 가능. 프론트에도 없음
+- `Purchase.totalPrice` — `unitPrice × SUM(batch.quantity)`로 계산 가능
+
+**유지 대상 (원본값)**:
+- `Purchase.unitPrice` — 사용자가 직접 입력하는 단가. 다른 곳에서 구할 수 없음
+
+**프론트엔드 수정**:
+- 카탈로그에서 재고 추가 시 자동 생성되는 PurchaseRecord에 `unitPrice: 0`, `totalPrice: 0`이 하드코딩되어 있었음
+- 5단계(수량·유통기한) 영역에 **단가 입력 필드** 추가 (`DashboardItemForm.section/index.tsx`)
+- `totalPrice`를 `unitPrice × qty`로 자동 계산하여 저장
 
 ---
 

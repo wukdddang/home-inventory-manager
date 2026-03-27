@@ -1,6 +1,10 @@
 # 개념적 설계 v2 — 엔티티와 속성
 
-**버전**: v2.4 — NotificationPreference 마스터 토글 추가 + 장보기 완료 API 정의 (2026-03-27)
+**버전**: v2.5 — UUID 확정 + Purchase 파생값 제거 (2026-03-27)
+
+**v2.5 변경**:
+- 모든 엔티티 PK를 UUID로 확정
+- Purchase에서 `quantity`(파생값), `totalPrice`(파생값) 제거
 
 **v2.4 변경**:
 - NotificationPreference에 마스터 토글 3컬럼 추가 (`notifyExpiration`, `notifyShopping`, `notifyLowStock`)
@@ -229,10 +233,8 @@ erDiagram
 
 - **소속 거점** **(v2.2 추가)** — 거점별 구매 필터링 및 미연결 구매의 거점 귀속
 - 재고 품목 **(v2 변경: 선택 — 구매만 먼저, 재고 연결은 나중에)**
-- 구매 수량
-- 구매 일시
 - 단가
-- 총액
+- 구매 일시
 - **구매처 이름(선택)** **(v2 추가)** — 1차 수기 입력, Supplier 테이블은 통계 기능 시 추가 예정
 - **품목명 스냅샷** **(v2 추가)** — 품목 삭제 시에도 구매 내역 표시용 (itemName, variantCaption, unitSymbol)
 - 메모
@@ -360,6 +362,7 @@ erDiagram
 
 - **v2 통합 결정**: 소비(Consumption)·폐기(WasteRecord)를 InventoryLog 하나로 합쳤다. 이력 조회가 단일 테이블로 가능하고, 프론트 `InventoryLedgerRow` 타입과 1:1 대응.
 - **v2 구조 단순화**: 장보기 리스트(ShoppingList)의 부모-자식 2단 구조를 제거하고, 항목(ShoppingListItem)이 Household에 직접 연결. 프론트에 리스트 이름·마감일 개념이 없었기 때문.
+- **v2.5 UUID + 파생값 정리**: 전체 PK를 UUID로 확정. Purchase에서 `quantity`(→ `SUM(batch.quantity)`)와 `totalPrice`(→ `unitPrice × 총수량`)를 제거하여 단일 출처 유지.
 - **v2.3 거점 유형 테이블화**: HouseholdKindDefinition 테이블 추가. 프론트 설정 화면의 거점 유형 CRUD(추가/수정/삭제/정렬)를 백엔드에서 지원. 사용자별로 관리하며, Household.kind와 느슨한 참조.
 - **v2.2 초대·권한 확장**: HouseholdInvitation 테이블 추가로 링크/이메일 초대 플로우 지원. HouseholdMember.role을 admin/editor/viewer 3단계로 세분화하여 거점별 접근 제어 실현.
 - **v2.1 카탈로그 Household-scoped**: Category·Unit·Product가 거점에 귀속. 같은 거점 멤버끼리 공유하며, "다른 거점 카탈로그 가져오기"로 거점 간 복사 가능.
