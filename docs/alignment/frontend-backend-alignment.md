@@ -2,7 +2,7 @@
 
 **목적**: 프론트엔드 UI 구현 현황과 docs(ERD·논리 설계·기능 체크리스트)를 대조하여, 백엔드 개발 시 **반영·조정·결정**해야 할 사항을 정리한 문서입니다.
 
-**현재 버전**: **v1.5** — HouseholdInvitation 추가 + MemberRole 3단계 + docs/v2.2 반영
+**현재 버전**: **v1.6** — HouseholdKindDefinition 테이블 추가 + docs/v2.3 반영
 
 | 버전 | 날짜 | 단계 | 요약 |
 |------|------|------|------|
@@ -11,7 +11,8 @@
 | v1.2 | 2026-03-26 | docs 수정 | docs/v2/ 문서 4건 생성. §6 체크리스트 18/19건 완료 |
 | v1.3 | 2026-03-26 | 설계 결정 | §2 필드 추가/변경 11건 결정 확정. Purchase 스냅샷 3컬럼 추가, categoryId nullable 확정 등 |
 | v1.4 | 2026-03-26 | 설계 결정 | §4-4 카탈로그 Household-scoped 확정, §4-2 NotificationPreference 별도 테이블 확정, §3-6 Purchase.userId 유지 확정 |
-| **v1.5** | 2026-03-27 | 설계 결정 | HouseholdInvitation 신규 엔티티 추가 (초대 링크·이메일), HouseholdMember.role 3단계 확장 (admin/editor/viewer), P0 #3 카탈로그 거점별 분리 프론트 해결 |
+| v1.5 | 2026-03-27 | 설계 결정 | HouseholdInvitation 신규 엔티티 추가 (초대 링크·이메일), HouseholdMember.role 3단계 확장 (admin/editor/viewer), P0 #3 카탈로그 거점별 분리 프론트 해결 |
+| **v1.6** | 2026-03-27 | 설계 결정 | HouseholdKindDefinition 테이블 추가 (사용자별 거점 유형 라벨·순서 관리). §2-1 갱신, §4-3 방안 B 확정. docs/v2.3 반영. backend-dev-review #4 해결 |
 | v2.0 | — | 물리적 설계 | TypeORM 엔티티·마이그레이션 확정 |
 | v2.1 | — | API 설계 | 엔드포인트·DTO 명세 확정 |
 | v3.0 | — | 구현 완료 | 1차 백엔드 개발 완료, 프론트 연동 시작 |
@@ -93,7 +94,7 @@
 
 | # | 프론트 타입 | 추가 필드/개념 | 결정 | 근거 | 중요도 | 상태 |
 |---|------------|---------------|------|------|--------|------|
-| 2-1 | `Household` | **`kind`** | Household에 `kind varchar nullable` 추가 | 프론트가 거점 유형(home/office/vehicle/other)으로 적극 사용 중. 별도 HouseholdKind 마스터 테이블은 과설계 — 라벨 관리는 프론트 로컬에서 충분 | **P1** | **확정** |
+| 2-1 | `Household` | **`kind`** | Household에 `kind varchar nullable` 유지 + **HouseholdKindDefinition 테이블 추가** | 프론트가 거점 유형(home/office/vehicle/other)으로 적극 사용 중. 라벨·순서 관리를 위해 **사용자별 HouseholdKindDefinition 테이블 추가 결정** (v2.3). Household.kind는 kindId 값을 저장, FK 제약 없이 느슨한 참조 | **P1** | **확정 (v1.6 갱신)** |
 | 2-2 | `Household` | **`structureDiagramLayout`** | HouseStructure에 `diagramLayout jsonb nullable` 추가 | structurePayload(방·슬롯 정의)와 용도가 다름 — diagramLayout은 구조도 2D 렌더링 좌표 전용 | **P2** | **확정** |
 | 2-3 | `FurniturePlacement` | **`anchorDirectStorageId`** | `anchorDirectStorageId bigint FK nullable` 추가 | 가구 배치의 대표 보관 슬롯을 지정하여 UI에서 앵커 포인트로 사용. 프론트 UX에 필요한 메타 정보 | **P2** | **확정** |
 | 2-4 | `PurchaseRecord` | **`supplierName`** | Purchase에 `supplierName varchar nullable` 추가 (수기 입력) | 개념 설계에 "구매처 이름(선택)" 이미 기술됨. 1차는 수기 입력으로 시작. **Supplier 별도 테이블은 통계 기능 구현 시(다음 버전) 추가** 예정 | **P1** | **확정** |
@@ -132,7 +133,7 @@
 |---|------|----------|-----------------|--------|------|
 | 4-1 | **Shopping Suggestions (장보기 제안)** | `shopping-suggestions.ts` — 유통기한 임박 + minStockLevel 미달 품목 자동 제안, 이미 장보기에 있는 품목 제외, 보충 수량 계산 | `GET /api/shopping-suggestions?householdId=` API. 프론트 로직과 동일한 쿼리: PurchaseBatch 만료 임박 + InventoryItem.quantity < minStockLevel | **P1** | **해결** (API 설계 시 처리 예정) |
 | 4-2 | **NotificationDetailPreferences** | `AppSettings` 안에 8개 필드 (expirationDaysBefore, scope, 요일 등) | **별도 NotificationPreference 테이블** (userId FK + householdId FK nullable). null이면 사용자 기본값, 값이 있으면 거점별 오버라이드. 확장 대비 (채널, 시간대 등) | **P1** | **확정** (v1.4) |
-| 4-3 | **HouseholdKindDefinition 관리** | `household-kind-defaults.ts` + 설정 화면에서 CRUD | **방안 A**: Household.kind만 varchar로 저장 (프론트에서 관리) / **방안 B**: HouseholdKind 마스터 테이블 추가. 현재 프론트는 로컬에서 관리하므로 **A로 시작** 가능 | **P2** | **해결** (API 설계 시 처리 예정) |
+| 4-3 | **HouseholdKindDefinition 관리** | `household-kind-defaults.ts` + 설정 화면에서 CRUD | **방안 B 확정**: HouseholdKindDefinition 테이블 추가 (`id, userId, kindId, label, sortOrder`). 사용자별로 관리. 프론트 UI 유지, localStorage → API 전환. §2-1과 함께 v2.3 반영 완료 | **P1** | **확정 (v1.6)** |
 | 4-4 | **ProductCatalog 공유 스토어** | `him-catalog` 로컬스토리지 키로 전역 관리. Household에서 분리됨 | **Household-scoped 확정**. Category, Unit, Product에 `householdId FK` 추가. 같은 거점 멤버끼리 공유. "다른 거점에서 카탈로그 가져오기" 기능으로 거점 간 복사 가능. ProductVariant는 Product를 통해 간접 스코프 | **P0** | **확정** (v1.4) |
 | 4-5 | **구매 → 재고 자동 반영** | 프론트 미구현 (ui-roadmap.md에서 "백엔드 API에서 처리"로 명시) | Purchase 생성 시 InventoryItem.quantity 자동 증가 + InventoryLog(type="in") 자동 생성. 트랜잭션 처리 | **P1** | **해결** (API 설계 시 처리 예정) |
 | 4-6 | **온보딩 마법사 지원 API** | 프론트에서 4단계 위자드 (Household → Room → FurniturePlacement → StorageLocation) | 각 엔티티 생성 API가 순차적으로 호출됨. 벌크 생성 API 제공 시 UX 개선 가능 | **P2** | **해결** (API 설계 시 처리 예정) |

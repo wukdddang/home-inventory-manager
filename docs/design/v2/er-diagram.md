@@ -1,6 +1,9 @@
 # ER 다이어그램 & 엔티티 명세 v2 (Home Inventory Manager)
 
-**버전**: v2.2 — HouseholdInvitation 추가 + MemberRole 3단계 확장 (2026-03-27)
+**버전**: v2.3 — HouseholdKindDefinition 추가 (2026-03-27)
+
+**v2.3 변경**:
+- HouseholdKindDefinition 신규 엔티티 추가 (사용자별 거점 유형 라벨·순서 관리)
 
 **v2.2 변경**:
 - HouseholdInvitation 신규 엔티티 추가 (초대 링크·이메일 초대 플로우)
@@ -50,6 +53,7 @@
 | 17   | Room                | 집 구조 내 방                                                              | HouseStructure                       | P1       | — |
 | 18   | FurniturePlacement  | 방 안 가구(인스턴스)                                                  | Room                                 | P1       | `anchorDirectStorageId` 추가 |
 | 20   | HouseholdInvitation | 거점 초대 (링크·이메일)                                               | Household, User                      | P1       | **신규 (v2.2)** |
+| 21   | HouseholdKindDefinition | 거점 유형 정의 (사용자별 라벨·순서)                               | User                                 | P1       | **신규 (v2.3)** |
 
 ### 사용하지 않음 (P3 — 1차 개발 범위 외)
 
@@ -93,6 +97,7 @@ Household (거점)
 User
   ├── Household (N:N)
   ├── HouseholdInvitation (1:N) — 초대한 초대 (v2.2)
+  ├── HouseholdKindDefinition (1:N) — 거점 유형 정의 (v2.3)
   ├── Notification (1:N)
   ├── NotificationPreference (1:N) — 알림 설정 (v2.1, 거점별 오버라이드 가능)
   └── ExpirationAlertRule (1:N, 선택, 품목별)
@@ -129,6 +134,7 @@ erDiagram
     User }o--o{ Household : "members (N:N)"
     Household ||--o{ HouseholdInvitation : "invitations"
     User ||--o{ HouseholdInvitation : "invitedBy"
+    User ||--o{ HouseholdKindDefinition : "kind definitions"
 
     Household ||--o{ Category : "catalog"
     Household ||--o{ Unit : "catalog"

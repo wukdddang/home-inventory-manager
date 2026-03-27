@@ -1,6 +1,9 @@
 # 개념적 설계 v2 — 엔티티와 속성
 
-**버전**: v2.2 — HouseholdInvitation 추가 + MemberRole 3단계 확장 (2026-03-27)
+**버전**: v2.3 — HouseholdKindDefinition 추가 (2026-03-27)
+
+**v2.3 변경**:
+- HouseholdKindDefinition 신규 엔티티 추가 (사용자별 거점 유형 라벨·순서 관리)
 
 **v2.2 변경**:
 - HouseholdInvitation 신규 엔티티 추가 (초대 링크·이메일 초대 지원)
@@ -31,6 +34,7 @@ erDiagram
     Household ||--o{ HouseholdMember : "멤버"
     Household ||--o{ HouseholdInvitation : "초대"
     User ||--o{ HouseholdInvitation : "초대한 사람"
+    User ||--o{ HouseholdKindDefinition : "거점 유형 정의"
 
     Household ||--o{ Category : "거점 카탈로그"
     Household ||--o{ Unit : "거점 카탈로그"
@@ -112,6 +116,17 @@ erDiagram
 - 만료 시각
 
 > 초대 수락 시 HouseholdMember 행이 생성된다. 미가입 사용자는 가입 후 토큰으로 수락.
+
+---
+
+## HouseholdKindDefinition (거점 유형 정의) — v2.3 신규
+
+- 소유 사용자 (userId)
+- 유형 식별자 (kindId) — 'home', 'office', 'vehicle', 'other' + 사용자 정의
+- 표시 라벨 — '집', '사무실', '차량', '기타' 등 (사용자가 수정 가능)
+- 정렬 순서
+
+> 사용자별로 거점 유형 라벨과 순서를 관리한다. Household.kind varchar에는 kindId 값이 저장되며, FK 제약 없이 느슨하게 참조한다. 가입 시 기본 4종이 시드된다.
 
 ---
 
@@ -337,6 +352,7 @@ erDiagram
 
 - **v2 통합 결정**: 소비(Consumption)·폐기(WasteRecord)를 InventoryLog 하나로 합쳤다. 이력 조회가 단일 테이블로 가능하고, 프론트 `InventoryLedgerRow` 타입과 1:1 대응.
 - **v2 구조 단순화**: 장보기 리스트(ShoppingList)의 부모-자식 2단 구조를 제거하고, 항목(ShoppingListItem)이 Household에 직접 연결. 프론트에 리스트 이름·마감일 개념이 없었기 때문.
+- **v2.3 거점 유형 테이블화**: HouseholdKindDefinition 테이블 추가. 프론트 설정 화면의 거점 유형 CRUD(추가/수정/삭제/정렬)를 백엔드에서 지원. 사용자별로 관리하며, Household.kind와 느슨한 참조.
 - **v2.2 초대·권한 확장**: HouseholdInvitation 테이블 추가로 링크/이메일 초대 플로우 지원. HouseholdMember.role을 admin/editor/viewer 3단계로 세분화하여 거점별 접근 제어 실현.
 - **v2.1 카탈로그 Household-scoped**: Category·Unit·Product가 거점에 귀속. 같은 거점 멤버끼리 공유하며, "다른 거점 카탈로그 가져오기"로 거점 간 복사 가능.
 - **v2.1 알림 설정 테이블화**: NotificationPreference를 별도 테이블로 분리. 사용자 기본값 + 거점별 오버라이드 구조.

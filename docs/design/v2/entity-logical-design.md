@@ -1,6 +1,10 @@
 # 엔티티 논리적 설계 v2 (ERD·구현용)
 
-**버전**: v2.2 — HouseholdInvitation 추가 + MemberRole 3단계 확장 (2026-03-27)
+**버전**: v2.3 — HouseholdKindDefinition 테이블 추가 (2026-03-27)
+
+**v2.3 변경**:
+- HouseholdKindDefinition 신규 테이블 추가 (사용자별 거점 유형 라벨·순서 관리)
+- 변경 근거: 프론트엔드 설정 화면의 거점 유형 CRUD를 백엔드에서 지원 (backend-dev-review #4 해결)
 
 **v2.2 변경**:
 - HouseholdInvitation 신규 테이블 추가 (초대 링크·이메일 초대 지원)
@@ -37,6 +41,7 @@ erDiagram
     Household ||--o{ HouseholdMember : "householdId"
     Household ||--o{ HouseholdInvitation : "householdId"
     User ||--o{ HouseholdInvitation : "invitedByUserId"
+    User ||--o{ HouseholdKindDefinition : "userId"
 
     Household ||--o{ Category : "householdId"
     Household ||--o{ Unit : "householdId"
@@ -125,6 +130,15 @@ erDiagram
         timestamp acceptedAt "nullable"
         timestamp expiresAt
         timestamp createdAt
+    }
+    HouseholdKindDefinition {
+        bigint id PK
+        bigint userId FK
+        string kindId
+        string label
+        int sortOrder
+        timestamp createdAt
+        timestamp updatedAt
     }
 ```
 
@@ -371,7 +385,7 @@ erDiagram
 | **선택** | createdAt, updatedAt | timestamp            | 감사용                                     |
 | **선택** | lastLoginAt          | timestamp            | —                                          |
 
-**관계**: Household (N:N), Notification (1:N), ExpirationAlertRule (1:N), ReportPreset (1:N), Purchase·InventoryLog (선택 `userId`)
+**관계**: Household (N:N), HouseholdKindDefinition (1:N), Notification (1:N), ExpirationAlertRule (1:N), ReportPreset (1:N), Purchase·InventoryLog (선택 `userId`)
 
 **이메일 검증**: 가입 시 인증 메일 발송 → 토큰(또는 링크) 검증 후 `emailVerifiedAt` 설정. 토큰 저장·만료는 별도 테이블 또는 캐시로 구현 가능.
 
@@ -438,6 +452,37 @@ GET    /api/households/:id/invitations       — 대기 중인 초대 목록 (ad
 DELETE /api/households/:id/invitations/:invId — 초대 취소 (admin 전용)
 GET    /api/invitations/:token               — 토큰으로 초대 정보 조회 (비인증 가능)
 POST   /api/invitations/:token/accept        — 초대 수락 → HouseholdMember 생성
+```
+
+---
+
+## 2-2. HouseholdKindDefinition (거점 유형 정의) — v2.3 신규
+
+| 구분     | 항목              | 타입/비고                         | 검토                                                    |
+| -------- | ----------------- | --------------------------------- | ------------------------------------------------------- |
+| **필수** | id                | PK                                | —                                                       |
+| **필수** | userId            | FK → User                         | 이 유형 목록을 소유하는 사용자                          |
+| **필수** | kindId            | string                            | 유형 식별자 ('home', 'office', 'vehicle', 'other', 사용자 정의) |
+| **필수** | label             | string                            | 표시 라벨 (예: '집', '사무실', '차량', '기타')          |
+| **선택** | sortOrder         | int, default 0                    | 정렬 순서                                               |
+| **필수** | createdAt         | timestamp                         | —                                                       |
+| **선택** | updatedAt         | timestamp                         | —                                                       |
+
+**제약**: `(userId, kindId)` **유니크** — 동일 사용자가 같은 kindId를 중복 등록할 수 없음.
+
+**관계**: User (N:1)
+
+**Household.kind와의 관계**: `Household.kind` varchar는 `kindId` 값을 저장한다. FK 제약은 걸지 않는다 — 사용자가 유형 정의를 삭제해도 기존 거점의 kind 값은 유지된다 (프론트에서 fallback 처리).
+
+**동작**:
+- 사용자 최초 가입 시 기본 4종(`home`/집, `office`/사무실, `vehicle`/차량, `other`/기타)을 시드
+- 설정 화면에서 추가/수정(라벨 변경)/삭제/정렬 순서 변경
+- 유형 삭제 시: 해당 kindId를 사용 중인 거점의 `kind` 값은 유지 (프론트에서 `거점_유형_정의를_교체_한다()`로 대체 또는 유지)
+
+**API 엔드포인트** (예정):
+```
+GET    /api/household-kind-definitions         — 현재 사용자의 유형 목록 조회
+PUT    /api/household-kind-definitions         — 유형 목록 전체 교체 (일괄 저장)
 ```
 
 ---

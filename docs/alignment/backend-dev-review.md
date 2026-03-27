@@ -19,7 +19,7 @@
 
 ### P1 — 높음
 
-- [ ] **#4** HouseholdKindDefinition 저장소 결정 → 테이블 추가 또는 UI 단순화
+- [x] **#4** HouseholdKindDefinition 저장소 결정 → 테이블 추가 완료 **(v2.3)**
 - [ ] **#5** 알림 마스터 토글 필드 누락 → NotificationPreference에 추가
 - [ ] **#11** 장보기 완료 트랜잭션 API 정의 → API 스펙에 추가
 
@@ -72,26 +72,25 @@
 
 ---
 
-### #4. HouseholdKindDefinition의 저장소 부재 — P1 높음
+### ~~#4. HouseholdKindDefinition의 저장소 부재~~ — 해결 (v2.3)
 
-**현상**: 프론트엔드는 `HouseholdKindDefinition[]`을 `him-household-kinds` localStorage에 저장하고, 설정 화면에서 CRUD(추가/수정/삭제/정렬)를 지원한다.
+**해결**: `HouseholdKindDefinition` 테이블 추가 완료 (방안 A 확정). v2.3 설계 문서(논리 설계·ER·개념 설계) 반영됨.
 
-**백엔드 설계**: §2-1에서 "별도 HouseholdKind 마스터 테이블은 과설계 — Household.kind varchar만 사용"으로 결정.
+**테이블 스키마**:
+- `id` bigint PK
+- `userId` bigint FK → User (NOT NULL)
+- `kindId` varchar NOT NULL — 유형 식별자 ('home', 'office', 'vehicle', 'other', 사용자 정의)
+- `label` varchar NOT NULL — 표시 라벨
+- `sortOrder` int default 0
+- `(userId, kindId)` UNIQUE
+- `createdAt`, `updatedAt`
 
-**왜 문제인가**: `kind` varchar만으로는 다음이 불가능하다:
-- 사용자 정의 라벨(label) 관리
-- 정렬 순서(sortOrder) 저장
-- 종류 삭제 시 기존 거점의 fallback 처리 (프론트 `거점_유형_정의를_교체_한다()`에 구현됨)
-- 다중 사용자 간 종류 정의 동기화
-
-**프론트엔드 근거**:
-- `HouseholdKindDefinition { id, label, sortOrder? }` 타입 정의 (`types/domain.ts`)
-- 설정 화면에서 종류 CRUD UI 구현 완료
-- 기본 4종 (`home`, `office`, `vehicle`, `other`) + 사용자 추가 지원
-
-**제안**: 두 가지 중 선택 필요:
-- **A**: `HouseholdKindDefinition` 테이블 추가 (`id, userId, label, sortOrder`)
-- **B**: 프론트엔드 설정 화면에서 종류 관리 UI를 제거하고, 고정 enum으로 단순화
+**설계 결정**:
+- **스코프**: 사용자별(per-user) — 각 사용자가 자신의 거점 유형 목록을 관리
+- **Household.kind와의 관계**: `Household.kind` varchar는 `kindId` 값을 저장. FK 제약 없이 느슨한 참조 — 유형 삭제 시 기존 거점의 kind 값 유지 (프론트에서 fallback 처리)
+- **초기 시드**: 가입 시 기본 4종(home/집, office/사무실, vehicle/차량, other/기타) 생성
+- **프론트엔드**: 기존 설정 화면 CRUD UI 유지. localStorage(`him-household-kinds`) → API(`GET/PUT /api/household-kind-definitions`) 전환
+- **API**: 목록 조회(GET) + 전체 교체(PUT) 방식으로 프론트의 일괄 저장 패턴에 맞춤
 
 ---
 

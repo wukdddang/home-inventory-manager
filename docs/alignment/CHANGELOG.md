@@ -4,6 +4,42 @@
 
 ---
 
+## v1.6 — HouseholdKindDefinition 테이블 추가 (2026-03-27)
+
+**단계**: §2-1 갱신, §4-3 확정 + docs/v2.3 반영
+
+### 확정된 결정
+
+| #   | 항목                          | 결정                                                                         | 근거                                                                                                                                                |
+| --- | ----------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 4-3 | HouseholdKindDefinition 관리  | **방안 B 확정**: HouseholdKindDefinition 테이블 추가 | 프론트 설정 화면의 거점 유형 CRUD(추가/수정/삭제/정렬)를 백엔드에서 지원. 사용자별 스코프. Household.kind varchar 유지 + kindId로 느슨한 참조 |
+| 2-1 | Household.kind (갱신)         | `kind varchar nullable` 유지 + HouseholdKindDefinition 테이블로 보완 | 기존 결정(v1.3)에서 "마스터 테이블 과설계"로 판단했으나, 다중 사용자 동기화·라벨·순서 관리 필요성에 따라 테이블 추가로 갱신 |
+
+### 테이블 스키마
+
+```
+HouseholdKindDefinition
+├─ id: bigint PK
+├─ userId: bigint FK → User (NOT NULL)
+├─ kindId: varchar NOT NULL — 'home', 'office', 'vehicle', 'other', 사용자 정의
+├─ label: varchar NOT NULL — 표시 라벨
+├─ sortOrder: int default 0
+├─ UNIQUE(userId, kindId)
+├─ createdAt, updatedAt
+```
+
+### docs/v2.3 반영 사항
+
+- `entity-logical-design.md`: §2-2 HouseholdKindDefinition 신규 섹션 추가. 논리적 ERD Mermaid 갱신. User 관계에 HouseholdKindDefinition 추가
+- `er-diagram.md`: 엔티티 목록에 HouseholdKindDefinition 추가 (#21). 관계 요약·Mermaid ERD 갱신
+- `entity-conceptual-design.md`: HouseholdKindDefinition 엔티티 추가. 개념적 ERD Mermaid·설계 메모 갱신
+
+### backend-dev-review #4 해결
+
+- backend-dev-review.md: #4 항목을 "해결 (v2.3)"으로 갱신
+
+---
+
 ## v1.4 — 카탈로그 Household-scoped + NotificationPreference + Purchase.userId 확정 (2026-03-26)
 
 **단계**: §3-6, §4-2, §4-4 결정 확정 + docs/v2.1 반영
