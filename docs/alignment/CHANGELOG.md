@@ -105,9 +105,9 @@
 
 ### 남은 미결정 사항
 
-- [ ] ShoppingListItem.categoryId nullable 여부 (§2-11)
-- [ ] Purchase.inventoryItemId nullable 확정 (§2-5) — v2에 nullable로 반영했으나 최종 확정 대기
-- [ ] ProductCatalog 스코프: Household-scoped vs global (§4-4)
+- [x] ShoppingListItem.categoryId nullable 여부 (§2-11) → **v1.3에서 확정: nullable**
+- [x] Purchase.inventoryItemId nullable 확정 (§2-5) → **v1.3에서 확정: nullable**
+- [x] ProductCatalog 스코프: Household-scoped vs global (§4-4) → **v1.4에서 확정: Household-scoped**
 
 ---
 
@@ -140,9 +140,9 @@
 
 ### 남은 미결정 사항 (v1.0에서 이관)
 
-- [ ] Purchase.inventoryItemId nullable 확정 (§2-5) — 방향은 nullable이나 docs 수정 시 최종 확정
-- [ ] ShoppingListItem.categoryId nullable 여부 (§2-11)
-- [ ] ProductCatalog 스코프: Household-scoped vs global (§4-4)
+- [x] Purchase.inventoryItemId nullable 확정 (§2-5) → **v1.3에서 확정: nullable**
+- [x] ShoppingListItem.categoryId nullable 여부 (§2-11) → **v1.3에서 확정: nullable**
+- [x] ProductCatalog 스코프: Household-scoped vs global (§4-4) → **v1.4에서 확정: Household-scoped**
 
 ---
 
@@ -173,9 +173,9 @@
 
 - [x] InventoryLog + WasteRecord + Consumption 통합 여부 (§1-3) → **v1.1 확정: 단일 테이블 통합**
 - [x] ShoppingList 부모 테이블 유지 여부 (§1-2) → **v1.1 확정: 제거**
-- [ ] Purchase.inventoryItemId nullable 확정 (§2-5) → v1.1 미결정, v1.2에서 처리
-- [ ] ShoppingListItem.categoryId nullable 여부 (§2-11)
-- [ ] ProductCatalog 스코프: Household-scoped vs global (§4-4)
+- [x] Purchase.inventoryItemId nullable 확정 (§2-5) → **v1.3에서 확정: nullable**
+- [x] ShoppingListItem.categoryId nullable 여부 (§2-11) → **v1.3에서 확정: nullable**
+- [x] ProductCatalog 스코프: Household-scoped vs global (§4-4) → **v1.4에서 확정: Household-scoped**
 
 ---
 
