@@ -1,6 +1,10 @@
 # ER 다이어그램 & 엔티티 명세 v2 (Home Inventory Manager)
 
-**버전**: v2.3 — HouseholdKindDefinition 추가 (2026-03-27)
+**버전**: v2.4 — NotificationPreference 마스터 토글 추가 + 장보기 완료 API 정의 (2026-03-27)
+
+**v2.4 변경**:
+- NotificationPreference에 마스터 토글 3컬럼 추가 (`notifyExpiration`, `notifyShopping`, `notifyLowStock`)
+- 장보기 완료 트랜잭션 API 스펙 정의 (`POST /api/shopping-list-items/:id/complete`)
 
 **v2.3 변경**:
 - HouseholdKindDefinition 신규 엔티티 추가 (사용자별 거점 유형 라벨·순서 관리)

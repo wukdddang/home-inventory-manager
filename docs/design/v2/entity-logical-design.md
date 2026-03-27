@@ -1,6 +1,11 @@
 # 엔티티 논리적 설계 v2 (ERD·구현용)
 
-**버전**: v2.3 — HouseholdKindDefinition 테이블 추가 (2026-03-27)
+**버전**: v2.4 — NotificationPreference 마스터 토글 추가 + 장보기 완료 API 정의 (2026-03-27)
+
+**v2.4 변경**:
+- NotificationPreference에 마스터 토글 3컬럼 추가 (`notifyExpiration`, `notifyShopping`, `notifyLowStock`)
+- 장보기 완료 트랜잭션 API 스펙 정의 (`POST /api/shopping-list-items/:id/complete`)
+- 변경 근거: backend-dev-review #5, #11 해결
 
 **v2.3 변경**:
 - HouseholdKindDefinition 신규 테이블 추가 (사용자별 거점 유형 라벨·순서 관리)
@@ -316,6 +321,43 @@ erDiagram
 - **v2 변경**: ShoppingList(부모) 테이블 제거. `shoppingListId FK` → `householdId FK`로 변경. `checked` 컬럼 제거 (구매 완료 시 행 삭제). `targetStorageLocationId` **추가** (넣을 칸 힌트, nullable).
 - **`categoryId`**: v1에서는 필수. **v1.3에서 nullable 확정** — 현재 프론트는 항상 채우지만, 자유 텍스트 장보기 항목 확장 대비.
 
+### 장보기 완료 트랜잭션 API — v2.4 신규
+
+> **backend-dev-review #11**: 장보기 "구매 완료" 시 세 작업이 원자적으로 수행되어야 한다.
+
+**엔드포인트**: `POST /api/shopping-list-items/:id/complete`
+
+**요청 Body**:
+```json
+{
+  "inventoryItemId": "bigint — 보충할 재고 품목 ID",
+  "quantity": "decimal — 보충 수량 (>= 1)",
+  "memo": "string? — 메모 (기본: '장보기 구매 완료')"
+}
+```
+
+**트랜잭션 내 작업** (단일 DB 트랜잭션):
+1. **InventoryItem.quantity 증가** — `quantity += request.quantity`
+2. **InventoryLog 생성** — `type: 'in'`, `quantityDelta: request.quantity`, `refType: 'shopping'`, `refId: shoppingListItemId`, `itemLabel: (품목명 스냅샷)`
+3. **ShoppingListItem 삭제** — 해당 장보기 항목 행 제거
+
+**응답**: `200 OK`
+```json
+{
+  "inventoryItem": { "id": "...", "quantity": 15 },
+  "inventoryLog": { "id": "...", "type": "in", "quantityDelta": 5, "quantityAfter": 15 }
+}
+```
+
+**엣지 케이스**:
+- `inventoryItemId`에 해당하는 품목이 없는 경우 → `404`
+- 장보기 항목에 `inventoryItemId`가 없는 경우 (카탈로그만 담기) → 프론트에서 매칭된 재고 ID를 body에 전달
+- 매칭 재고가 없는 경우 → 프론트에서 장보기 항목만 삭제 (API 호출 없이 `DELETE /api/shopping-list-items/:id`)
+
+**프론트엔드 대응**:
+- `DashboardContext.재고_장보기_보충을_기록_한다()` → 이 API로 전환
+- `DashboardShoppingList.module.tsx`의 `completeLinked()` / `completeSaved()` / `completeDepleted()` 함수가 호출
+
 ### 알림·만료 규칙·리포트
 
 ```mermaid
@@ -336,6 +378,9 @@ erDiagram
         bigint id PK
         bigint userId FK
         bigint householdId FK
+        boolean notifyExpiration "default true"
+        boolean notifyShopping "default true"
+        boolean notifyLowStock "default false"
         int expirationDaysBefore
         string expirationRuleScope
         boolean notifyExpiredLots
@@ -795,6 +840,9 @@ PUT    /api/household-kind-definitions         — 유형 목록 전체 교체 (
 | **필수** | id                            | PK                           | —                                                |
 | **필수** | userId                        | FK → User                    | —                                                |
 | **선택** | householdId                   | FK → Household, nullable     | **null이면 사용자 기본 설정**, 값이 있으면 해당 거점 오버라이드 |
+| **v2.4** | **notifyExpiration**          | boolean, default **true**    | **마스터 토글** — 유통기한 알림 전체 켜기/끄기. false이면 아래 expiration 세부 설정 무시 |
+| **v2.4** | **notifyShopping**            | boolean, default **true**    | **마스터 토글** — 장보기 알림 전체 켜기/끄기. false이면 아래 shopping 세부 설정 무시 |
+| **v2.4** | **notifyLowStock**            | boolean, default **false**   | **마스터 토글** — 재고 부족 알림 전체 켜기/끄기. false이면 아래 lowStock 세부 설정 무시 |
 | **필수** | expirationDaysBefore          | int                          | 유통기한 N일 전 알림 (기본 3)                    |
 | **필수** | expirationRuleScope           | string                       | `'household'` \| `'personal'`                    |
 | **필수** | notifyExpiredLots             | boolean                      | 이미 만료된 로트 알림 여부                       |
@@ -849,6 +897,9 @@ PUT    /api/household-kind-definitions         — 유형 목록 전체 교체 (
 | **v2.1 추가** | Product.householdId | 거점별 카탈로그 FK (비정규화) |
 | **v2.1 추가** | NotificationPreference (§19) | 신규 테이블. 사용자별·거점별 알림 상세 설정 |
 | **v2.1 확정** | Purchase.userId | 유지 확정 (백엔드 인증 토큰 기반 자동 기록) |
+| **v2.4 추가** | NotificationPreference.notifyExpiration | 마스터 토글 — 유통기한 알림 전체 켜기/끄기 (default true) |
+| **v2.4 추가** | NotificationPreference.notifyShopping | 마스터 토글 — 장보기 알림 전체 켜기/끄기 (default true) |
+| **v2.4 추가** | NotificationPreference.notifyLowStock | 마스터 토글 — 재고 부족 알림 전체 켜기/끄기 (default false) |
 
 ### 정합성 제약 (v2.1 — 카탈로그 Household-scoped)
 

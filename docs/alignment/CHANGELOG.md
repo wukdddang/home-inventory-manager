@@ -4,6 +4,34 @@
 
 ---
 
+## v1.7 — NotificationPreference 마스터 토글 + 장보기 완료 API (2026-03-27)
+
+**단계**: #5, #11 해결 + docs/v2.4 반영
+
+### 확정된 결정
+
+| #   | 항목                          | 결정                                                                         | 근거                                                                                                                                                |
+| --- | ----------------------------- | ---------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| #5  | 알림 마스터 토글              | NotificationPreference에 `notifyExpiration`(default true), `notifyShopping`(default true), `notifyLowStock`(default false) 3컬럼 추가 | 프론트 설정 화면에서 알림 카테고리별 마스터 토글 사용 중. 스케줄러가 세부 설정 전에 마스터 토글을 확인해야 함 |
+| #11 | 장보기 완료 트랜잭션 API      | `POST /api/shopping-list-items/:id/complete` 정의 | 재고 증가 + InventoryLog 생성 + ShoppingListItem 삭제를 원자적으로 수행. 프론트 `재고_장보기_보충을_기록_한다()` 함수가 이 API로 전환 |
+
+### docs/v2.4 반영 사항
+
+- `entity-logical-design.md`: NotificationPreference §18에 마스터 토글 3컬럼 추가. Mermaid ERD 갱신. ShoppingListItem 섹션에 장보기 완료 API 스펙 추가. v2 변경 요약 테이블에 v2.4 항목 추가
+- `er-diagram.md`: 버전 v2.4 갱신
+- `entity-conceptual-design.md`: NotificationPreference 개념에 마스터 토글 추가
+
+### backend-dev-review #5, #11 해결
+
+- #5: 체크리스트 완료 처리, 상세에 추가된 컬럼·동작·프론트 대응 기록
+- #11: 체크리스트 완료 처리, 상세에 API 스펙·프론트 대응 기록
+
+### §4-5 갱신
+
+- 기존 "구매 → 재고 자동 반영"에 장보기 완료 트랜잭션 API 반영. 상태를 "확정 (v1.7)"으로 변경
+
+---
+
 ## v1.6 — HouseholdKindDefinition 테이블 추가 (2026-03-27)
 
 **단계**: §2-1 갱신, §4-3 확정 + docs/v2.3 반영

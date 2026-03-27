@@ -1,6 +1,10 @@
 # 개념적 설계 v2 — 엔티티와 속성
 
-**버전**: v2.3 — HouseholdKindDefinition 추가 (2026-03-27)
+**버전**: v2.4 — NotificationPreference 마스터 토글 추가 + 장보기 완료 API 정의 (2026-03-27)
+
+**v2.4 변경**:
+- NotificationPreference에 마스터 토글 3컬럼 추가 (`notifyExpiration`, `notifyShopping`, `notifyLowStock`)
+- 장보기 완료 트랜잭션 API 스펙 정의
 
 **v2.3 변경**:
 - HouseholdKindDefinition 신규 엔티티 추가 (사용자별 거점 유형 라벨·순서 관리)
@@ -305,6 +309,9 @@ erDiagram
 
 - 사용자 (userId)
 - 소속 거점(선택) — null이면 사용자 기본 설정, 값이 있으면 거점별 오버라이드
+- **유통기한 알림 마스터 토글** (notifyExpiration, default true) **(v2.4 추가)**
+- **장보기 알림 마스터 토글** (notifyShopping, default true) **(v2.4 추가)**
+- **재고 부족 알림 마스터 토글** (notifyLowStock, default false) **(v2.4 추가)**
 - 유통기한 알림 일수 (expirationDaysBefore)
 - 알림 범위 (household / personal)
 - 만료 로트 알림 여부
@@ -313,6 +320,7 @@ erDiagram
 - 장보기 리마인더 (요일 설정)
 - 재고 부족 알림 정책 (minStockLevel 기준)
 
+> 마스터 토글이 false이면 해당 카테고리의 세부 설정은 모두 무시된다. 백엔드 알림 스케줄러가 마스터 토글을 먼저 확인.
 > 확장: 알림 채널(이메일/푸시), 조용한 시간, 알림 유형별 세분화 가능.
 
 ---

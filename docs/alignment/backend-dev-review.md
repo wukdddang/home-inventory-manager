@@ -20,8 +20,8 @@
 ### P1 — 높음
 
 - [x] **#4** HouseholdKindDefinition 저장소 결정 → 테이블 추가 완료 **(v2.3)**
-- [ ] **#5** 알림 마스터 토글 필드 누락 → NotificationPreference에 추가
-- [ ] **#11** 장보기 완료 트랜잭션 API 정의 → API 스펙에 추가
+- [x] **#5** 알림 마스터 토글 필드 누락 → NotificationPreference에 추가 완료 **(v2.4)**
+- [x] **#11** 장보기 완료 트랜잭션 API 정의 → API 스펙에 추가 완료 **(v2.4)**
 
 ### P2 — 보통
 
@@ -94,24 +94,18 @@
 
 ---
 
-### #5. 알림 마스터 토글 필드 누락 — P1 높음
+### ~~#5. 알림 마스터 토글 필드 누락~~ — 해결 (v2.4)
 
-**현상**: 프론트엔드 `AppSettings`에는 세 가지 마스터 토글이 있다:
-```typescript
-notifyExpiration: boolean   // 유통기한 알림 전체 켜기/끄기
-notifyShopping: boolean     // 장보기 알림 전체 켜기/끄기
-notifyLowStock: boolean     // 재고 부족 알림 전체 켜기/끄기
-```
+**해결**: `NotificationPreference`에 마스터 토글 3컬럼 추가 완료. v2.4 설계 문서(논리 설계·ER·개념 설계) 반영됨.
 
-**백엔드 설계**: `NotificationPreference` 테이블에는 세부 설정만 있고 (`expirationDaysBefore`, `shoppingTripReminder` 등), 카테고리별 마스터 스위치가 없다.
+**추가된 컬럼**:
+- `notifyExpiration` boolean, default **true** — 유통기한 알림 전체 켜기/끄기
+- `notifyShopping` boolean, default **true** — 장보기 알림 전체 켜기/끄기
+- `notifyLowStock` boolean, default **false** — 재고 부족 알림 전체 켜기/끄기
 
-**왜 문제인가**: 사용자가 "유통기한 알림"을 전체 끄면, 세부 설정(며칠 전, 당일 알림, 만료 후 알림)이 모두 무시되어야 한다. 백엔드 스케줄러에서 이 마스터 토글을 참조할 수 없다.
+**동작**: 마스터 토글이 false이면 해당 카테고리의 세부 설정(expirationDaysBefore, shoppingTripReminder 등)은 모두 무시된다. 백엔드 알림 스케줄러가 마스터 토글을 먼저 확인해야 한다.
 
-**프론트엔드 근거**:
-- 설정 화면의 알림 카드 상단에 마스터 토글 배치
-- `DEFAULT_SETTINGS`에서 `notifyExpiration: true`, `notifyShopping: true`, `notifyLowStock: false`
-
-**제안**: `NotificationPreference`에 `notifyExpiration boolean`, `notifyShopping boolean`, `notifyLowStock boolean` 컬럼 추가.
+**프론트엔드 대응**: `AppSettings`의 `notifyExpiration`/`notifyShopping`/`notifyLowStock` → NotificationPreference API의 동일 필드로 전환. UI 변경 없음.
 
 ---
 
@@ -174,20 +168,23 @@ DTO 매핑 레이어에서 필드명을 프론트 타입에 맞춰 변환해야 
 
 ---
 
-### #11. 장보기 완료 트랜잭션 API 미정의 — P1 높음
+### ~~#11. 장보기 완료 트랜잭션 API 미정의~~ — 해결 (v2.4)
 
-**현상**: 프론트엔드 장보기 화면에서 "구매 완료" 시 다음이 한 번에 발생한다:
-1. `InventoryItem.quantity` 증가
-2. `InventoryLedgerRow` 생성 (type: `"in"`, refType: `"shopping"`)
-3. `ShoppingListEntry` 삭제
+**해결**: `POST /api/shopping-list-items/:id/complete` 트랜잭션 API 스펙 정의 완료. v2.4 설계 문서(논리 설계 ShoppingListItem 섹션) 반영됨.
 
-**백엔드 설계**: §4-5에서 "구매 → 재고 자동 반영"을 언급하지만, 장보기 완료 플로우의 트랜잭션 API는 구체적으로 정의되지 않았다.
+**API 스펙**:
+- **엔드포인트**: `POST /api/shopping-list-items/:id/complete`
+- **Body**: `{ inventoryItemId, quantity, memo? }`
+- **트랜잭션** (원자적):
+  1. `InventoryItem.quantity` 증가
+  2. `InventoryLog` 생성 (type: `'in'`, refType: `'shopping'`, refId: shoppingListItemId)
+  3. `ShoppingListItem` 삭제
+- **응답**: 갱신된 InventoryItem + 생성된 InventoryLog
 
-**프론트엔드 근거**:
-- `DashboardContext.재고_장보기_보충을_기록_한다()` — 재고 증가 + 이력 생성을 동시에 수행
-- 장보기 패널에서 "구매 완료" 버튼 클릭 시 장보기 항목 삭제
-
-**제안**: `POST /api/shopping-list-items/:id/complete` 같은 트랜잭션 API를 설계에 명시. 세 작업이 원자적으로 수행되어야 한다.
+**프론트엔드 대응**:
+- `DashboardContext.재고_장보기_보충을_기록_한다()` → 이 API 호출로 전환
+- `DashboardShoppingList.module.tsx`의 `completeLinked()` / `completeSaved()` / `completeDepleted()` 함수가 이 API를 사용
+- 매칭 재고가 없는 경우: `DELETE /api/shopping-list-items/:id`로 목록에서만 제거 (기존 동작 유지)
 
 ---
 
