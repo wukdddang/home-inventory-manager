@@ -24,6 +24,7 @@
 | 문서 | 설명 |
 |------|------|
 | [frontend-backend-alignment.md](./alignment/frontend-backend-alignment.md) | 프론트-백엔드 정합성 정리 및 백엔드 할 일 |
+| [backend-dev-review.md](./alignment/backend-dev-review.md) | 백엔드 개발 전 검토 사항 (스키마 누락·불일치 12건) |
 | [CHANGELOG.md](./alignment/CHANGELOG.md) | alignment 문서 버전별 변경 내역 |
 
 ## 인프라 (`infra/`)
