@@ -1,9 +1,21 @@
 {
-    "moduleFileExtensions": ["js", "json", "ts"],
-    "rootDir": ".",
-    "testEnvironment": "node",
-    "testRegex": ".e2e-spec.ts$",
-    "transform": {
-        "^.+\\.(t|j)s$": "ts-jest"
-    }
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": "..",
+  "roots": ["<rootDir>/test"],
+  "testEnvironment": "node",
+  "testRegex": ".e2e-spec.ts$",
+  "testPathIgnorePatterns": ["base-e2e.spec.ts$"],
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "moduleNameMapper": {
+    "^@src/(.*)$": "<rootDir>/src/$1",
+    "^@domain/(.*)$": "<rootDir>/src/domain/$1",
+    "^@context/(.*)$": "<rootDir>/src/context/$1",
+    "^@business/(.*)$": "<rootDir>/src/business/$1",
+    "^@interface/(.*)$": "<rootDir>/src/interface/$1",
+    "^@common/(.*)$": "<rootDir>/src/common/$1"
+  },
+  "maxWorkers": 1,
+  "testTimeout": 30000
 }

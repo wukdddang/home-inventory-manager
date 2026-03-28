@@ -55,7 +55,8 @@
       "Bash(mkdir -p common)",
       "Bash(mv database:*)",
       "Bash(mv infrastructure:*)",
-      "Bash(mv auth:*)"
+      "Bash(mv auth:*)",
+      "Bash(npx jest:*)"
     ]
   }
 }
