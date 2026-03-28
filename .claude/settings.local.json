@@ -51,7 +51,11 @@
       "Bash(node -e \"const pkg = require\\(''@nestjs/common/package.json''\\); console.log\\(''main:'', pkg.main\\); console.log\\(''exports:'', JSON.stringify\\(pkg.exports, null, 2\\)?.substring\\(0, 500\\)\\)\")",
       "Bash(node -e \"const pkg = require\\(''@nestjs/common/package.json''\\); console.log\\(''type:'', pkg.type\\); console.log\\(''main:'', pkg.main\\); console.log\\(''types:'', pkg.types || pkg.typings\\); console.log\\(''exports:'', pkg.exports ? ''yes'' : ''no''\\)\")",
       "Bash(npx @nestjs/cli@latest new --dry-run nest-default)",
-      "Bash(npx @nestjs/cli@latest --version)"
+      "Bash(npx @nestjs/cli@latest --version)",
+      "Bash(mkdir -p common)",
+      "Bash(mv database:*)",
+      "Bash(mv infrastructure:*)",
+      "Bash(mv auth:*)"
     ]
   }
 }

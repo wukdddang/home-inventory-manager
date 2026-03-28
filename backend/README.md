@@ -64,7 +64,7 @@ src/
 | 스케줄러        | @nestjs/schedule                    | 유통기한 체크, 알림 생성 등           |
 | API 문서        | Postman Collection                  | —                                     |
 | 파일 업로드     | AWS S3                              | 카탈로그 상품 이미지, 최대 10MB       |
-| 테스트          | Jest                                | e2e 테스트 목표 40%                   |
+| 테스트          | Jest                                | 단위·통합·e2e 모두 커버리지 100% 목표 |
 | 배포            | Docker + Cloudflare Tunnel          | 홈 서버 운영                          |
 
 ---
