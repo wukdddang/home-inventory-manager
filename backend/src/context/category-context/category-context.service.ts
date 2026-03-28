@@ -4,12 +4,12 @@ import {
   CategoryResult,
   CreateCategoryData,
   UpdateCategoryData,
-} from './interfaces/category-context.interface.js';
-import { CreateCategoryCommand } from './handlers/commands/create-category.handler.js';
-import { UpdateCategoryCommand } from './handlers/commands/update-category.handler.js';
-import { DeleteCategoryCommand } from './handlers/commands/delete-category.handler.js';
-import { GetCategoryListQuery } from './handlers/queries/get-category-list.handler.js';
-import { GetCategoryDetailQuery } from './handlers/queries/get-category-detail.handler.js';
+} from './interfaces/category-context.interface';
+import { CreateCategoryCommand } from './handlers/commands/create-category.handler';
+import { UpdateCategoryCommand } from './handlers/commands/update-category.handler';
+import { DeleteCategoryCommand } from './handlers/commands/delete-category.handler';
+import { GetCategoryListQuery } from './handlers/queries/get-category-list.handler';
+import { GetCategoryDetailQuery } from './handlers/queries/get-category-detail.handler';
 
 @Injectable()
 export class CategoryContextService {

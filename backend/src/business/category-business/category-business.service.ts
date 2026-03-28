@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { CategoryContextService } from '../../context/category-context/category-context.service.js';
+import { CategoryContextService } from '../../context/category-context/category-context.service';
 import {
   CategoryResult,
   CreateCategoryData,
   UpdateCategoryData,
-} from '../../context/category-context/interfaces/category-context.interface.js';
+} from '../../context/category-context/interfaces/category-context.interface';
 
 @Injectable()
 export class CategoryBusinessService {

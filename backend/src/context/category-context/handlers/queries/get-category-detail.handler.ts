@@ -1,7 +1,7 @@
 import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
 import { NotFoundException } from '@nestjs/common';
-import { CategoryService } from '../../../../domain/category/category.service.js';
-import { CategoryResult } from '../../interfaces/category-context.interface.js';
+import { CategoryService } from '../../../../domain/category/category.service';
+import { CategoryResult } from '../../interfaces/category-context.interface';
 
 export class GetCategoryDetailQuery {
   constructor(

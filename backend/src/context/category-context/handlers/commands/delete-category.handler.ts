@@ -1,6 +1,6 @@
 import { CommandHandler, ICommandHandler } from '@nestjs/cqrs';
 import { NotFoundException } from '@nestjs/common';
-import { CategoryService } from '../../../../domain/category/category.service.js';
+import { CategoryService } from '../../../../domain/category/category.service';
 
 export class DeleteCategoryCommand {
   constructor(

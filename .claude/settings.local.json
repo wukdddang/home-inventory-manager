@@ -45,7 +45,13 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "Bash(git push:*)",
-      "Bash(pnpm add:*)"
+      "Bash(pnpm add:*)",
+      "Bash(node -e \"const exp = Object.keys\\(require\\(''@nestjs/common''\\)\\); console.log\\(exp.filter\\(e => e.includes\\(''NotFound''\\)\\)\\)\")",
+      "Bash(node -e \"const pkg = require\\(''@nestjs/common/package.json''\\); console.log\\(JSON.stringify\\(pkg.exports?.[''.''], null, 2\\)\\)\")",
+      "Bash(node -e \"const pkg = require\\(''@nestjs/common/package.json''\\); console.log\\(''main:'', pkg.main\\); console.log\\(''exports:'', JSON.stringify\\(pkg.exports, null, 2\\)?.substring\\(0, 500\\)\\)\")",
+      "Bash(node -e \"const pkg = require\\(''@nestjs/common/package.json''\\); console.log\\(''type:'', pkg.type\\); console.log\\(''main:'', pkg.main\\); console.log\\(''types:'', pkg.types || pkg.typings\\); console.log\\(''exports:'', pkg.exports ? ''yes'' : ''no''\\)\")",
+      "Bash(npx @nestjs/cli@latest new --dry-run nest-default)",
+      "Bash(npx @nestjs/cli@latest --version)"
     ]
   }
 }

@@ -1,8 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { DatabaseModule } from './database/database.module.js';
-import { HouseholdModule } from './domain/household/household.module.js';
-import { CategoryInterfaceModule } from './interface/category/category.module.js';
+import { DatabaseModule } from './database/database.module';
+import { HouseholdModule } from './domain/household/household.module';
+import { CategoryInterfaceModule } from './interface/category/category.module';
 
 @Module({
   imports: [

@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
-import { CategoryContextModule } from '../../context/category-context/category-context.module.js';
-import { CategoryBusinessService } from './category-business.service.js';
+import { CategoryContextModule } from '../../context/category-context/category-context.module';
+import { CategoryBusinessService } from './category-business.service';
 
 @Module({
   imports: [CategoryContextModule],

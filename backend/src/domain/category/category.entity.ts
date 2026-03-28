@@ -1,6 +1,6 @@
 import { Column, Entity, JoinColumn, ManyToOne } from 'typeorm';
-import { BaseEntity } from '../common/base.entity.js';
-import { Household } from '../household/household.entity.js';
+import { BaseEntity } from '../common/base.entity';
+import { Household } from '../household/household.entity';
 
 @Entity('categories')
 export class Category extends BaseEntity {
