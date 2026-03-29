@@ -6,6 +6,7 @@ import { HouseholdModule } from './domain/household/household.module';
 import { AuthInfrastructureModule } from './common/auth/auth-infrastructure.module';
 import { CategoryInterfaceModule } from './interface/category/category.module';
 import { AuthInterfaceModule } from './interface/auth/auth.module';
+import { HouseholdInterfaceModule } from './interface/household/household.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { AuthInterfaceModule } from './interface/auth/auth.module';
     // Interface (각 Interface 모듈이 Business → Context → Domain 의존성을 자체 포함)
     CategoryInterfaceModule,
     AuthInterfaceModule,
+    HouseholdInterfaceModule,
   ],
 })
 export class AppModule {}
