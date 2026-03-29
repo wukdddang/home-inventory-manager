@@ -27,14 +27,14 @@
 ```
 
 **체크리스트:**
-- [ ] `useDeviceLayout` 훅 구현 (matchMedia 기반, breakpoint: 1024px)
-- [ ] `MobileShell.component.tsx` — 헤더 + 콘텐츠 + 하단 탭 레이아웃
-- [ ] `MobileHeader.component.tsx` — 가구명 드롭다운 + 알림 아이콘(뱃지)
-- [ ] `BottomNav.component.tsx` — 하단 탭 바 (홈/이력/설정)
-- [ ] 헤더 높이 `h-14`, 하단 탭 `h-16` + safe-area inset 적용
-- [ ] 콘텐츠 영역 `100dvh - 헤더 - 탭바` 스크롤 처리
-- [ ] 활성 탭 `text-teal-400`, 비활성 `text-zinc-500` 스타일
-- [ ] 기존 `page.tsx`에 디바이스 분기 렌더링 적용 (dashboard, inventory-history, settings)
+- [x] `useDeviceLayout` 훅 구현 (matchMedia 기반, breakpoint: 1024px)
+- [x] `MobileShell.component.tsx` — 헤더 + 콘텐츠 + 하단 탭 레이아웃
+- [x] `MobileHeader.component.tsx` — 가구명 드롭다운 + 알림 아이콘(뱃지)
+- [x] `BottomNav.component.tsx` — 하단 탭 바 (홈/이력/설정)
+- [x] 헤더 높이 `h-14`, 하단 탭 `h-16` + safe-area inset 적용
+- [x] 콘텐츠 영역 `100dvh - 헤더 - 탭바` 스크롤 처리
+- [x] 활성 탭 `text-teal-400`, 비활성 `text-zinc-500` 스타일
+- [x] 기존 `page.tsx`에 디바이스 분기 렌더링 적용 (dashboard, inventory-history, settings)
 
 ### 1.2 하단 탭 내비게이션
 
@@ -84,10 +84,10 @@
 ```
 
 **체크리스트:**
-- [ ] `DashboardMobile.panel/index.tsx` — 전체 모바일 대시보드 레이아웃
-- [ ] 재고 검색 바 + 필터 칩 (방/수납 드롭다운)
-- [ ] 방/수납별 그룹 헤더
-- [ ] 장보기 목록 플로팅 버튼 (아이템 개수 뱃지)
+- [x] `DashboardMobile.panel/index.tsx` — 전체 모바일 대시보드 레이아웃
+- [x] 재고 검색 바 + 필터 칩 (방/수납 드롭다운)
+- [x] 방/수납별 그룹 헤더
+- [x] 장보기 목록 플로팅 버튼 (아이템 개수 뱃지)
 
 ### 2.2 재고 카드 컴포넌트
 
@@ -101,9 +101,9 @@
 ```
 
 **체크리스트:**
-- [ ] `InventoryCard.component.tsx` — 재고 카드 기본 컴포넌트
-- [ ] 카드 상태별 스타일 적용 (기본 / 임박 amber / 만료 rose / 부족 blue)
-- [ ] D-day 뱃지 표시 (`inventory-lot-expiry-badge` 재활용 또는 모바일 전용)
+- [x] `InventoryCard.component.tsx` — 재고 카드 기본 컴포넌트 (`InventoryCardList.section.tsx` 내 구현)
+- [x] 카드 상태별 스타일 적용 (기본 / 임박 amber / 만료 rose / 부족 blue)
+- [x] D-day 뱃지 표시 (`inventory-lot-expiry-badge` 재활용)
 - [ ] 카드 탭 시 상세 정보 표시 (로트/배치, 수납위치, 최근 이력)
 
 ### 2.3 스와이프 동작
@@ -122,12 +122,12 @@
 ```
 
 **체크리스트:**
-- [ ] `SwipeableCard.component.tsx` — framer-motion 기반 스와이프 래퍼
-- [ ] 왼쪽 스와이프 시 사용/폐기 버튼 노출 (threshold: 80px)
-- [ ] 스프링 애니메이션 적용 (`stiffness: 300, damping: 30`)
-- [ ] 사용 버튼 탭 → 수량 -1 즉시 반영 + 토스트 확인
-- [ ] 사용 버튼 길게 누르기 → 수량 선택 바텀시트 열기
-- [ ] 폐기 버튼 탭 → 폐기 바텀시트 열기
+- [x] `SwipeableCard.component.tsx` — framer-motion 기반 스와이프 래퍼
+- [x] 왼쪽 스와이프 시 사용/폐기 버튼 노출 (threshold: 40px)
+- [x] 스프링 애니메이션 적용 (`stiffness: 300, damping: 30`)
+- [x] 사용 버튼 탭 → 수량 선택 바텀시트 열기
+- [ ] 사용 버튼 길게 누르기 → 수량 선택 바텀시트 열기 (탭과 분리)
+- [x] 폐기 버튼 탭 → 폐기 바텀시트 열기
 
 ### 2.4 사용 수량 선택 바텀시트
 
@@ -147,11 +147,11 @@
 ```
 
 **체크리스트:**
-- [ ] `BottomSheet.component.tsx` — 공통 바텀시트 (드래그 핸들, 오버레이, snap)
-- [ ] `UseItemSheet.component.tsx` — 사용 수량 선택 바텀시트
-- [ ] 수량 스테퍼 (-, +) 컴포넌트
-- [ ] 현재 재고 표시, 최대 수량 제한
-- [ ] 사용 확인 → mock 데이터 업데이트 + 토스트
+- [x] `BottomSheet.component.tsx` — 공통 바텀시트 (드래그 핸들, 오버레이, snap)
+- [x] `UseItemSheet.component.tsx` — 사용 수량 선택 바텀시트
+- [x] 수량 스테퍼 (-, +) 컴포넌트 (`QuantityStepper.component.tsx`)
+- [x] 현재 재고 표시, 최대 수량 제한
+- [x] 사용 확인 → mock 데이터 업데이트
 
 ### 2.5 폐기 처리 바텀시트
 
@@ -174,10 +174,10 @@
 ```
 
 **체크리스트:**
-- [ ] `WasteItemSheet.component.tsx` — 폐기 바텀시트
-- [ ] 폐기 수량 스테퍼
-- [ ] 폐기 사유 라디오 선택 (유통기한 만료 / 품질 저하 / 기타)
-- [ ] 폐기 확인 → mock 데이터 업데이트 + 이력 기록 + 토스트
+- [x] `WasteItemSheet.component.tsx` — 폐기 바텀시트
+- [x] 폐기 수량 스테퍼
+- [x] 폐기 사유 라디오 선택 (유통기한 만료 / 품질 저하 / 기타)
+- [x] 폐기 확인 → mock 데이터 업데이트 + 이력 기록
 
 ### 2.6 장보기 목록 바텀시트
 
@@ -198,10 +198,10 @@
 ```
 
 **체크리스트:**
-- [ ] `ShoppingListSheet.component.tsx` — 장보기 목록 바텀시트
-- [ ] 항목 체크박스 토글
-- [ ] 장보기 완료 버튼 (체크된 항목 수 표시)
-- [ ] 완료 시 일괄 입고 처리 → mock 데이터 업데이트
+- [x] `ShoppingListFab.component.tsx` — 장보기 목록 FAB + 바텀시트
+- [x] 항목 체크박스 토글
+- [x] 장보기 완료 버튼 (체크된 항목 수 표시)
+- [x] 완료 시 일괄 입고 처리 → mock 데이터 업데이트
 - [ ] 바텀시트 드래그 높이 조절 (snap: 40%, 80%)
 
 ### 2.7 유통기한 임박 알림 카드
@@ -219,11 +219,11 @@
 ```
 
 **체크리스트:**
-- [ ] `ExpiryAlerts.section.tsx` — 유통기한 임박/만료 알림 카드
-- [ ] 상태별 색상 (amber: D-7 이내, rose: 만료)
-- [ ] 각 항목 인라인 사용/폐기 버튼
-- [ ] 접기/펼치기 토글
-- [ ] 알림 항목 없을 시 섹션 미표시
+- [x] `ExpiryAlerts.section.tsx` — 유통기한 임박/만료 알림 카드
+- [x] 상태별 색상 (amber: D-7 이내, rose: 만료)
+- [x] 각 항목 인라인 사용/폐기 버튼
+- [x] 접기/펼치기 토글
+- [x] 알림 항목 없을 시 섹션 미표시
 
 ---
 
@@ -258,12 +258,12 @@
 ```
 
 **체크리스트:**
-- [ ] `InventoryHistoryMobile.panel/index.tsx` — 모바일 이력 레이아웃
-- [ ] 기간 필터 칩 (오늘 / 이번주 / 이번달)
-- [ ] 유형 필터 드롭다운 (전체 / 입고 / 소비 / 조정 / 폐기)
-- [ ] 날짜별 그룹 구분선
-- [ ] 이력 타임라인 카드 (유형 뱃지 + 제품명 + 수량 변화 + 시간 + 사유)
-- [ ] 유형별 색상 (emerald: 입고, blue: 소비, amber: 조정, rose: 폐기)
+- [x] `InventoryHistoryMobile.panel/index.tsx` — 모바일 이력 레이아웃
+- [x] 기간 필터 칩 (오늘 / 이번주 / 이번달)
+- [x] 유형 필터 드롭다운 (전체 / 입고 / 소비 / 조정 / 폐기)
+- [x] 날짜별 그룹 구분선
+- [x] 이력 타임라인 카드 (유형 뱃지 + 제품명 + 수량 변화 + 시간 + 사유)
+- [x] 유형별 색상 (emerald: 입고, blue: 소비, amber: 조정, rose: 폐기)
 
 ### 3.2 이력 카드
 
@@ -316,12 +316,12 @@
 ```
 
 **체크리스트:**
-- [ ] `SettingsMobile.panel/index.tsx` — 모바일 설정 레이아웃
-- [ ] 계정 정보 카드 (이름, 이메일 — 읽기 전용)
-- [ ] 알림 설정 토글 그룹 (푸시 알림 / 유통기한 / 장보기 / 재고 부족)
+- [x] `SettingsMobile.panel/index.tsx` — 모바일 설정 레이아웃
+- [x] 계정 정보 카드 (이름, 이메일 — 읽기 전용)
+- [x] 알림 설정 토글 그룹 (유통기한 / 장보기 / 재고 부족)
 - [ ] 가구 전환 섹션 (현재 가구 표시 + 전환 버튼)
-- [ ] 로그아웃 버튼
-- [ ] "상세 설정은 데스크탑에서" 안내 문구
+- [x] 로그아웃 버튼
+- [x] "상세 설정은 데스크탑에서" 안내 문구
 
 ### 4.2 FCM 토큰 등록 흐름
 
@@ -338,6 +338,7 @@
 ```
 
 **체크리스트:**
+- [ ] 푸시 알림 토글 추가 (FCM 트리거)
 - [ ] `useFcmToken` 훅 (토큰 발급/등록/해제)
 - [ ] 푸시 알림 토글 ON → 권한 요청 → 토큰 발급 흐름
 - [ ] 권한 거부 시 안내 토스트
