@@ -34,7 +34,7 @@ pnpm test              # 전체 테스트
 ## 프론트엔드 (frontend/)
 - **프레임워크**: Next.js 16 (App Router), React 19
 - **스타일링**: Tailwind CSS 4, class-variance-authority, tailwind-merge, clsx
-- **UI/애니메이션**: framer-motion, lucide-react (아이콘), @radix-ui/react-toast
+- **UI/애니메이션**: framer-motion, lucide-react (아이콘), sonner (토스트, shadcn/ui 패턴)
 - **기타**: @xyflow/react (집 구조 플로우 차트)
 
 ### 라우트 구조

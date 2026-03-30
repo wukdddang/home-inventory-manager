@@ -29,6 +29,7 @@ type ItemsSpreadsheetProps = {
   onItemClick?: (item: InventoryRow) => void;
 };
 
+/** blur(또는 Enter) 시에만 저장 콜백 — 부모에서 토스트 표시 */
 function MinStockInput({
   itemId,
   initial,
@@ -45,28 +46,34 @@ function MinStockInput({
     setText(initial != null ? String(initial) : "");
   }, [itemId, initial]);
 
+  const commit = () => {
+    const raw = text.trim();
+    if (raw === "") {
+      if (initial !== undefined) onCommit(itemId, undefined);
+      return;
+    }
+    const n = Math.floor(Number(raw));
+    if (!Number.isFinite(n) || n < 0) {
+      setText(initial != null ? String(initial) : "");
+      return;
+    }
+    if (n !== initial) onCommit(itemId, n);
+  };
+
   return (
     <input
       type="number"
       min={0}
       step={1}
-      title="이 수량 이하이면 재고 부족으로 장보기에 제안"
+      inputMode="numeric"
+      title="이 수량 이하이면 재고 부족으로 장보기에 제안. 비우면 최소 재고 미사용"
       value={text}
       onChange={(e) => setText(e.target.value)}
-      onBlur={() => {
-        const raw = text.trim();
-        if (raw === "") {
-          if (initial !== undefined) onCommit(itemId, undefined);
-          return;
-        }
-        const n = Math.floor(Number(raw));
-        if (!Number.isFinite(n) || n < 0) {
-          setText(initial != null ? String(initial) : "");
-          return;
-        }
-        if (n !== initial) onCommit(itemId, n);
+      onBlur={commit}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") (e.target as HTMLInputElement).blur();
       }}
-      className="w-16 rounded border border-zinc-700 bg-zinc-900 px-1.5 py-1 text-xs text-zinc-100 tabular-nums outline-none focus:border-teal-500"
+      className="w-20 min-w-0 rounded-lg border border-zinc-700 bg-zinc-950 px-2 py-1.5 text-xs tabular-nums text-zinc-100 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500/30"
       aria-label="최소 재고"
     />
   );
