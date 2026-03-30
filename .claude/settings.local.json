@@ -68,7 +68,8 @@
       "Bash(npx nest:*)",
       "Bash(pnpm --filter frontend exec tsc --noEmit --pretty)",
       "Bash(pnpm:*)",
-      "Bash(docker compose:*)"
+      "Bash(docker compose:*)",
+      "Bash(find \"/c/Users/wukdd/dev/Lumir-ERP/src/app/api/\\(ams\\)\" -type d -maxdepth 4)"
     ]
   }
 }
