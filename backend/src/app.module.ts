@@ -9,6 +9,7 @@ import { AuthInterfaceModule } from './interface/auth/auth.module';
 import { HouseholdInterfaceModule } from './interface/household/household.module';
 import { InvitationInterfaceModule } from './interface/invitation/invitation.module';
 import { HouseholdKindInterfaceModule } from './interface/household-kind/household-kind.module';
+import { SpaceInterfaceModule } from './interface/space/space.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { HouseholdKindInterfaceModule } from './interface/household-kind/househo
     HouseholdInterfaceModule,
     InvitationInterfaceModule,
     HouseholdKindInterfaceModule,
+    SpaceInterfaceModule,
   ],
 })
 export class AppModule {}
