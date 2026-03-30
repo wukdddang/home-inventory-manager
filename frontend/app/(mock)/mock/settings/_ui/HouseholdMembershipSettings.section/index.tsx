@@ -5,17 +5,9 @@ import { FormModal } from "@/app/_ui/form-modal";
 import { toast } from "@/hooks/use-toast";
 import { getHouseholdKindLabel } from "@/lib/household-kind-defaults";
 import { cn } from "@/lib/utils";
-import type { GroupMember, Household, MemberRole } from "@/types/domain";
+import type { GroupMember, Household, MemberRole, MockInvitation } from "@/types/domain";
 import { useEffect, useMemo, useState } from "react";
 import { useDashboard } from "../../../dashboard/_hooks/useDashboard";
-
-function newMemberId() {
-  return crypto.randomUUID();
-}
-
-function membersOf(h: Household): GroupMember[] {
-  return h.members ?? [];
-}
 
 function adminCount(list: GroupMember[]) {
   return list.filter((m) => m.role === "admin").length;
@@ -55,10 +47,9 @@ function MembershipRoleBadgePicker({
   list: GroupMember[];
   isOpen: boolean;
   onToggle: () => void;
-  onSelectRole: (role: MemberRole) => boolean;
+  onSelectRole: (role: MemberRole) => void;
 }) {
-  const isLastSoleAdmin =
-    member.role === "admin" && adminCount(list) <= 1;
+  const isLastSoleAdmin = member.role === "admin" && adminCount(list) <= 1;
 
   return (
     <div
@@ -96,21 +87,16 @@ function MembershipRoleBadgePicker({
                 key={role}
                 type="button"
                 disabled={disabled}
-                title={
-                  disabled
-                    ? "마지막 관리자의 역할은 변경할 수 없습니다"
-                    : undefined
-                }
+                title={disabled ? "마지막 관리자의 역할은 변경할 수 없습니다" : undefined}
                 className={cn(
                   "flex w-full items-center gap-2 px-3 py-2 text-left text-sm",
-                  disabled
-                    ? "cursor-not-allowed text-zinc-300"
-                    : "cursor-pointer text-zinc-200 hover:bg-zinc-800",
+                  disabled ? "cursor-not-allowed text-zinc-300" : "cursor-pointer text-zinc-200 hover:bg-zinc-800",
                   isCurrent && !disabled ? "bg-zinc-800/60" : "",
                 )}
                 onClick={() => {
                   if (disabled) return;
-                  if (onSelectRole(role)) onToggle();
+                  onSelectRole(role);
+                  onToggle();
                 }}
               >
                 <span
@@ -133,121 +119,55 @@ export function HouseholdMembershipSettingsSection() {
   const {
     households,
     householdKindDefinitions,
-    거점을_갱신_한다,
+    멤버_역할을_변경_한다,
+    멤버를_제거_한다,
+    초대를_생성_한다,
+    초대_목록을_불러온다,
+    초대를_취소_한다,
     loading,
   } = useDashboard();
-  const [pickedHouseholdId, setPickedHouseholdId] = useState<string | null>(
-    null,
-  );
+
+  const [pickedHouseholdId, setPickedHouseholdId] = useState<string | null>(null);
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteLabel, setInviteLabel] = useState("");
   const [inviteRole, setInviteRole] = useState<MemberRole>("editor");
-  const [pendingRemoveMemberId, setPendingRemoveMemberId] = useState<
-    string | null
-  >(null);
-  const [rolePickerMemberId, setRolePickerMemberId] = useState<string | null>(
-    null,
-  );
+  const [inviteExpiresInDays, setInviteExpiresInDays] = useState(7);
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
-  const [inviteLinkRole, setInviteLinkRole] = useState<MemberRole>("editor");
-  const [inviteLinkUrl, setInviteLinkUrl] = useState<string | null>(null);
+  const [inviteSubmitting, setInviteSubmitting] = useState(false);
+
+  const [pendingRemoveMemberId, setPendingRemoveMemberId] = useState<string | null>(null);
+  const [rolePickerMemberId, setRolePickerMemberId] = useState<string | null>(null);
+
+  const [invitations, setInvitations] = useState<MockInvitation[]>([]);
+  const [invLinkRole, setInvLinkRole] = useState<MemberRole>("editor");
+  const [invLinkGenerating, setInvLinkGenerating] = useState(false);
+  const [invLinkUrl, setInvLinkUrl] = useState<string | null>(null);
 
   const selectedId = useMemo(() => {
     if (households.length === 0) return null;
-    if (
-      pickedHouseholdId &&
-      households.some((h) => h.id === pickedHouseholdId)
-    ) {
-      return pickedHouseholdId;
-    }
+    if (pickedHouseholdId && households.some((h) => h.id === pickedHouseholdId)) return pickedHouseholdId;
     return households[0]!.id;
   }, [households, pickedHouseholdId]);
 
-  const selected = useMemo(
+  const selected: Household | null = useMemo(
     () => households.find((h) => h.id === selectedId) ?? null,
     [households, selectedId],
   );
 
-  const pendingRemoveMember = useMemo(() => {
-    if (!pendingRemoveMemberId || !selected) return null;
-    return (
-      membersOf(selected).find((m) => m.id === pendingRemoveMemberId) ?? null
-    );
-  }, [pendingRemoveMemberId, selected]);
+  const members: GroupMember[] = selected?.members ?? [];
 
-  const resetInviteFields = () => {
-    setInviteEmail("");
-    setInviteLabel("");
-    setInviteRole("editor");
-  };
+  const pendingRemoveMember = useMemo(
+    () => members.find((m) => m.id === pendingRemoveMemberId) ?? null,
+    [members, pendingRemoveMemberId],
+  );
 
-  const handleInviteModalSubmit = () => {
-    if (!selected) return;
-    const email = inviteEmail.trim().toLowerCase();
-    if (!email) {
-      toast({ title: "이메일을 입력하세요", variant: "warning" });
-      return;
-    }
-    const list = membersOf(selected);
-    if (list.some((m) => m.email.toLowerCase() === email)) {
-      toast({
-        title: "이미 초대된 이메일입니다",
-        variant: "warning",
-      });
-      return;
-    }
-    const m: GroupMember = {
-      id: newMemberId(),
-      email: inviteEmail.trim(),
-      role: inviteRole,
-      label: inviteLabel.trim() || undefined,
-    };
-    const next = [...list, m];
-    if (adminCount(next) < 1) {
-      toast({
-        title: "관리자가 한 명 이상 필요합니다",
-        variant: "warning",
-      });
-      return;
-    }
-    거점을_갱신_한다(selected.id, (h) => ({
-      ...h,
-      members: next,
-    }));
-    resetInviteFields();
-    setInviteModalOpen(false);
-    toast({
-      title: "멤버를 추가했습니다",
-      description: `${selected.name} · (로컬 데모)`,
-    });
-  };
+  // 초대 목록 로드
+  useEffect(() => {
+    if (!selectedId) return;
+    setInvitations([]);
+    void 초대_목록을_불러온다(selectedId).then(setInvitations).catch(() => {});
+  }, [selectedId, 초대_목록을_불러온다]);
 
-  const handleRoleChange = (
-    memberId: string,
-    role: MemberRole,
-  ): boolean => {
-    if (!selected) return false;
-    const list = membersOf(selected);
-    const target = list.find((m) => m.id === memberId);
-    if (!target || target.role === role) return false;
-    if (target.role === "admin" && adminCount(list) <= 1 && role !== "admin") {
-      toast({
-        title: "마지막 관리자의 역할은 변경할 수 없습니다",
-        variant: "warning",
-      });
-      return false;
-    }
-    const next = list.map((m) =>
-      m.id === memberId ? { ...m, role } : m,
-    );
-    거점을_갱신_한다(selected.id, (h) => ({ ...h, members: next }));
-    toast({
-      title: "멤버 역할을 변경했습니다",
-      description: `${target.label ?? target.email}: ${role}`,
-    });
-    return true;
-  };
-
+  // 역할 picker 외부 클릭 닫기
   useEffect(() => {
     if (!rolePickerMemberId) return;
     const onPointerDown = (e: PointerEvent) => {
@@ -268,25 +188,89 @@ export function HouseholdMembershipSettingsSection() {
     };
   }, [rolePickerMemberId]);
 
-  const confirmRemove = () => {
+  const handleRoleChange = async (memberId: string, role: MemberRole) => {
+    if (!selected) return;
+    const target = members.find((m) => m.id === memberId);
+    if (!target || target.role === role) return;
+    if (target.role === "admin" && adminCount(members) <= 1 && role !== "admin") {
+      toast({ title: "마지막 관리자의 역할은 변경할 수 없습니다", variant: "warning" });
+      return;
+    }
+    try {
+      await 멤버_역할을_변경_한다(selected.id, memberId, role);
+      toast({ title: "멤버 역할을 변경했습니다", description: `${target.label ?? target.email}: ${ROLE_LABELS[role]}` });
+    } catch {
+      toast({ title: "역할 변경에 실패했습니다", variant: "warning" });
+    }
+  };
+
+  const confirmRemove = async () => {
     if (!selected || !pendingRemoveMemberId) return;
-    const list = membersOf(selected);
-    const target = list.find((m) => m.id === pendingRemoveMemberId);
+    const target = members.find((m) => m.id === pendingRemoveMemberId);
     if (!target) return;
-    if (target.role === "admin" && adminCount(list) <= 1) {
-      toast({
-        title: "마지막 관리자는 제거할 수 없습니다",
-        variant: "warning",
-      });
+    if (target.role === "admin" && adminCount(members) <= 1) {
+      toast({ title: "마지막 관리자는 제거할 수 없습니다", variant: "warning" });
       setPendingRemoveMemberId(null);
       return;
     }
-    거점을_갱신_한다(selected.id, (h) => ({
-      ...h,
-      members: list.filter((m) => m.id !== pendingRemoveMemberId),
-    }));
+    try {
+      await 멤버를_제거_한다(selected.id, pendingRemoveMemberId);
+      toast({ title: "멤버를 제거했습니다" });
+    } catch {
+      toast({ title: "멤버 제거에 실패했습니다", variant: "warning" });
+    }
     setPendingRemoveMemberId(null);
-    toast({ title: "멤버를 제거했습니다" });
+  };
+
+  const handleInviteSubmit = async () => {
+    if (!selected) return;
+    setInviteSubmitting(true);
+    try {
+      await 초대를_생성_한다(selected.id, {
+        role: inviteRole,
+        inviteeEmail: inviteEmail.trim() || undefined,
+        expiresInDays: inviteExpiresInDays,
+      });
+      toast({ title: "초대장을 보냈습니다", description: inviteEmail.trim() ? `${inviteEmail.trim()} 에게 이메일 전송됨` : "링크 초대 생성됨" });
+      const updated = await 초대_목록을_불러온다(selected.id);
+      setInvitations(updated);
+      setInviteEmail("");
+      setInviteModalOpen(false);
+    } catch (err) {
+      toast({ title: "초대 생성에 실패했습니다", description: err instanceof Error ? err.message : undefined, variant: "warning" });
+    } finally {
+      setInviteSubmitting(false);
+    }
+  };
+
+  const handleGenerateInviteLink = async () => {
+    if (!selected) return;
+    setInvLinkGenerating(true);
+    setInvLinkUrl(null);
+    try {
+      const inv = await 초대를_생성_한다(selected.id, { role: invLinkRole, expiresInDays: 7 });
+      const url = `${window.location.origin}/invite/${inv.token}`;
+      setInvLinkUrl(url);
+      await navigator.clipboard.writeText(url).catch(() => {});
+      toast({ title: "초대 링크를 클립보드에 복사했습니다" });
+      const updated = await 초대_목록을_불러온다(selected.id);
+      setInvitations(updated);
+    } catch {
+      toast({ title: "링크 생성에 실패했습니다", variant: "warning" });
+    } finally {
+      setInvLinkGenerating(false);
+    }
+  };
+
+  const handleRevokeInvitation = async (invId: string) => {
+    if (!selected) return;
+    try {
+      await 초대를_취소_한다(selected.id, invId);
+      setInvitations((prev) => prev.filter((i) => i.id !== invId));
+      toast({ title: "초대를 취소했습니다" });
+    } catch {
+      toast({ title: "초대 취소에 실패했습니다", variant: "warning" });
+    }
   };
 
   if (loading && households.length === 0) {
@@ -303,141 +287,65 @@ export function HouseholdMembershipSettingsSection() {
       <section className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
         <h2 className="text-base font-semibold text-white">거점 멤버십</h2>
         <p className="mt-2 text-sm text-zinc-300">
-          등록된 거점이 없습니다. 대시보드에서 거점을 만든 뒤 멤버를 관리할 수
-          있습니다.
+          등록된 거점이 없습니다. 대시보드에서 거점을 만든 뒤 멤버를 관리할 수 있습니다.
         </p>
       </section>
     );
   }
 
-  const members = selected ? membersOf(selected) : [];
-
   return (
     <section className="rounded-2xl border border-zinc-800 bg-zinc-900/40 p-6">
       <h2 className="text-base font-semibold text-white">거점 멤버십</h2>
       <p className="mt-1 text-sm text-zinc-300">
-        거점(가족·공유 그룹)마다 멤버·역할을 둡니다. 초대 메일·권한 검증은
-        백엔드 연동 후 연결하세요.
+        거점마다 멤버와 역할을 관리합니다.
       </p>
 
       <div className="mt-4 space-y-1">
         <label className="text-xs text-zinc-300">거점 선택</label>
         <select
           value={selectedId ?? ""}
-          onChange={(e) =>
-            setPickedHouseholdId(e.target.value || null)
-          }
+          onChange={(e) => setPickedHouseholdId(e.target.value || null)}
           className={inputClass}
         >
           {households.map((h) => (
             <option key={h.id} value={h.id}>
-              {h.name} ·{" "}
-              {getHouseholdKindLabel(h.kind, householdKindDefinitions)}
+              {h.name} · {getHouseholdKindLabel(h.kind, householdKindDefinitions)}
             </option>
           ))}
         </select>
       </div>
 
-      <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-xs text-zinc-300">
-          멤버 초대·역할 지정은 모달에서 진행합니다.
-        </p>
+      {/* 멤버 목록 */}
+      <div className="mt-5 flex items-center justify-between">
+        <p className="text-xs text-zinc-300">멤버 {members.length}명</p>
         <button
           type="button"
-          onClick={() => {
-            resetInviteFields();
-            setInviteModalOpen(true);
-          }}
+          onClick={() => { setInviteEmail(""); setInviteModalOpen(true); }}
           className="shrink-0 cursor-pointer rounded-xl bg-teal-500 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-teal-400"
         >
-          멤버 추가…
+          초대장 보내기…
         </button>
       </div>
 
-      <FormModal
-        open={inviteModalOpen}
-        onOpenChange={(open) => {
-          setInviteModalOpen(open);
-          if (!open) resetInviteFields();
-        }}
-        title="멤버 추가"
-        description={
-          selected
-            ? `대상 거점: ${selected.name} (${getHouseholdKindLabel(selected.kind, householdKindDefinitions)}) · 데모에서는 로컬에만 반영됩니다.`
-            : ""
-        }
-        submitLabel="추가"
-        cancelLabel="취소"
-        onSubmit={handleInviteModalSubmit}
-        submitDisabled={!inviteEmail.trim()}
-      >
-        <div className="space-y-3">
-          <div className="space-y-1">
-            <label className="text-xs text-zinc-300">이메일</label>
-            <input
-              type="email"
-              value={inviteEmail}
-              onChange={(e) => setInviteEmail(e.target.value)}
-              className={inputClass}
-              placeholder="member@example.com"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs text-zinc-300">표시 이름 (선택)</label>
-            <input
-              value={inviteLabel}
-              onChange={(e) => setInviteLabel(e.target.value)}
-              className={inputClass}
-              placeholder="엄마, 동료…"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs text-zinc-300">역할</label>
-            <select
-              value={inviteRole}
-              onChange={(e) =>
-                setInviteRole(e.target.value as MemberRole)
-              }
-              className={inputClass}
-            >
-              <option value="viewer">조회자 — 조회만</option>
-              <option value="editor">편집자 — 조회 · 추가 · 수정</option>
-              <option value="admin">관리자 — 전체 + 멤버 관리</option>
-            </select>
-          </div>
-        </div>
-      </FormModal>
-
-      <ul className="mt-4 divide-y divide-zinc-800 rounded-xl border border-zinc-800">
+      <ul className="mt-3 divide-y divide-zinc-800 rounded-xl border border-zinc-800">
         {members.length === 0 ? (
           <li className="px-4 py-8 text-center text-sm text-zinc-300">
-            아직 멤버가 없습니다. 첫 멤버는{" "}
-            <span className="text-zinc-300">관리자</span>로 두는 것을
-            권장합니다.
+            아직 멤버가 없습니다.
           </li>
         ) : (
           members.map((g) => (
-            <li
-              key={g.id}
-              className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
-            >
+            <li key={g.id} className="flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
               <div className="min-w-0">
                 <p className="font-medium text-zinc-200">{g.email}</p>
-                {g.label ? (
-                  <p className="text-xs text-zinc-300">{g.label}</p>
-                ) : null}
+                {g.label ? <p className="text-xs text-zinc-300">{g.label}</p> : null}
               </div>
               <div className="flex flex-wrap items-center gap-3">
                 <MembershipRoleBadgePicker
                   member={g}
                   list={members}
                   isOpen={rolePickerMemberId === g.id}
-                  onToggle={() =>
-                    setRolePickerMemberId((id) =>
-                      id === g.id ? null : g.id,
-                    )
-                  }
-                  onSelectRole={(role) => handleRoleChange(g.id, role)}
+                  onToggle={() => setRolePickerMemberId((id) => id === g.id ? null : g.id)}
+                  onSelectRole={(role) => void handleRoleChange(g.id, role)}
                 />
                 <button
                   type="button"
@@ -454,17 +362,14 @@ export function HouseholdMembershipSettingsSection() {
 
       {/* 초대 링크 */}
       <div className="mt-4 rounded-xl border border-zinc-800 p-4">
-        <p className="text-xs font-medium text-zinc-300">초대 링크 생성 (모의)</p>
+        <p className="text-xs font-medium text-zinc-300">초대 링크 생성</p>
         <p className="mt-0.5 text-xs text-zinc-500">
-          링크를 받은 사람이 거점에 참여할 수 있습니다. 백엔드 연동 전 데모입니다.
+          링크를 받은 사람이 가입 또는 로그인 후 거점에 참여할 수 있습니다.
         </p>
         <div className="mt-3 flex items-center gap-2">
           <select
-            value={inviteLinkRole}
-            onChange={(e) => {
-              setInviteLinkRole(e.target.value as MemberRole);
-              setInviteLinkUrl(null);
-            }}
+            value={invLinkRole}
+            onChange={(e) => { setInvLinkRole(e.target.value as MemberRole); setInvLinkUrl(null); }}
             className={cn(inputClass, "max-w-40")}
           >
             <option value="viewer">조회자</option>
@@ -473,40 +378,103 @@ export function HouseholdMembershipSettingsSection() {
           </select>
           <button
             type="button"
-            onClick={() => {
-              const token = crypto.randomUUID().slice(0, 8);
-              const url = `${typeof window !== "undefined" ? window.location.origin : ""}/mock/invite/${token}`;
-              setInviteLinkUrl(url);
-              void navigator.clipboard.writeText(url);
-              toast({ title: "초대 링크를 클립보드에 복사했습니다" });
-            }}
-            className="shrink-0 cursor-pointer rounded-xl border border-teal-500/40 bg-teal-500/10 px-3 py-2 text-xs font-semibold text-teal-300 transition-colors hover:bg-teal-500/20"
+            onClick={() => void handleGenerateInviteLink()}
+            disabled={invLinkGenerating}
+            className="shrink-0 cursor-pointer rounded-xl border border-teal-500/40 bg-teal-500/10 px-3 py-2 text-xs font-semibold text-teal-300 transition-colors hover:bg-teal-500/20 disabled:opacity-50"
           >
-            {inviteLinkUrl ? "다시 생성" : "링크 생성"}
+            {invLinkGenerating ? "생성 중…" : invLinkUrl ? "다시 생성" : "링크 생성"}
           </button>
         </div>
-        {inviteLinkUrl && (
+        {invLinkUrl && (
           <p className="mt-2 break-all rounded-lg bg-zinc-950 px-3 py-1.5 text-xs text-zinc-400">
-            {inviteLinkUrl}
+            {invLinkUrl}
           </p>
         )}
       </div>
 
+      {/* 보낸 초대 목록 */}
+      {invitations.length > 0 && (
+        <div className="mt-4">
+          <p className="text-xs font-medium text-zinc-300">보낸 초대 ({invitations.length})</p>
+          <ul className="mt-2 divide-y divide-zinc-800 rounded-xl border border-zinc-800">
+            {invitations.map((inv) => (
+              <li key={inv.id} className="flex items-center justify-between px-4 py-2.5">
+                <div>
+                  <span className="text-xs text-zinc-300">
+                    {ROLE_LABELS[inv.role]} · {new Date(inv.createdAt).toLocaleDateString("ko-KR")}
+                  </span>
+                  <p className="text-xs text-zinc-500 font-mono">/invite/{inv.token}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => void handleRevokeInvitation(inv.id)}
+                  className="text-xs text-rose-400 hover:underline cursor-pointer"
+                >
+                  취소
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* 초대장 발송 모달 (이메일 지정 초대) */}
+      <FormModal
+        open={inviteModalOpen}
+        onOpenChange={(open) => { setInviteModalOpen(open); if (!open) setInviteEmail(""); }}
+        title="초대장 보내기"
+        description={selected ? `대상 거점: ${selected.name}` : ""}
+        submitLabel={inviteSubmitting ? "전송 중…" : "초대 전송"}
+        cancelLabel="취소"
+        onSubmit={() => void handleInviteSubmit()}
+        submitDisabled={inviteSubmitting}
+      >
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <label className="text-xs text-zinc-300">이메일 (선택 — 비우면 누구나 수락 가능)</label>
+            <input
+              type="email"
+              value={inviteEmail}
+              onChange={(e) => setInviteEmail(e.target.value)}
+              className={inputClass}
+              placeholder="member@example.com"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-zinc-300">역할</label>
+            <select
+              value={inviteRole}
+              onChange={(e) => setInviteRole(e.target.value as MemberRole)}
+              className={inputClass}
+            >
+              <option value="viewer">조회자 — 조회만</option>
+              <option value="editor">편집자 — 조회 · 추가 · 수정</option>
+              <option value="admin">관리자 — 전체 + 멤버 관리</option>
+            </select>
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-zinc-300">만료 (일)</label>
+            <input
+              type="number"
+              min={1}
+              max={30}
+              value={inviteExpiresInDays}
+              onChange={(e) => setInviteExpiresInDays(Number(e.target.value))}
+              className={inputClass}
+            />
+          </div>
+        </div>
+      </FormModal>
+
       <AlertModal
         open={pendingRemoveMemberId !== null}
-        onOpenChange={(open) => {
-          if (!open) setPendingRemoveMemberId(null);
-        }}
+        onOpenChange={(open) => { if (!open) setPendingRemoveMemberId(null); }}
         title="멤버 제거"
-        description={
-          pendingRemoveMember
-            ? `「${pendingRemoveMember.email}」을(를) 이 거점에서 제거할까요?`
-            : "제거할까요?"
-        }
+        description={pendingRemoveMember ? `「${pendingRemoveMember.email}」을(를) 이 거점에서 제거할까요?` : "제거할까요?"}
         confirmLabel="제거"
         cancelLabel="취소"
         variant="danger"
-        onConfirm={confirmRemove}
+        onConfirm={() => void confirmRemove()}
       />
     </section>
   );

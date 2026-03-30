@@ -69,7 +69,8 @@
       "Bash(pnpm --filter frontend exec tsc --noEmit --pretty)",
       "Bash(pnpm:*)",
       "Bash(docker compose:*)",
-      "Bash(find \"/c/Users/wukdd/dev/Lumir-ERP/src/app/api/\\(ams\\)\" -type d -maxdepth 4)"
+      "Bash(find \"/c/Users/wukdd/dev/Lumir-ERP/src/app/api/\\(ams\\)\" -type d -maxdepth 4)",
+      "Bash(find \"C:/Users/wukdd/dev/home-inventory-manager/frontend/app/\\(current\\)/settings\" -type f)"
     ]
   }
 }

@@ -20,17 +20,19 @@ import {
   getNotifications,
   getSharedHouseholdKindDefinitions,
   setNotifications,
-  setSharedHouseholdKindDefinitions,
 } from "@/lib/local-store";
 import { cloneDefaultCatalog } from "./dashboard-mock.service";
 import type {
+  GroupMember,
   Household,
   HouseholdKindDefinition,
+  MemberRole,
+  MockInvitation,
   ProductCatalog,
 } from "@/types/domain";
 import { newEntityId } from "../_lib/dashboard-helpers";
 import { dashboardApiHouseholdsClient } from "./dashboard-api.service";
-import type { DashboardHouseholdsPort } from "./dashboard-households.port";
+import type { CreateInvitationParams, DashboardHouseholdsPort } from "./dashboard-households.port";
 import {
   createDashboardMockHouseholdsService,
   MOCK_SEED_NOTIFICATIONS,
@@ -48,66 +50,35 @@ function normalizeHouseholdKinds(
   }));
 }
 
-/** URL이 `/mock/...` 이면 mock, 그 외는 api (현재 localStorage, 이후 Route Handler) */
+/** URL이 `/mock/...` 이면 mock, 그 외는 api */
 export type DashboardHouseholdsDataMode = "mock" | "api";
 
 export type DashboardContextType = {
-  /** mock / api(백엔드·Route Handler) — UI 분기용 */
   dataMode: DashboardHouseholdsDataMode;
-  /** 데이터 소스에서 읽은 거점 목록 */
   households: Household[];
-  /** 거점별 카탈로그를 꺼낸다 (없으면 기본 카탈로그 반환) */
   거점_카탈로그를_가져온다: (householdId: string) => ProductCatalog;
-  /** 거점 유형 정의 (라벨 CRUD, 로컬 공유) */
   householdKindDefinitions: HouseholdKindDefinition[];
-  /** 거점 유형 목록이 로컬에서 읽혔는지 (저장 effect 게이트) */
   householdKindsHydrated: boolean;
-  /** 최초 하이드레이션·재조회 중 */
   loading: boolean;
   error: string | null;
-  /** 현재 `dataMode`에 맞는 소스에서 거점 목록을 다시 읽는다 */
   거점_목록을_불러온다: () => void;
-  /** 거점을 추가하고 새 id를 반환한다 */
-  거점을_추가_한다: (name: string, kind: string) => string;
-  /**
-   * 거점 유형 목록을 통째로 교체한다. 삭제된 유형을 쓰는 거점은 남은 첫 유형으로 옮긴다.
-   */
-  거점_유형_정의를_교체_한다: (next: HouseholdKindDefinition[]) => void;
-  /** 거점 id로 삭제한다 */
-  거점을_삭제_한다: (householdId: string) => void;
-  /** 특정 거점에 대해 불변 갱신 함수를 적용한다 */
-  거점을_갱신_한다: (
-    householdId: string,
-    updater: (h: Household) => Household,
-  ) => void;
-  /** 거점별 카탈로그 갱신 (거점 상태를 통해 저장) */
-  카탈로그를_갱신_한다: (
-    householdId: string,
-    updater: (c: ProductCatalog) => ProductCatalog,
-  ) => void;
-  /** 소비(사용) — 수량 감소 + `him-inventory-ledger` type `out` */
-  재고_소비를_기록_한다: (
-    householdId: string,
-    itemId: string,
-    quantity: number,
-    memo?: string,
-  ) => boolean;
-  /** 폐기 — 수량 감소 + `him-inventory-ledger` type `waste` */
-  재고_폐기를_기록_한다: (
-    householdId: string,
-    itemId: string,
-    quantity: number,
-    reasonCode: string,
-    memo?: string,
-  ) => boolean;
-  /** 장보기「구매 완료」— 수량 증가 + `him-inventory-ledger` type `in` */
-  재고_장보기_보충을_기록_한다: (
-    householdId: string,
-    itemId: string,
-    quantity: number,
-    memo?: string,
-    refId?: string,
-  ) => boolean;
+  거점을_추가_한다: (name: string, kind: string) => Promise<string>;
+  거점_기본정보를_수정_한다: (id: string, name: string, kind: string) => Promise<void>;
+  거점_유형_정의를_교체_한다: (next: HouseholdKindDefinition[]) => Promise<void>;
+  거점을_삭제_한다: (householdId: string) => Promise<void>;
+  거점을_갱신_한다: (householdId: string, updater: (h: Household) => Household) => void;
+  카탈로그를_갱신_한다: (householdId: string, updater: (c: ProductCatalog) => ProductCatalog) => void;
+  // ── 멤버 ──
+  멤버_역할을_변경_한다: (householdId: string, memberId: string, role: MemberRole) => Promise<void>;
+  멤버를_제거_한다: (householdId: string, memberId: string) => Promise<void>;
+  // ── 초대 ──
+  초대를_생성_한다: (householdId: string, params: CreateInvitationParams) => Promise<MockInvitation>;
+  초대_목록을_불러온다: (householdId: string) => Promise<MockInvitation[]>;
+  초대를_취소_한다: (householdId: string, invitationId: string) => Promise<void>;
+  // ── 재고 ──
+  재고_소비를_기록_한다: (householdId: string, itemId: string, quantity: number, memo?: string) => boolean;
+  재고_폐기를_기록_한다: (householdId: string, itemId: string, quantity: number, reasonCode: string, memo?: string) => boolean;
+  재고_장보기_보충을_기록_한다: (householdId: string, itemId: string, quantity: number, memo?: string, refId?: string) => boolean;
 };
 
 export type DashboardProviderProps = {
@@ -124,16 +95,14 @@ export function DashboardProvider({
   dataMode,
 }: DashboardProviderProps) {
   const householdsPort = useMemo<DashboardHouseholdsPort>(() => {
-    if (dataMode === "mock") {
-      return createDashboardMockHouseholdsService();
-    }
+    if (dataMode === "mock") return createDashboardMockHouseholdsService();
     return dashboardApiHouseholdsClient;
   }, [dataMode]);
 
-  const [households, setHouseholds] = useState<Household[]>([]);
-  const [householdKindDefinitions, setHouseholdKindDefinitions] = useState<
-    HouseholdKindDefinition[]
-  >(() => cloneDefaultHouseholdKindDefinitions());
+  const [households, setHouseholdsState] = useState<Household[]>([]);
+  const [householdKindDefinitions, setHouseholdKindDefinitions] = useState<HouseholdKindDefinition[]>(
+    () => cloneDefaultHouseholdKindDefinitions(),
+  );
   const [householdKindsHydrated, setHouseholdKindsHydrated] = useState(false);
   const kindDefsRef = useRef(householdKindDefinitions);
 
@@ -150,10 +119,20 @@ export function DashboardProvider({
     householdsRef.current = households;
   }, [households]);
 
+  // ── 거점 유형 초기 로드 ──
   useEffect(() => {
-    setHouseholdKindDefinitions(getSharedHouseholdKindDefinitions());
-    setHouseholdKindsHydrated(true);
-  }, []);
+    void (async () => {
+      try {
+        const kinds = await householdsPort.listKinds();
+        setHouseholdKindDefinitions(kinds.length > 0 ? kinds : cloneDefaultHouseholdKindDefinitions());
+      } catch {
+        setHouseholdKindDefinitions(getSharedHouseholdKindDefinitions());
+      } finally {
+        setHouseholdKindsHydrated(true);
+      }
+    })();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [householdsPort]);
 
   useEffect(() => {
     if (dataMode !== "mock") return;
@@ -162,11 +141,13 @@ export function DashboardProvider({
     }
   }, [dataMode]);
 
+  // ── mock 모드: localStorage 동기화 (saveAll 패턴 유지) ──
   useEffect(() => {
-    if (!householdKindsHydrated) return;
-    setSharedHouseholdKindDefinitions(householdKindDefinitions);
-  }, [householdKindDefinitions, householdKindsHydrated]);
+    if (!hydrated || dataMode !== "mock") return;
+    void householdsPort.saveAll(households);
+  }, [households, hydrated, householdsPort, dataMode]);
 
+  // ── 거점 목록 로드 ──
   const 거점_목록을_불러온다 = useCallback(() => {
     setLoading(true);
     setError(null);
@@ -174,14 +155,9 @@ export function DashboardProvider({
       try {
         const list = await householdsPort.list();
         const defs = kindDefsRef.current;
-        setHouseholds(normalizeHouseholdKinds(list, defs));
+        setHouseholdsState(normalizeHouseholdKinds(list, defs));
       } catch (err) {
-        console.error("거점 목록 로드 오류:", err);
-        setError(
-          err instanceof Error
-            ? err.message
-            : "거점 목록을 불러오는 중 오류가 발생했습니다.",
-        );
+        setError(err instanceof Error ? err.message : "거점 목록을 불러오는 중 오류가 발생했습니다.");
       } finally {
         setLoading(false);
         setHydrated(true);
@@ -193,182 +169,170 @@ export function DashboardProvider({
     거점_목록을_불러온다();
   }, [거점_목록을_불러온다]);
 
-  useEffect(() => {
-    if (!hydrated) return;
-    void (async () => {
-      try {
-        await householdsPort.saveAll(households);
-      } catch (err) {
-        console.error("거점 목록 저장 오류:", err);
-      }
-    })();
-  }, [households, hydrated, householdsPort]);
-
+  // ── 거점 유형 교체 ──
   const 거점_유형_정의를_교체_한다 = useCallback(
-    (next: HouseholdKindDefinition[]) => {
+    async (next: HouseholdKindDefinition[]) => {
       const cleaned = next
-        .map((d, i) => ({
-          id: d.id.trim(),
-          label: d.label.trim(),
-          sortOrder: d.sortOrder ?? i,
-        }))
+        .map((d, i) => ({ id: d.id.trim(), label: d.label.trim(), sortOrder: d.sortOrder ?? i }))
         .filter((d) => d.id && d.label);
       const sorted = sortHouseholdKindDefinitions(cleaned);
       if (sorted.length === 0) return;
+
       const valid = new Set(sorted.map((d) => d.id));
-      const fallback = sorted[0].id;
-      setHouseholds((prev) =>
-        prev.map((h) => ({
-          ...h,
-          kind: valid.has(h.kind) ? h.kind : fallback,
-        })),
+      const fallback = sorted[0]!.id;
+      setHouseholdsState((prev) =>
+        prev.map((h) => ({ ...h, kind: valid.has(h.kind) ? h.kind : fallback })),
       );
       setHouseholdKindDefinitions(sorted);
+
+      try {
+        await householdsPort.saveKinds(sorted);
+      } catch (err) {
+        console.error("거점 유형 저장 오류:", err);
+      }
     },
-    [],
+    [householdsPort],
   );
 
-  const 거점을_추가_한다 = useCallback((name: string, kind: string) => {
-    const defs = kindDefsRef.current;
-    const valid = new Set(defs.map((d) => d.id));
-    const resolved = valid.has(kind) ? kind : (defs[0]?.id ?? "home");
-    const id = newEntityId();
-    const h: Household = {
-      id,
-      name: name.trim() || "이름 없는 거점",
-      kind: resolved,
-      rooms: [],
-      items: [],
-      furniturePlacements: [],
-      storageLocations: [],
-      createdAt: new Date().toISOString(),
-      catalog: cloneDefaultCatalog(),
-    };
-    setHouseholds((prev) => [...prev, h]);
-    return id;
-  }, []);
+  // ── 거점 추가 ──
+  const 거점을_추가_한다 = useCallback(
+    async (name: string, kind: string): Promise<string> => {
+      const defs = kindDefsRef.current;
+      const valid = new Set(defs.map((d) => d.id));
+      const resolved = valid.has(kind) ? kind : (defs[0]?.id ?? "home");
+      try {
+        const created = await householdsPort.create(name, resolved);
+        setHouseholdsState((prev) => [...prev, ensureHouseholdShape(created)]);
+        return created.id;
+      } catch (err) {
+        console.error("거점 추가 오류:", err);
+        // fallback: 로컬에서만 추가
+        const id = newEntityId();
+        const h: Household = {
+          id,
+          name: name.trim() || "이름 없는 거점",
+          kind: resolved,
+          rooms: [],
+          items: [],
+          furniturePlacements: [],
+          storageLocations: [],
+          createdAt: new Date().toISOString(),
+          catalog: cloneDefaultCatalog(),
+        };
+        setHouseholdsState((prev) => [...prev, h]);
+        return id;
+      }
+    },
+    [householdsPort],
+  );
 
-  const 거점을_삭제_한다 = useCallback((householdId: string) => {
-    setHouseholds((prev) => prev.filter((h) => h.id !== householdId));
-  }, []);
+  // ── 거점 기본정보 수정 ──
+  const 거점_기본정보를_수정_한다 = useCallback(
+    async (id: string, name: string, kind: string) => {
+      setHouseholdsState((prev) =>
+        prev.map((h) => (h.id === id ? { ...h, name, kind } : h)),
+      );
+      try {
+        await householdsPort.update(id, { name, kind });
+      } catch (err) {
+        console.error("거점 수정 오류:", err);
+      }
+    },
+    [householdsPort],
+  );
 
+  // ── 거점 삭제 ──
+  const 거점을_삭제_한다 = useCallback(
+    async (householdId: string) => {
+      setHouseholdsState((prev) => prev.filter((h) => h.id !== householdId));
+      try {
+        await householdsPort.remove(householdId);
+      } catch (err) {
+        console.error("거점 삭제 오류:", err);
+        거점_목록을_불러온다(); // 실패 시 재로드
+      }
+    },
+    [householdsPort, 거점_목록을_불러온다],
+  );
+
+  // ── 거점 상태 직접 갱신 (rooms/items/catalog 등 로컬 전용) ──
   const 거점을_갱신_한다 = useCallback(
     (householdId: string, updater: (h: Household) => Household) => {
-      setHouseholds((prev) =>
+      setHouseholdsState((prev) =>
         prev.map((h) => (h.id === householdId ? updater(h) : h)),
       );
     },
     [],
   );
 
-  const 재고_소비를_기록_한다 = useCallback(
-    (householdId: string, itemId: string, quantity: number, memo?: string) => {
-      if (!Number.isFinite(quantity) || quantity < 1) return false;
-      const h = householdsRef.current.find((x) => x.id === householdId);
-      if (!h) return false;
-      const it = h.items.find((i) => i.id === itemId);
-      if (!it || it.quantity < quantity) return false;
-      const nextQty = it.quantity - quantity;
-      const trimmed = memo?.trim();
-      appendInventoryLedgerRow({
-        id: crypto.randomUUID(),
-        householdId,
-        inventoryItemId: itemId,
-        type: "out",
-        quantityDelta: -quantity,
-        quantityAfter: nextQty,
-        itemLabel: it.name,
-        memo: trimmed || undefined,
-        createdAt: new Date().toISOString(),
-      });
-      거점을_갱신_한다(householdId, (prev) => ({
-        ...prev,
-        items: prev.items.map((row) =>
-          row.id === itemId ? { ...row, quantity: nextQty } : row,
+  // ── 멤버 역할 변경 ──
+  const 멤버_역할을_변경_한다 = useCallback(
+    async (householdId: string, memberId: string, role: MemberRole) => {
+      setHouseholdsState((prev) =>
+        prev.map((h) =>
+          h.id === householdId
+            ? {
+                ...h,
+                members: (h.members ?? []).map((m) =>
+                  m.id === memberId ? { ...m, role } : m,
+                ),
+              }
+            : h,
         ),
-      }));
-      return true;
+      );
+      try {
+        await householdsPort.changeMemberRole(householdId, memberId, role);
+      } catch (err) {
+        console.error("멤버 역할 변경 오류:", err);
+        거점_목록을_불러온다();
+        throw err;
+      }
     },
-    [거점을_갱신_한다],
+    [householdsPort, 거점_목록을_불러온다],
   );
 
-  const 재고_폐기를_기록_한다 = useCallback(
-    (
-      householdId: string,
-      itemId: string,
-      quantity: number,
-      reasonCode: string,
-      memo?: string,
-    ) => {
-      if (!Number.isFinite(quantity) || quantity < 1) return false;
-      const h = householdsRef.current.find((x) => x.id === householdId);
-      if (!h) return false;
-      const it = h.items.find((i) => i.id === itemId);
-      if (!it || it.quantity < quantity) return false;
-      const nextQty = it.quantity - quantity;
-      const trimmed = memo?.trim();
-      appendInventoryLedgerRow({
-        id: crypto.randomUUID(),
-        householdId,
-        inventoryItemId: itemId,
-        type: "waste",
-        quantityDelta: -quantity,
-        quantityAfter: nextQty,
-        itemLabel: it.name,
-        reason: reasonCode,
-        memo: trimmed || undefined,
-        createdAt: new Date().toISOString(),
-      });
-      거점을_갱신_한다(householdId, (prev) => ({
-        ...prev,
-        items: prev.items.map((row) =>
-          row.id === itemId ? { ...row, quantity: nextQty } : row,
+  // ── 멤버 제거 ──
+  const 멤버를_제거_한다 = useCallback(
+    async (householdId: string, memberId: string) => {
+      setHouseholdsState((prev) =>
+        prev.map((h) =>
+          h.id === householdId
+            ? { ...h, members: (h.members ?? []).filter((m) => m.id !== memberId) }
+            : h,
         ),
-      }));
-      return true;
+      );
+      try {
+        await householdsPort.removeMember(householdId, memberId);
+      } catch (err) {
+        console.error("멤버 제거 오류:", err);
+        거점_목록을_불러온다();
+        throw err;
+      }
     },
-    [거점을_갱신_한다],
+    [householdsPort, 거점_목록을_불러온다],
   );
 
-  const 재고_장보기_보충을_기록_한다 = useCallback(
-    (
-      householdId: string,
-      itemId: string,
-      quantity: number,
-      memo?: string,
-      refId?: string,
-    ) => {
-      if (!Number.isFinite(quantity) || quantity < 1) return false;
-      const h = householdsRef.current.find((x) => x.id === householdId);
-      if (!h) return false;
-      const it = h.items.find((i) => i.id === itemId);
-      if (!it) return false;
-      const nextQty = it.quantity + quantity;
-      const trimmed = memo?.trim();
-      appendInventoryLedgerRow({
-        id: crypto.randomUUID(),
-        householdId,
-        inventoryItemId: itemId,
-        type: "in",
-        quantityDelta: quantity,
-        quantityAfter: nextQty,
-        itemLabel: it.name,
-        memo: trimmed || "장보기 구매 완료",
-        refType: "shopping",
-        refId: refId?.trim() || undefined,
-        createdAt: new Date().toISOString(),
-      });
-      거점을_갱신_한다(householdId, (prev) => ({
-        ...prev,
-        items: prev.items.map((row) =>
-          row.id === itemId ? { ...row, quantity: nextQty } : row,
-        ),
-      }));
-      return true;
-    },
-    [거점을_갱신_한다],
+  // ── 초대 생성 ──
+  const 초대를_생성_한다 = useCallback(
+    (householdId: string, params: CreateInvitationParams) =>
+      householdsPort.createInvitation(householdId, params),
+    [householdsPort],
   );
 
+  // ── 초대 목록 ──
+  const 초대_목록을_불러온다 = useCallback(
+    (householdId: string) => householdsPort.listInvitations(householdId),
+    [householdsPort],
+  );
+
+  // ── 초대 취소 ──
+  const 초대를_취소_한다 = useCallback(
+    (householdId: string, invitationId: string) =>
+      householdsPort.revokeInvitation(householdId, invitationId),
+    [householdsPort],
+  );
+
+  // ── 카탈로그 ──
   const 거점_카탈로그를_가져온다 = useCallback(
     (householdId: string): ProductCatalog => {
       const h = householdsRef.current.find((x) => x.id === householdId);
@@ -387,6 +351,100 @@ export function DashboardProvider({
     [거점을_갱신_한다],
   );
 
+  // ── 재고 기록 ──
+  const 재고_소비를_기록_한다 = useCallback(
+    (householdId: string, itemId: string, quantity: number, memo?: string) => {
+      if (!Number.isFinite(quantity) || quantity < 1) return false;
+      const h = householdsRef.current.find((x) => x.id === householdId);
+      if (!h) return false;
+      const it = h.items.find((i) => i.id === itemId);
+      if (!it || it.quantity < quantity) return false;
+      const nextQty = it.quantity - quantity;
+      appendInventoryLedgerRow({
+        id: crypto.randomUUID(),
+        householdId,
+        inventoryItemId: itemId,
+        type: "out",
+        quantityDelta: -quantity,
+        quantityAfter: nextQty,
+        itemLabel: it.name,
+        memo: memo?.trim() || undefined,
+        createdAt: new Date().toISOString(),
+      });
+      거점을_갱신_한다(householdId, (prev) => ({
+        ...prev,
+        items: prev.items.map((row) =>
+          row.id === itemId ? { ...row, quantity: nextQty } : row,
+        ),
+      }));
+      return true;
+    },
+    [거점을_갱신_한다],
+  );
+
+  const 재고_폐기를_기록_한다 = useCallback(
+    (householdId: string, itemId: string, quantity: number, reasonCode: string, memo?: string) => {
+      if (!Number.isFinite(quantity) || quantity < 1) return false;
+      const h = householdsRef.current.find((x) => x.id === householdId);
+      if (!h) return false;
+      const it = h.items.find((i) => i.id === itemId);
+      if (!it || it.quantity < quantity) return false;
+      const nextQty = it.quantity - quantity;
+      appendInventoryLedgerRow({
+        id: crypto.randomUUID(),
+        householdId,
+        inventoryItemId: itemId,
+        type: "waste",
+        quantityDelta: -quantity,
+        quantityAfter: nextQty,
+        itemLabel: it.name,
+        reason: reasonCode,
+        memo: memo?.trim() || undefined,
+        createdAt: new Date().toISOString(),
+      });
+      거점을_갱신_한다(householdId, (prev) => ({
+        ...prev,
+        items: prev.items.map((row) =>
+          row.id === itemId ? { ...row, quantity: nextQty } : row,
+        ),
+      }));
+      return true;
+    },
+    [거점을_갱신_한다],
+  );
+
+  const 재고_장보기_보충을_기록_한다 = useCallback(
+    (householdId: string, itemId: string, quantity: number, memo?: string, refId?: string) => {
+      if (!Number.isFinite(quantity) || quantity < 1) return false;
+      const h = householdsRef.current.find((x) => x.id === householdId);
+      if (!h) return false;
+      const it = h.items.find((i) => i.id === itemId);
+      if (!it) return false;
+      const nextQty = it.quantity + quantity;
+      appendInventoryLedgerRow({
+        id: crypto.randomUUID(),
+        householdId,
+        inventoryItemId: itemId,
+        type: "in",
+        quantityDelta: quantity,
+        quantityAfter: nextQty,
+        itemLabel: it.name,
+        memo: memo?.trim() || "장보기 구매 완료",
+        refType: "shopping",
+        refId: refId?.trim() || undefined,
+        createdAt: new Date().toISOString(),
+      });
+      거점을_갱신_한다(householdId, (prev) => ({
+        ...prev,
+        items: prev.items.map((row) =>
+          row.id === itemId ? { ...row, quantity: nextQty } : row,
+        ),
+      }));
+      return true;
+    },
+    [거점을_갱신_한다],
+  );
+
   const value = useMemo<DashboardContextType>(
     () => ({
       dataMode,
@@ -398,31 +456,28 @@ export function DashboardProvider({
       error,
       거점_목록을_불러온다,
       거점을_추가_한다,
+      거점_기본정보를_수정_한다,
       거점을_삭제_한다,
       거점을_갱신_한다,
       거점_유형_정의를_교체_한다,
       카탈로그를_갱신_한다,
+      멤버_역할을_변경_한다,
+      멤버를_제거_한다,
+      초대를_생성_한다,
+      초대_목록을_불러온다,
+      초대를_취소_한다,
       재고_소비를_기록_한다,
       재고_폐기를_기록_한다,
       재고_장보기_보충을_기록_한다,
     }),
     [
-      dataMode,
-      households,
-      거점_카탈로그를_가져온다,
-      householdKindDefinitions,
-      householdKindsHydrated,
-      loading,
-      error,
-      거점_목록을_불러온다,
-      거점을_추가_한다,
-      거점을_삭제_한다,
-      거점을_갱신_한다,
-      거점_유형_정의를_교체_한다,
-      카탈로그를_갱신_한다,
-      재고_소비를_기록_한다,
-      재고_폐기를_기록_한다,
-      재고_장보기_보충을_기록_한다,
+      dataMode, households, 거점_카탈로그를_가져온다,
+      householdKindDefinitions, householdKindsHydrated, loading, error,
+      거점_목록을_불러온다, 거점을_추가_한다, 거점_기본정보를_수정_한다,
+      거점을_삭제_한다, 거점을_갱신_한다, 거점_유형_정의를_교체_한다,
+      카탈로그를_갱신_한다, 멤버_역할을_변경_한다, 멤버를_제거_한다,
+      초대를_생성_한다, 초대_목록을_불러온다, 초대를_취소_한다,
+      재고_소비를_기록_한다, 재고_폐기를_기록_한다, 재고_장보기_보충을_기록_한다,
     ],
   );
 
