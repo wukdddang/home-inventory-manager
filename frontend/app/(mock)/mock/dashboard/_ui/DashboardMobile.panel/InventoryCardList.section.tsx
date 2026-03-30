@@ -4,9 +4,9 @@ import { SwipeableCard } from "@/app/_ui/mobile/SwipeableCard.component";
 import { InventoryLotExpiryBadge } from "@/app/_ui/inventory-lot-expiry-badge";
 import { 유통기한까지_일수를_구한다 } from "@/lib/purchase-lot-helpers";
 import { getPurchases } from "@/lib/local-store";
-import type { Household, InventoryRow } from "@/types/domain";
-import { Search } from "lucide-react";
-import { useMemo, useState } from "react";
+import type { Household, InventoryRow, StructureRoom } from "@/types/domain";
+import { ChevronDown, Search } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
 
 type InventoryCardListProps = {
   household: Household;
@@ -14,20 +14,24 @@ type InventoryCardListProps = {
   onWaste: (item: InventoryRow) => void;
 };
 
-type GroupedItems = {
+type StorageGroup = {
   label: string;
   items: InventoryRow[];
 };
 
-function useGroupedItems(
+type RoomSection = {
+  room: StructureRoom;
+  storageGroups: StorageGroup[];
+  itemCount: number;
+};
+
+function useRoomSections(
   household: Household,
   search: string,
-  roomFilter: string | null,
-): GroupedItems[] {
+): RoomSection[] {
   return useMemo(() => {
     let items = household.items;
 
-    // 검색 필터
     if (search.trim()) {
       const q = search.trim().toLowerCase();
       items = items.filter(
@@ -37,31 +41,47 @@ function useGroupedItems(
       );
     }
 
-    // 방 필터
-    if (roomFilter) {
-      items = items.filter((item) => item.roomId === roomFilter);
-    }
+    const sections: RoomSection[] = [];
 
-    // 방 > 수납위치로 그룹핑
-    const groups = new Map<string, InventoryRow[]>();
-    for (const item of items) {
-      const room = household.rooms.find((r) => r.id === item.roomId);
-      const storage = household.storageLocations?.find(
-        (s) => s.id === item.storageLocationId,
-      );
-      const key = [room?.name ?? "미지정", storage?.name]
-        .filter(Boolean)
-        .join(" > ");
-      const group = groups.get(key);
-      if (group) {
-        group.push(item);
-      } else {
-        groups.set(key, [item]);
+    for (const room of household.rooms) {
+      const roomItems = items.filter((item) => item.roomId === room.id);
+      if (roomItems.length === 0 && search.trim()) continue;
+
+      const storageMap = new Map<string, InventoryRow[]>();
+      for (const item of roomItems) {
+        const storage = household.storageLocations?.find(
+          (s) => s.id === item.storageLocationId,
+        );
+        const key = storage?.name ?? "";
+        const group = storageMap.get(key);
+        if (group) group.push(item);
+        else storageMap.set(key, [item]);
       }
+
+      sections.push({
+        room,
+        storageGroups: Array.from(storageMap, ([label, items]) => ({
+          label,
+          items,
+        })),
+        itemCount: roomItems.length,
+      });
     }
 
-    return Array.from(groups, ([label, items]) => ({ label, items }));
-  }, [household, search, roomFilter]);
+    // 미지정 방 아이템
+    const unassigned = items.filter(
+      (item) => !household.rooms.some((r) => r.id === item.roomId),
+    );
+    if (unassigned.length > 0) {
+      sections.push({
+        room: { id: "__unassigned__", name: "미지정" } as StructureRoom,
+        storageGroups: [{ label: "", items: unassigned }],
+        itemCount: unassigned.length,
+      });
+    }
+
+    return sections;
+  }, [household, search]);
 }
 
 function useItemExpiryInfo(household: Household) {
@@ -99,11 +119,22 @@ export function InventoryCardList({
   onWaste,
 }: InventoryCardListProps) {
   const [search, setSearch] = useState("");
-  const [roomFilter, setRoomFilter] = useState<string | null>(null);
-  const groups = useGroupedItems(household, search, roomFilter);
+  const sections = useRoomSections(household, search);
   const expiryMap = useItemExpiryInfo(household);
 
-  const totalItems = groups.reduce((sum, g) => sum + g.items.length, 0);
+  // 모든 방을 기본 열림 상태로 초기화
+  const [collapsedRooms, setCollapsedRooms] = useState<Set<string>>(new Set());
+
+  const toggleRoom = useCallback((roomId: string) => {
+    setCollapsedRooms((prev) => {
+      const next = new Set(prev);
+      if (next.has(roomId)) next.delete(roomId);
+      else next.add(roomId);
+      return next;
+    });
+  }, []);
+
+  const totalItems = sections.reduce((sum, s) => sum + s.itemCount, 0);
 
   return (
     <div className="flex flex-1 flex-col gap-3">
@@ -120,41 +151,8 @@ export function InventoryCardList({
         />
       </div>
 
-      {/* 방 필터 칩 */}
-      {household.rooms.length > 0 && (
-        <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
-          <button
-            type="button"
-            onClick={() => setRoomFilter(null)}
-            className={`shrink-0 cursor-pointer rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-              roomFilter === null
-                ? "bg-teal-500/15 text-teal-300"
-                : "bg-zinc-800 text-zinc-400 hover:text-zinc-200"
-            }`}
-          >
-            전체
-          </button>
-          {household.rooms.map((room) => (
-            <button
-              key={room.id}
-              type="button"
-              onClick={() =>
-                setRoomFilter(roomFilter === room.id ? null : room.id)
-              }
-              className={`shrink-0 cursor-pointer rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                roomFilter === room.id
-                  ? "bg-teal-500/15 text-teal-300"
-                  : "bg-zinc-800 text-zinc-400 hover:text-zinc-200"
-              }`}
-            >
-              {room.name}
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* 재고 목록 */}
-      {totalItems === 0 ? (
+      {/* 방별 토글 섹션 */}
+      {totalItems === 0 && sections.every((s) => s.itemCount === 0) ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-2 py-12">
           <p className="text-sm text-zinc-500">
             {search ? "검색 결과가 없습니다." : "등록된 재고가 없습니다."}
@@ -166,83 +164,126 @@ export function InventoryCardList({
           )}
         </div>
       ) : (
-        <div className="flex flex-col gap-4">
-          {groups.map((group) => (
-            <div key={group.label} className="flex flex-col gap-2">
-              <h3 className="px-1 text-xs font-medium tracking-wide text-zinc-500">
-                {group.label}
-              </h3>
-              <div className="flex flex-col gap-2">
-                {group.items.map((item) => {
-                  const expiry = expiryMap.get(item.id);
-                  const worstDays = expiry?.worstDays ?? null;
-                  const lotCount = expiry?.lotCount ?? 0;
-                  const isExpired = worstDays !== null && worstDays < 0;
-                  const isExpiring =
-                    worstDays !== null && worstDays >= 0 && worstDays <= 7;
-                  const isLowStock =
-                    item.minStockLevel != null &&
-                    item.quantity <= item.minStockLevel;
+        <div className="flex flex-col gap-2">
+          {sections.map(({ room, storageGroups, itemCount }) => {
+            const isCollapsed = collapsedRooms.has(room.id);
+            return (
+              <div
+                key={room.id}
+                className="overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900/50"
+              >
+                {/* 방 토글 헤더 */}
+                <button
+                  type="button"
+                  onClick={() => toggleRoom(room.id)}
+                  className="flex w-full cursor-pointer items-center gap-2 px-4 py-3 transition-colors active:bg-zinc-800/50"
+                >
+                  <span className="text-sm font-semibold text-zinc-100">
+                    {room.name}
+                  </span>
+                  <span className="rounded-full bg-zinc-800 px-2 py-0.5 text-[10px] font-medium tabular-nums text-zinc-400">
+                    {itemCount}
+                  </span>
+                  <ChevronDown
+                    className={`ml-auto size-4 text-zinc-500 transition-transform duration-200 ${
+                      isCollapsed ? "-rotate-90" : ""
+                    }`}
+                  />
+                </button>
 
-                  return (
-                    <SwipeableCard
-                      key={item.id}
-                      actions={[
-                        {
-                          label: "사용",
-                          color: "bg-teal-600",
-                          onClick: () => onUse(item),
-                        },
-                        {
-                          label: "폐기",
-                          color: "bg-rose-600",
-                          onClick: () => onWaste(item),
-                        },
-                      ]}
-                    >
-                      <div
-                        className={`rounded-xl border bg-zinc-900 px-4 py-3 ${
-                          isExpired
-                            ? "border-l-4 border-zinc-800 border-l-rose-500"
-                            : isExpiring
-                              ? "border-l-4 border-zinc-800 border-l-amber-500"
-                              : isLowStock
-                                ? "border-l-4 border-zinc-800 border-l-blue-500"
-                                : "border-zinc-800"
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium text-zinc-100">
-                              {item.name}
-                              {item.variantCaption && (
-                                <span className="ml-1.5 text-zinc-500">
-                                  {item.variantCaption}
-                                </span>
-                              )}
+                {/* 아이템 목록 */}
+                {!isCollapsed && (
+                  <div className="flex flex-col gap-2 px-3 pb-3">
+                    {itemCount === 0 ? (
+                      <p className="py-2 text-center text-xs text-zinc-600">
+                        재고 없음
+                      </p>
+                    ) : (
+                      storageGroups.map((group) => (
+                        <div key={group.label} className="flex flex-col gap-1.5">
+                          {group.label && (
+                            <p className="mt-1 px-1 text-[11px] font-medium text-zinc-500">
+                              {group.label}
                             </p>
-                            <p className="mt-0.5 text-xs text-zinc-400">
-                              {item.quantity}
-                              {item.unit} 보유
-                              {isLowStock && (
-                                <span className="ml-1.5 text-blue-400">
-                                  (부족)
-                                </span>
-                              )}
-                            </p>
-                          </div>
-                          <InventoryLotExpiryBadge
-                            worstExpiryDays={worstDays}
-                            lotCount={lotCount}
-                          />
+                          )}
+                          {group.items.map((item) => {
+                            const expiry = expiryMap.get(item.id);
+                            const worstDays = expiry?.worstDays ?? null;
+                            const lotCount = expiry?.lotCount ?? 0;
+                            const isExpired =
+                              worstDays !== null && worstDays < 0;
+                            const isExpiring =
+                              worstDays !== null &&
+                              worstDays >= 0 &&
+                              worstDays <= 7;
+                            const isLowStock =
+                              item.minStockLevel != null &&
+                              item.quantity <= item.minStockLevel;
+
+                            return (
+                              <SwipeableCard
+                                key={item.id}
+                                actions={[
+                                  {
+                                    label: "사용",
+                                    color: "bg-teal-600",
+                                    onClick: () => onUse(item),
+                                  },
+                                  {
+                                    label: "폐기",
+                                    color: "bg-rose-600",
+                                    onClick: () => onWaste(item),
+                                  },
+                                ]}
+                              >
+                                <div
+                                  className={`rounded-lg border bg-zinc-900 px-3 py-2.5 ${
+                                    isExpired
+                                      ? "border-l-4 border-zinc-800 border-l-rose-500"
+                                      : isExpiring
+                                        ? "border-l-4 border-zinc-800 border-l-amber-500"
+                                        : isLowStock
+                                          ? "border-l-4 border-zinc-800 border-l-blue-500"
+                                          : "border-zinc-800"
+                                  }`}
+                                >
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="min-w-0 flex-1">
+                                      <p className="truncate text-sm font-medium text-zinc-100">
+                                        {item.name}
+                                        {item.variantCaption && (
+                                          <span className="ml-1.5 text-zinc-500">
+                                            {item.variantCaption}
+                                          </span>
+                                        )}
+                                      </p>
+                                      <p className="mt-0.5 text-xs text-zinc-400">
+                                        {item.quantity}
+                                        {item.unit} 보유
+                                        {isLowStock && (
+                                          <span className="ml-1.5 text-blue-400">
+                                            (부족)
+                                          </span>
+                                        )}
+                                      </p>
+                                    </div>
+                                    <InventoryLotExpiryBadge
+                                      worstExpiryDays={worstDays}
+                                      lotCount={lotCount}
+                                    />
+                                  </div>
+                                </div>
+                              </SwipeableCard>
+                            );
+                          })}
                         </div>
-                      </div>
-                    </SwipeableCard>
-                  );
-                })}
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

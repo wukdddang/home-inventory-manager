@@ -1,6 +1,7 @@
 "use client";
 
 import { useInventoryHistory } from "../../_hooks/useInventoryHistory";
+import { 이력_유형_라벨을_구한다 } from "../../_context/inventory-history-helpers.service";
 import type { InventoryLedgerRow, InventoryLedgerType } from "@/types/domain";
 import { useMemo, useState } from "react";
 
@@ -79,7 +80,7 @@ export function InventoryHistoryMobilePanel() {
     if (type === "all") {
       ctx.컬럼_필터를_바꾼다("type", "");
     } else {
-      ctx.컬럼_필터를_바꾼다("type", type);
+      ctx.컬럼_필터를_바꾼다("type", 이력_유형_라벨을_구한다(type));
     }
   };
 

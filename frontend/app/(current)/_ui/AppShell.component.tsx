@@ -105,7 +105,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           />
         </>
       ) : (
-        <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-zinc-950 text-zinc-100">
+        <div className="flex h-full min-h-0 w-full flex-1 flex-col overflow-hidden bg-zinc-950 text-zinc-100 max-lg:hidden">
           <header className="z-40 shrink-0 border-b border-zinc-800/80 bg-zinc-950/90 backdrop-blur-md">
             <div className="flex h-14 w-full items-center justify-between gap-3 px-3 sm:px-4">
               <Link

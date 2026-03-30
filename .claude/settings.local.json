@@ -56,7 +56,8 @@
       "Bash(mv database:*)",
       "Bash(mv infrastructure:*)",
       "Bash(mv auth:*)",
-      "Bash(npx jest:*)"
+      "Bash(npx jest:*)",
+      "Bash(find \"/c/Users/USER/dev/home-inventory-manager/frontend/app/\\(mock\\)/mock/inventory-history\" -type f)"
     ]
   }
 }

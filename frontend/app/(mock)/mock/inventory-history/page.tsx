@@ -13,7 +13,7 @@ export default function InventoryHistoryPage() {
       {isMobileLayout ? (
         <InventoryHistoryMobilePanel />
       ) : (
-        <div className="flex h-full min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden">
+        <div className="flex h-full min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden max-lg:hidden">
           <InventoryHistoryScreen />
         </div>
       )}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 export type DeviceType = "mobile" | "tablet" | "desktop";
 
@@ -13,30 +13,37 @@ function getDeviceType(width: number): DeviceType {
   return "desktop";
 }
 
+function subscribe(callback: () => void): () => void {
+  const mqMobile = window.matchMedia(`(max-width: ${MOBILE_MAX - 1}px)`);
+  const mqTablet = window.matchMedia(
+    `(min-width: ${MOBILE_MAX}px) and (max-width: ${TABLET_MAX - 1}px)`,
+  );
+  mqMobile.addEventListener("change", callback);
+  mqTablet.addEventListener("change", callback);
+  return () => {
+    mqMobile.removeEventListener("change", callback);
+    mqTablet.removeEventListener("change", callback);
+  };
+}
+
+function getSnapshot(): DeviceType {
+  return getDeviceType(window.innerWidth);
+}
+
+function getServerSnapshot(): DeviceType {
+  return "desktop";
+}
+
 /**
  * matchMedia 기반 디바이스 타입 감지.
- * SSR 기본값은 desktop (hydration mismatch 방지).
+ * useSyncExternalStore를 사용하여 클라이언트 내비게이션 시 즉시 올바른 값 반환.
  */
 export function useDeviceLayout() {
-  const [deviceType, setDeviceType] = useState<DeviceType>("desktop");
-
-  useEffect(() => {
-    const update = () => setDeviceType(getDeviceType(window.innerWidth));
-    update();
-
-    const mqMobile = window.matchMedia(`(max-width: ${MOBILE_MAX - 1}px)`);
-    const mqTablet = window.matchMedia(
-      `(min-width: ${MOBILE_MAX}px) and (max-width: ${TABLET_MAX - 1}px)`,
-    );
-
-    const handler = () => update();
-    mqMobile.addEventListener("change", handler);
-    mqTablet.addEventListener("change", handler);
-    return () => {
-      mqMobile.removeEventListener("change", handler);
-      mqTablet.removeEventListener("change", handler);
-    };
-  }, []);
+  const deviceType = useSyncExternalStore(
+    subscribe,
+    getSnapshot,
+    getServerSnapshot,
+  );
 
   return {
     deviceType,

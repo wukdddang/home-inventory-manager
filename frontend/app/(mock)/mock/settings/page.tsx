@@ -13,7 +13,7 @@ export default function SettingsPage() {
       {isMobileLayout ? (
         <SettingsMobilePanel />
       ) : (
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col max-lg:hidden">
           <SettingsPanel />
         </div>
       )}
