@@ -8,7 +8,7 @@ import {
 } from "@/lib/household-kind-defaults";
 import { useAppRoutePrefix } from "@/lib/use-app-route-prefix";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { FormModal } from "@/app/_ui/form-modal";
@@ -153,23 +153,35 @@ function DashboardScreenHelpHint() {
       >
         <InfoCircleIcon className="size-3.5" />
       </button>
-      {open ? (
-        <div
-          role="tooltip"
-          className="absolute left-0 top-full z-50 mt-1.5 w-[min(calc(100vw-2rem),22rem)] rounded-lg border border-zinc-600 bg-zinc-900 p-2.5 text-xs leading-relaxed text-zinc-300 shadow-xl ring-1 ring-black/40 sm:text-sm"
-        >
-          <span className="font-medium text-zinc-200">이 화면</span>에서는 방·보관
-          장소에 재고를 바로 맞춥니다. 장만 하고 보관 장소 정리는 나중이면{" "}
-          <Link
-            href={`${prefix}/purchases`}
-            className="font-medium text-teal-400 underline-offset-2 hover:underline"
-            onClick={() => setOpen(false)}
+      <AnimatePresence>
+        {open ? (
+          <motion.div
+            key="dashboard-screen-help-hint"
+            role="tooltip"
+            initial={{ opacity: 0, y: -6, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -4, scale: 0.98 }}
+            transition={{
+              type: "spring",
+              stiffness: 520,
+              damping: 32,
+              mass: 0.7,
+            }}
+            className="absolute left-0 top-full z-100 mt-1.5 w-[min(calc(100vw-2rem),22rem)] origin-top-left rounded-lg border border-zinc-600 bg-zinc-950 p-2.5 text-xs leading-relaxed text-zinc-300 shadow-xl ring-1 ring-black sm:text-sm"
           >
-            구매·로트
-          </Link>
-          에서 유통기한·로트만 먼저 적어 두면 됩니다.
-        </div>
-      ) : null}
+            <span className="font-medium text-zinc-200">이 화면</span>에서는 방·보관
+            장소에 재고를 바로 맞춥니다. 장만 하고 보관 장소 정리는 나중이면{" "}
+            <Link
+              href={`${prefix}/purchases`}
+              className="font-medium text-teal-400 underline-offset-2 hover:underline"
+              onClick={() => setOpen(false)}
+            >
+              구매·로트
+            </Link>
+            에서 유통기한·로트만 먼저 적어 두면 됩니다.
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }
@@ -738,7 +750,8 @@ export function DashboardHouseholdsHeader({
 
   return (
     <header className="shrink-0 rounded-xl border border-zinc-800 bg-zinc-900/40 px-3 py-3 sm:px-4">
-      <div className="min-w-0">
+      {/* z-index: 툴팁이 아래쪽 형제(거점 탭·멤버 줄)보다 위에 그려지도록 — 형제 순서만으로는 탭이 툴팁을 덮음 */}
+      <div className="relative z-30 min-w-0">
         <div className="flex min-w-0 flex-wrap items-center gap-1.5">
           <HouseholdSectionIcon />
           <h1 className="text-sm font-semibold tracking-tight text-white sm:text-base">
@@ -751,7 +764,7 @@ export function DashboardHouseholdsHeader({
         </p>
       </div>
 
-      <div className="mt-3 flex min-w-0 items-stretch gap-1.5">
+      <div className="relative z-10 mt-3 flex min-w-0 items-stretch gap-1.5">
         <div
           role="tablist"
           aria-label="거점 선택"
