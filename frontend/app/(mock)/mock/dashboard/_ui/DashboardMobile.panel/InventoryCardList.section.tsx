@@ -1,6 +1,5 @@
 "use client";
 
-import { SwipeableCard } from "@/app/_ui/mobile/SwipeableCard.component";
 import { InventoryLotExpiryBadge } from "@/app/_ui/inventory-lot-expiry-badge";
 import { 유통기한까지_일수를_구한다 } from "@/lib/purchase-lot-helpers";
 import { getPurchases } from "@/lib/local-store";
@@ -10,8 +9,7 @@ import { useCallback, useMemo, useState } from "react";
 
 type InventoryCardListProps = {
   household: Household;
-  onUse: (item: InventoryRow) => void;
-  onWaste: (item: InventoryRow) => void;
+  onItemTap: (item: InventoryRow) => void;
 };
 
 type StorageGroup = {
@@ -115,8 +113,7 @@ function useItemExpiryInfo(household: Household) {
 
 export function InventoryCardList({
   household,
-  onUse,
-  onWaste,
+  onItemTap,
 }: InventoryCardListProps) {
   const [search, setSearch] = useState("");
   const sections = useRoomSections(household, search);
@@ -221,59 +218,46 @@ export function InventoryCardList({
                               item.quantity <= item.minStockLevel;
 
                             return (
-                              <SwipeableCard
+                              <button
                                 key={item.id}
-                                actions={[
-                                  {
-                                    label: "사용",
-                                    color: "bg-teal-600",
-                                    onClick: () => onUse(item),
-                                  },
-                                  {
-                                    label: "폐기",
-                                    color: "bg-rose-600",
-                                    onClick: () => onWaste(item),
-                                  },
-                                ]}
+                                type="button"
+                                onClick={() => onItemTap(item)}
+                                className={`w-full cursor-pointer rounded-lg border bg-zinc-900 px-3 py-2.5 text-left transition-colors active:bg-zinc-800 ${
+                                  isExpired
+                                    ? "border-l-4 border-zinc-800 border-l-rose-500"
+                                    : isExpiring
+                                      ? "border-l-4 border-zinc-800 border-l-amber-500"
+                                      : isLowStock
+                                        ? "border-l-4 border-zinc-800 border-l-blue-500"
+                                        : "border-zinc-800"
+                                }`}
                               >
-                                <div
-                                  className={`rounded-lg border bg-zinc-900 px-3 py-2.5 ${
-                                    isExpired
-                                      ? "border-l-4 border-zinc-800 border-l-rose-500"
-                                      : isExpiring
-                                        ? "border-l-4 border-zinc-800 border-l-amber-500"
-                                        : isLowStock
-                                          ? "border-l-4 border-zinc-800 border-l-blue-500"
-                                          : "border-zinc-800"
-                                  }`}
-                                >
-                                  <div className="flex items-start justify-between gap-2">
-                                    <div className="min-w-0 flex-1">
-                                      <p className="truncate text-sm font-medium text-zinc-100">
-                                        {item.name}
-                                        {item.variantCaption && (
-                                          <span className="ml-1.5 text-zinc-500">
-                                            {item.variantCaption}
-                                          </span>
-                                        )}
-                                      </p>
-                                      <p className="mt-0.5 text-xs text-zinc-400">
-                                        {item.quantity}
-                                        {item.unit} 보유
-                                        {isLowStock && (
-                                          <span className="ml-1.5 text-blue-400">
-                                            (부족)
-                                          </span>
-                                        )}
-                                      </p>
-                                    </div>
-                                    <InventoryLotExpiryBadge
-                                      worstExpiryDays={worstDays}
-                                      lotCount={lotCount}
-                                    />
+                                <div className="flex items-start justify-between gap-2">
+                                  <div className="min-w-0 flex-1">
+                                    <p className="truncate text-sm font-medium text-zinc-100">
+                                      {item.name}
+                                      {item.variantCaption && (
+                                        <span className="ml-1.5 text-zinc-500">
+                                          {item.variantCaption}
+                                        </span>
+                                      )}
+                                    </p>
+                                    <p className="mt-0.5 text-xs text-zinc-400">
+                                      {item.quantity}
+                                      {item.unit} 보유
+                                      {isLowStock && (
+                                        <span className="ml-1.5 text-blue-400">
+                                          (부족)
+                                        </span>
+                                      )}
+                                    </p>
                                   </div>
+                                  <InventoryLotExpiryBadge
+                                    worstExpiryDays={worstDays}
+                                    lotCount={lotCount}
+                                  />
                                 </div>
-                              </SwipeableCard>
+                              </button>
                             );
                           })}
                         </div>
