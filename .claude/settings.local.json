@@ -57,7 +57,11 @@
       "Bash(mv infrastructure:*)",
       "Bash(mv auth:*)",
       "Bash(npx jest:*)",
-      "Bash(find \"/c/Users/USER/dev/home-inventory-manager/frontend/app/\\(mock\\)/mock/inventory-history\" -type f)"
+      "Bash(find \"/c/Users/USER/dev/home-inventory-manager/frontend/app/\\(mock\\)/mock/inventory-history\" -type f)",
+      "Bash(find /c/Users/USER/dev/home-inventory-manager/frontend -type f \\\\\\(-name *skeleton* -o -name *loading* \\\\\\))",
+      "Bash(grep -r \"snap\\\\|snap-points\\\\|snapPoints\" /c/Users/USER/dev/home-inventory-manager/frontend/app --include=*.tsx --include=*.ts)",
+      "Bash(find /c/Users/USER/dev/home-inventory-manager -type f \\\\\\(-name *spec* -o -name *SPEC* -o -name *mobile* \\\\\\))",
+      "Bash(grep -E \"\\\\.\\(md|txt\\)$\")"
     ]
   }
 }

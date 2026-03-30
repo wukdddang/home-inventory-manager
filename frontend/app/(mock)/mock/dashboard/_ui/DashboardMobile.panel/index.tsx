@@ -1,6 +1,6 @@
 "use client";
 
-import { AppLoadingState } from "@/app/_ui/app-loading-state";
+import { DashboardMobileSkeleton } from "@/app/_ui/mobile/MobileSkeleton.component";
 import { useSelectedHouseholdShell } from "@/app/(current)/_ui/selected-household-shell-bridge";
 import { MOBILE_HOUSEHOLD_SELECT_EVENT } from "@/app/(current)/_ui/AppShell.component";
 import { useEffect, useMemo, useState } from "react";
@@ -61,14 +61,7 @@ export function DashboardMobilePanel() {
   }, []);
 
   if (loading && households.length === 0) {
-    return (
-      <div className="flex flex-1 items-center justify-center px-4">
-        <AppLoadingState
-          message="거점 데이터를 불러오는 중…"
-          layout="standalone"
-        />
-      </div>
-    );
+    return <DashboardMobileSkeleton />;
   }
 
   if (error) {
@@ -104,6 +97,7 @@ export function DashboardMobilePanel() {
       <ShoppingListFab household={selected} />
       <ItemActionSheet
         item={actionItem}
+        household={selected}
         onClose={() => setActionItem(null)}
         onUse={(item) => setUseItem(item)}
         onWaste={(item) => setWasteItem(item)}

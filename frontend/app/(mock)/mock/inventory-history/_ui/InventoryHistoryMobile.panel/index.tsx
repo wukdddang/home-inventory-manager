@@ -97,7 +97,7 @@ export function InventoryHistoryMobilePanel() {
   }, [ctx.paginatedRows]);
 
   return (
-    <div className="flex flex-1 flex-col gap-4 px-4 py-4">
+    <div className="flex flex-1 flex-col gap-4 px-4 py-4 md:mx-auto md:w-full md:max-w-2xl">
       {/* 기간 필터 칩 */}
       <div className="flex gap-2">
         {(["today", "week", "month"] as const).map((preset) => {

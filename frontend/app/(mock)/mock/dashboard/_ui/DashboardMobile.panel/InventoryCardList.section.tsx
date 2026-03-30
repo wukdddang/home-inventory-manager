@@ -203,6 +203,7 @@ export function InventoryCardList({
                               {group.label}
                             </p>
                           )}
+                          <div className="grid grid-cols-1 gap-1.5 md:grid-cols-2">
                           {group.items.map((item) => {
                             const expiry = expiryMap.get(item.id);
                             const worstDays = expiry?.worstDays ?? null;
@@ -260,6 +261,7 @@ export function InventoryCardList({
                               </button>
                             );
                           })}
+                          </div>
                         </div>
                       ))
                     )}
