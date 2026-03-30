@@ -301,6 +301,13 @@ export function DashboardInventorySection({
                       : row,
                   ),
                 }));
+                const item = selected.items.find((r) => r.id === itemId);
+                toast({
+                  title: "최소 재고가 변경되었습니다",
+                  description: item
+                    ? `${item.name}: ${min == null ? "해제" : `${min}${item.unit}`}`
+                    : undefined,
+                });
               }}
               onSelectRoomId={(id) => onRoomSelect(id)}
             />
