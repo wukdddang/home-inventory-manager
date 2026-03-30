@@ -241,6 +241,10 @@ export function HouseholdMembershipSettingsSection() {
       m.id === memberId ? { ...m, role } : m,
     );
     거점을_갱신_한다(selected.id, (h) => ({ ...h, members: next }));
+    toast({
+      title: "멤버 역할을 변경했습니다",
+      description: `${target.label ?? target.email}: ${role}`,
+    });
     return true;
   };
 

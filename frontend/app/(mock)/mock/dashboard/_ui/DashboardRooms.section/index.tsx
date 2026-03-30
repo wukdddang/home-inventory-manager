@@ -2,6 +2,7 @@
 
 import { AlertModal } from "@/app/_ui/alert-modal";
 import { MotionModalLayer } from "@/app/_ui/motion-modal-layer";
+import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import type { Household, StorageLocationRow, StructureRoom } from "@/types/domain";
@@ -144,6 +145,7 @@ export function DashboardRoomsSection({
       rooms: [...h.rooms, room],
       storageLocations: [...(h.storageLocations ?? []), defaultSlot],
     }));
+    toast({ title: "방을 추가했습니다", description: label });
     setAddOpen(false);
     onRoomSelect(room.id);
   };
@@ -156,6 +158,7 @@ export function DashboardRoomsSection({
       ...h,
       rooms: h.rooms.map((r) => (r.id === editRoomId ? { ...r, name } : r)),
     }));
+    toast({ title: "방 이름을 변경했습니다", description: name });
     setEditOpen(false);
     setEditRoomId(null);
   };
@@ -169,6 +172,7 @@ export function DashboardRoomsSection({
   };
 
   const confirmDeleteRoom = (roomId: string) => {
+    const room = selected.rooms.find((r) => r.id === roomId);
     const fpIdsInRoom = new Set(
       (selected.furniturePlacements ?? [])
         .filter((f) => f.roomId === roomId)
@@ -204,6 +208,11 @@ export function DashboardRoomsSection({
         return true;
       }),
     }));
+    toast({
+      title: "방을 삭제했습니다",
+      description: room?.name,
+      variant: "destructive",
+    });
     if (selectedRoomId === roomId) onRoomSelect(null);
     setEditOpen(false);
     setEditRoomId(null);

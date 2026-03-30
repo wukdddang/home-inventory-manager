@@ -11,6 +11,7 @@ import type {
   CatalogProductVariant,
   ProductCatalog,
 } from "@/types/domain";
+import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useState, useMemo, useId, useRef, useEffect, useCallback } from "react";
 import {
@@ -288,6 +289,7 @@ function CatalogListBody({
           : p,
       ),
     }));
+    toast({ title: "품목을 수정했습니다", description: d.name.trim() });
     setEditDraft(null);
   }, [editDraft, onCatalogUpdate]);
 
@@ -306,6 +308,11 @@ function CatalogListBody({
         variants: c.variants.filter((v) => v.id !== id),
       }));
     }
+    toast({
+      title: type === "product" ? "품목을 삭제했습니다" : "용량·포장을 삭제했습니다",
+      description: deleteTarget.label,
+      variant: "destructive",
+    });
     setDeleteTarget(null);
   }, [deleteTarget, onCatalogUpdate]);
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { MotionModalLayer } from "@/app/_ui/motion-modal-layer";
+import { toast } from "@/hooks/use-toast";
 import { sortHouseholdKindDefinitions } from "@/lib/household-kind-defaults";
 import { cn } from "@/lib/utils";
 import type { HouseholdKindDefinition } from "@/types/domain";
@@ -76,60 +77,6 @@ function ArrowRightIcon({ className }: { className?: string }) {
   );
 }
 
-/* ─── 변경 요약(diff) 계산 ─── */
-
-type DiffEntry =
-  | { type: "added"; label: string }
-  | { type: "removed"; label: string }
-  | { type: "renamed"; from: string; to: string }
-  | { type: "reordered"; label: string; from: number; to: number };
-
-function computeDiff(
-  original: HouseholdKindDefinition[],
-  next: HouseholdKindDefinition[],
-): DiffEntry[] {
-  const entries: DiffEntry[] = [];
-  const origMap = new Map(original.map((d) => [d.id, d]));
-  const nextMap = new Map(next.map((d) => [d.id, d]));
-
-  // 삭제
-  for (const o of original) {
-    if (!nextMap.has(o.id)) {
-      entries.push({ type: "removed", label: o.label });
-    }
-  }
-  // 추가
-  for (const n of next) {
-    if (!origMap.has(n.id)) {
-      entries.push({ type: "added", label: n.label });
-    }
-  }
-  // 이름 변경
-  for (const n of next) {
-    const o = origMap.get(n.id);
-    if (o && o.label !== n.label) {
-      entries.push({ type: "renamed", from: o.label, to: n.label });
-    }
-  }
-  // 순서 변경
-  for (const n of next) {
-    const o = origMap.get(n.id);
-    if (o && o.label === n.label) {
-      const origIdx = original.indexOf(o);
-      const nextIdx = next.indexOf(n);
-      if (origIdx !== nextIdx) {
-        entries.push({
-          type: "reordered",
-          label: n.label,
-          from: origIdx + 1,
-          to: nextIdx + 1,
-        });
-      }
-    }
-  }
-  return entries;
-}
-
 /* ─── 드래그 가능한 행 ─── */
 
 function DraggableRow({
@@ -186,95 +133,157 @@ function DraggableRow({
 
 /* ─── 저장 확인 모달 (AS-IS → TO-BE) ─── */
 
+/** AS-IS / TO-BE 각 행의 상태를 나타내는 뱃지 스타일 */
+function KindRow({
+  label,
+  index,
+  statuses,
+}: {
+  label: string;
+  index: number;
+  statuses?: Set<"added" | "removed" | "renamed" | "moved">;
+}) {
+  const added = statuses?.has("added");
+  const removed = statuses?.has("removed");
+  const renamed = statuses?.has("renamed");
+  const moved = statuses?.has("moved");
+  const unchanged = !statuses || statuses.size === 0;
+
+  return (
+    <li
+      className={cn(
+        "flex items-center gap-2.5 rounded-lg px-3 py-1.5 text-sm",
+        removed && "bg-rose-500/8 line-through opacity-50",
+        added && "bg-teal-500/10",
+        !added && !removed && renamed && "bg-amber-500/8",
+        !added && !removed && !renamed && moved && "bg-indigo-500/8",
+        unchanged && "opacity-60",
+      )}
+    >
+      <span className="w-5 text-center text-xs tabular-nums text-zinc-500">
+        {index + 1}
+      </span>
+      <span
+        className={cn(
+          "text-zinc-200",
+          removed && "text-rose-300",
+          added && "text-teal-200",
+          renamed && !added && "text-amber-200",
+        )}
+      >
+        {label}
+      </span>
+      <span className="ml-auto flex gap-1">
+        {added && (
+          <span className="rounded bg-teal-500/20 px-1.5 py-0.5 text-[10px] font-medium text-teal-300">
+            추가
+          </span>
+        )}
+        {removed && (
+          <span className="rounded bg-rose-500/20 px-1.5 py-0.5 text-[10px] font-medium text-rose-300">
+            삭제
+          </span>
+        )}
+        {renamed && !added && (
+          <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] font-medium text-amber-300">
+            이름
+          </span>
+        )}
+        {moved && !added && !removed && (
+          <span className="rounded bg-indigo-500/20 px-1.5 py-0.5 text-[10px] font-medium text-indigo-300">
+            순서
+          </span>
+        )}
+      </span>
+    </li>
+  );
+}
+
 function SaveConfirmModal({
   open,
   onOpenChange,
-  diff,
+  original,
+  next,
   onConfirm,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
-  diff: DiffEntry[];
+  original: HouseholdKindDefinition[];
+  next: HouseholdKindDefinition[];
   onConfirm: () => void;
 }) {
   const titleId = useId().replace(/:/g, "");
+  const nextIds = new Set(next.map((d) => d.id));
+  const origMap = new Map(original.map((d) => [d.id, d]));
 
   return (
     <MotionModalLayer
       open={open}
       onOpenChange={onOpenChange}
       closeOnOverlayClick
-      panelClassName="fixed left-1/2 top-1/2 z-10042 w-[min(100vw-2rem,28rem)] -translate-x-1/2 -translate-y-1/2 outline-none"
+      zOffset={2}
+      panelClassName="fixed left-1/2 top-1/2 z-10043 w-[min(100vw-2rem,36rem)] -translate-x-1/2 -translate-y-1/2 outline-none"
       ariaLabelledBy={titleId}
     >
       {open ? (
         <div className="flex flex-col rounded-2xl border border-zinc-700 bg-zinc-900 shadow-xl">
           <div className="border-b border-zinc-800 p-5 pb-3">
-            <h3
-              id={titleId}
-              className="text-base font-semibold text-white"
-            >
-              변경 사항 확인
+            <h3 id={titleId} className="text-base font-semibold text-white">
+              이렇게 변경됩니다
             </h3>
           </div>
 
-          <div className="max-h-60 overflow-y-auto px-5 py-4">
-            {diff.length === 0 ? (
-              <p className="text-sm text-zinc-400">변경된 내용이 없습니다.</p>
-            ) : (
-              <ul className="space-y-2">
-                {diff.map((d, i) => (
-                  <li
-                    key={i}
-                    className="flex items-center gap-2 text-sm"
-                  >
-                    {d.type === "added" && (
-                      <>
-                        <span className="shrink-0 rounded bg-teal-500/20 px-1.5 py-0.5 text-xs font-medium text-teal-300">
-                          추가
-                        </span>
-                        <span className="text-zinc-200">{d.label}</span>
-                      </>
-                    )}
-                    {d.type === "removed" && (
-                      <>
-                        <span className="shrink-0 rounded bg-rose-500/20 px-1.5 py-0.5 text-xs font-medium text-rose-300">
-                          삭제
-                        </span>
-                        <span className="text-zinc-200 line-through">
-                          {d.label}
-                        </span>
-                      </>
-                    )}
-                    {d.type === "renamed" && (
-                      <>
-                        <span className="shrink-0 rounded bg-amber-500/20 px-1.5 py-0.5 text-xs font-medium text-amber-300">
-                          이름
-                        </span>
-                        <span className="text-zinc-400">{d.from}</span>
-                        <ArrowRightIcon className="shrink-0 text-zinc-500" />
-                        <span className="text-zinc-200">{d.to}</span>
-                      </>
-                    )}
-                    {d.type === "reordered" && (
-                      <>
-                        <span className="shrink-0 rounded bg-indigo-500/20 px-1.5 py-0.5 text-xs font-medium text-indigo-300">
-                          순서
-                        </span>
-                        <span className="text-zinc-200">{d.label}</span>
-                        <span className="text-zinc-500">
-                          {d.from}번째
-                        </span>
-                        <ArrowRightIcon className="shrink-0 text-zinc-500" />
-                        <span className="text-zinc-300">
-                          {d.to}번째
-                        </span>
-                      </>
-                    )}
-                  </li>
+          <div className="grid max-h-72 grid-cols-[1fr_auto_1fr] gap-0 overflow-y-auto">
+            {/* AS-IS */}
+            <div className="flex flex-col border-r border-zinc-800 px-4 py-3">
+              <span className="mb-2 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+                현재
+              </span>
+              <ol className="space-y-1">
+                {original.map((row, i) => (
+                  <KindRow
+                    key={row.id}
+                    label={row.label}
+                    index={i}
+                    statuses={
+                      !nextIds.has(row.id) ? new Set(["removed"]) : undefined
+                    }
+                  />
                 ))}
-              </ul>
-            )}
+              </ol>
+            </div>
+
+            {/* 화살표 구분선 */}
+            <div className="flex items-center px-2 text-zinc-600">
+              <ArrowRightIcon className="size-5" />
+            </div>
+
+            {/* TO-BE */}
+            <div className="flex flex-col px-4 py-3">
+              <span className="mb-2 text-xs font-semibold tracking-wide text-zinc-500 uppercase">
+                변경 후
+              </span>
+              <ol className="space-y-1">
+                {next.map((row, i) => {
+                  const orig = origMap.get(row.id);
+                  const s = new Set<"added" | "renamed" | "moved">();
+                  if (!orig) {
+                    s.add("added");
+                  } else {
+                    if (orig.label !== row.label) s.add("renamed");
+                    if (original.indexOf(orig) !== i) s.add("moved");
+                  }
+                  return (
+                    <KindRow
+                      key={row.id}
+                      label={row.label}
+                      index={i}
+                      statuses={s.size > 0 ? s : undefined}
+                    />
+                  );
+                })}
+              </ol>
+            </div>
           </div>
 
           <div className="flex justify-end gap-2 border-t border-zinc-800 p-5 pt-3">
@@ -363,11 +372,17 @@ function HouseholdKindsManageModalBody({
     [draft],
   );
 
-  const diff = useMemo(() => computeDiff(original, cleaned), [original, cleaned]);
+  const hasChanges = useMemo(() => {
+    if (original.length !== cleaned.length) return true;
+    return original.some(
+      (o, i) => o.id !== cleaned[i].id || o.label !== cleaned[i].label,
+    );
+  }, [original, cleaned]);
 
   const handleSave = () => {
     if (cleaned.length === 0) return;
     거점_유형_정의를_교체_한다(cleaned);
+    toast({ title: "거점 유형을 저장했습니다" });
     onOpenChange(false);
   };
 
@@ -424,7 +439,7 @@ function HouseholdKindsManageModalBody({
           <button
             type="button"
             onClick={() => {
-              if (diff.length === 0) {
+              if (!hasChanges) {
                 onOpenChange(false);
                 return;
               }
@@ -441,7 +456,8 @@ function HouseholdKindsManageModalBody({
       <SaveConfirmModal
         open={confirmOpen}
         onOpenChange={setConfirmOpen}
-        diff={diff}
+        original={original}
+        next={cleaned}
         onConfirm={handleSave}
       />
     </>

@@ -7,6 +7,7 @@ import type {
   ExpirationAlertRule,
   NotificationRuleScope,
 } from "@/types/domain";
+import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { useState, useId } from "react";
 import {
@@ -379,6 +380,11 @@ function PerProductExpirationRules() {
       daysBefore: clampInt(addingDays, 1, 365),
       isActive: true,
     });
+    const p = products.find((x) => x.id === addingProductId);
+    toast({
+      title: "만료 알림 규칙을 추가했습니다",
+      description: p ? productName(p.id) : undefined,
+    });
     setAddingProductId("");
     setAddingDays(settings?.notificationDetail.expirationDaysBefore ?? 3);
   };
@@ -436,7 +442,14 @@ function PerProductExpirationRules() {
               </div>
               <button
                 type="button"
-                onClick={() => 만료_규칙을_삭제한다(rule.id)}
+                onClick={() => {
+                  만료_규칙을_삭제한다(rule.id);
+                  toast({
+                    title: "만료 알림 규칙을 삭제했습니다",
+                    description: productName(rule.productId),
+                    variant: "destructive",
+                  });
+                }}
                 className="shrink-0 rounded p-1 text-zinc-500 transition hover:bg-zinc-800 hover:text-rose-400"
                 aria-label={`${productName(rule.productId)} 규칙 삭제`}
               >

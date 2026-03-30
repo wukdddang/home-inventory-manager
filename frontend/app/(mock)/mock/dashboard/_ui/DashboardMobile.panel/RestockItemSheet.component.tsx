@@ -2,6 +2,7 @@
 
 import { BottomSheet } from "@/app/_ui/mobile/BottomSheet.component";
 import { QuantityStepper } from "@/app/_ui/mobile/QuantityStepper.component";
+import { toast } from "@/hooks/use-toast";
 import { useDashboard } from "../../_hooks/useDashboard";
 import type { InventoryRow } from "@/types/domain";
 import { useState, useEffect } from "react";
@@ -37,6 +38,11 @@ export function RestockItemSheet({
       quantity,
       "모바일 빠른 보충",
     );
+    toast({
+      title: "재고를 보충했습니다",
+      description: `${item.name} +${quantity}${item.unit}`,
+      variant: "success",
+    });
     onClose();
   };
 

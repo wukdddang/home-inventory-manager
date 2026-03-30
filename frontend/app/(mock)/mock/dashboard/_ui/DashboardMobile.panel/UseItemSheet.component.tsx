@@ -2,6 +2,7 @@
 
 import { BottomSheet } from "@/app/_ui/mobile/BottomSheet.component";
 import { QuantityStepper } from "@/app/_ui/mobile/QuantityStepper.component";
+import { toast } from "@/hooks/use-toast";
 import { useDashboard } from "../../_hooks/useDashboard";
 import type { InventoryRow } from "@/types/domain";
 import { useState, useEffect } from "react";
@@ -22,7 +23,19 @@ export function UseItemSheet({ item, householdId, onClose }: UseItemSheetProps) 
 
   const handleConfirm = () => {
     if (!item) return;
-    재고_소비를_기록_한다(householdId, item.id, quantity, "모바일 사용 처리");
+    const ok = 재고_소비를_기록_한다(householdId, item.id, quantity, "모바일 사용 처리");
+    if (ok) {
+      toast({
+        title: "소비를 기록했습니다",
+        description: `${item.name} −${quantity}${item.unit}`,
+      });
+    } else {
+      toast({
+        title: "기록할 수 없습니다",
+        description: "보유 수량을 확인하세요.",
+        variant: "warning",
+      });
+    }
     onClose();
   };
 

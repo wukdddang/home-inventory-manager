@@ -152,10 +152,16 @@ export function DashboardInventorySection({
   };
 
   const handleDeleteItem = (itemId: string) => {
+    const item = selected.items.find((i) => i.id === itemId);
     거점을_갱신_한다(selected.id, (h) => ({
       ...h,
       items: h.items.filter((i) => i.id !== itemId),
     }));
+    toast({
+      title: "재고를 삭제했습니다",
+      description: item?.name,
+      variant: "destructive",
+    });
   };
 
   const handleOpenConsume = (it: InventoryRow) => {
