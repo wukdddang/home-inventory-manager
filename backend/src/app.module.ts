@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { DatabaseModule } from './common/database/database.module';
 import { envValidationSchema } from './common/config/env-validation';
 import { HouseholdModule } from './domain/household/household.module';
@@ -19,6 +20,8 @@ import { PurchaseBatchInterfaceModule } from './interface/purchase-batch/purchas
 import { InventoryLogInterfaceModule } from './interface/inventory-log/inventory-log.module';
 import { ShoppingListInterfaceModule } from './interface/shopping-list/shopping-list.module';
 import { NotificationPreferenceInterfaceModule } from './interface/notification-preference/notification-preference.module';
+import { NotificationInterfaceModule } from './interface/notification/notification.module';
+import { ExpirationAlertRuleInterfaceModule } from './interface/expiration-alert-rule/expiration-alert-rule.module';
 
 @Module({
   imports: [
@@ -26,6 +29,7 @@ import { NotificationPreferenceInterfaceModule } from './interface/notification-
       isGlobal: true,
       validationSchema: envValidationSchema,
     }),
+    ScheduleModule.forRoot(),
     DatabaseModule,
 
     // Infrastructure
@@ -50,6 +54,8 @@ import { NotificationPreferenceInterfaceModule } from './interface/notification-
     InventoryLogInterfaceModule,
     ShoppingListInterfaceModule,
     NotificationPreferenceInterfaceModule,
+    NotificationInterfaceModule,
+    ExpirationAlertRuleInterfaceModule,
   ],
 })
 export class AppModule {}

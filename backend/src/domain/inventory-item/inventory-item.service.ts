@@ -55,6 +55,20 @@ export class InventoryItemService {
     return this.inventoryItemRepository.save(item);
   }
 
+  async 부족_품목_목록을_조회한다(
+    householdId: string,
+  ): Promise<InventoryItem[]> {
+    return this.inventoryItemRepository
+      .createQueryBuilder('item')
+      .innerJoinAndSelect('item.storageLocation', 'sl', 'sl.householdId = :householdId', { householdId })
+      .innerJoinAndSelect('item.productVariant', 'pv')
+      .innerJoinAndSelect('pv.product', 'p')
+      .where('item.minStockLevel IS NOT NULL')
+      .andWhere('item.quantity <= item.minStockLevel')
+      .orderBy('item.createdAt', 'ASC')
+      .getMany();
+  }
+
   async 재고_수량을_증가한다(
     id: string,
     delta: number,
