@@ -84,7 +84,7 @@ const StructureRoomNode = memo(function StructureRoomNode({
       <Handle
         type="source"
         position={Position.Right}
-        className="!size-2 !border-none !bg-teal-500/80"
+        className="size-2! border-none! bg-teal-500/80!"
       />
       <span className="line-clamp-2 text-sm font-semibold leading-tight">
         {data.label}
@@ -112,12 +112,12 @@ const DirectSlotNode = memo(function DirectSlotNode({
       <Handle
         type="target"
         position={Position.Left}
-        className="!size-2 !border-none !bg-amber-500/70"
+        className="size-2! border-none! bg-amber-500/70!"
       />
       <Handle
         type="source"
         position={Position.Right}
-        className="!size-2 !border-none !bg-amber-500/70"
+        className="size-2! border-none! bg-amber-500/70!"
       />
       <p className="text-xs font-normal text-amber-200/60">직속 보관</p>
       <p
@@ -141,7 +141,7 @@ const FurniturePlacementNode = memo(function FurniturePlacementNode({
       <Handle
         type="target"
         position={Position.Left}
-        className="!size-2 !border-none !bg-teal-500/70"
+        className="size-2! border-none! bg-teal-500/70!"
       />
       <div className="shrink-0 border-b border-teal-600/25 bg-teal-950/35 px-2 py-1">
         <p
