@@ -42,12 +42,12 @@ export class InventoryLogController {
     @Param('householdId', ParseUUIDPipe) _householdId: string,
     @Param('inventoryItemId', ParseUUIDPipe) inventoryItemId: string,
     @Body() dto: CreateConsumptionDto,
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user: { userId: string },
   ) {
     return this.inventoryLogBusinessService.소비를_등록한다(
       inventoryItemId,
       dto.quantity,
-      user.id,
+      user.userId,
       dto.memo ?? null,
     );
   }
@@ -57,13 +57,13 @@ export class InventoryLogController {
     @Param('householdId', ParseUUIDPipe) _householdId: string,
     @Param('inventoryItemId', ParseUUIDPipe) inventoryItemId: string,
     @Body() dto: CreateWasteDto,
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user: { userId: string },
   ) {
     return this.inventoryLogBusinessService.폐기를_등록한다(
       inventoryItemId,
       dto.quantity,
       dto.reason ?? null,
-      user.id,
+      user.userId,
       dto.memo ?? null,
     );
   }
@@ -73,12 +73,12 @@ export class InventoryLogController {
     @Param('householdId', ParseUUIDPipe) _householdId: string,
     @Param('inventoryItemId', ParseUUIDPipe) inventoryItemId: string,
     @Body() dto: CreateAdjustmentDto,
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user: { userId: string },
   ) {
     return this.inventoryLogBusinessService.수량을_수동_조정한다(
       inventoryItemId,
       dto.quantityDelta,
-      user.id,
+      user.userId,
       dto.memo ?? null,
     );
   }

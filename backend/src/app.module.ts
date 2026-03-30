@@ -17,6 +17,8 @@ import { InventoryItemInterfaceModule } from './interface/inventory-item/invento
 import { PurchaseInterfaceModule } from './interface/purchase/purchase.module';
 import { PurchaseBatchInterfaceModule } from './interface/purchase-batch/purchase-batch.module';
 import { InventoryLogInterfaceModule } from './interface/inventory-log/inventory-log.module';
+import { ShoppingListInterfaceModule } from './interface/shopping-list/shopping-list.module';
+import { NotificationPreferenceInterfaceModule } from './interface/notification-preference/notification-preference.module';
 
 @Module({
   imports: [
@@ -46,6 +48,8 @@ import { InventoryLogInterfaceModule } from './interface/inventory-log/inventory
     PurchaseInterfaceModule,
     PurchaseBatchInterfaceModule,
     InventoryLogInterfaceModule,
+    ShoppingListInterfaceModule,
+    NotificationPreferenceInterfaceModule,
   ],
 })
 export class AppModule {}

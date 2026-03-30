@@ -33,7 +33,7 @@ export class PurchaseController {
   async 구매를_등록한다(
     @Param('householdId', ParseUUIDPipe) householdId: string,
     @Body() dto: CreatePurchaseDto,
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user: { userId: string },
   ) {
     return this.purchaseBusinessService.구매를_등록한다({
       householdId,
@@ -45,7 +45,7 @@ export class PurchaseController {
       variantCaption: dto.variantCaption,
       unitSymbol: dto.unitSymbol,
       memo: dto.memo,
-      userId: user.id,
+      userId: user.userId,
       batches: dto.batches.map((b) => ({
         quantity: b.quantity,
         expirationDate: b.expirationDate,
@@ -58,13 +58,13 @@ export class PurchaseController {
     @Param('householdId', ParseUUIDPipe) householdId: string,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: LinkPurchaseInventoryDto,
-    @CurrentUser() user: { id: string },
+    @CurrentUser() user: { userId: string },
   ) {
     return this.purchaseBusinessService.구매에_재고를_나중에_연결한다(
       id,
       householdId,
       { inventoryItemId: dto.inventoryItemId },
-      user.id,
+      user.userId,
     );
   }
 }
