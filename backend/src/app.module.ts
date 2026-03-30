@@ -13,6 +13,10 @@ import { SpaceInterfaceModule } from './interface/space/space.module';
 import { UnitInterfaceModule } from './interface/unit/unit.module';
 import { ProductInterfaceModule } from './interface/product/product.module';
 import { ProductVariantInterfaceModule } from './interface/product-variant/product-variant.module';
+import { InventoryItemInterfaceModule } from './interface/inventory-item/inventory-item.module';
+import { PurchaseInterfaceModule } from './interface/purchase/purchase.module';
+import { PurchaseBatchInterfaceModule } from './interface/purchase-batch/purchase-batch.module';
+import { InventoryLogInterfaceModule } from './interface/inventory-log/inventory-log.module';
 
 @Module({
   imports: [
@@ -38,6 +42,10 @@ import { ProductVariantInterfaceModule } from './interface/product-variant/produ
     UnitInterfaceModule,
     ProductInterfaceModule,
     ProductVariantInterfaceModule,
+    InventoryItemInterfaceModule,
+    PurchaseInterfaceModule,
+    PurchaseBatchInterfaceModule,
+    InventoryLogInterfaceModule,
   ],
 })
 export class AppModule {}
