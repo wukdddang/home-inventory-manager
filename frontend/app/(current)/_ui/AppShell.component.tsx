@@ -1,6 +1,6 @@
 "use client";
 
-import { DashboardProvider } from "@/app/(mock)/mock/dashboard/_context/DashboardContext";
+import { DashboardProvider } from "@/app/(current)/dashboard/_context/DashboardContext";
 import { DashboardShoppingListModal } from "@/app/(mock)/mock/dashboard/_ui/DashboardInventory.section/DashboardShoppingList.module";
 import {
   NotificationCenterModal,

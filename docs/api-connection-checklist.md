@@ -74,134 +74,166 @@
 
 ## 카테고리
 
-| 기능 | 상태 | 비고 |
-|------|------|------|
-| 카테고리 CRUD | 🚧 | 프론트 UI 존재 (mock localStorage), API 미연결 |
-| 다른 거점 카테고리 가져오기 | 🚧 | 프론트 UI 존재 (mock), API 미연결 |
+| 기능 | API 라우트 | 상태 | 비고 |
+|------|-----------|------|------|
+| 카테고리 목록 조회 | `GET /api/households/[id]/categories` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 카테고리 단건 조회 | `GET /api/households/[id]/categories/[cid]` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 카테고리 생성 | `POST /api/households/[id]/categories` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 카테고리 수정 | `PUT /api/households/[id]/categories/[cid]` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 카테고리 삭제 | `DELETE /api/households/[id]/categories/[cid]` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 다른 거점 카테고리 가져오기 | `POST /api/households/[id]/categories/copy` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
 
 ---
 
 ## 방 / 집 구조
 
-| 기능 | 상태 | 비고 |
-|------|------|------|
-| 방 목록 조회·동기화 | 🚧 | 프론트 UI 존재 (mock localStorage), API 미연결 |
-| 집 구조 등록·수정·조회 | 🚧 | 프론트 UI 존재 (mock localStorage), API 미연결 |
+| 기능 | API 라우트 | 상태 | 비고 |
+|------|-----------|------|------|
+| 방 목록 조회 | `GET /api/households/[id]/rooms` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 방 동기화 | `PUT /api/households/[id]/rooms/sync` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 집 구조 조회 | `GET /api/households/[id]/house-structure` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 집 구조 저장 | `PUT /api/households/[id]/house-structure` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
 
 ---
 
 ## 가구 배치
 
-| 기능 | 상태 | 비고 |
-|------|------|------|
-| 가구 배치 CRUD | 🚧 | 프론트 UI 존재 (mock localStorage), API 미연결 |
+| 기능 | API 라우트 | 상태 | 비고 |
+|------|-----------|------|------|
+| 가구 목록 조회 | `GET /api/households/[id]/rooms/[rid]/furniture-placements` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 가구 생성 | `POST /api/households/[id]/rooms/[rid]/furniture-placements` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 가구 수정 | `PUT /api/households/[id]/furniture-placements/[fid]` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 가구 삭제 | `DELETE /api/households/[id]/furniture-placements/[fid]` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
 
 ---
 
 ## 보관 장소
 
-| 기능 | 상태 | 비고 |
-|------|------|------|
-| 보관 장소 CRUD | 🚧 | 프론트 UI 존재 (mock localStorage), API 미연결 |
-| 방·가구 배치 연결 | 🚧 | 프론트 UI 존재 (mock localStorage), API 미연결 |
+| 기능 | API 라우트 | 상태 | 비고 |
+|------|-----------|------|------|
+| 보관장소 목록 조회 | `GET /api/households/[id]/storage-locations` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 보관장소 생성 | `POST /api/households/[id]/storage-locations` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 보관장소 수정 | `PUT /api/households/[id]/storage-locations/[sid]` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 보관장소 삭제 | `DELETE /api/households/[id]/storage-locations/[sid]` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
 
 ---
 
 ## 단위
 
-| 기능 | 상태 | 비고 |
-|------|------|------|
-| 단위 CRUD | 🚧 | 프론트 UI 존재 (mock localStorage), API 미연결 |
-| 다른 거점 단위 가져오기 | 🚧 | 프론트 UI 존재 (mock), API 미연결 |
+| 기능 | API 라우트 | 상태 | 비고 |
+|------|-----------|------|------|
+| 단위 목록 조회 | `GET /api/households/[id]/units` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 단위 단건 조회 | `GET /api/households/[id]/units/[uid]` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 단위 생성 | `POST /api/households/[id]/units` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 단위 수정 | `PUT /api/households/[id]/units/[uid]` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 단위 삭제 | `DELETE /api/households/[id]/units/[uid]` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 다른 거점 단위 가져오기 | `POST /api/households/[id]/units/copy` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
 
 ---
 
 ## 상품 / 상품 용량·변형
 
-| 기능 | 상태 | 비고 |
-|------|------|------|
-| 상품 CRUD | 🚧 | 프론트 UI 존재 (mock localStorage), API 미연결 |
-| 상품 용량·변형 CRUD | 🚧 | 프론트 UI 존재 (mock localStorage), API 미연결 |
-| 다른 거점 상품 가져오기 | 🚧 | 프론트 UI 존재 (mock), API 미연결 |
+| 기능 | API 라우트 | 상태 | 비고 |
+|------|-----------|------|------|
+| 상품 목록 조회 | `GET /api/households/[id]/products` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 상품 단건 조회 | `GET /api/households/[id]/products/[pid]` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 상품 생성 | `POST /api/households/[id]/products` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 상품 수정 | `PUT /api/households/[id]/products/[pid]` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 상품 삭제 | `DELETE /api/households/[id]/products/[pid]` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 다른 거점 상품 가져오기 | `POST /api/households/[id]/products/copy` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 상품 변형 목록 조회 | `GET /api/households/[id]/products/[pid]/variants` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 상품 변형 단건 조회 | `GET /api/households/[id]/products/[pid]/variants/[vid]` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 상품 변형 생성 | `POST /api/households/[id]/products/[pid]/variants` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 상품 변형 수정 | `PUT /api/households/[id]/products/[pid]/variants/[vid]` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 상품 변형 삭제 | `DELETE /api/households/[id]/products/[pid]/variants/[vid]` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
 
 ---
 
 ## 재고 품목
 
-| 기능 | 상태 | 비고 |
-|------|------|------|
-| 재고 품목 등록·조회·수정 | 🚧 | 프론트 UI 존재 (mock localStorage), API 미연결 |
+| 기능 | API 라우트 | 상태 | 비고 |
+|------|-----------|------|------|
+| 재고 품목 목록 조회 | `GET /api/households/[id]/inventory-items` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 재고 품목 등록 | `POST /api/households/[id]/inventory-items` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 재고 수량 수정 | `PATCH /api/households/[id]/inventory-items/[iid]/quantity` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
 
 ---
 
 ## 구매 기록
 
-| 기능 | 상태 | 비고 |
-|------|------|------|
-| 구매 기록 등록·조회 | 🚧 | 프론트 UI 존재 (mock localStorage), API 미연결 |
-| 유통기한 로트 입력 | 🚧 | 프론트 UI 존재 (mock localStorage), API 미연결 |
-| 구매 등록 시 재고 자동 증가 | 🚧 | 백엔드 트랜잭션 API 필요, 미연결 |
-| 재고 나중에 연결 | 🚧 | 프론트 UI 존재 (mock), API 미연결 |
+| 기능 | API 라우트 | 상태 | 비고 |
+|------|-----------|------|------|
+| 구매 목록 조회 | `GET /api/households/[id]/purchases` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 구매 등록 (로트 포함) | `POST /api/households/[id]/purchases` | ✅ | batches 배열로 유통기한 로트 입력, 재고 자동 증가 포함 |
+| 재고 나중에 연결 | `PATCH /api/households/[id]/purchases/[pid]/link-inventory` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
 
 ---
 
 ## 로트
 
-| 기능 | 상태 | 비고 |
-|------|------|------|
-| 로트 목록 조회 | 🚧 | 프론트 UI 존재 (mock localStorage), API 미연결 |
-| 유통기한 임박 목록 | 🚧 | 프론트 UI 존재 (mock localStorage), API 미연결 |
-| 만료된 목록 | 🚧 | 프론트 UI 존재 (mock localStorage), API 미연결 |
+| 기능 | API 라우트 | 상태 | 비고 |
+|------|-----------|------|------|
+| 로트 목록 조회 | `GET /api/households/[id]/batches` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 유통기한 임박 목록 | `GET /api/households/[id]/batches/expiring` | ✅ | `days` 쿼리 파라미터 지원 |
+| 만료된 목록 | `GET /api/households/[id]/batches/expired` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
 
 ---
 
 ## 재고 변경 이력
 
-| 기능 | 상태 | 비고 |
-|------|------|------|
-| 재고 변경 이력 조회 (품목별·기간별) | 🚧 | 프론트 UI 존재 (mock localStorage), API 미연결 |
-| 소비 기록 등록 | 🚧 | 프론트 UI 존재 (mock localStorage), API 미연결 |
-| 폐기 기록 등록 | 🚧 | 프론트 UI 존재 (mock localStorage), API 미연결 |
-| 수량 수동 조정 | 🚧 | 프론트 UI 존재 (mock localStorage), API 미연결 |
+| 기능 | API 라우트 | 상태 | 비고 |
+|------|-----------|------|------|
+| 재고 변경 이력 조회 | `GET /api/households/[id]/inventory-items/[iid]/logs` | ✅ | `from`, `to` 쿼리 파라미터 지원 |
+| 소비 기록 등록 | `POST /api/households/[id]/inventory-items/[iid]/logs/consumption` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 폐기 기록 등록 | `POST /api/households/[id]/inventory-items/[iid]/logs/waste` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 수량 수동 조정 | `POST /api/households/[id]/inventory-items/[iid]/logs/adjustment` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
 
 ---
 
 ## 장보기 항목
 
-| 기능 | 상태 | 비고 |
-|------|------|------|
-| 장보기 항목 추가·조회·수정·삭제 | 🚧 | 프론트 UI 존재 (mock localStorage), API 미연결 |
-| 장보기 항목 구매 완료 처리 (트랜잭션) | 🚧 | 백엔드 트랜잭션 API 필요, 미연결 |
-| 부족 품목 자동 제안 | 🚧 | 프론트 로직 존재 (mock), API 미연결 |
-| 유통기한 임박 품목 자동 제안 | 🚧 | 프론트 로직 존재 (mock), API 미연결 |
+| 기능 | API 라우트 | 상태 | 비고 |
+|------|-----------|------|------|
+| 장보기 항목 목록 조회 | `GET /api/households/[id]/shopping-list-items` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 장보기 항목 추가 | `POST /api/households/[id]/shopping-list-items` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 장보기 항목 수정 | `PUT /api/households/[id]/shopping-list-items/[sid]` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 장보기 항목 삭제 | `DELETE /api/households/[id]/shopping-list-items/[sid]` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 장보기 항목 구매 완료 처리 | `POST /api/households/[id]/shopping-list-items/[sid]/complete` | ✅ | 트랜잭션 포함 |
+| 부족 품목 자동 제안 | — | 🚧 | 프론트 로직 존재, 백엔드 API 필요 시 추가 |
+| 유통기한 임박 품목 자동 제안 | — | 🚧 | 프론트 로직 존재, 백엔드 API 필요 시 추가 |
 
 ---
 
 ## 알림 설정
 
-| 기능 | 상태 | 비고 |
-|------|------|------|
-| 기본/거점별 알림 설정 저장·조회·수정·삭제 | 🚧 | 프론트 UI 존재 (mock localStorage), API 미연결 |
-| 마스터 토글 (유통기한/장보기/재고부족) | 🚧 | 프론트 UI 존재 (mock localStorage), API 미연결 |
+| 기능 | API 라우트 | 상태 | 비고 |
+|------|-----------|------|------|
+| 알림 설정 목록 조회 | `GET /api/notification-preferences` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 알림 설정 저장 | `POST /api/notification-preferences` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 알림 설정 수정 | `PUT /api/notification-preferences/[id]` | ✅ | 마스터 토글 포함 |
+| 알림 설정 삭제 | `DELETE /api/notification-preferences/[id]` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
 
 ---
 
 ## 알림
 
-| 기능 | 상태 | 비고 |
-|------|------|------|
-| 유통기한 임박 알림 (스케줄러) | ⬜ | 백엔드 스케줄러 미구현 |
-| 부족 재고 알림 (스케줄러) | ⬜ | 백엔드 스케줄러 미구현 |
-| 알림 목록 조회 | 🚧 | 프론트 UI 존재 (mock localStorage), API 미연결 |
-| 알림 읽음 처리 | 🚧 | 프론트 UI 존재 (mock localStorage), API 미연결 |
+| 기능 | API 라우트 | 상태 | 비고 |
+|------|-----------|------|------|
+| 유통기한 임박 알림 (스케줄러) | — | ⬜ | 백엔드 스케줄러 미구현 |
+| 부족 재고 알림 (스케줄러) | — | ⬜ | 백엔드 스케줄러 미구현 |
+| 알림 목록 조회 | `GET /api/notifications` | ✅ | `householdId` 쿼리 파라미터 지원 |
+| 알림 읽음 처리 | `PATCH /api/notifications/[id]/read` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
 
 ---
 
 ## 만료 알림 설정
 
-| 기능 | 상태 | 비고 |
-|------|------|------|
-| 만료 알림 일수 설정·조회·수정·삭제 | 🚧 | 프론트 UI 존재 (mock localStorage), API 미연결 |
+| 기능 | API 라우트 | 상태 | 비고 |
+|------|-----------|------|------|
+| 만료 알림 규칙 목록 조회 | `GET /api/households/[id]/expiration-alert-rules` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 만료 알림 규칙 저장 | `POST /api/households/[id]/expiration-alert-rules` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 만료 알림 규칙 수정 | `PUT /api/households/[id]/expiration-alert-rules/[rid]` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 만료 알림 규칙 삭제 | `DELETE /api/households/[id]/expiration-alert-rules/[rid]` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
 
 ---
 

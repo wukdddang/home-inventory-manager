@@ -13,7 +13,7 @@ import type {
   MockInvitation,
 } from "@/types/domain";
 import type { CreateInvitationParams, DashboardHouseholdsPort } from "./dashboard-households.port";
-import { cloneDefaultCatalog } from "./dashboard-mock.service";
+import { cloneDefaultCatalog } from "@/app/(mock)/mock/dashboard/_context/dashboard-mock.service";
 import { ensureHouseholdShape } from "@/lib/household-location";
 
 /* ─────────────────────────────────────────────────────── helpers ── */
