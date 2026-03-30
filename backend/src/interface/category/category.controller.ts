@@ -9,12 +9,17 @@ import {
   ParseUUIDPipe,
   Post,
   Put,
+  UseGuards,
 } from '@nestjs/common';
 import { CategoryBusinessService } from '../../business/category-business/category-business.service';
+import { JwtAuthGuard } from '../../common/auth/guards/jwt-auth.guard';
+import { HouseholdMemberGuard } from '../../common/auth/guards/household-member.guard';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { CopyCategoriesDto } from './dto/copy-categories.dto';
 
 @Controller('households/:householdId/categories')
+@UseGuards(JwtAuthGuard, HouseholdMemberGuard)
 export class CategoryController {
   constructor(
     private readonly categoryBusinessService: CategoryBusinessService,
@@ -69,5 +74,16 @@ export class CategoryController {
     @Param('id', ParseUUIDPipe) id: string,
   ) {
     await this.categoryBusinessService.카테고리를_삭제한다(id, householdId);
+  }
+
+  @Post('copy')
+  async 다른_거점에서_카테고리를_가져온다(
+    @Param('householdId', ParseUUIDPipe) householdId: string,
+    @Body() dto: CopyCategoriesDto,
+  ) {
+    return this.categoryBusinessService.다른_거점에서_카테고리를_가져온다(
+      dto.sourceHouseholdId,
+      householdId,
+    );
   }
 }

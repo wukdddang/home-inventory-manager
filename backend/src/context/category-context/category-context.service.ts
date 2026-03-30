@@ -8,6 +8,7 @@ import {
 import { CreateCategoryCommand } from './handlers/commands/create-category.handler';
 import { UpdateCategoryCommand } from './handlers/commands/update-category.handler';
 import { DeleteCategoryCommand } from './handlers/commands/delete-category.handler';
+import { CopyCategoriesCommand } from './handlers/commands/copy-categories.handler';
 import { GetCategoryListQuery } from './handlers/queries/get-category-list.handler';
 import { GetCategoryDetailQuery } from './handlers/queries/get-category-detail.handler';
 
@@ -55,6 +56,15 @@ export class CategoryContextService {
   ): Promise<void> {
     return this.commandBus.execute(
       new DeleteCategoryCommand(id, householdId),
+    );
+  }
+
+  async 다른_거점에서_카테고리를_가져온다(
+    sourceHouseholdId: string,
+    targetHouseholdId: string,
+  ): Promise<CategoryResult[]> {
+    return this.commandBus.execute(
+      new CopyCategoriesCommand(sourceHouseholdId, targetHouseholdId),
     );
   }
 }

@@ -54,4 +54,23 @@ export class CategoryService {
     const result = await this.categoryRepository.delete({ id, householdId });
     return (result.affected ?? 0) > 0;
   }
+
+  async 다른_거점에서_카테고리를_복사한다(
+    sourceHouseholdId: string,
+    targetHouseholdId: string,
+  ): Promise<Category[]> {
+    const sourceCategories = await this.카테고리_목록을_조회한다(
+      sourceHouseholdId,
+    );
+
+    const copies = sourceCategories.map((cat) =>
+      this.categoryRepository.create({
+        householdId: targetHouseholdId,
+        name: cat.name,
+        sortOrder: cat.sortOrder,
+      }),
+    );
+
+    return this.categoryRepository.save(copies);
+  }
 }

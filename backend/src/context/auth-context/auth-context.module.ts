@@ -3,6 +3,7 @@ import { CqrsModule } from '@nestjs/cqrs';
 import { UserModule } from '../../domain/user/user.module';
 import { AuthInfrastructureModule } from '../../common/auth/auth-infrastructure.module';
 import { MailModule } from '../../common/infrastructure/mail/mail.module';
+import { HouseholdKindDefinitionModule } from '../../domain/household-kind-definition/household-kind-definition.module';
 import { AuthContextService } from './auth-context.service';
 import { SignupHandler } from './handlers/commands/signup.handler';
 import { LoginHandler } from './handlers/commands/login.handler';
@@ -24,7 +25,7 @@ const CommandHandlers = [
 const QueryHandlers = [GetMyProfileHandler];
 
 @Module({
-  imports: [CqrsModule, UserModule, AuthInfrastructureModule, MailModule],
+  imports: [CqrsModule, UserModule, AuthInfrastructureModule, MailModule, HouseholdKindDefinitionModule],
   providers: [AuthContextService, ...CommandHandlers, ...QueryHandlers],
   exports: [AuthContextService],
 })

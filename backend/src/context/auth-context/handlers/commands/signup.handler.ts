@@ -6,6 +6,7 @@ import * as bcrypt from 'bcrypt';
 import { randomUUID } from 'crypto';
 import { UserService } from '../../../../domain/user/user.service';
 import { MailService } from '../../../../common/infrastructure/mail/mail.service';
+import { HouseholdKindDefinitionService } from '../../../../domain/household-kind-definition/household-kind-definition.service';
 import { AuthTokenResult } from '../../interfaces/auth-context.interface';
 
 export class SignupCommand {
@@ -23,6 +24,7 @@ export class SignupHandler implements ICommandHandler<SignupCommand> {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly mailService: MailService,
+    private readonly kindDefinitionService: HouseholdKindDefinitionService,
   ) {}
 
   async execute(command: SignupCommand): Promise<AuthTokenResult> {
@@ -52,6 +54,9 @@ export class SignupHandler implements ICommandHandler<SignupCommand> {
       user.email,
       emailVerificationToken,
     );
+
+    // 기본 거점 유형 4종 시드
+    await this.kindDefinitionService.기본_유형을_시드한다(user.id);
 
     return tokens;
   }

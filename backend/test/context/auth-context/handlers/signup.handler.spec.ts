@@ -8,6 +8,7 @@ import {
 } from '@context/auth-context/handlers/commands/signup.handler';
 import { UserService } from '@domain/user/user.service';
 import { MailService } from '@common/infrastructure/mail/mail.service';
+import { HouseholdKindDefinitionService } from '@domain/household-kind-definition/household-kind-definition.service';
 import { User } from '@domain/user/user.entity';
 
 describe('SignupHandler', () => {
@@ -40,6 +41,10 @@ describe('SignupHandler', () => {
     인증_이메일을_발송한다: jest.fn(),
   };
 
+  const mockKindDefinitionService = {
+    기본_유형을_시드한다: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -48,6 +53,10 @@ describe('SignupHandler', () => {
         { provide: JwtService, useValue: mockJwtService },
         { provide: ConfigService, useValue: mockConfigService },
         { provide: MailService, useValue: mockMailService },
+        {
+          provide: HouseholdKindDefinitionService,
+          useValue: mockKindDefinitionService,
+        },
       ],
     }).compile();
 
@@ -84,6 +93,9 @@ describe('SignupHandler', () => {
         .mockReturnValueOnce('access-token')
         .mockReturnValueOnce('refresh-token');
       mockMailService.인증_이메일을_발송한다.mockResolvedValue(undefined);
+      mockKindDefinitionService.기본_유형을_시드한다.mockResolvedValue(
+        undefined,
+      );
 
       // When
       const result = await handler.execute(command);
@@ -91,6 +103,9 @@ describe('SignupHandler', () => {
       // Then
       expect(result.accessToken).toBe('access-token');
       expect(result.refreshToken).toBe('refresh-token');
+      expect(
+        mockKindDefinitionService.기본_유형을_시드한다,
+      ).toHaveBeenCalledWith('user-1');
       expect(userService.이메일로_사용자를_조회한다).toHaveBeenCalledWith(
         'test@example.com',
       );

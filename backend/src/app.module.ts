@@ -7,6 +7,8 @@ import { AuthInfrastructureModule } from './common/auth/auth-infrastructure.modu
 import { CategoryInterfaceModule } from './interface/category/category.module';
 import { AuthInterfaceModule } from './interface/auth/auth.module';
 import { HouseholdInterfaceModule } from './interface/household/household.module';
+import { InvitationInterfaceModule } from './interface/invitation/invitation.module';
+import { HouseholdKindInterfaceModule } from './interface/household-kind/household-kind.module';
 
 @Module({
   imports: [
@@ -26,6 +28,8 @@ import { HouseholdInterfaceModule } from './interface/household/household.module
     CategoryInterfaceModule,
     AuthInterfaceModule,
     HouseholdInterfaceModule,
+    InvitationInterfaceModule,
+    HouseholdKindInterfaceModule,
   ],
 })
 export class AppModule {}

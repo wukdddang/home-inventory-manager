@@ -52,4 +52,14 @@ export class CategoryBusinessService {
   ): Promise<void> {
     return this.categoryContextService.카테고리를_삭제한다(id, householdId);
   }
+
+  async 다른_거점에서_카테고리를_가져온다(
+    sourceHouseholdId: string,
+    targetHouseholdId: string,
+  ): Promise<CategoryResult[]> {
+    return this.categoryContextService.다른_거점에서_카테고리를_가져온다(
+      sourceHouseholdId,
+      targetHouseholdId,
+    );
+  }
 }
