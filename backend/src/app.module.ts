@@ -10,6 +10,9 @@ import { HouseholdInterfaceModule } from './interface/household/household.module
 import { InvitationInterfaceModule } from './interface/invitation/invitation.module';
 import { HouseholdKindInterfaceModule } from './interface/household-kind/household-kind.module';
 import { SpaceInterfaceModule } from './interface/space/space.module';
+import { UnitInterfaceModule } from './interface/unit/unit.module';
+import { ProductInterfaceModule } from './interface/product/product.module';
+import { ProductVariantInterfaceModule } from './interface/product-variant/product-variant.module';
 
 @Module({
   imports: [
@@ -32,6 +35,9 @@ import { SpaceInterfaceModule } from './interface/space/space.module';
     InvitationInterfaceModule,
     HouseholdKindInterfaceModule,
     SpaceInterfaceModule,
+    UnitInterfaceModule,
+    ProductInterfaceModule,
+    ProductVariantInterfaceModule,
   ],
 })
 export class AppModule {}
