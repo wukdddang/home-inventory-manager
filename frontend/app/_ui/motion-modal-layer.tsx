@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { useEffect, useId, useState, type ReactNode } from "react";
+import { useEffect, useId, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 
 const overlayEase = [0.4, 0, 0.2, 1] as const;
@@ -57,9 +57,11 @@ export function MotionModalLayer({
   zOffset = 0,
 }: MotionModalLayerProps) {
   const baseKey = useId().replace(/:/g, "");
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   useEffect(() => {
     if (!open) return;
