@@ -22,11 +22,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import {
-  getAppSettings,
-  getHouseholds,
-  setAppSettings as persistLocalSettings,
-} from "@/lib/local-store";
+import { getHouseholds } from "@/lib/local-store";
 import {
   DEFAULT_NOTIFICATION_DETAIL,
   DEFAULT_SETTINGS,
@@ -59,6 +55,8 @@ export type SettingsDataPort = {
     householdId: string | undefined,
     ruleId: string,
   ): Promise<void>;
+  /** 알림 설정 레코드를 삭제한다 (기본값으로 초기화). */
+  deleteNotificationPreference(): Promise<void>;
 };
 
 /* ─────────────────────── API helpers ─────────────────────── */
@@ -232,6 +230,14 @@ function createSettingsApiService(): SettingsDataPort {
         { method: "DELETE" },
       ).catch((e) => console.error("만료 규칙 삭제 오류:", e));
     },
+
+    async deleteNotificationPreference() {
+      if (!notificationPrefId) return;
+      await apiFetch(`/api/notification-preferences/${notificationPrefId}`, {
+        method: "DELETE",
+      }).catch((e) => console.error("알림 설정 삭제 오류:", e));
+      notificationPrefId = null;
+    },
   };
 }
 
@@ -251,6 +257,7 @@ export type SettingsContextType = {
   알림_상세를_갱신한다: (patch: Partial<NotificationDetailPreferences>) => void;
   만료_규칙을_저장한다: (rule: ExpirationAlertRule) => void;
   만료_규칙을_삭제한다: (ruleId: string) => void;
+  알림_설정을_초기화_한다: () => void;
 };
 
 export type SettingsProviderProps = {
@@ -436,6 +443,25 @@ export function SettingsProvider({
     [port, householdIdProp],
   );
 
+  const 알림_설정을_초기화_한다 = useCallback(() => {
+    void port
+      .deleteNotificationPreference()
+      .catch((e) => console.error("알림 설정 초기화 오류:", e));
+    // 로컬 상태를 기본값으로 되돌린다
+    setSettings((s) =>
+      s
+        ? {
+            ...s,
+            notifyExpiration: DEFAULT_SETTINGS.notifyExpiration,
+            notifyShopping: DEFAULT_SETTINGS.notifyShopping,
+            notifyLowStock: DEFAULT_SETTINGS.notifyLowStock,
+            notificationDetail: { ...DEFAULT_NOTIFICATION_DETAIL },
+            expirationAlertRules: [],
+          }
+        : s,
+    );
+  }, [port]);
+
   const value = useMemo<SettingsContextType>(
     () => ({
       settings,
@@ -449,6 +475,7 @@ export function SettingsProvider({
       알림_상세를_갱신한다,
       만료_규칙을_저장한다,
       만료_규칙을_삭제한다,
+      알림_설정을_초기화_한다,
     }),
     [
       settings,
@@ -462,22 +489,21 @@ export function SettingsProvider({
       알림_상세를_갱신한다,
       만료_규칙을_저장한다,
       만료_규칙을_삭제한다,
+      알림_설정을_초기화_한다,
     ],
   );
 
   return (
-    <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>
+    <SettingsContext.Provider value={value}>
+      {children}
+    </SettingsContext.Provider>
   );
 }
 
 /* ─────────────────────── Current Provider ─────────────────────── */
 
 /** current 경로 전용 Provider. 백엔드 API 서비스를 주입한다. */
-export function CurrentSettingsProvider({
-  children,
-}: {
-  children: ReactNode;
-}) {
+export function CurrentSettingsProvider({ children }: { children: ReactNode }) {
   const [port] = useState<SettingsDataPort>(() => createSettingsApiService());
 
   return <SettingsProvider port={port}>{children}</SettingsProvider>;

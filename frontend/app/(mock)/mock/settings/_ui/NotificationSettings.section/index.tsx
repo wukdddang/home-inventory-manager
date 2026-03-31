@@ -18,6 +18,8 @@ import {
   Trash2,
   Settings2,
   X,
+  RotateCcw,
+  AlertTriangle,
 } from "lucide-react";
 
 /* ── 공통 UI ── */
@@ -655,12 +657,23 @@ function lowStockSummary(enabled: boolean, respectMin: boolean) {
 /* ── 메인 섹션 ── */
 
 export function NotificationSettingsSection() {
-  const { settings, 알림_플래그를_토글_한다 } = useSettings();
+  const { settings, 알림_플래그를_토글_한다, 알림_설정을_초기화_한다 } =
+    useSettings();
   const [openModal, setOpenModal] = useState<
     "expiration" | "shopping" | "lowStock" | null
   >(null);
+  const [confirmReset, setConfirmReset] = useState(false);
 
   if (!settings) return null;
+
+  const handleResetConfirm = () => {
+    알림_설정을_초기화_한다();
+    setConfirmReset(false);
+    toast({
+      title: "알림 설정을 초기화했습니다",
+      description: "모든 알림 설정이 기본값으로 되돌아갔습니다.",
+    });
+  };
 
   const d = settings.notificationDetail;
   const ruleCount = settings.expirationAlertRules?.length ?? 0;
@@ -716,6 +729,56 @@ export function NotificationSettingsSection() {
             onToggle={() => 알림_플래그를_토글_한다("notifyLowStock")}
             onConfigure={() => setOpenModal("lowStock")}
           />
+        </div>
+
+        {/* 초기화 존 */}
+        <div className="mt-6 rounded-xl border border-rose-900/40 bg-rose-950/20 px-4 py-3.5">
+          <div className="flex items-center justify-between gap-4">
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-rose-300">
+                알림 설정 초기화
+              </p>
+              <p className="mt-0.5 text-xs text-zinc-500">
+                모든 알림 설정을 기본값으로 되돌리고 백엔드 레코드를 삭제합니다
+              </p>
+            </div>
+            {confirmReset ? (
+              <div className="flex shrink-0 items-center gap-2">
+                <span className="text-xs text-zinc-400">정말 초기화할까요?</span>
+                <button
+                  type="button"
+                  onClick={handleResetConfirm}
+                  className="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-rose-500"
+                >
+                  초기화
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmReset(false)}
+                  className="rounded-lg border border-zinc-700 px-3 py-1.5 text-xs font-medium text-zinc-300 transition hover:bg-zinc-800"
+                >
+                  취소
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirmReset(true)}
+                className="flex shrink-0 items-center gap-1.5 rounded-lg border border-rose-800/50 bg-rose-950/40 px-3 py-1.5 text-xs font-medium text-rose-400 transition hover:bg-rose-900/30 hover:text-rose-300"
+              >
+                <RotateCcw className="size-3.5" />
+                초기화
+              </button>
+            )}
+          </div>
+          {confirmReset && (
+            <div className="mt-3 flex items-start gap-2 rounded-lg border border-rose-900/30 bg-rose-950/30 px-3 py-2">
+              <AlertTriangle className="mt-0.5 size-3.5 shrink-0 text-rose-400" />
+              <p className="text-xs text-rose-300/80">
+                이 작업은 되돌릴 수 없습니다. 유통기한·장보기·재고 부족 알림 설정과 품목별 만료 규칙이 모두 초기화됩니다.
+              </p>
+            </div>
+          )}
         </div>
       </section>
 

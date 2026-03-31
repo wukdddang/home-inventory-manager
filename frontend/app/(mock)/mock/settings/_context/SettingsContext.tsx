@@ -39,6 +39,8 @@ const mockSettingsService: SettingsDataPort = {
   // mock에서 만료 규칙은 persistSettings(전체 설정 저장)로 함께 처리되므로 no-op
   async saveExpirationRule() {},
   async deleteExpirationRule() {},
+  // mock에서 알림 설정 삭제는 no-op (persistSettings에서 통합 처리)
+  async deleteNotificationPreference() {},
 };
 
 /**
