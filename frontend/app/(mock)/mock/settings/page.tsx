@@ -2,17 +2,20 @@
 
 import { usePathname } from "next/navigation";
 import { useDeviceLayout } from "@/hooks/useDeviceLayout";
-import { SettingsProvider } from "./_context/SettingsContext";
+import { MockSettingsProvider } from "./_context/SettingsContext";
+import { CurrentSettingsProvider } from "@/app/(current)/settings/_context/SettingsContext";
 import { SettingsPanel } from "./_ui/SettingsPage.panel";
 import { SettingsMobilePanel } from "./_ui/SettingsMobile.panel";
 
 export default function SettingsPage() {
   const { isMobileLayout } = useDeviceLayout();
   const pathname = usePathname();
-  const dataMode = pathname.startsWith("/mock") ? "mock" : "api";
+  const ProviderWrapper = pathname.startsWith("/mock")
+    ? MockSettingsProvider
+    : CurrentSettingsProvider;
 
   return (
-    <SettingsProvider dataMode={dataMode}>
+    <ProviderWrapper>
       {isMobileLayout ? (
         <SettingsMobilePanel />
       ) : (
@@ -20,6 +23,6 @@ export default function SettingsPage() {
           <SettingsPanel />
         </div>
       )}
-    </SettingsProvider>
+    </ProviderWrapper>
   );
 }

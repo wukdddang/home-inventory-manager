@@ -1,15 +1,8 @@
 "use client";
 
-import {
-  PurchasesProvider,
-  type PurchasesDataMode,
-} from "./_context/PurchasesContext";
 import { PurchasesPanel } from "./_ui/PurchasesPage.panel";
 
-export function PurchasesScreen({ dataMode }: { dataMode: PurchasesDataMode }) {
-  return (
-    <PurchasesProvider dataMode={dataMode}>
-      <PurchasesPanel />
-    </PurchasesProvider>
-  );
+/** Provider는 상위 page.tsx에서 Mock/Current 중 하나가 마운트된다. */
+export function PurchasesScreen() {
+  return <PurchasesPanel />;
 }

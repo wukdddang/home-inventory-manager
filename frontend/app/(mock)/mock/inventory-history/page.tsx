@@ -2,17 +2,20 @@
 
 import { usePathname } from "next/navigation";
 import { useDeviceLayout } from "@/hooks/useDeviceLayout";
-import { InventoryHistoryProvider } from "./_context/InventoryHistoryContext";
+import { MockInventoryHistoryProvider } from "./_context/InventoryHistoryContext";
+import { CurrentInventoryHistoryProvider } from "@/app/(current)/inventory-history/_context/InventoryHistoryContext";
 import { InventoryHistoryScreen } from "./InventoryHistoryScreen";
 import { InventoryHistoryMobilePanel } from "./_ui/InventoryHistoryMobile.panel";
 
 export default function InventoryHistoryPage() {
   const { isMobileLayout } = useDeviceLayout();
   const pathname = usePathname();
-  const dataMode = pathname.startsWith("/mock") ? "mock" : "api";
+  const ProviderWrapper = pathname.startsWith("/mock")
+    ? MockInventoryHistoryProvider
+    : CurrentInventoryHistoryProvider;
 
   return (
-    <InventoryHistoryProvider dataMode={dataMode}>
+    <ProviderWrapper>
       {isMobileLayout ? (
         <InventoryHistoryMobilePanel />
       ) : (
@@ -20,6 +23,6 @@ export default function InventoryHistoryPage() {
           <InventoryHistoryScreen />
         </div>
       )}
-    </InventoryHistoryProvider>
+    </ProviderWrapper>
   );
 }
