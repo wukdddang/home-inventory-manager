@@ -1,12 +1,23 @@
 import type {
   GroupMember,
   Household,
+  HouseholdKindDefinition,
   InventoryLedgerRow,
   InventoryLedgerType,
+  MemberRole,
+  MockInvitation,
   NotificationItem,
   ProductCatalog,
 } from "@/types/domain";
-import type { DashboardHouseholdsPort } from "./dashboard-households.port";
+import {
+  cloneDefaultHouseholdKindDefinitions,
+  sortHouseholdKindDefinitions,
+} from "@/lib/household-kind-defaults";
+import {
+  getSharedHouseholdKindDefinitions,
+  setSharedHouseholdKindDefinitions,
+} from "@/lib/local-store";
+import type { CreateInvitationParams, DashboardHouseholdsPort } from "./dashboard-households.port";
 
 /* ── 상품 카탈로그 기본 시드 ── */
 
@@ -567,18 +578,107 @@ function cloneHouseholds(list: Household[]): Household[] {
 export function createDashboardMockHouseholdsService(): DashboardHouseholdsPort {
   let cache: Household[] | null = null;
 
+  function getCache(): Household[] {
+    if (cache === null) cache = cloneHouseholds(MOCK_SEED_HOUSEHOLDS);
+    return cache;
+  }
+
   return {
     async list() {
       await delay(MOCK_LATENCY_MS);
-      if (cache === null) {
-        cache = cloneHouseholds(MOCK_SEED_HOUSEHOLDS);
-      }
-      return cloneHouseholds(cache);
+      return cloneHouseholds(getCache());
     },
 
     async saveAll(households) {
       await delay(Math.min(80, MOCK_LATENCY_MS));
       cache = cloneHouseholds(households);
+    },
+
+    async create(name, kind) {
+      await delay(MOCK_LATENCY_MS);
+      const h: Household = {
+        id: crypto.randomUUID(),
+        name: name.trim() || "이름 없는 거점",
+        kind,
+        rooms: [],
+        items: [],
+        furniturePlacements: [],
+        storageLocations: [],
+        createdAt: new Date().toISOString(),
+        catalog: structuredClone(
+          (await import("./dashboard-mock.service")).cloneDefaultCatalog(),
+        ),
+        members: [],
+      };
+      getCache().push(h);
+      return structuredClone(h);
+    },
+
+    async update(id, updates) {
+      await delay(MOCK_LATENCY_MS);
+      const list = getCache();
+      const idx = list.findIndex((h) => h.id === id);
+      if (idx === -1) throw new Error("거점을 찾을 수 없습니다.");
+      list[idx] = { ...list[idx]!, ...updates };
+      return structuredClone(list[idx]!);
+    },
+
+    async remove(id) {
+      await delay(MOCK_LATENCY_MS);
+      cache = getCache().filter((h) => h.id !== id);
+    },
+
+    // ── 유형 정의 ──
+    async listKinds() {
+      const saved = getSharedHouseholdKindDefinitions();
+      return saved.length > 0 ? saved : cloneDefaultHouseholdKindDefinitions();
+    },
+
+    async saveKinds(items) {
+      const sorted = sortHouseholdKindDefinitions(items);
+      setSharedHouseholdKindDefinitions(sorted);
+    },
+
+    // ── 멤버 ──
+    async listMembers(householdId) {
+      const h = getCache().find((x) => x.id === householdId);
+      return structuredClone(h?.members ?? []);
+    },
+
+    async changeMemberRole(householdId, memberId, role) {
+      const list = getCache();
+      const h = list.find((x) => x.id === householdId);
+      if (!h) return;
+      h.members = (h.members ?? []).map((m) =>
+        m.id === memberId ? { ...m, role } : m,
+      );
+    },
+
+    async removeMember(householdId, memberId) {
+      const h = getCache().find((x) => x.id === householdId);
+      if (!h) return;
+      h.members = (h.members ?? []).filter((m) => m.id !== memberId);
+    },
+
+    // ── 초대 ──
+    async listInvitations() {
+      return [];
+    },
+
+    async createInvitation(householdId, params) {
+      await delay(MOCK_LATENCY_MS);
+      const inv: MockInvitation = {
+        id: crypto.randomUUID(),
+        householdId,
+        role: params.role,
+        token: crypto.randomUUID().slice(0, 8),
+        createdAt: new Date().toISOString(),
+      };
+      return inv;
+    },
+
+    async revokeInvitation() {
+      // mock no-op
     },
   };
 }

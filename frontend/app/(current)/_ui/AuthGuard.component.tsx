@@ -1,8 +1,8 @@
 "use client";
 
-import { useAppRoutePrefix } from "@/lib/use-app-route-prefix";
 import {
   getAuthUserSnapshot,
+  setAuthUser,
   subscribeAuthUser,
 } from "@/lib/local-store";
 import { AppLoadingState } from "@/app/_ui/app-loading-state";
@@ -14,24 +14,50 @@ import {
 } from "@/app/_ui/app-view-transition.motion";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const prefix = useAppRoutePrefix();
   const user = useSyncExternalStore(
     subscribeAuthUser,
     getAuthUserSnapshot,
     () => null,
   );
+  const [verified, setVerified] = useState(false);
+  const verifyAttempted = useRef(false);
 
   useEffect(() => {
-    if (user === null) router.replace(`${prefix}/login`);
-  }, [user, router, prefix]);
+    if (verifyAttempted.current) return;
+    verifyAttempted.current = true;
+
+    fetch("/api/auth/me")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.data) {
+          setAuthUser({
+            email: data.data.email,
+            displayName: data.data.displayName,
+            emailVerified: !!data.data.emailVerifiedAt,
+          });
+          setVerified(true);
+        } else {
+          setAuthUser(null);
+          router.replace("/login");
+        }
+      })
+      .catch(() => {
+        setAuthUser(null);
+        router.replace("/login");
+      });
+  }, [router]);
+
+  // localStorage에 유저가 없고 검증도 안 됐으면 로딩
+  // 검증 실패 시 위 effect에서 리다이렉트 처리
+  const showChildren = verified && user !== null;
 
   return (
     <AnimatePresence mode="wait">
-      {user ? (
+      {showChildren ? (
         <motion.div
           key="auth-children"
           className="flex h-full min-h-0 w-full flex-1 flex-col"

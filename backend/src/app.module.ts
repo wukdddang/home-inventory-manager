@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { DatabaseModule } from './common/database/database.module';
 import { envValidationSchema } from './common/config/env-validation';
 import { HouseholdModule } from './domain/household/household.module';
@@ -13,6 +14,14 @@ import { SpaceInterfaceModule } from './interface/space/space.module';
 import { UnitInterfaceModule } from './interface/unit/unit.module';
 import { ProductInterfaceModule } from './interface/product/product.module';
 import { ProductVariantInterfaceModule } from './interface/product-variant/product-variant.module';
+import { InventoryItemInterfaceModule } from './interface/inventory-item/inventory-item.module';
+import { PurchaseInterfaceModule } from './interface/purchase/purchase.module';
+import { PurchaseBatchInterfaceModule } from './interface/purchase-batch/purchase-batch.module';
+import { InventoryLogInterfaceModule } from './interface/inventory-log/inventory-log.module';
+import { ShoppingListInterfaceModule } from './interface/shopping-list/shopping-list.module';
+import { NotificationPreferenceInterfaceModule } from './interface/notification-preference/notification-preference.module';
+import { NotificationInterfaceModule } from './interface/notification/notification.module';
+import { ExpirationAlertRuleInterfaceModule } from './interface/expiration-alert-rule/expiration-alert-rule.module';
 
 @Module({
   imports: [
@@ -20,6 +29,7 @@ import { ProductVariantInterfaceModule } from './interface/product-variant/produ
       isGlobal: true,
       validationSchema: envValidationSchema,
     }),
+    ScheduleModule.forRoot(),
     DatabaseModule,
 
     // Infrastructure
@@ -38,6 +48,14 @@ import { ProductVariantInterfaceModule } from './interface/product-variant/produ
     UnitInterfaceModule,
     ProductInterfaceModule,
     ProductVariantInterfaceModule,
+    InventoryItemInterfaceModule,
+    PurchaseInterfaceModule,
+    PurchaseBatchInterfaceModule,
+    InventoryLogInterfaceModule,
+    ShoppingListInterfaceModule,
+    NotificationPreferenceInterfaceModule,
+    NotificationInterfaceModule,
+    ExpirationAlertRuleInterfaceModule,
   ],
 })
 export class AppModule {}

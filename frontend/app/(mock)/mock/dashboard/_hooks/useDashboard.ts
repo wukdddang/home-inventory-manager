@@ -1,15 +1,5 @@
-"use client";
-
-import { useContext } from "react";
-import {
-  DashboardContext,
-  type DashboardContextType,
-} from "../_context/DashboardContext";
-
-export function useDashboard(): DashboardContextType {
-  const ctx = useContext(DashboardContext);
-  if (ctx === undefined) {
-    throw new Error("useDashboard는 DashboardProvider 안에서만 사용할 수 있습니다.");
-  }
-  return ctx;
-}
+/**
+ * mock 경로 호환용 re-export.
+ * useDashboard 훅은 (current)/dashboard/_hooks에서 관리합니다.
+ */
+export { useDashboard } from "@/app/(current)/dashboard/_hooks/useDashboard";

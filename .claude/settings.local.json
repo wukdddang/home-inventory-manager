@@ -66,7 +66,20 @@
       "Bash(pnpm --filter backend add -D @testcontainers/postgresql)",
       "Bash(docker info:*)",
       "Bash(npx nest:*)",
-      "Bash(pnpm --filter frontend exec tsc --noEmit --pretty)"
+      "Bash(pnpm --filter frontend exec tsc --noEmit --pretty)",
+      "Bash(pnpm:*)",
+      "Bash(docker compose:*)",
+      "Bash(find \"/c/Users/wukdd/dev/Lumir-ERP/src/app/api/\\(ams\\)\" -type d -maxdepth 4)",
+      "Bash(find \"C:/Users/wukdd/dev/home-inventory-manager/frontend/app/\\(current\\)/settings\" -type f)",
+      "Bash(xargs -I {} basename {} -depth 3)",
+      "Read(//mnt/c/Users/wukdd/dev/home-inventory-manager/frontend/**)",
+      "Bash(find \"app/\\(current\\)\" -type f)",
+      "Bash(find \"app/\\(current\\)\" -type d)",
+      "Bash(find \"app/\\(current\\)/dashboard\" -type f)",
+      "Bash(find \"app/\\(current\\)/settings\" -type f)",
+      "Bash(find \"app/\\(mock\\)/mock/dashboard\" -type f)",
+      "Bash(find \"app/\\(mock\\)/mock/settings\" -type f)",
+      "Bash(find \"app/\\(current\\)\" -type f -name \"*hooks*\" -o -name \"*lib*\")"
     ]
   }
 }

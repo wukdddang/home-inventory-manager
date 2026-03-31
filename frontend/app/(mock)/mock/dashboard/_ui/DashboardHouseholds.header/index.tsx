@@ -703,10 +703,10 @@ export function DashboardHouseholdsHeader({
     setInviteLink(null);
   }, [addOpen, defaultKindId]);
 
-  const handleAddHousehold = () => {
+  const handleAddHousehold = async () => {
     const trimmed = newHouseName.trim();
     if (!trimmed) return;
-    const id = 거점을_추가_한다(trimmed, newHouseKind);
+    const id = await 거점을_추가_한다(trimmed, newHouseKind);
     setCreatedHouseholdId(id);
     onAfterAddHousehold(id);
     setAddStep(2);

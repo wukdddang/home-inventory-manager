@@ -1,6 +1,6 @@
 "use client";
 
-import { DashboardProvider } from "@/app/(mock)/mock/dashboard/_context/DashboardContext";
+import { DashboardProvider } from "@/app/(current)/dashboard/_context/DashboardContext";
 import { DashboardShoppingListModal } from "@/app/(mock)/mock/dashboard/_ui/DashboardInventory.section/DashboardShoppingList.module";
 import {
   NotificationCenterModal,
@@ -75,7 +75,12 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     () => null,
   );
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      // 로그아웃 API 실패해도 로컬 정리 진행
+    }
     setAuthUser(null);
     router.replace(`${prefix}/login`);
   };
