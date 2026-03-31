@@ -34,6 +34,7 @@ function AccountSecuritySettingsBody({
   const [pwNew, setPwNew] = useState("");
   const [pwConfirm, setPwConfirm] = useState("");
   const [pwMsg, setPwMsg] = useState("");
+  const [pwSubmitting, setPwSubmitting] = useState(false);
 
   const resetPasswordFields = () => {
     setPwCurrent("");
@@ -97,8 +98,12 @@ function AccountSecuritySettingsBody({
     });
   };
 
-  const handlePasswordModalSubmit = () => {
+  const handlePasswordModalSubmit = async () => {
     setPwMsg("");
+    if (!pwCurrent) {
+      setPwMsg("현재 비밀번호를 입력하세요.");
+      return;
+    }
     if (pwNew.length < 4) {
       setPwMsg("새 비밀번호는 4자 이상이어야 합니다.");
       return;
@@ -107,15 +112,35 @@ function AccountSecuritySettingsBody({
       setPwMsg("새 비밀번호 확인이 일치하지 않습니다.");
       return;
     }
-    if (!pwCurrent) {
-      setPwMsg("현재 비밀번호를 입력하세요. (데모: 아무 값)");
+
+    if (isMockRoute) {
+      toast({
+        title: "비밀번호 변경 요청(데모)",
+        description: "목 경로에서는 실제 API를 호출하지 않습니다.",
+      });
+      setPasswordModalOpen(false);
       return;
     }
-    toast({
-      title: "비밀번호 변경 요청(데모)",
-      description: "백엔드 연동 후 PATCH /me/password 등으로 전송합니다.",
-    });
-    setPasswordModalOpen(false);
+
+    setPwSubmitting(true);
+    try {
+      const res = await fetch("/api/auth/password", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword: pwCurrent, newPassword: pwNew }),
+      });
+      const json = (await res.json()) as { success: boolean; message?: string };
+      if (!json.success) {
+        setPwMsg(json.message ?? "비밀번호 변경에 실패했습니다.");
+        return;
+      }
+      toast({ title: "비밀번호가 변경되었습니다." });
+      setPasswordModalOpen(false);
+    } catch {
+      setPwMsg("네트워크 오류가 발생했습니다. 다시 시도해 주세요.");
+    } finally {
+      setPwSubmitting(false);
+    }
   };
 
   const verified = user?.emailVerified === true;
@@ -280,11 +305,15 @@ function AccountSecuritySettingsBody({
           if (!open) resetPasswordFields();
         }}
         title="비밀번호 변경"
-        description="현재 비밀번호와 새 비밀번호를 입력하세요. 데모에서는 서버로 전송되지 않습니다."
-        submitLabel="변경"
+        description={
+          isMockRoute
+            ? "현재 비밀번호와 새 비밀번호를 입력하세요. 목 경로에서는 서버로 전송되지 않습니다."
+            : "현재 비밀번호와 새 비밀번호를 입력하세요."
+        }
+        submitLabel={pwSubmitting ? "변경 중…" : "변경"}
         cancelLabel="취소"
-        onSubmit={handlePasswordModalSubmit}
-        submitDisabled={!pwCurrent || !pwNew || !pwConfirm}
+        onSubmit={() => { void handlePasswordModalSubmit(); }}
+        submitDisabled={!pwCurrent || !pwNew || !pwConfirm || pwSubmitting}
       >
         <div className="space-y-3">
           <div className="space-y-1">

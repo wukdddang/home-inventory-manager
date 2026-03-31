@@ -36,11 +36,15 @@ import {
   getSharedHouseholdKindDefinitions,
 } from "@/lib/local-store";
 import type {
+  FurniturePlacement,
   Household,
   HouseholdKindDefinition,
+  HouseholdStructureDiagramLayout,
   MemberRole,
   MockInvitation,
   ProductCatalog,
+  StorageLocationRow,
+  StructureRoom,
 } from "@/types/domain";
 import { newEntityId } from "@/app/(mock)/mock/dashboard/_lib/dashboard-helpers";
 import { cloneDefaultCatalog } from "@/app/(mock)/mock/dashboard/_context/dashboard-mock.service";
@@ -92,6 +96,65 @@ export type DashboardContextType = {
     householdId: string,
     updater: (c: ProductCatalog) => ProductCatalog,
   ) => void;
+  // ── 방 / 집 구조 ──
+  /**
+   * 방 목록을 상태에 반영하고 API에 동기화한다.
+   * rooms sync API(논리 방 목록) + house-structure API(2D 좌표)를 순차 호출하고
+   * 서버에서 할당된 UUID가 반영된 StructureRoom 배열을 반환한다.
+   */
+  방_목록을_동기화_한다: (
+    householdId: string,
+    rooms: StructureRoom[],
+    layout?: HouseholdStructureDiagramLayout,
+  ) => Promise<StructureRoom[]>;
+  /**
+   * 집 구조 다이어그램 레이아웃을 저장한다.
+   * rooms를 전달하면 방 좌표도 함께 업데이트한다 (방 위치 드래그 시 사용).
+   */
+  집_구조를_저장_한다: (
+    householdId: string,
+    layout: HouseholdStructureDiagramLayout,
+    rooms?: StructureRoom[],
+  ) => Promise<void>;
+  // ── 가구 배치 ──
+  /** 방에 가구 배치를 생성한다. 서버 응답 객체(서버 UUID 포함)를 반환한다. */
+  가구를_추가_한다: (
+    householdId: string,
+    roomId: string,
+    label: string,
+    anchorDirectStorageId?: string | null,
+    sortOrder?: number,
+  ) => Promise<FurniturePlacement | null>;
+  /** 가구 배치의 앵커 직속 보관 장소를 변경한다 (로컬 + API). */
+  가구_앵커를_변경_한다: (
+    householdId: string,
+    furnitureId: string,
+    newSlotId: string | null,
+  ) => Promise<void>;
+  /** 가구 배치와 그 아래 세부 보관 장소·재고를 삭제한다 (로컬 + API). */
+  가구를_삭제_한다: (householdId: string, furnitureId: string) => Promise<void>;
+  // ── 보관 장소 ──
+  /** 보관 장소를 생성한다. 서버 응답 객체(서버 UUID 포함)를 반환한다. */
+  보관장소를_추가_한다: (
+    householdId: string,
+    data: {
+      name: string;
+      roomId?: string | null;
+      furniturePlacementId?: string | null;
+      sortOrder?: number;
+    },
+  ) => Promise<StorageLocationRow | null>;
+  /** 보관 장소 이름을 수정한다 (로컬 + API). */
+  보관장소_이름을_수정_한다: (
+    householdId: string,
+    slotId: string,
+    name: string,
+  ) => Promise<void>;
+  /** 보관 장소를 삭제하고 연결된 가구 앵커를 폴백 처리한다 (로컬 + API). */
+  보관장소를_삭제_한다: (
+    householdId: string,
+    slotId: string,
+  ) => Promise<void>;
   // ── 멤버 ──
   멤버_역할을_변경_한다: (
     householdId: string,
@@ -316,6 +379,249 @@ export function DashboardProvider({
       );
     },
     [],
+  );
+
+  // ── 방 목록 동기화 ──
+  const 방_목록을_동기화_한다 = useCallback(
+    async (
+      householdId: string,
+      rooms: StructureRoom[],
+      layout?: HouseholdStructureDiagramLayout,
+    ): Promise<StructureRoom[]> => {
+      // 낙관적 로컬 업데이트 (temp ID 기반)
+      거점을_갱신_한다(householdId, (h) => ({
+        ...h,
+        rooms,
+        ...(layout !== undefined ? { structureDiagramLayout: layout } : {}),
+      }));
+      // 방 동기화 → 서버 UUID 반환
+      const serverRooms = await port.syncRooms(householdId, rooms);
+      // house-structure는 서버 UUID를 키로 저장해야 다음 조회 시 좌표가 매핑됨
+      const resolvedLayout =
+        layout ??
+        householdsRef.current.find((h) => h.id === householdId)
+          ?.structureDiagramLayout;
+      await port.saveHouseStructure(householdId, serverRooms, resolvedLayout);
+      // 로컬 상태를 서버 UUID로 갱신
+      if (serverRooms.length > 0) {
+        거점을_갱신_한다(householdId, (h) => ({
+          ...h,
+          rooms: serverRooms,
+        }));
+      }
+      return serverRooms;
+    },
+    [거점을_갱신_한다, port],
+  );
+
+  // ── 가구 배치 추가 ──
+  const 가구를_추가_한다 = useCallback(
+    async (
+      householdId: string,
+      roomId: string,
+      label: string,
+      anchorDirectStorageId?: string | null,
+      sortOrder?: number,
+    ): Promise<FurniturePlacement | null> => {
+      try {
+        const fp = await port.createFurniturePlacement(
+          householdId,
+          roomId,
+          label,
+          anchorDirectStorageId,
+          sortOrder,
+        );
+        거점을_갱신_한다(householdId, (h) => ({
+          ...h,
+          furniturePlacements: [...(h.furniturePlacements ?? []), fp],
+        }));
+        return fp;
+      } catch (e) {
+        console.error("가구 배치 생성 오류:", e);
+        return null;
+      }
+    },
+    [거점을_갱신_한다, port],
+  );
+
+  // ── 가구 앵커 변경 ──
+  const 가구_앵커를_변경_한다 = useCallback(
+    async (
+      householdId: string,
+      furnitureId: string,
+      newSlotId: string | null,
+    ): Promise<void> => {
+      거점을_갱신_한다(householdId, (h) => ({
+        ...h,
+        furniturePlacements: (h.furniturePlacements ?? []).map((f) =>
+          f.id === furnitureId
+            ? { ...f, anchorDirectStorageId: newSlotId ?? undefined }
+            : f,
+        ),
+      }));
+      await port
+        .patchFurniturePlacement(householdId, furnitureId, {
+          anchorDirectStorageId: newSlotId,
+        })
+        .catch((e) => console.error("가구 앵커 변경 오류:", e));
+    },
+    [거점을_갱신_한다, port],
+  );
+
+  // ── 가구 배치 삭제 ──
+  const 가구를_삭제_한다 = useCallback(
+    async (householdId: string, furnitureId: string): Promise<void> => {
+      const h = householdsRef.current.find((x) => x.id === householdId);
+      const slotIds = new Set(
+        (h?.storageLocations ?? [])
+          .filter((s) => s.furniturePlacementId === furnitureId)
+          .map((s) => s.id),
+      );
+      거점을_갱신_한다(householdId, (cur) => ({
+        ...cur,
+        furniturePlacements: (cur.furniturePlacements ?? []).filter(
+          (f) => f.id !== furnitureId,
+        ),
+        storageLocations: (cur.storageLocations ?? []).filter(
+          (s) => s.furniturePlacementId !== furnitureId,
+        ),
+        items: cur.items.filter(
+          (i) => !i.storageLocationId || !slotIds.has(i.storageLocationId),
+        ),
+      }));
+      await port
+        .removeFurniturePlacement(householdId, furnitureId)
+        .catch((e) => console.error("가구 배치 삭제 오류:", e));
+    },
+    [거점을_갱신_한다, port],
+  );
+
+  // ── 보관 장소 추가 ──
+  const 보관장소를_추가_한다 = useCallback(
+    async (
+      householdId: string,
+      data: {
+        name: string;
+        roomId?: string | null;
+        furniturePlacementId?: string | null;
+        sortOrder?: number;
+      },
+    ): Promise<StorageLocationRow | null> => {
+      try {
+        const slot = await port.createStorageLocation(householdId, data);
+        거점을_갱신_한다(householdId, (h) => ({
+          ...h,
+          storageLocations: [...(h.storageLocations ?? []), slot],
+        }));
+        return slot;
+      } catch (e) {
+        console.error("보관 장소 생성 오류:", e);
+        return null;
+      }
+    },
+    [거점을_갱신_한다, port],
+  );
+
+  // ── 보관 장소 이름 수정 ──
+  const 보관장소_이름을_수정_한다 = useCallback(
+    async (householdId: string, slotId: string, name: string): Promise<void> => {
+      거점을_갱신_한다(householdId, (h) => ({
+        ...h,
+        storageLocations: (h.storageLocations ?? []).map((s) =>
+          s.id === slotId ? { ...s, name } : s,
+        ),
+      }));
+      await port
+        .updateStorageLocation(householdId, slotId, name)
+        .catch((e) => console.error("보관 장소 이름 수정 오류:", e));
+    },
+    [거점을_갱신_한다, port],
+  );
+
+  // ── 보관 장소 삭제 (앵커 폴백 포함) ──
+  const 보관장소를_삭제_한다 = useCallback(
+    async (householdId: string, slotId: string): Promise<void> => {
+      const h = householdsRef.current.find((x) => x.id === householdId);
+      if (!h) return;
+      const slot = (h.storageLocations ?? []).find((s) => s.id === slotId);
+      if (!slot) return;
+
+      const isRoomDirect =
+        Boolean(slot.roomId) &&
+        (slot.furniturePlacementId == null || slot.furniturePlacementId === "");
+
+      let anchored: FurniturePlacement[] = [];
+      let fallback: string | undefined;
+
+      if (isRoomDirect && slot.roomId) {
+        const roomDirects = (h.storageLocations ?? [])
+          .filter(
+            (s) =>
+              s.roomId === slot.roomId &&
+              (s.furniturePlacementId == null || s.furniturePlacementId === ""),
+          )
+          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+        fallback = roomDirects.find((s) => s.id !== slotId)?.id;
+        anchored = (h.furniturePlacements ?? []).filter(
+          (fp) => fp.anchorDirectStorageId === slotId,
+        );
+      }
+
+      // 로컬 상태 갱신 (앵커 폴백 + 슬롯 제거 + 아이템 정리)
+      거점을_갱신_한다(householdId, (cur) => {
+        let nextFps = [...(cur.furniturePlacements ?? [])];
+        if (isRoomDirect && anchored.length > 0) {
+          nextFps = nextFps.map((f) =>
+            f.anchorDirectStorageId === slotId
+              ? { ...f, anchorDirectStorageId: fallback }
+              : f,
+          );
+        }
+        return {
+          ...cur,
+          storageLocations: (cur.storageLocations ?? []).filter(
+            (s) => s.id !== slotId,
+          ),
+          furniturePlacements: nextFps,
+          items: cur.items.filter((i) => i.storageLocationId !== slotId),
+        };
+      });
+
+      // API: 영향받는 가구 앵커 변경
+      for (const fp of anchored) {
+        await port
+          .patchFurniturePlacement(householdId, fp.id, {
+            anchorDirectStorageId: fallback ?? null,
+          })
+          .catch((e) => console.error("가구 앵커 변경 오류:", e));
+      }
+      // API: 보관 장소 삭제
+      await port
+        .removeStorageLocation(householdId, slotId)
+        .catch((e) => console.error("보관 장소 삭제 오류:", e));
+    },
+    [거점을_갱신_한다, port],
+  );
+
+  // ── 집 구조 레이아웃 저장 ──
+  const 집_구조를_저장_한다 = useCallback(
+    async (
+      householdId: string,
+      layout: HouseholdStructureDiagramLayout,
+      rooms?: StructureRoom[],
+    ) => {
+      거점을_갱신_한다(householdId, (h) => ({
+        ...h,
+        ...(rooms !== undefined ? { rooms } : {}),
+        structureDiagramLayout: layout,
+      }));
+      // rooms가 명시적으로 전달된 경우 해당 값을 사용한다.
+      // 그렇지 않으면 ref에서 읽는다 (방 좌표 변경이 없는 경우라 이전 값이 올바름).
+      const resolvedRooms =
+        rooms ?? householdsRef.current.find((h) => h.id === householdId)?.rooms ?? [];
+      await port.saveHouseStructure(householdId, resolvedRooms, layout);
+    },
+    [거점을_갱신_한다, port],
   );
 
   // ── 멤버 역할 변경 ──
@@ -547,6 +853,14 @@ export function DashboardProvider({
       거점을_갱신_한다,
       거점_유형_정의를_교체_한다,
       카탈로그를_갱신_한다,
+      방_목록을_동기화_한다,
+      집_구조를_저장_한다,
+      가구를_추가_한다,
+      가구_앵커를_변경_한다,
+      가구를_삭제_한다,
+      보관장소를_추가_한다,
+      보관장소_이름을_수정_한다,
+      보관장소를_삭제_한다,
       멤버_역할을_변경_한다,
       멤버를_제거_한다,
       초대를_생성_한다,
@@ -571,6 +885,14 @@ export function DashboardProvider({
       거점을_갱신_한다,
       거점_유형_정의를_교체_한다,
       카탈로그를_갱신_한다,
+      방_목록을_동기화_한다,
+      집_구조를_저장_한다,
+      가구를_추가_한다,
+      가구_앵커를_변경_한다,
+      가구를_삭제_한다,
+      보관장소를_추가_한다,
+      보관장소_이름을_수정_한다,
+      보관장소를_삭제_한다,
       멤버_역할을_변경_한다,
       멤버를_제거_한다,
       초대를_생성_한다,

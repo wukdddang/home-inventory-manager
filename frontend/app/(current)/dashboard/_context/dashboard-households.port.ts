@@ -1,10 +1,14 @@
 import type {
+  FurniturePlacement,
   GroupMember,
   Household,
   HouseholdKindDefinition,
+  HouseholdStructureDiagramLayout,
   MemberRole,
   MockInvitation,
   ProductCatalog,
+  StorageLocationRow,
+  StructureRoom,
 } from "@/types/domain";
 
 export type CreateInvitationParams = {
@@ -42,6 +46,53 @@ export type DashboardHouseholdsPort = {
   listInvitations(householdId: string): Promise<MockInvitation[]>;
   createInvitation(householdId: string, params: CreateInvitationParams): Promise<MockInvitation>;
   revokeInvitation(householdId: string, invitationId: string): Promise<void>;
+
+  // ── 방 / 집 구조 (API 전용; mock은 no-op 또는 패스스루) ──
+  /**
+   * 논리적 방 목록을 서버에 동기화한다 (PUT /rooms/sync).
+   * 서버에서 할당된 UUID가 포함된 StructureRoom 배열을 반환한다.
+   */
+  syncRooms(householdId: string, rooms: StructureRoom[]): Promise<StructureRoom[]>;
+  /** 집 구조(2D 좌표 + 다이어그램 레이아웃)를 서버에 저장한다 (PUT /house-structure). */
+  saveHouseStructure(
+    householdId: string,
+    rooms: StructureRoom[],
+    layout?: HouseholdStructureDiagramLayout,
+  ): Promise<void>;
+
+  // ── 가구 배치 CUD (API 전용; mock은 no-op) ──
+  /** 방에 가구 배치를 생성한다 (POST /rooms/:roomId/furniture-placements). */
+  createFurniturePlacement(
+    householdId: string,
+    roomId: string,
+    label: string,
+    anchorDirectStorageId?: string | null,
+    sortOrder?: number,
+  ): Promise<FurniturePlacement>;
+  /** 가구 배치를 수정한다 (PUT /furniture-placements/:id). */
+  patchFurniturePlacement(
+    householdId: string,
+    id: string,
+    patch: { anchorDirectStorageId?: string | null },
+  ): Promise<void>;
+  /** 가구 배치를 삭제한다 (DELETE /furniture-placements/:id). */
+  removeFurniturePlacement(householdId: string, id: string): Promise<void>;
+
+  // ── 보관 장소 CUD (API 전용; mock은 no-op) ──
+  /** 보관 장소를 생성한다 (POST /storage-locations). */
+  createStorageLocation(
+    householdId: string,
+    data: {
+      name: string;
+      roomId?: string | null;
+      furniturePlacementId?: string | null;
+      sortOrder?: number;
+    },
+  ): Promise<StorageLocationRow>;
+  /** 보관 장소 이름을 수정한다 (PUT /storage-locations/:id). */
+  updateStorageLocation(householdId: string, id: string, name: string): Promise<void>;
+  /** 보관 장소를 삭제한다 (DELETE /storage-locations/:id). */
+  removeStorageLocation(householdId: string, id: string): Promise<void>;
 
   // ── 카탈로그 동기화 (API 전용; mock은 no-op) ──
   syncCatalogDiff(

@@ -97,7 +97,8 @@ export function DashboardRoomsSection({
   selectedRoomId,
   onRoomSelect,
 }: DashboardRoomsSectionProps) {
-  const { 거점을_갱신_한다 } = useDashboard();
+  const { 방_목록을_동기화_한다, 가구를_삭제_한다, 보관장소를_추가_한다, 보관장소를_삭제_한다, 거점을_갱신_한다 } =
+    useDashboard();
   const [addOpen, setAddOpen] = useState(false);
   const [newRoomName, setNewRoomName] = useState("");
   const [editOpen, setEditOpen] = useState(false);
@@ -125,39 +126,41 @@ export function DashboardRoomsSection({
 
   if (!selected) return null;
 
-  const handleAddRoom = () => {
+  const handleAddRoom = async () => {
     const label = newRoomName.trim() || `방 ${selected.rooms.length + 1}`;
     const grid = defaultRoomGrid(selected.rooms.length);
-    const room: StructureRoom = {
+    const tempRoom: StructureRoom = {
       id: newEntityId(),
       name: label,
       ...grid,
     };
-    const defaultSlot: StorageLocationRow = {
-      id: `sl-default-${room.id}`,
-      name: "방(기본)",
-      roomId: room.id,
-      furniturePlacementId: null,
-      sortOrder: 0,
-    };
-    거점을_갱신_한다(selected.id, (h) => ({
-      ...h,
-      rooms: [...h.rooms, room],
-      storageLocations: [...(h.storageLocations ?? []), defaultSlot],
-    }));
+    const nextRooms = [...selected.rooms, tempRoom];
+    // 방 목록을 서버에 동기화하고 서버 UUID를 반환받는다
+    const serverRooms = await 방_목록을_동기화_한다(selected.id, nextRooms);
+    // 새로 추가한 방의 서버 UUID (순서상 마지막 항목)
+    const serverRoom = serverRooms[serverRooms.length - 1];
+    // 기본 보관 장소를 서버 UUID room ID로 생성한다
+    if (serverRoom) {
+      await 보관장소를_추가_한다(selected.id, {
+        name: "방(기본)",
+        roomId: serverRoom.id,
+        furniturePlacementId: null,
+        sortOrder: 0,
+      });
+      onRoomSelect(serverRoom.id);
+    }
     toast({ title: "방을 추가했습니다", description: label });
     setAddOpen(false);
-    onRoomSelect(room.id);
   };
 
-  const handleSaveRoomName = () => {
+  const handleSaveRoomName = async () => {
     if (!editRoomId) return;
     const name = editRoomName.trim();
     if (!name) return;
-    거점을_갱신_한다(selected.id, (h) => ({
-      ...h,
-      rooms: h.rooms.map((r) => (r.id === editRoomId ? { ...r, name } : r)),
-    }));
+    const nextRooms = selected.rooms.map((r) =>
+      r.id === editRoomId ? { ...r, name } : r,
+    );
+    await 방_목록을_동기화_한다(selected.id, nextRooms);
     toast({ title: "방 이름을 변경했습니다", description: name });
     setEditOpen(false);
     setEditRoomId(null);
@@ -171,12 +174,16 @@ export function DashboardRoomsSection({
     setEditOpen(true);
   };
 
-  const confirmDeleteRoom = (roomId: string) => {
+  const confirmDeleteRoom = async (roomId: string) => {
     const room = selected.rooms.find((r) => r.id === roomId);
-    const fpIdsInRoom = new Set(
-      (selected.furniturePlacements ?? [])
-        .filter((f) => f.roomId === roomId)
-        .map((f) => f.id),
+    const fpIdsInRoom = (selected.furniturePlacements ?? [])
+      .filter((f) => f.roomId === roomId)
+      .map((f) => f.id);
+    const fpIdSet = new Set(fpIdsInRoom);
+    const directSlots = (selected.storageLocations ?? []).filter(
+      (s) =>
+        s.roomId === roomId &&
+        (s.furniturePlacementId == null || s.furniturePlacementId === ""),
     );
     const storageIdsToRemove = new Set(
       (selected.storageLocations ?? [])
@@ -184,10 +191,12 @@ export function DashboardRoomsSection({
           (s) =>
             s.roomId === roomId ||
             (s.furniturePlacementId != null &&
-              fpIdsInRoom.has(s.furniturePlacementId)),
+              fpIdSet.has(s.furniturePlacementId)),
         )
         .map((s) => s.id),
     );
+
+    // 로컬 상태 즉시 갱신 (낙관적)
     거점을_갱신_한다(selected.id, (h) => ({
       ...h,
       rooms: h.rooms.filter((r) => r.id !== roomId),
@@ -199,15 +208,30 @@ export function DashboardRoomsSection({
       ),
       items: h.items.filter((i) => {
         if (i.roomId === roomId) return false;
-        if (
-          i.storageLocationId &&
-          storageIdsToRemove.has(i.storageLocationId)
-        ) {
+        if (i.storageLocationId && storageIdsToRemove.has(i.storageLocationId))
           return false;
-        }
         return true;
       }),
     }));
+
+    // API: 가구 배치 삭제 (서버 cascade 없을 경우를 대비해 명시 삭제)
+    for (const fpId of fpIdsInRoom) {
+      void 가구를_삭제_한다(selected.id, fpId).catch((e) =>
+        console.error("방 삭제 중 가구 삭제 오류:", e),
+      );
+    }
+    // API: 직속 보관 장소 삭제 (가구 배치에 속하지 않는 것)
+    for (const slot of directSlots) {
+      void 보관장소를_삭제_한다(selected.id, slot.id).catch((e) =>
+        console.error("방 삭제 중 보관장소 삭제 오류:", e),
+      );
+    }
+    // API: 방 목록 동기화 (삭제된 방 제외)
+    const nextRooms = selected.rooms.filter((r) => r.id !== roomId);
+    void 방_목록을_동기화_한다(selected.id, nextRooms).catch((e) =>
+      console.error("방 목록 동기화 오류:", e),
+    );
+
     toast({
       title: "방을 삭제했습니다",
       description: room?.name,
@@ -348,7 +372,7 @@ export function DashboardRoomsSection({
               </button>
               <button
                 type="button"
-                onClick={handleAddRoom}
+                onClick={() => { void handleAddRoom(); }}
                 className="cursor-pointer rounded-lg bg-teal-500 px-3 py-1.5 text-xs font-semibold text-zinc-950 hover:bg-teal-400"
               >
                 추가
@@ -397,7 +421,7 @@ export function DashboardRoomsSection({
               <button
                 type="button"
                 disabled={!editRoomName.trim()}
-                onClick={handleSaveRoomName}
+                onClick={() => { void handleSaveRoomName(); }}
                 className="cursor-pointer rounded-lg bg-teal-500 px-3 py-1.5 text-xs font-semibold text-zinc-950 hover:bg-teal-400 disabled:cursor-not-allowed disabled:opacity-40"
               >
                 저장
@@ -422,7 +446,7 @@ export function DashboardRoomsSection({
         cancelLabel="취소"
         variant="danger"
         onConfirm={() => {
-          if (pendingDeleteRoomId) confirmDeleteRoom(pendingDeleteRoomId);
+          if (pendingDeleteRoomId) void confirmDeleteRoom(pendingDeleteRoomId);
           setPendingDeleteRoomId(null);
         }}
       />

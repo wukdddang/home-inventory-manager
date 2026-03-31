@@ -681,6 +681,15 @@ export function createDashboardMockHouseholdsService(): DashboardHouseholdsPort 
       // mock no-op
     },
 
+    // ── 방 / 집 구조 (mock은 인메모리 상태만 관리; syncRooms는 입력값을 그대로 반환) ──
+    async syncRooms(_, rooms) {
+      return [...rooms]; // mock: 서버 없이 로컬 방 목록 그대로 반환
+    },
+
+    async saveHouseStructure() {
+      // no-op
+    },
+
     // ── 카탈로그 동기화 (mock은 인메모리 상태만 관리하므로 no-op) ──
     async syncCatalogDiff() {
       // no-op
@@ -692,6 +701,44 @@ export function createDashboardMockHouseholdsService(): DashboardHouseholdsPort 
     },
 
     async recordInventoryWaste() {
+      // no-op
+    },
+
+    // ── 가구 배치 CUD (mock은 no-op; Context에서 로컬 상태만 관리) ──
+    async createFurniturePlacement(_hid, roomId, label, anchorDirectStorageId, sortOrder) {
+      return {
+        id: crypto.randomUUID(),
+        roomId,
+        label,
+        anchorDirectStorageId: anchorDirectStorageId ?? undefined,
+        sortOrder: sortOrder ?? 0,
+      };
+    },
+
+    async patchFurniturePlacement() {
+      // no-op
+    },
+
+    async removeFurniturePlacement() {
+      // no-op
+    },
+
+    // ── 보관 장소 CUD (mock은 no-op; Context에서 로컬 상태만 관리) ──
+    async createStorageLocation(_hid, data) {
+      return {
+        id: crypto.randomUUID(),
+        name: data.name,
+        roomId: data.roomId ?? null,
+        furniturePlacementId: data.furniturePlacementId ?? null,
+        sortOrder: data.sortOrder ?? 0,
+      };
+    },
+
+    async updateStorageLocation() {
+      // no-op (mock은 Context에서 로컬 상태만 관리)
+    },
+
+    async removeStorageLocation() {
       // no-op
     },
   };

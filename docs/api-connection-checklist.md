@@ -1,4 +1,4 @@
-# API 연결 현황 체크리스트
+﻿# API 연결 현황 체크리스트
 
 **최초 작성**: 2026-03-31
 **기준**: feature-checklist.md v2.5
@@ -32,7 +32,7 @@
 | 로그아웃 | `POST /api/auth/logout` | ✅ | `AppShell` → route handler |
 | 내 정보 조회 | `GET /api/auth/me` | ✅ | `AuthGuard` 마운트 시 호출 |
 | 토큰 갱신 | `POST /api/auth/refresh` | ✅ | 자동 갱신 (클라이언트 직접 호출 없음) |
-| 비밀번호 변경 | `PATCH /api/auth/password` | ✅ | route handler 존재, UI 연결 필요 확인 필요 |
+| 비밀번호 변경 | `PATCH /api/auth/password` | ✅ | AccountSecuritySettingsSection — 비 mock 경로에서 PATCH /api/auth/password 호출 |
 
 ---
 
@@ -58,8 +58,8 @@
 | 이메일 초대 전송 | `POST /api/households/[id]/invitations` | ✅ | `inviteeEmail` 파라미터 포함 |
 | 초대 목록 조회 | `GET /api/households/[id]/invitations` | ✅ | `초대_목록을_불러온다` |
 | 초대 취소(revoke) | `DELETE /api/households/[id]/invitations/[iid]` | ✅ | `초대를_취소_한다` |
-| 초대 링크 수락 | `POST /api/invitations/[token]/accept` | ✅ | route handler 존재, 수락 UI 미구현 |
-| 초대 토큰 조회 | `GET /api/invitations/[token]` | ✅ | route handler 존재 |
+| 초대 링크 수락 | `POST /api/invitations/[token]/accept` | ✅ | /invite/[token] 페이지 구현 — GET 토큰조회 후 POST accept 호출 |
+| 초대 토큰 조회 | `GET /api/invitations/[token]` | ✅ | /invite/[token] 페이지에서 마운트 시 GET 호출 |
 
 ---
 
@@ -89,10 +89,10 @@
 
 | 기능 | API 라우트 | 상태 | 비고 |
 |------|-----------|------|------|
-| 방 목록 조회 | `GET /api/households/[id]/rooms` | 🚧 | `dashboard-api.service`가 rooms를 localStorage에서 가져옴 (공간 데이터 포함 불일치) |
-| 방 동기화 | `PUT /api/households/[id]/rooms/sync` | 🚧 | `거점을_갱신_한다` API 미호출 (공간 편집기 UI와 백엔드 모델 불일치) |
-| 집 구조 조회 | `GET /api/households/[id]/house-structure` | 🚧 | route handler 있음, context 미연결 (공간 편집기 UI 개발 후 연결 필요) |
-| 집 구조 저장 | `PUT /api/households/[id]/house-structure` | 🚧 | route handler 있음, context 미연결 |
+| 방 목록 조회 | `GET /api/households/[id]/rooms` | ✅ | `list()` 내 `loadRoomsAndStructureFromApi` 병렬 호출. 2D 좌표는 house-structure.structurePayload에서 보완, localStorage 폴백 |
+| 방 동기화 | `PUT /api/households/[id]/rooms/sync` | ✅ | `DashboardInventorySection.handleRoomRename` · `DashboardRoomsSection.handleSaveRoomName` · 방 추가/삭제 → `방_목록을_동기화_한다` → `port.syncRooms` (서버 UUID 반환) + `port.saveHouseStructure` 순차 호출. 서버 UUID로 로컬 상태 갱신 |
+| 집 구조 조회 | `GET /api/households/[id]/house-structure` | ✅ | `list()` 내 `loadRoomsAndStructureFromApi`에서 병렬 조회. structurePayload.rooms에서 2D 좌표, diagramLayout에서 레이아웃 추출 |
+| 집 구조 저장 | `PUT /api/households/[id]/house-structure` | ✅ | `HouseStructureFlow.onNodeDragStop` → `handleStructureDiagramCommit` → `집_구조를_저장_한다` → `port.saveHouseStructure`. 방 위치 드래그 시 nextRooms 명시 전달, 다이어그램 노드만 이동 시 layout만 전달 |
 
 ---
 
@@ -101,9 +101,9 @@
 | 기능 | API 라우트 | 상태 | 비고 |
 |------|-----------|------|------|
 | 가구 목록 조회 | `GET /api/households/[id]/rooms/[rid]/furniture-placements` | ✅ | `dashboard-api.service.ts` `loadFurniturePlacementsFromApi`에서 방별 API 호출 |
-| 가구 생성 | `POST /api/households/[id]/rooms/[rid]/furniture-placements` | 🚧 | route handler 있음, 가구 편집 write-through 미구현 |
-| 가구 수정 | `PUT /api/households/[id]/furniture-placements/[fid]` | 🚧 | route handler 있음, 가구 편집 write-through 미구현 |
-| 가구 삭제 | `DELETE /api/households/[id]/furniture-placements/[fid]` | 🚧 | route handler 있음, 가구 편집 write-through 미구현 |
+| 가구 생성 | `POST /api/households/[id]/rooms/[rid]/furniture-placements` | ✅ | `DashboardPlacementsSection` 가구 추가 모달 → `가구를_추가_한다` → `port.createFurniturePlacement` |
+| 가구 수정(앵커 변경) | `PUT /api/households/[id]/furniture-placements/[fid]` | ✅ | 직속 보관장소 이동 모달 → `가구_앵커를_변경_한다` → `port.patchFurniturePlacement` |
+| 가구 삭제 | `DELETE /api/households/[id]/furniture-placements/[fid]` | ✅ | 가구 삭제 확인 → `가구를_삭제_한다` → `port.removeFurniturePlacement`. 세부 보관장소·재고 로컬 정리 포함 |
 
 ---
 
@@ -112,9 +112,9 @@
 | 기능 | API 라우트 | 상태 | 비고 |
 |------|-----------|------|------|
 | 보관장소 목록 조회 | `GET /api/households/[id]/storage-locations` | ✅ | `dashboard-api.service.ts` `loadStorageLocationsFromApi`에서 API 호출 |
-| 보관장소 생성 | `POST /api/households/[id]/storage-locations` | 🚧 | route handler 있음, write-through 미구현 |
-| 보관장소 수정 | `PUT /api/households/[id]/storage-locations/[sid]` | 🚧 | route handler 있음, write-through 미구현 |
-| 보관장소 삭제 | `DELETE /api/households/[id]/storage-locations/[sid]` | 🚧 | route handler 있음, write-through 미구현 |
+| 보관장소 생성 | `POST /api/households/[id]/storage-locations` | ✅ | 직속/세부 보관장소 추가 모달 + 방 추가 시 기본 슬롯 → `보관장소를_추가_한다` → `port.createStorageLocation` |
+| 보관장소 수정 | `PUT /api/households/[id]/storage-locations/[sid]` | ✅ | 보관장소_이름을_수정_한다 → port.updateStorageLocation — DashboardPlacements.section 연필 버튼 |
+| 보관장소 삭제 | `DELETE /api/households/[id]/storage-locations/[sid]` | ✅ | 보관장소 삭제 확인 → `보관장소를_삭제_한다` → 가구 앵커 폴백(`patchFurniturePlacement`) + `port.removeStorageLocation` |
 
 ---
 
@@ -250,19 +250,21 @@
 
 | 상태 | 항목 수 | 내용 |
 |------|---------|------|
-| ✅ 완료 | 인프라 6, 사용자 8, 거점 7, 거점초대 6, 거점유형 2, 카테고리 4, 단위 4, 상품 4, 변형 4, 가구조회 1, 보관장소조회 1, 구매 2, 소비/폐기이력 2, 장보기 5, 알림 2, 알림설정 3, 만료규칙 4, 장보기자동제안 2, 스케줄러 2 | **총 73항목** |
-| 🚧 미연결 | 방/구조 4, 가구CUD 3, 보관장소CUD 3, 재고품목 3, 로트 3, 재고이력조회 1, 이력수동조정 1, 구매재고연결 1, 알림설정삭제 없음→⬜ | **총 ~15항목** |
+| ✅ 완료 | 인프라 6, 사용자 6+1(비밀번호변경), 거점 7, 거점초대 4+2(수락·토큰조회), 거점유형 2, 카테고리 4, 단위 4, 상품 4, 변형 4, **가구 CUD+조회 4**, **보관장소 생성+조회+삭제+수정 4**, **방/집구조 4**, 구매 2, 소비/폐기이력 2, 장보기 5, 알림 2, 알림설정 3, 만료규칙 4, 장보기자동제안 2, 스케줄러 2 | **총 89항목** |
+| 🚧 미연결 | 재고품목 3, 로트 3, 재고이력조회 1, 이력수동조정 1, 구매재고연결 1 | **총 ~9항목** |
 | ⬜ 개발 전 | 태그, 리포트 설정, 단건조회 UI, copy UI, 알림설정삭제 UI | **~7항목** |
 
 ### 잔여 미연결 원인
 
 | 원인 | 해당 기능 |
 |------|-----------|
-| 방/공간 편집기와 백엔드 모델 불일치 | 방 목록 조회·동기화, 집 구조 조회·저장 (4항목) |
-| 가구·보관장소 write-through 미구현 | 가구 CUD, 보관장소 CUD (6항목) |
+| ~~방/공간 편집기와 백엔드 모델 불일치~~ | ~~방 목록 조회·동기화, 집 구조 조회·저장 (4항목)~~ → **✅ 2026-03-31 완료** |
+| ~~가구·보관장소 write-through 미구현~~ | ~~가구 CUD, 보관장소 생성·삭제 (5항목)~~ → **✅ 2026-03-31 완료** |
 | 재고 품목 API 연결 미완료 | 재고 품목 목록·등록·수량수정 (3항목) |
 | 로트 별도 조회 미연결 | 로트 목록·유통기한임박·만료 (3항목) |
 | 이력 조회 API 미연결 | 재고 이력 조회·수동조정 (2항목) |
+| ~~인증 UI 미구현~~ | ~~비밀번호 변경, 초대 링크 수락·토큰 조회 (3항목)~~ → **✅ 2026-03-31 완료** |
+| ~~보관장소 이름 수정 UI 없음~~ | ~~보관장소 수정 (1항목)~~ → **✅ 2026-03-31 완료** |
 
 ---
 
@@ -271,8 +273,8 @@
 1. **재고 품목** — `dashboard-api.service.ts`에서 inventory-items API 로드 추가
 2. **로트** — `PurchasesContext` 또는 별도 컨텍스트에서 batches API 연결
 3. **이력 조회** — `InventoryHistoryContext`에서 API 기반 로드 추가
-4. **방/구조** — 공간 편집기 UI와 백엔드 Room 모델 정합성 해결 후 연결
-5. **가구·보관장소 CUD** — 공간 편집기에서 write-through 추가
+4. ~~**가구·보관장소 CUD** — 2026-03-31 완료~~
+5. ~~**방/구조** — 2026-03-31 완료~~
 
 ---
 

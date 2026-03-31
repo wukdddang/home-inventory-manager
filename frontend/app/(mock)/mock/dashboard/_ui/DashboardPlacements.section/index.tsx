@@ -6,12 +6,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { useMemo, useState } from "react";
 import { useDashboard } from "../../_hooks/useDashboard";
-import { newEntityId } from "../../_lib/dashboard-helpers";
-import type {
-  FurniturePlacement,
-  Household,
-  StorageLocationRow,
-} from "@/types/domain";
+import type { Household } from "@/types/domain";
 
 const inputClass =
   "w-full rounded-lg border border-zinc-700 bg-zinc-950 px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500";
@@ -62,6 +57,26 @@ function PlusMiniIcon({ className }: { className?: string }) {
       aria-hidden
     >
       <path strokeLinecap="round" d="M12 4.5v15m7.5-7.5h-15" />
+    </svg>
+  );
+}
+
+function PencilMiniIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      className={cn("size-3 shrink-0", className)}
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125"
+      />
     </svg>
   );
 }
@@ -123,7 +138,15 @@ export function DashboardPlacementsSection({
   selectedRoomId,
   onFocusItemAddPanel,
 }: DashboardPlacementsSectionProps) {
-  const { 거점을_갱신_한다 } = useDashboard();
+  const {
+    가구를_추가_한다,
+    가구_앵커를_변경_한다,
+    가구를_삭제_한다,
+    보관장소를_추가_한다,
+    보관장소_이름을_수정_한다,
+    보관장소를_삭제_한다,
+  } = useDashboard();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(
     null,
   );
@@ -162,6 +185,10 @@ export function DashboardPlacementsSection({
   >(null);
   const [reanchorModalTargetSlotId, setReanchorModalTargetSlotId] =
     useState("");
+
+  const [renameSlotModalOpen, setRenameSlotModalOpen] = useState(false);
+  const [renameSlotId, setRenameSlotId] = useState<string | null>(null);
+  const [renameSlotDraft, setRenameSlotDraft] = useState("");
 
   const directsForSelectedRoom = useMemo(() => {
     if (!selected || !selectedRoomId) return [];
@@ -226,7 +253,7 @@ export function DashboardPlacementsSection({
     setDirectSlotModalOpen(true);
   };
 
-  const submitDirectSlotModal = () => {
+  const submitDirectSlotModal = async () => {
     if (!directSlotModalRoomId || !selected) return;
     const name = directSlotModalDraft.trim();
     if (!name) {
@@ -237,35 +264,32 @@ export function DashboardPlacementsSection({
       });
       return;
     }
-    const id = newEntityId();
     const nextSort =
       Math.max(
         0,
         ...roomDirectSlots(directSlotModalRoomId).map((s) => s.sortOrder ?? 0),
       ) + 1;
-    const row: StorageLocationRow = {
-      id,
+    setIsSubmitting(true);
+    const created = await 보관장소를_추가_한다(selected.id, {
       name,
       roomId: directSlotModalRoomId,
       furniturePlacementId: null,
       sortOrder: nextSort,
-    };
-    거점을_갱신_한다(selected.id, (h) => ({
-      ...h,
-      storageLocations: [...(h.storageLocations ?? []), row],
-    }));
-    setUserDirectSlotPick(id);
+    });
+    setIsSubmitting(false);
+    if (!created) return;
+    setUserDirectSlotPick(created.id);
     setDirectSlotModalOpen(false);
     setDirectSlotModalDraft("");
     setDirectSlotModalRoomId(null);
     toast({ title: "직속 보관 장소가 추가되었습니다", description: name });
   };
 
-  const handleAddFurnitureToSlot = (
+  const handleAddFurnitureToSlot = async (
     roomId: string,
     slotId: string,
     labelRaw: string,
-  ): boolean => {
+  ): Promise<boolean> => {
     const label = labelRaw.trim();
     if (!label) {
       toast({
@@ -282,21 +306,11 @@ export function DashboardPlacementsSection({
       });
       return false;
     }
-    const id = newEntityId();
     const inRoom = furnitureInRoom(roomId);
     const nextSort = Math.max(0, ...inRoom.map((f) => f.sortOrder ?? 0)) + 1;
-    const fp: FurniturePlacement = {
-      id,
-      roomId,
-      label,
-      sortOrder: nextSort,
-      anchorDirectStorageId: slotId,
-    };
-    거점을_갱신_한다(selected.id, (h) => ({
-      ...h,
-      furniturePlacements: [...(h.furniturePlacements ?? []), fp],
-    }));
-    setFocusedFurnitureId(id);
+    const fp = await 가구를_추가_한다(selected.id, roomId, label, slotId, nextSort);
+    if (!fp) return false;
+    setFocusedFurnitureId(fp.id);
     toast({ title: "가구가 이 직속 보관 장소에 연결되었습니다", description: label });
     return true;
   };
@@ -308,7 +322,7 @@ export function DashboardPlacementsSection({
     setFurnitureModalOpen(true);
   };
 
-  const submitFurnitureModal = () => {
+  const submitFurnitureModal = async () => {
     if (!furnitureModalRoomId || !furnitureModalSlotId || !selected) return;
     const label = furnitureModalDraft.trim();
     if (!label) {
@@ -319,11 +333,13 @@ export function DashboardPlacementsSection({
       });
       return;
     }
-    const ok = handleAddFurnitureToSlot(
+    setIsSubmitting(true);
+    const ok = await handleAddFurnitureToSlot(
       furnitureModalRoomId,
       furnitureModalSlotId,
       label,
     );
+    setIsSubmitting(false);
     if (!ok) return;
     setFurnitureModalOpen(false);
     setFurnitureModalDraft("");
@@ -342,12 +358,7 @@ export function DashboardPlacementsSection({
       toast({ title: "직속 보관 장소를 확인하세요", variant: "warning" });
       return false;
     }
-    거점을_갱신_한다(selected.id, (h) => ({
-      ...h,
-      furniturePlacements: (h.furniturePlacements ?? []).map((f) =>
-        f.id === furnitureId ? { ...f, anchorDirectStorageId: nextSlotId } : f,
-      ),
-    }));
+    void 가구_앵커를_변경_한다(selected.id, furnitureId, nextSlotId);
     return true;
   };
 
@@ -391,10 +402,12 @@ export function DashboardPlacementsSection({
     }
   };
 
-  const handleAddFurnitureSlot = (
+  // requestDeleteStorage의 유효성 검사는 context 함수 호출 전에 수행한다
+
+  const handleAddFurnitureSlot = async (
     furnitureId: string,
     nameRaw: string,
-  ): boolean => {
+  ): Promise<boolean> => {
     const name = nameRaw.trim();
     if (!name) {
       toast({
@@ -404,20 +417,15 @@ export function DashboardPlacementsSection({
       });
       return false;
     }
-    const id = newEntityId();
     const under = slotsUnderFurniture(furnitureId);
     const nextSort = Math.max(0, ...under.map((s) => s.sortOrder ?? 0)) + 1;
-    const row: StorageLocationRow = {
-      id,
+    const created = await 보관장소를_추가_한다(selected.id, {
       name,
       roomId: null,
       furniturePlacementId: furnitureId,
       sortOrder: nextSort,
-    };
-    거점을_갱신_한다(selected.id, (h) => ({
-      ...h,
-      storageLocations: [...(h.storageLocations ?? []), row],
-    }));
+    });
+    if (!created) return false;
     toast({ title: "세부 보관 장소가 추가되었습니다", description: name });
     return true;
   };
@@ -428,7 +436,7 @@ export function DashboardPlacementsSection({
     setSubSlotModalOpen(true);
   };
 
-  const submitSubSlotModal = () => {
+  const submitSubSlotModal = async () => {
     if (!subSlotModalFurnitureId || !selected) return;
     const name = subSlotModalDraft.trim();
     if (!name) {
@@ -439,7 +447,9 @@ export function DashboardPlacementsSection({
       });
       return;
     }
-    const ok = handleAddFurnitureSlot(subSlotModalFurnitureId, name);
+    setIsSubmitting(true);
+    const ok = await handleAddFurnitureSlot(subSlotModalFurnitureId, name);
+    setIsSubmitting(false);
     if (!ok) return;
     setSubSlotModalOpen(false);
     setSubSlotModalDraft("");
@@ -471,67 +481,37 @@ export function DashboardPlacementsSection({
   };
 
   const confirmDeleteStorage = (storageId: string) => {
-    const victim = slots.find((x) => x.id === storageId);
-    const roomId = victim?.roomId;
-    const isRoomDirect =
-      victim &&
-      (victim.furniturePlacementId == null ||
-        victim.furniturePlacementId === "");
-
-    거점을_갱신_한다(selected.id, (h) => {
-      const allSlots = [...(h.storageLocations ?? [])];
-      let nextFps = [...(h.furniturePlacements ?? [])];
-
-      if (isRoomDirect && roomId) {
-        const remaining = allSlots
-          .filter(
-            (x) =>
-              x.id !== storageId &&
-              x.roomId === roomId &&
-              (x.furniturePlacementId == null || x.furniturePlacementId === ""),
-          )
-          .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
-        const fallback = remaining[0]?.id;
-        nextFps = nextFps.map((f) =>
-          f.anchorDirectStorageId === storageId
-            ? { ...f, anchorDirectStorageId: fallback }
-            : f,
-        );
-      }
-
-      return {
-        ...h,
-        storageLocations: allSlots.filter((x) => x.id !== storageId),
-        furniturePlacements: nextFps,
-        items: h.items.filter((i) => i.storageLocationId !== storageId),
-      };
-    });
+    void 보관장소를_삭제_한다(selected.id, storageId);
     toast({ title: "보관 장소가 삭제되었습니다", variant: "success" });
   };
 
   const confirmDeleteFurniture = (furnitureId: string) => {
-    const slotIds = new Set(
-      (selected.storageLocations ?? [])
-        .filter((s) => s.furniturePlacementId === furnitureId)
-        .map((s) => s.id),
-    );
-    거점을_갱신_한다(selected.id, (h) => ({
-      ...h,
-      furniturePlacements: (h.furniturePlacements ?? []).filter(
-        (f) => f.id !== furnitureId,
-      ),
-      storageLocations: (h.storageLocations ?? []).filter(
-        (s) => s.furniturePlacementId !== furnitureId,
-      ),
-      items: h.items.filter(
-        (i) => !i.storageLocationId || !slotIds.has(i.storageLocationId),
-      ),
-    }));
+    const label =
+      placements.find((f) => f.id === furnitureId)?.label ?? "";
+    void 가구를_삭제_한다(selected.id, furnitureId);
     toast({
       title: "가구가 삭제되었습니다",
-      description: "연결된 세부 보관 장소·재고도 함께 정리되었습니다.",
+      description: label
+        ? `「${label}」의 세부 보관 장소·재고도 함께 정리되었습니다.`
+        : "연결된 세부 보관 장소·재고도 함께 정리되었습니다.",
       variant: "success",
     });
+  };
+
+  const submitRenameSlotModal = async () => {
+    if (!renameSlotId || !selected) return;
+    const name = renameSlotDraft.trim();
+    if (!name) {
+      toast({ title: "이름을 입력하세요", variant: "warning" });
+      return;
+    }
+    setIsSubmitting(true);
+    await 보관장소_이름을_수정_한다(selected.id, renameSlotId, name);
+    setIsSubmitting(false);
+    toast({ title: "보관 장소 이름을 수정했습니다", description: name, variant: "success" });
+    setRenameSlotModalOpen(false);
+    setRenameSlotId(null);
+    setRenameSlotDraft("");
   };
 
   const reanchorModalFurniture = reanchorModalFurnitureId
@@ -685,6 +665,25 @@ export function DashboardPlacementsSection({
                                   <span className="whitespace-nowrap">
                                     {s.name}
                                   </span>
+                                </button>
+                                <button
+                                  type="button"
+                                  className={cn(
+                                    "relative z-10 flex cursor-pointer items-center justify-center p-1.5 transition-colors",
+                                    selectedTab
+                                      ? "text-amber-200/60 hover:bg-amber-500/15 hover:text-amber-100"
+                                      : "text-zinc-500 hover:bg-zinc-800/70 hover:text-zinc-200",
+                                  )}
+                                  title="이름 수정"
+                                  aria-label={`「${s.name}」 직속 보관 장소 이름 수정`}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setRenameSlotId(s.id);
+                                    setRenameSlotDraft(s.name);
+                                    setRenameSlotModalOpen(true);
+                                  }}
+                                >
+                                  <PencilMiniIcon />
                                 </button>
                                 <button
                                   type="button"
@@ -863,17 +862,32 @@ export function DashboardPlacementsSection({
                                               className="flex items-center justify-between gap-2 rounded-md bg-zinc-900/80 px-2 py-1 text-xs text-zinc-300"
                                             >
                                               <span>{s.name}</span>
-                                              <button
-                                                type="button"
-                                                className={`${btnDangerIcon} shrink-0`}
-                                                title="이 세부 보관 장소와 여기에만 묶인 재고를 삭제합니다"
-                                                aria-label={`「${s.name}」 세부 보관 장소 삭제`}
-                                                onClick={() =>
-                                                  requestDeleteStorage(s.id)
-                                                }
-                                              >
-                                                <TrashIcon />
-                                              </button>
+                                              <div className="flex shrink-0 items-center gap-1">
+                                                <button
+                                                  type="button"
+                                                  className="inline-flex cursor-pointer items-center justify-center rounded-md border border-zinc-700/50 p-1.5 text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200"
+                                                  title="이름 수정"
+                                                  aria-label={`「${s.name}」 세부 보관 장소 이름 수정`}
+                                                  onClick={() => {
+                                                    setRenameSlotId(s.id);
+                                                    setRenameSlotDraft(s.name);
+                                                    setRenameSlotModalOpen(true);
+                                                  }}
+                                                >
+                                                  <PencilMiniIcon />
+                                                </button>
+                                                <button
+                                                  type="button"
+                                                  className={`${btnDangerIcon} shrink-0`}
+                                                  title="이 세부 보관 장소와 여기에만 묶인 재고를 삭제합니다"
+                                                  aria-label={`「${s.name}」 세부 보관 장소 삭제`}
+                                                  onClick={() =>
+                                                    requestDeleteStorage(s.id)
+                                                  }
+                                                >
+                                                  <TrashIcon />
+                                                </button>
+                                              </div>
                                             </li>
                                           ))
                                         )}
@@ -924,8 +938,8 @@ export function DashboardPlacementsSection({
         }
         submitLabel="추가"
         cancelLabel="취소"
-        submitDisabled={!directSlotModalDraft.trim()}
-        onSubmit={submitDirectSlotModal}
+        submitDisabled={!directSlotModalDraft.trim() || isSubmitting}
+        onSubmit={() => { void submitDirectSlotModal(); }}
       >
         <label className="block text-xs font-medium text-zinc-300">
           보관 장소 이름
@@ -957,8 +971,8 @@ export function DashboardPlacementsSection({
         }
         submitLabel="추가"
         cancelLabel="취소"
-        submitDisabled={!furnitureModalDraft.trim()}
-        onSubmit={submitFurnitureModal}
+        submitDisabled={!furnitureModalDraft.trim() || isSubmitting}
+        onSubmit={() => { void submitFurnitureModal(); }}
       >
         <label className="block text-xs font-medium text-zinc-300">
           가구 이름
@@ -989,8 +1003,8 @@ export function DashboardPlacementsSection({
         }
         submitLabel="추가"
         cancelLabel="취소"
-        submitDisabled={!subSlotModalDraft.trim()}
-        onSubmit={submitSubSlotModal}
+        submitDisabled={!subSlotModalDraft.trim() || isSubmitting}
+        onSubmit={() => { void submitSubSlotModal(); }}
       >
         <label className="block text-xs font-medium text-zinc-300">
           세부 보관 장소 이름
@@ -1047,6 +1061,37 @@ export function DashboardPlacementsSection({
             </option>
           ))}
         </select>
+      </FormModal>
+
+      <FormModal
+        open={renameSlotModalOpen}
+        onOpenChange={(open) => {
+          setRenameSlotModalOpen(open);
+          if (!open) {
+            setRenameSlotId(null);
+            setRenameSlotDraft("");
+          }
+        }}
+        title="보관 장소 이름 수정"
+        description={
+          renameSlotId
+            ? `「${slots.find((s) => s.id === renameSlotId)?.name ?? ""}」의 이름을 변경합니다.`
+            : "이름을 입력하세요."
+        }
+        submitLabel="수정"
+        cancelLabel="취소"
+        submitDisabled={!renameSlotDraft.trim() || isSubmitting}
+        onSubmit={() => { void submitRenameSlotModal(); }}
+      >
+        <label className="block text-xs font-medium text-zinc-300">
+          새 이름
+        </label>
+        <input
+          value={renameSlotDraft}
+          onChange={(e) => setRenameSlotDraft(e.target.value)}
+          className={`${inputClass} mt-1`}
+          autoFocus
+        />
       </FormModal>
 
       <AlertModal

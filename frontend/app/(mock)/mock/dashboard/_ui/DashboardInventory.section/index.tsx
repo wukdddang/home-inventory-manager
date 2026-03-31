@@ -80,6 +80,8 @@ export function DashboardInventorySection({
   const {
     dataMode,
     거점을_갱신_한다,
+    집_구조를_저장_한다,
+    방_목록을_동기화_한다,
     거점_카탈로그를_가져온다,
     재고_소비를_기록_한다,
     재고_폐기를_기록_한다,
@@ -117,38 +119,32 @@ export function DashboardInventorySection({
   if (!selected) return null;
 
   const handleRoomRename = (roomId: string, nextName: string) => {
-    거점을_갱신_한다(selected.id, (h) => ({
-      ...h,
-      rooms: h.rooms.map((x) =>
-        x.id === roomId ? { ...x, name: nextName } : x,
-      ),
-    }));
+    const nextRooms = selected.rooms.map((x) =>
+      x.id === roomId ? { ...x, name: nextName } : x,
+    );
+    void 방_목록을_동기화_한다(selected.id, nextRooms);
   };
 
   const handleStructureDiagramCommit = (
     payload: StructureDiagramCommitPayload,
   ) => {
-    거점을_갱신_한다(selected.id, (h) => {
-      const nextLayout = { ...(h.structureDiagramLayout ?? {}) };
-      for (const [k, pos] of Object.entries(payload.layoutPatch)) {
-        nextLayout[k] = pos;
-      }
-      let next: typeof h = {
-        ...h,
-        structureDiagramLayout: nextLayout,
-      };
-      if (payload.room) {
-        next = {
-          ...next,
-          rooms: next.rooms.map((r) =>
-            r.id === payload.room!.roomId
-              ? { ...r, x: payload.room!.x, y: payload.room!.y }
-              : r,
-          ),
-        };
-      }
-      return next;
-    });
+    // 새 레이아웃 계산 (layoutPatch 적용)
+    const nextLayout = {
+      ...(selected.structureDiagramLayout ?? {}),
+      ...payload.layoutPatch,
+    };
+
+    // 방 위치가 변경된 경우 새 rooms 계산
+    const nextRooms = payload.room
+      ? selected.rooms.map((r) =>
+          r.id === payload.room!.roomId
+            ? { ...r, x: payload.room!.x, y: payload.room!.y }
+            : r,
+        )
+      : undefined;
+
+    // 로컬 상태 + API 저장 (api 모드에서만 백엔드 호출)
+    void 집_구조를_저장_한다(selected.id, nextLayout, nextRooms);
   };
 
   const handleDeleteItem = (itemId: string) => {

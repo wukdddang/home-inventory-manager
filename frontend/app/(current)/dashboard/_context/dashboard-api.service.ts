@@ -14,10 +14,12 @@ import type {
   GroupMember,
   Household,
   HouseholdKindDefinition,
+  HouseholdStructureDiagramLayout,
   MemberRole,
   MockInvitation,
   ProductCatalog,
   StorageLocationRow,
+  StructureRoom,
 } from "@/types/domain";
 
 /* ─────────────────── 카탈로그 diff 유틸 ─────────────────── */
@@ -348,6 +350,72 @@ async function loadStorageLocationsFromApi(
   }));
 }
 
+/** structurePayload 내 방 2D 좌표 형식 */
+type RoomCoordMap = Record<string, { x: number; y: number; width: number; height: number }>;
+
+/**
+ * 방 목록(rooms API)과 집 구조(house-structure API)를 병렬로 조회하여
+ * 프론트 StructureRoom[] + structureDiagramLayout을 반환한다.
+ *
+ * 백엔드 Room에는 2D 좌표가 없으므로 house-structure.structurePayload.rooms에서 보완한다.
+ * 두 API 중 하나라도 실패하면 localStorage rooms를 폴백으로 사용한다.
+ */
+async function loadRoomsAndStructureFromApi(
+  householdId: string,
+  localRooms: StructureRoom[],
+): Promise<{
+  rooms: StructureRoom[];
+  structureDiagramLayout?: HouseholdStructureDiagramLayout;
+}> {
+  const [rawRoomsResult, rawStructureResult] = await Promise.allSettled([
+    apiFetch<
+      Array<{
+        id: string;
+        structureRoomKey: string;
+        displayName: string | null;
+        sortOrder: number;
+      }>
+    >(`/api/households/${householdId}/rooms`),
+    apiFetch<{
+      structurePayload: Record<string, unknown>;
+      diagramLayout: Record<string, unknown> | null;
+    }>(`/api/households/${householdId}/house-structure`),
+  ]);
+
+  const localById = new Map(localRooms.map((r) => [r.id, r]));
+
+  // structurePayload에서 방별 2D 좌표 추출
+  const coordMap: RoomCoordMap =
+    rawStructureResult.status === "fulfilled"
+      ? ((rawStructureResult.value.structurePayload?.rooms ?? {}) as RoomCoordMap)
+      : {};
+
+  const diagramLayout: HouseholdStructureDiagramLayout | undefined =
+    rawStructureResult.status === "fulfilled" && rawStructureResult.value.diagramLayout
+      ? (rawStructureResult.value.diagramLayout as HouseholdStructureDiagramLayout)
+      : undefined;
+
+  if (rawRoomsResult.status === "fulfilled" && rawRoomsResult.value.length > 0) {
+    const rooms: StructureRoom[] = rawRoomsResult.value
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((r) => {
+        const coord = coordMap[r.id] ?? localById.get(r.id);
+        return {
+          id: r.id,
+          name: r.displayName ?? r.structureRoomKey,
+          x: coord?.x ?? 0,
+          y: coord?.y ?? 0,
+          width: coord?.width ?? 120,
+          height: coord?.height ?? 80,
+        };
+      });
+    return { rooms, structureDiagramLayout: diagramLayout };
+  }
+
+  // 방 목록 API 실패 시 localStorage 폴백
+  return { rooms: localRooms, structureDiagramLayout: diagramLayout };
+}
+
 /** 거점 가구 배치를 API에서 로드 (방 ID 목록 기반) */
 async function loadFurniturePlacementsFromApi(
   householdId: string,
@@ -398,31 +466,39 @@ export const dashboardApiHouseholdsClient: DashboardHouseholdsPort = {
       remoteList.map(async (remote) => {
         const household = mergeWithLocal(remote, localById.get(remote.id));
 
-        const [members, catalog, storageLocations] = await Promise.all([
-          apiFetch<
-            { id: string; email: string; displayName: string; role: string }[]
-          >(`/api/households/${remote.id}/members`).catch(
-            () =>
-              [] as {
-                id: string;
-                email: string;
-                displayName: string;
-                role: string;
-              }[],
-          ),
-          loadCatalogFromApi(remote.id).catch(
-            () => household.catalog ?? cloneDefaultCatalog(),
-          ),
-          loadStorageLocationsFromApi(remote.id).catch(
-            () => household.storageLocations ?? [],
-          ),
-        ]);
+        const [members, catalog, storageLocations, roomsAndStructure] =
+          await Promise.all([
+            apiFetch<
+              { id: string; email: string; displayName: string; role: string }[]
+            >(`/api/households/${remote.id}/members`).catch(
+              () =>
+                [] as {
+                  id: string;
+                  email: string;
+                  displayName: string;
+                  role: string;
+                }[],
+            ),
+            loadCatalogFromApi(remote.id).catch(
+              () => household.catalog ?? cloneDefaultCatalog(),
+            ),
+            loadStorageLocationsFromApi(remote.id).catch(
+              () => household.storageLocations ?? [],
+            ),
+            loadRoomsAndStructureFromApi(remote.id, household.rooms).catch(
+              () => ({ rooms: household.rooms, structureDiagramLayout: household.structureDiagramLayout }),
+            ),
+          ]);
 
         household.members = members.map(mapMember);
         household.catalog = catalog;
         household.storageLocations = storageLocations;
+        household.rooms = roomsAndStructure.rooms;
+        if (roomsAndStructure.structureDiagramLayout !== undefined) {
+          household.structureDiagramLayout = roomsAndStructure.structureDiagramLayout;
+        }
 
-        // 보관장소 roomId → 방 ID 목록 추출 후 가구 배치 로드
+        // 보관장소 roomId + rooms에서 방 ID 목록 추출 후 가구 배치 로드
         const roomIdsFromStorage = [
           ...new Set(
             storageLocations
@@ -491,6 +567,62 @@ export const dashboardApiHouseholdsClient: DashboardHouseholdsPort = {
   /* ── 전체 저장 (api 모드에서는 no-op; 개별 API 호출로 대체됨) ── */
   async saveAll(households) {
     setHouseholds(households); // localStorage 동기화만 유지
+  },
+
+  /* ── 방 목록 동기화 ── */
+  async syncRooms(householdId, rooms) {
+    const localById = new Map(rooms.map((r) => [r.id, r]));
+    try {
+      const data = await apiFetch<
+        Array<{
+          id: string;
+          structureRoomKey: string;
+          displayName: string | null;
+          sortOrder: number;
+        }>
+      >(`/api/households/${householdId}/rooms/sync`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          rooms: rooms.map((r, i) => ({
+            structureRoomKey: r.id,
+            displayName: r.name,
+            sortOrder: i,
+          })),
+        }),
+      });
+      // 서버에서 할당된 UUID + 로컬 좌표를 병합하여 반환
+      return data.map((sr) => {
+        const local = localById.get(sr.structureRoomKey);
+        return {
+          id: sr.id,
+          name: sr.displayName ?? sr.structureRoomKey,
+          x: local?.x ?? 0,
+          y: local?.y ?? 0,
+          width: local?.width ?? 120,
+          height: local?.height ?? 80,
+        };
+      });
+    } catch (e) {
+      console.error("방 동기화 API 오류:", e);
+      return rooms; // 실패 시 로컬 목록을 그대로 반환
+    }
+  },
+
+  /* ── 집 구조 저장 ── */
+  async saveHouseStructure(householdId, rooms, layout) {
+    const roomCoords: RoomCoordMap = Object.fromEntries(
+      rooms.map((r) => [r.id, { x: r.x, y: r.y, width: r.width, height: r.height }]),
+    );
+    await apiFetch<unknown>(`/api/households/${householdId}/house-structure`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: "default",
+        structurePayload: { rooms: roomCoords },
+        diagramLayout: layout ?? null,
+      }),
+    }).catch((e) => console.error("집 구조 저장 API 오류:", e));
   },
 
   /* ── 거점 유형 정의 ── */
@@ -618,5 +750,99 @@ export const dashboardApiHouseholdsClient: DashboardHouseholdsPort = {
         body: JSON.stringify({ quantity, reason, memo: memo?.trim() }),
       },
     ).catch((e) => console.error("폐기 기록 API 오류:", e));
+  },
+
+  /* ── 가구 배치 생성 ── */
+  async createFurniturePlacement(
+    householdId,
+    roomId,
+    label,
+    anchorDirectStorageId,
+    sortOrder,
+  ) {
+    const raw = await apiFetch<{
+      id: string;
+      roomId: string;
+      label: string;
+      anchorDirectStorageId: string | null;
+      sortOrder: number;
+    }>(`/api/households/${householdId}/rooms/${roomId}/furniture-placements`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        label,
+        anchorDirectStorageId: anchorDirectStorageId ?? null,
+        sortOrder: sortOrder ?? 0,
+      }),
+    });
+    return {
+      id: raw.id,
+      roomId: raw.roomId ?? roomId,
+      label: raw.label,
+      anchorDirectStorageId: raw.anchorDirectStorageId ?? undefined,
+      sortOrder: raw.sortOrder,
+    };
+  },
+
+  /* ── 가구 배치 수정 ── */
+  async patchFurniturePlacement(householdId, id, patch) {
+    await apiFetch<unknown>(
+      `/api/households/${householdId}/furniture-placements/${id}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(patch),
+      },
+    ).catch((e) => console.error("가구 배치 수정 API 오류:", e));
+  },
+
+  /* ── 가구 배치 삭제 ── */
+  async removeFurniturePlacement(householdId, id) {
+    await apiFetch<unknown>(
+      `/api/households/${householdId}/furniture-placements/${id}`,
+      { method: "DELETE" },
+    ).catch((e) => console.error("가구 배치 삭제 API 오류:", e));
+  },
+
+  /* ── 보관 장소 생성 ── */
+  async createStorageLocation(householdId, data) {
+    const raw = await apiFetch<{
+      id: string;
+      name: string;
+      roomId: string | null;
+      furniturePlacementId: string | null;
+      sortOrder: number;
+    }>(`/api/households/${householdId}/storage-locations`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data),
+    });
+    return {
+      id: raw.id,
+      name: raw.name,
+      roomId: raw.roomId,
+      furniturePlacementId: raw.furniturePlacementId,
+      sortOrder: raw.sortOrder,
+    };
+  },
+
+  /* ── 보관 장소 수정 ── */
+  async updateStorageLocation(householdId, id, name) {
+    await apiFetch<unknown>(
+      `/api/households/${householdId}/storage-locations/${id}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      },
+    ).catch((e) => console.error("보관 장소 수정 API 오류:", e));
+  },
+
+  /* ── 보관 장소 삭제 ── */
+  async removeStorageLocation(householdId, id) {
+    await apiFetch<unknown>(
+      `/api/households/${householdId}/storage-locations/${id}`,
+      { method: "DELETE" },
+    ).catch((e) => console.error("보관 장소 삭제 API 오류:", e));
   },
 };
