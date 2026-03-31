@@ -1,6 +1,7 @@
 "use client";
 
-import { DashboardProvider } from "@/app/(current)/dashboard/_context/DashboardContext";
+import { CurrentDashboardProvider } from "@/app/(current)/dashboard/_context/DashboardContext";
+import { MockDashboardProvider } from "@/app/(mock)/mock/dashboard/_context/DashboardContext";
 import { DashboardShoppingListModal } from "@/app/(mock)/mock/dashboard/_ui/DashboardInventory.section/DashboardShoppingList.module";
 import {
   NotificationCenterModal,
@@ -91,10 +92,14 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
     );
   };
 
-  const dataMode = pathname.startsWith("/mock") ? "mock" : "api";
+  const isMock = pathname.startsWith("/mock");
+  const dataMode = isMock ? "mock" : "api";
+  const DashboardProviderWrapper = isMock
+    ? MockDashboardProvider
+    : CurrentDashboardProvider;
 
   return (
-    <DashboardProvider dataMode={dataMode}>
+    <DashboardProviderWrapper>
       {isMobileLayout ? (
         <>
           <MobileShell
@@ -195,7 +200,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
           />
         </div>
       )}
-    </DashboardProvider>
+    </DashboardProviderWrapper>
   );
 }
 

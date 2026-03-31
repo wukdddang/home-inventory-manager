@@ -19,6 +19,130 @@ import type {
   ProductCatalog,
   StorageLocationRow,
 } from "@/types/domain";
+
+/* ─────────────────── 카탈로그 diff 유틸 ─────────────────── */
+
+async function syncCatalogDiffImpl(
+  householdId: string,
+  before: ProductCatalog,
+  after: ProductCatalog,
+): Promise<void> {
+  const jsonFetch = (url: string, method: string, body?: unknown) =>
+    apiFetch(url, {
+      method,
+      headers: { "Content-Type": "application/json" },
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    }).catch((e) => console.error(`카탈로그 API 오류 [${method} ${url}]:`, e));
+
+  const base = `/api/households/${householdId}`;
+
+  const beforeCats = new Map(before.categories.map((c) => [c.id, c]));
+  const afterCats = new Map(after.categories.map((c) => [c.id, c]));
+  for (const [id, cat] of afterCats) {
+    if (!beforeCats.has(id)) {
+      await jsonFetch(`${base}/categories`, "POST", {
+        name: cat.name,
+        sortOrder: cat.sortOrder,
+      });
+    } else if (JSON.stringify(beforeCats.get(id)) !== JSON.stringify(cat)) {
+      await jsonFetch(`${base}/categories/${id}`, "PUT", {
+        name: cat.name,
+        sortOrder: cat.sortOrder,
+      });
+    }
+  }
+  for (const [id] of beforeCats) {
+    if (!afterCats.has(id))
+      await jsonFetch(`${base}/categories/${id}`, "DELETE");
+  }
+
+  const beforeUnits = new Map(before.units.map((u) => [u.id, u]));
+  const afterUnits = new Map(after.units.map((u) => [u.id, u]));
+  for (const [id, unit] of afterUnits) {
+    if (!beforeUnits.has(id)) {
+      await jsonFetch(`${base}/units`, "POST", {
+        symbol: unit.symbol,
+        name: unit.name,
+        sortOrder: unit.sortOrder,
+      });
+    } else if (JSON.stringify(beforeUnits.get(id)) !== JSON.stringify(unit)) {
+      await jsonFetch(`${base}/units/${id}`, "PUT", {
+        symbol: unit.symbol,
+        name: unit.name,
+        sortOrder: unit.sortOrder,
+      });
+    }
+  }
+  for (const [id] of beforeUnits) {
+    if (!afterUnits.has(id)) await jsonFetch(`${base}/units/${id}`, "DELETE");
+  }
+
+  const beforeProds = new Map(before.products.map((p) => [p.id, p]));
+  const afterProds = new Map(after.products.map((p) => [p.id, p]));
+  for (const [id, prod] of afterProds) {
+    if (!beforeProds.has(id)) {
+      await jsonFetch(`${base}/products`, "POST", {
+        categoryId: prod.categoryId,
+        name: prod.name,
+        isConsumable: prod.isConsumable,
+        imageUrl: prod.imageUrl,
+        description: prod.description,
+      });
+    } else if (JSON.stringify(beforeProds.get(id)) !== JSON.stringify(prod)) {
+      await jsonFetch(`${base}/products/${id}`, "PUT", {
+        categoryId: prod.categoryId,
+        name: prod.name,
+        isConsumable: prod.isConsumable,
+        imageUrl: prod.imageUrl,
+        description: prod.description,
+      });
+    }
+  }
+  for (const [id] of beforeProds) {
+    if (!afterProds.has(id))
+      await jsonFetch(`${base}/products/${id}`, "DELETE");
+  }
+
+  const beforeVars = new Map(before.variants.map((v) => [v.id, v]));
+  const afterVars = new Map(after.variants.map((v) => [v.id, v]));
+  for (const [id, variant] of afterVars) {
+    if (!beforeVars.has(id)) {
+      await jsonFetch(
+        `${base}/products/${variant.productId}/variants`,
+        "POST",
+        {
+          unitId: variant.unitId,
+          quantityPerUnit: variant.quantityPerUnit,
+          name: variant.name,
+          price: variant.price,
+          sku: variant.sku,
+          isDefault: variant.isDefault,
+        },
+      );
+    } else if (JSON.stringify(beforeVars.get(id)) !== JSON.stringify(variant)) {
+      await jsonFetch(
+        `${base}/products/${variant.productId}/variants/${id}`,
+        "PUT",
+        {
+          unitId: variant.unitId,
+          quantityPerUnit: variant.quantityPerUnit,
+          name: variant.name,
+          price: variant.price,
+          sku: variant.sku,
+          isDefault: variant.isDefault,
+        },
+      );
+    }
+  }
+  for (const [id, variant] of beforeVars) {
+    if (!afterVars.has(id)) {
+      await jsonFetch(
+        `${base}/products/${variant.productId}/variants/${id}`,
+        "DELETE",
+      );
+    }
+  }
+}
 import type { DashboardHouseholdsPort } from "./dashboard-households.port";
 import { cloneDefaultCatalog } from "@/app/(mock)/mock/dashboard/_context/dashboard-mock.service";
 import { ensureHouseholdShape } from "@/lib/household-location";
@@ -465,5 +589,34 @@ export const dashboardApiHouseholdsClient: DashboardHouseholdsPort = {
       `/api/households/${householdId}/invitations/${invitationId}`,
       { method: "DELETE" },
     );
+  },
+
+  /* ── 카탈로그 동기화 ── */
+  async syncCatalogDiff(householdId, before, after) {
+    await syncCatalogDiffImpl(householdId, before, after);
+  },
+
+  /* ── 재고 소비 기록 ── */
+  async recordInventoryConsumption(householdId, itemId, quantity, memo) {
+    await apiFetch(
+      `/api/households/${householdId}/inventory-items/${itemId}/logs/consumption`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quantity, memo: memo?.trim() }),
+      },
+    ).catch((e) => console.error("소비 기록 API 오류:", e));
+  },
+
+  /* ── 재고 폐기 기록 ── */
+  async recordInventoryWaste(householdId, itemId, quantity, reason, memo) {
+    await apiFetch(
+      `/api/households/${householdId}/inventory-items/${itemId}/logs/waste`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quantity, reason, memo: memo?.trim() }),
+      },
+    ).catch((e) => console.error("폐기 기록 API 오류:", e));
   },
 };

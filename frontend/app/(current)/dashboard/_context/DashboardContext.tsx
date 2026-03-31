@@ -17,15 +17,8 @@ import {
 } from "@/lib/household-kind-defaults";
 import {
   appendInventoryLedgerRow,
-  getNotifications,
   getSharedHouseholdKindDefinitions,
-  setNotifications,
 } from "@/lib/local-store";
-import {
-  cloneDefaultCatalog,
-  createDashboardMockHouseholdsService,
-  MOCK_SEED_NOTIFICATIONS,
-} from "@/app/(mock)/mock/dashboard/_context/dashboard-mock.service";
 import type {
   Household,
   HouseholdKindDefinition,
@@ -34,150 +27,12 @@ import type {
   ProductCatalog,
 } from "@/types/domain";
 import { newEntityId } from "@/app/(mock)/mock/dashboard/_lib/dashboard-helpers";
+import { cloneDefaultCatalog } from "@/app/(mock)/mock/dashboard/_context/dashboard-mock.service";
 import { dashboardApiHouseholdsClient } from "./dashboard-api.service";
 import type {
   CreateInvitationParams,
   DashboardHouseholdsPort,
 } from "./dashboard-households.port";
-
-/* ─────────────────── 카탈로그 diff 유틸 ─────────────────── */
-
-async function apiFetch<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init);
-  const json = (await res.json()) as {
-    success: boolean;
-    data: T;
-    message?: string;
-  };
-  if (!json.success) throw new Error(json.message ?? "API 오류");
-  return json.data;
-}
-
-async function syncCatalogDiff(
-  householdId: string,
-  before: ProductCatalog,
-  after: ProductCatalog,
-): Promise<void> {
-  const jsonFetch = (url: string, method: string, body?: unknown) =>
-    apiFetch(url, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      body: body !== undefined ? JSON.stringify(body) : undefined,
-    }).catch((e) => console.error(`카탈로그 API 오류 [${method} ${url}]:`, e));
-
-  const base = `/api/households/${householdId}`;
-
-  // ── 카테고리 ──
-  const beforeCats = new Map(before.categories.map((c) => [c.id, c]));
-  const afterCats = new Map(after.categories.map((c) => [c.id, c]));
-  for (const [id, cat] of afterCats) {
-    if (!beforeCats.has(id)) {
-      await jsonFetch(`${base}/categories`, "POST", {
-        name: cat.name,
-        sortOrder: cat.sortOrder,
-      });
-    } else if (JSON.stringify(beforeCats.get(id)) !== JSON.stringify(cat)) {
-      await jsonFetch(`${base}/categories/${id}`, "PUT", {
-        name: cat.name,
-        sortOrder: cat.sortOrder,
-      });
-    }
-  }
-  for (const [id] of beforeCats) {
-    if (!afterCats.has(id))
-      await jsonFetch(`${base}/categories/${id}`, "DELETE");
-  }
-
-  // ── 단위 ──
-  const beforeUnits = new Map(before.units.map((u) => [u.id, u]));
-  const afterUnits = new Map(after.units.map((u) => [u.id, u]));
-  for (const [id, unit] of afterUnits) {
-    if (!beforeUnits.has(id)) {
-      await jsonFetch(`${base}/units`, "POST", {
-        symbol: unit.symbol,
-        name: unit.name,
-        sortOrder: unit.sortOrder,
-      });
-    } else if (JSON.stringify(beforeUnits.get(id)) !== JSON.stringify(unit)) {
-      await jsonFetch(`${base}/units/${id}`, "PUT", {
-        symbol: unit.symbol,
-        name: unit.name,
-        sortOrder: unit.sortOrder,
-      });
-    }
-  }
-  for (const [id] of beforeUnits) {
-    if (!afterUnits.has(id)) await jsonFetch(`${base}/units/${id}`, "DELETE");
-  }
-
-  // ── 상품 ──
-  const beforeProds = new Map(before.products.map((p) => [p.id, p]));
-  const afterProds = new Map(after.products.map((p) => [p.id, p]));
-  for (const [id, prod] of afterProds) {
-    if (!beforeProds.has(id)) {
-      await jsonFetch(`${base}/products`, "POST", {
-        categoryId: prod.categoryId,
-        name: prod.name,
-        isConsumable: prod.isConsumable,
-        imageUrl: prod.imageUrl,
-        description: prod.description,
-      });
-    } else if (JSON.stringify(beforeProds.get(id)) !== JSON.stringify(prod)) {
-      await jsonFetch(`${base}/products/${id}`, "PUT", {
-        categoryId: prod.categoryId,
-        name: prod.name,
-        isConsumable: prod.isConsumable,
-        imageUrl: prod.imageUrl,
-        description: prod.description,
-      });
-    }
-  }
-  for (const [id] of beforeProds) {
-    if (!afterProds.has(id))
-      await jsonFetch(`${base}/products/${id}`, "DELETE");
-  }
-
-  // ── 상품 변형 ──
-  const beforeVars = new Map(before.variants.map((v) => [v.id, v]));
-  const afterVars = new Map(after.variants.map((v) => [v.id, v]));
-  for (const [id, variant] of afterVars) {
-    if (!beforeVars.has(id)) {
-      await jsonFetch(
-        `${base}/products/${variant.productId}/variants`,
-        "POST",
-        {
-          unitId: variant.unitId,
-          quantityPerUnit: variant.quantityPerUnit,
-          name: variant.name,
-          price: variant.price,
-          sku: variant.sku,
-          isDefault: variant.isDefault,
-        },
-      );
-    } else if (JSON.stringify(beforeVars.get(id)) !== JSON.stringify(variant)) {
-      await jsonFetch(
-        `${base}/products/${variant.productId}/variants/${id}`,
-        "PUT",
-        {
-          unitId: variant.unitId,
-          quantityPerUnit: variant.quantityPerUnit,
-          name: variant.name,
-          price: variant.price,
-          sku: variant.sku,
-          isDefault: variant.isDefault,
-        },
-      );
-    }
-  }
-  for (const [id, variant] of beforeVars) {
-    if (!afterVars.has(id)) {
-      await jsonFetch(
-        `${base}/products/${variant.productId}/variants/${id}`,
-        "DELETE",
-      );
-    }
-  }
-}
 
 function normalizeHouseholdKinds(
   list: Household[],
@@ -263,6 +118,7 @@ export type DashboardContextType = {
 
 export type DashboardProviderProps = {
   children: ReactNode;
+  port: DashboardHouseholdsPort;
   dataMode: DashboardHouseholdsDataMode;
 };
 
@@ -272,13 +128,9 @@ export const DashboardContext = createContext<DashboardContextType | undefined>(
 
 export function DashboardProvider({
   children,
+  port,
   dataMode,
 }: DashboardProviderProps) {
-  const householdsPort = useMemo<DashboardHouseholdsPort>(() => {
-    if (dataMode === "mock") return createDashboardMockHouseholdsService();
-    return dashboardApiHouseholdsClient;
-  }, [dataMode]);
-
   const [households, setHouseholdsState] = useState<Household[]>([]);
   const [householdKindDefinitions, setHouseholdKindDefinitions] = useState<
     HouseholdKindDefinition[]
@@ -303,7 +155,7 @@ export function DashboardProvider({
   useEffect(() => {
     void (async () => {
       try {
-        const kinds = await householdsPort.listKinds();
+        const kinds = await port.listKinds();
         setHouseholdKindDefinitions(
           kinds.length > 0 ? kinds : cloneDefaultHouseholdKindDefinitions(),
         );
@@ -313,20 +165,13 @@ export function DashboardProvider({
         setHouseholdKindsHydrated(true);
       }
     })();
-  }, [householdsPort]);
+  }, [port]);
 
+  // ── 거점 상태 변경 시 포트로 전체 저장 동기화 ──
   useEffect(() => {
-    if (dataMode !== "mock") return;
-    if (getNotifications().length === 0) {
-      setNotifications(MOCK_SEED_NOTIFICATIONS);
-    }
-  }, [dataMode]);
-
-  // ── mock 모드: localStorage 동기화 (saveAll 패턴 유지) ──
-  useEffect(() => {
-    if (!hydrated || dataMode !== "mock") return;
-    void householdsPort.saveAll(households);
-  }, [households, hydrated, householdsPort, dataMode]);
+    if (!hydrated) return;
+    void port.saveAll(households);
+  }, [households, hydrated, port]);
 
   // ── 거점 목록 로드 ──
   const 거점_목록을_불러온다 = useCallback(() => {
@@ -334,7 +179,7 @@ export function DashboardProvider({
     setError(null);
     void (async () => {
       try {
-        const list = await householdsPort.list();
+        const list = await port.list();
         const defs = kindDefsRef.current;
         setHouseholdsState(normalizeHouseholdKinds(list, defs));
       } catch (err) {
@@ -348,7 +193,7 @@ export function DashboardProvider({
         setHydrated(true);
       }
     })();
-  }, [householdsPort]);
+  }, [port]);
 
   useEffect(() => {
     거점_목록을_불러온다();
@@ -378,12 +223,12 @@ export function DashboardProvider({
       setHouseholdKindDefinitions(sorted);
 
       try {
-        await householdsPort.saveKinds(sorted);
+        await port.saveKinds(sorted);
       } catch (err) {
         console.error("거점 유형 저장 오류:", err);
       }
     },
-    [householdsPort],
+    [port],
   );
 
   // ── 거점 추가 ──
@@ -393,7 +238,7 @@ export function DashboardProvider({
       const valid = new Set(defs.map((d) => d.id));
       const resolved = valid.has(kind) ? kind : (defs[0]?.id ?? "home");
       try {
-        const created = await householdsPort.create(name, resolved);
+        const created = await port.create(name, resolved);
         setHouseholdsState((prev) => [...prev, ensureHouseholdShape(created)]);
         return created.id;
       } catch (err) {
@@ -415,7 +260,7 @@ export function DashboardProvider({
         return id;
       }
     },
-    [householdsPort],
+    [port],
   );
 
   // ── 거점 기본정보 수정 ──
@@ -425,12 +270,12 @@ export function DashboardProvider({
         prev.map((h) => (h.id === id ? { ...h, name, kind } : h)),
       );
       try {
-        await householdsPort.update(id, { name, kind });
+        await port.update(id, { name, kind });
       } catch (err) {
         console.error("거점 수정 오류:", err);
       }
     },
-    [householdsPort],
+    [port],
   );
 
   // ── 거점 삭제 ──
@@ -438,13 +283,13 @@ export function DashboardProvider({
     async (householdId: string) => {
       setHouseholdsState((prev) => prev.filter((h) => h.id !== householdId));
       try {
-        await householdsPort.remove(householdId);
+        await port.remove(householdId);
       } catch (err) {
         console.error("거점 삭제 오류:", err);
-        거점_목록을_불러온다(); // 실패 시 재로드
+        거점_목록을_불러온다();
       }
     },
-    [householdsPort, 거점_목록을_불러온다],
+    [port, 거점_목록을_불러온다],
   );
 
   // ── 거점 상태 직접 갱신 (rooms/items/catalog 등 로컬 전용) ──
@@ -473,14 +318,14 @@ export function DashboardProvider({
         ),
       );
       try {
-        await householdsPort.changeMemberRole(householdId, memberId, role);
+        await port.changeMemberRole(householdId, memberId, role);
       } catch (err) {
         console.error("멤버 역할 변경 오류:", err);
         거점_목록을_불러온다();
         throw err;
       }
     },
-    [householdsPort, 거점_목록을_불러온다],
+    [port, 거점_목록을_불러온다],
   );
 
   // ── 멤버 제거 ──
@@ -497,34 +342,34 @@ export function DashboardProvider({
         ),
       );
       try {
-        await householdsPort.removeMember(householdId, memberId);
+        await port.removeMember(householdId, memberId);
       } catch (err) {
         console.error("멤버 제거 오류:", err);
         거점_목록을_불러온다();
         throw err;
       }
     },
-    [householdsPort, 거점_목록을_불러온다],
+    [port, 거점_목록을_불러온다],
   );
 
   // ── 초대 생성 ──
   const 초대를_생성_한다 = useCallback(
     (householdId: string, params: CreateInvitationParams) =>
-      householdsPort.createInvitation(householdId, params),
-    [householdsPort],
+      port.createInvitation(householdId, params),
+    [port],
   );
 
   // ── 초대 목록 ──
   const 초대_목록을_불러온다 = useCallback(
-    (householdId: string) => householdsPort.listInvitations(householdId),
-    [householdsPort],
+    (householdId: string) => port.listInvitations(householdId),
+    [port],
   );
 
   // ── 초대 취소 ──
   const 초대를_취소_한다 = useCallback(
     (householdId: string, invitationId: string) =>
-      householdsPort.revokeInvitation(householdId, invitationId),
-    [householdsPort],
+      port.revokeInvitation(householdId, invitationId),
+    [port],
   );
 
   // ── 카탈로그 ──
@@ -547,12 +392,11 @@ export function DashboardProvider({
         return { ...h, catalog: after };
       });
 
-      // api 모드에서만 백엔드 동기화 (diff 기반)
-      if (dataMode === "api" && before && after) {
-        void syncCatalogDiff(householdId, before, after);
+      if (before && after) {
+        void port.syncCatalogDiff(householdId, before, after);
       }
     },
-    [거점을_갱신_한다, dataMode],
+    [거점을_갱신_한다, port],
   );
 
   // ── 재고 기록 ──
@@ -582,20 +426,13 @@ export function DashboardProvider({
         ),
       }));
 
-      if (dataMode === "api") {
-        void apiFetch(
-          `/api/households/${householdId}/inventory-items/${itemId}/logs/consumption`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ quantity, memo: memo?.trim() }),
-          },
-        ).catch((e) => console.error("소비 기록 API 오류:", e));
-      }
+      void port
+        .recordInventoryConsumption(householdId, itemId, quantity, memo)
+        .catch((e) => console.error("소비 기록 포트 오류:", e));
 
       return true;
     },
-    [거점을_갱신_한다, dataMode],
+    [거점을_갱신_한다, port],
   );
 
   const 재고_폐기를_기록_한다 = useCallback(
@@ -631,24 +468,13 @@ export function DashboardProvider({
         ),
       }));
 
-      if (dataMode === "api") {
-        void apiFetch(
-          `/api/households/${householdId}/inventory-items/${itemId}/logs/waste`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              quantity,
-              reason: reasonCode,
-              memo: memo?.trim(),
-            }),
-          },
-        ).catch((e) => console.error("폐기 기록 API 오류:", e));
-      }
+      void port
+        .recordInventoryWaste(householdId, itemId, quantity, reasonCode, memo)
+        .catch((e) => console.error("폐기 기록 포트 오류:", e));
 
       return true;
     },
-    [거점을_갱신_한다, dataMode],
+    [거점을_갱신_한다, port],
   );
 
   const 재고_장보기_보충을_기록_한다 = useCallback(
@@ -744,5 +570,18 @@ export function DashboardProvider({
     <DashboardContext.Provider value={value}>
       {children}
     </DashboardContext.Provider>
+  );
+}
+
+/** current 경로 전용 Provider. API 서비스를 주입한다. */
+export function CurrentDashboardProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  return (
+    <DashboardProvider port={dashboardApiHouseholdsClient} dataMode="api">
+      {children}
+    </DashboardProvider>
   );
 }

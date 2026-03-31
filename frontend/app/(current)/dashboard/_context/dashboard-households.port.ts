@@ -4,6 +4,7 @@ import type {
   HouseholdKindDefinition,
   MemberRole,
   MockInvitation,
+  ProductCatalog,
 } from "@/types/domain";
 
 export type CreateInvitationParams = {
@@ -41,4 +42,26 @@ export type DashboardHouseholdsPort = {
   listInvitations(householdId: string): Promise<MockInvitation[]>;
   createInvitation(householdId: string, params: CreateInvitationParams): Promise<MockInvitation>;
   revokeInvitation(householdId: string, invitationId: string): Promise<void>;
+
+  // ── 카탈로그 동기화 (API 전용; mock은 no-op) ──
+  syncCatalogDiff(
+    householdId: string,
+    before: ProductCatalog,
+    after: ProductCatalog,
+  ): Promise<void>;
+
+  // ── 재고 기록 Side-effect (API 전용; mock은 no-op) ──
+  recordInventoryConsumption(
+    householdId: string,
+    itemId: string,
+    quantity: number,
+    memo?: string,
+  ): Promise<void>;
+  recordInventoryWaste(
+    householdId: string,
+    itemId: string,
+    quantity: number,
+    reason: string,
+    memo?: string,
+  ): Promise<void>;
 };

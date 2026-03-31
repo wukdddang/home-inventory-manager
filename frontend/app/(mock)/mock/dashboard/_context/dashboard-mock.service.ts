@@ -680,5 +680,19 @@ export function createDashboardMockHouseholdsService(): DashboardHouseholdsPort 
     async revokeInvitation() {
       // mock no-op
     },
+
+    // ── 카탈로그 동기화 (mock은 인메모리 상태만 관리하므로 no-op) ──
+    async syncCatalogDiff() {
+      // no-op
+    },
+
+    // ── 재고 기록 Side-effect (mock은 Context 로컬 상태로만 관리) ──
+    async recordInventoryConsumption() {
+      // no-op
+    },
+
+    async recordInventoryWaste() {
+      // no-op
+    },
   };
 }
