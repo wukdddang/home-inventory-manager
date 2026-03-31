@@ -143,4 +143,28 @@ export type DashboardHouseholdsPort = {
     quantityDelta: number,
     memo?: string,
   ): Promise<void>;
+
+  /** 재고 수량을 절댓값으로 직접 설정한다 (PATCH /inventory-items/:id/quantity). */
+  updateInventoryItemQuantity(
+    householdId: string,
+    itemId: string,
+    quantity: number,
+  ): Promise<void>;
+
+  /** 유통기한 임박 배치 목록을 조회한다 (GET /batches/expiring?days=N). */
+  loadExpiringBatches(
+    householdId: string,
+    days?: number,
+  ): Promise<PurchaseBatchDto[]>;
+
+  /** 만료된 배치 목록을 조회한다 (GET /batches/expired). */
+  loadExpiredBatches(householdId: string): Promise<PurchaseBatchDto[]>;
+};
+
+/** 배치 API DTO (route handler 응답 형태). */
+export type PurchaseBatchDto = {
+  id: string;
+  purchaseId: string;
+  quantity: number;
+  expirationDate: string | null;
 };

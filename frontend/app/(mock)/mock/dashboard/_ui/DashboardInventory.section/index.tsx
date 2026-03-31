@@ -85,6 +85,7 @@ export function DashboardInventorySection({
     거점_카탈로그를_가져온다,
     재고_소비를_기록_한다,
     재고_폐기를_기록_한다,
+    재고_수량을_직접_설정_한다,
   } = useDashboard();
   const productCatalog = selected
     ? 거점_카탈로그를_가져온다(selected.id)
@@ -350,6 +351,19 @@ export function DashboardInventorySection({
         ledger={inventoryLedger}
         on소비하려고_연다={handleOpenConsume}
         on폐기하려고_연다={handleOpenWaste}
+        on수량을_수정한다={(itemId, newQuantity, memo) => {
+          const ok = 재고_수량을_직접_설정_한다(selected.id, itemId, newQuantity, memo);
+          if (ok) {
+            const item = selected.items.find((i) => i.id === itemId);
+            toast({
+              title: "수량이 수정되었습니다",
+              description: item
+                ? `${item.name}: ${newQuantity}${item.unit}`
+                : `→ ${newQuantity}`,
+              variant: "success",
+            });
+          }
+        }}
       />
     </div>
   );

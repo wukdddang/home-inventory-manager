@@ -1043,4 +1043,42 @@ export const dashboardApiHouseholdsClient: DashboardHouseholdsPort = {
       },
     ).catch((e) => console.error("재고 수동 조정 API 오류:", e));
   },
+
+  /* ── 재고 수량 절댓값 직접 설정 ── */
+  async updateInventoryItemQuantity(householdId, itemId, quantity) {
+    await apiFetch<unknown>(
+      `/api/households/${householdId}/inventory-items/${itemId}/quantity`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quantity }),
+      },
+    ).catch((e) => console.error("재고 수량 직접 설정 API 오류:", e));
+  },
+
+  /* ── 유통기한 임박 배치 목록 조회 ── */
+  async loadExpiringBatches(householdId, days) {
+    try {
+      const qs = days !== undefined ? `?days=${days}` : "";
+      return await apiFetch<{ id: string; purchaseId: string; quantity: number; expirationDate: string | null }[]>(
+        `/api/households/${householdId}/batches/expiring${qs}`,
+      );
+    } catch (e) {
+      console.error("유통기한 임박 배치 조회 오류:", e);
+      return [];
+    }
+  },
+
+  /* ── 만료된 배치 목록 조회 ── */
+  async loadExpiredBatches(householdId) {
+    try {
+      const res = await apiFetch<{ id: string; purchaseId: string; quantity: number; expirationDate: string | null }[]>(
+        `/api/households/${householdId}/batches/expired`,
+      );
+      return res;
+    } catch (e) {
+      console.error("만료된 배치 조회 오류:", e);
+      return [];
+    }
+  },
 };

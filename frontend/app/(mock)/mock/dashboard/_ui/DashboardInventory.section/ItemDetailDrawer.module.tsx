@@ -19,14 +19,16 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   CalendarDays,
+  Check,
   MapPin,
   Package,
+  Pencil,
   RefreshCw,
   ShoppingBag,
   Trash2,
   X,
 } from "lucide-react";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 /* ── animation config ── */
@@ -46,6 +48,7 @@ export type ItemDetailDrawerProps = {
   ledger: InventoryLedgerRow[];
   on소비하려고_연다: (item: InventoryRow) => void;
   on폐기하려고_연다: (item: InventoryRow) => void;
+  on수량을_수정한다?: (itemId: string, newQuantity: number, memo?: string) => void;
 };
 
 /* ── ledger type helpers ── */
@@ -185,17 +188,60 @@ export function ItemDetailDrawer({
   ledger,
   on소비하려고_연다,
   on폐기하려고_연다,
+  on수량을_수정한다,
 }: ItemDetailDrawerProps) {
   const mounted = typeof window !== "undefined";
+
+  // ── 수량 수정 인라인 편집 상태 ──
+  const [editingQty, setEditingQty] = useState(false);
+  const [qtyText, setQtyText] = useState("");
+  const [memoText, setMemoText] = useState("");
+  const qtyInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        if (editingQty) {
+          setEditingQty(false);
+          return;
+        }
+        onClose();
+      }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [open, onClose]);
+  }, [open, onClose, editingQty]);
+
+  // 아이템이 바뀌면 편집 상태 초기화
+  useEffect(() => {
+    setEditingQty(false);
+    setQtyText("");
+    setMemoText("");
+  }, [item?.id]);
+
+  const openQtyEdit = () => {
+    setQtyText(item ? String(item.quantity) : "0");
+    setMemoText("");
+    setEditingQty(true);
+    setTimeout(() => qtyInputRef.current?.select(), 0);
+  };
+
+  const commitQtyEdit = () => {
+    if (!item || !on수량을_수정한다) {
+      setEditingQty(false);
+      return;
+    }
+    const raw = qtyText.trim();
+    const n = Math.floor(Number(raw));
+    if (!Number.isFinite(n) || n < 0) {
+      setQtyText(String(item.quantity));
+      return;
+    }
+    on수량을_수정한다(item.id, n, memoText.trim() || undefined);
+    setEditingQty(false);
+    setMemoText("");
+  };
 
   const location = useMemo(() => {
     if (!item) return "";
@@ -341,20 +387,58 @@ export function ItemDetailDrawer({
                         : "border-zinc-800 bg-zinc-900/60",
                     )}
                   >
-                    <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500">
-                      수량
-                    </p>
-                    <p
-                      className={cn(
-                        "mt-1 text-lg font-bold tabular-nums",
-                        low ? "text-amber-300" : "text-white",
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] font-medium uppercase tracking-wider text-zinc-500">
+                        수량
+                      </p>
+                      {on수량을_수정한다 && !editingQty && (
+                        <button
+                          type="button"
+                          onClick={openQtyEdit}
+                          className="rounded p-0.5 text-zinc-600 transition hover:bg-zinc-700/50 hover:text-zinc-300"
+                          aria-label="수량 수정"
+                        >
+                          <Pencil className="size-3" />
+                        </button>
                       )}
-                    >
-                      {item.quantity}
-                      <span className="ml-0.5 text-xs font-normal text-zinc-400">
-                        {item.unit}
-                      </span>
-                    </p>
+                    </div>
+                    {editingQty ? (
+                      <div className="mt-1 flex flex-col gap-1">
+                        <input
+                          ref={qtyInputRef}
+                          type="number"
+                          min={0}
+                          step={1}
+                          value={qtyText}
+                          onChange={(e) => setQtyText(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") commitQtyEdit();
+                            if (e.key === "Escape") setEditingQty(false);
+                          }}
+                          className="w-full rounded-md border border-zinc-600 bg-zinc-800 px-2 py-1 text-sm font-bold tabular-nums text-white outline-none focus:border-teal-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={commitQtyEdit}
+                          className="flex items-center justify-center gap-1 rounded-md bg-teal-600 py-1 text-xs font-medium text-white hover:bg-teal-500"
+                        >
+                          <Check className="size-3" />
+                          확인
+                        </button>
+                      </div>
+                    ) : (
+                      <p
+                        className={cn(
+                          "mt-1 text-lg font-bold tabular-nums",
+                          low ? "text-amber-300" : "text-white",
+                        )}
+                      >
+                        {item.quantity}
+                        <span className="ml-0.5 text-xs font-normal text-zinc-400">
+                          {item.unit}
+                        </span>
+                      </p>
+                    )}
                   </div>
                   <div
                     className={cn(
@@ -388,6 +472,33 @@ export function ItemDetailDrawer({
                     </div>
                   </div>
                 </div>
+
+                {/* 수량 수정 메모 (편집 중일 때만 표시) */}
+                {editingQty && (
+                  <div className="rounded-xl border border-teal-500/20 bg-teal-950/20 px-3 py-3">
+                    <p className="mb-1.5 text-[10px] font-medium uppercase tracking-wider text-zinc-500">
+                      수정 메모 (선택)
+                    </p>
+                    <input
+                      type="text"
+                      placeholder="예: 실사 후 재고 수정"
+                      value={memoText}
+                      onChange={(e) => setMemoText(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") commitQtyEdit();
+                        if (e.key === "Escape") setEditingQty(false);
+                      }}
+                      className="w-full rounded-md border border-zinc-700 bg-zinc-800/80 px-2.5 py-1.5 text-sm text-white placeholder:text-zinc-600 outline-none focus:border-teal-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setEditingQty(false)}
+                      className="mt-2 text-xs text-zinc-500 hover:text-zinc-300"
+                    >
+                      취소
+                    </button>
+                  </div>
+                )}
 
                 {/* location */}
                 {location && (

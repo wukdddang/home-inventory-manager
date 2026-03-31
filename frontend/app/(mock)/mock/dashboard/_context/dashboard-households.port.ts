@@ -5,4 +5,5 @@
 export type {
   CreateInvitationParams,
   DashboardHouseholdsPort,
+  PurchaseBatchDto,
 } from "@/app/(current)/dashboard/_context/dashboard-households.port";

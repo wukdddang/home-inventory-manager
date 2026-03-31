@@ -17,7 +17,13 @@ import {
   getSharedHouseholdKindDefinitions,
   setSharedHouseholdKindDefinitions,
 } from "@/lib/local-store";
-import type { CreateInvitationParams, DashboardHouseholdsPort } from "./dashboard-households.port";
+import { 유통기한까지_일수를_구한다 } from "@/lib/purchase-lot-helpers";
+import { getMockPurchasesSession } from "@/app/(mock)/mock/purchases/_context/purchases-mock.service";
+import type {
+  CreateInvitationParams,
+  DashboardHouseholdsPort,
+  PurchaseBatchDto,
+} from "./dashboard-households.port";
 
 /* ── 상품 카탈로그 기본 시드 ── */
 
@@ -753,6 +759,54 @@ export function createDashboardMockHouseholdsService(): DashboardHouseholdsPort 
 
     async recordInventoryAdjustment() {
       // no-op (mock은 Context에서 로컬 상태만 관리)
+    },
+
+    async updateInventoryItemQuantity() {
+      // no-op (mock은 Context에서 로컬 상태만 관리)
+    },
+
+    async loadExpiringBatches(householdId, days = 7) {
+      const purchases = getMockPurchasesSession().filter(
+        (p) => p.householdId === householdId,
+      );
+      const result: PurchaseBatchDto[] = [];
+      for (const p of purchases) {
+        for (const batch of p.batches) {
+          if (!batch.expiresOn) continue;
+          const daysLeft = 유통기한까지_일수를_구한다(batch.expiresOn);
+          if (daysLeft !== null && daysLeft >= 0 && daysLeft <= days) {
+            result.push({
+              id: batch.id,
+              purchaseId: p.id,
+              quantity: batch.quantity,
+              expirationDate: batch.expiresOn,
+            });
+          }
+        }
+      }
+      return result;
+    },
+
+    async loadExpiredBatches(householdId) {
+      const purchases = getMockPurchasesSession().filter(
+        (p) => p.householdId === householdId,
+      );
+      const result: PurchaseBatchDto[] = [];
+      for (const p of purchases) {
+        for (const batch of p.batches) {
+          if (!batch.expiresOn) continue;
+          const daysLeft = 유통기한까지_일수를_구한다(batch.expiresOn);
+          if (daysLeft !== null && daysLeft < 0) {
+            result.push({
+              id: batch.id,
+              purchaseId: p.id,
+              quantity: batch.quantity,
+              expirationDate: batch.expiresOn,
+            });
+          }
+        }
+      }
+      return result;
     },
   };
 }

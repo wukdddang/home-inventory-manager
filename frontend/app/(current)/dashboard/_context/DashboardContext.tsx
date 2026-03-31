@@ -34,7 +34,10 @@ import {
 import {
   appendInventoryLedgerRow,
   getSharedHouseholdKindDefinitions,
+  getPurchases,
 } from "@/lib/local-store";
+import { 유통기한까지_일수를_구한다 } from "@/lib/purchase-lot-helpers";
+import { getMockPurchasesSession } from "@/app/(mock)/mock/purchases/_context/purchases-mock.service";
 import type {
   FurniturePlacement,
   Household,
@@ -53,6 +56,7 @@ import { dashboardApiHouseholdsClient } from "./dashboard-api.service";
 import type {
   CreateInvitationParams,
   DashboardHouseholdsPort,
+  PurchaseBatchDto,
 } from "./dashboard-households.port";
 
 function normalizeHouseholdKinds(
@@ -69,6 +73,13 @@ function normalizeHouseholdKinds(
 
 /** URL이 `/mock/...` 이면 mock, 그 외는 api */
 export type DashboardHouseholdsDataMode = "mock" | "api";
+
+/** 유통기한 임박·만료 알림 아이템. 거점별로 context에서 관리한다. */
+export type ExpiryAlertItem = {
+  item: InventoryRow;
+  daysLeft: number;
+  isExpired: boolean;
+};
 
 export type DashboardContextType = {
   dataMode: DashboardHouseholdsDataMode;
@@ -224,6 +235,21 @@ export type DashboardContextType = {
     quantityDelta: number,
     memo?: string,
   ) => boolean;
+  /**
+   * 재고 수량을 절댓값으로 직접 설정한다.
+   * api 모드: PATCH /inventory-items/:id/quantity + 로컬 상태 반영.
+   * mock 모드: 로컬 상태만 반영.
+   */
+  재고_수량을_직접_설정_한다: (
+    householdId: string,
+    itemId: string,
+    newQuantity: number,
+    memo?: string,
+  ) => boolean;
+  /** 거점의 유통기한 임박 품목 목록을 반환한다 (API 기반). */
+  거점_유통기한_임박_목록을_가져온다: (householdId: string) => ExpiryAlertItem[];
+  /** 거점의 만료된 품목 목록을 반환한다 (API 기반). */
+  거점_만료_목록을_가져온다: (householdId: string) => ExpiryAlertItem[];
 };
 
 export type DashboardProviderProps = {
@@ -257,6 +283,14 @@ export function DashboardProvider({
   const [hydrated, setHydrated] = useState(false);
   const householdsRef = useRef(households);
 
+  // ── 유통기한 임박·만료 상태 (거점 ID → 목록) ──
+  const [expiryAlertsByHousehold, setExpiryAlertsByHousehold] = useState<
+    Record<string, ExpiryAlertItem[]>
+  >({});
+  const [expiredAlertsByHousehold, setExpiredAlertsByHousehold] = useState<
+    Record<string, ExpiryAlertItem[]>
+  >({});
+
   useLayoutEffect(() => {
     householdsRef.current = households;
   }, [households]);
@@ -283,6 +317,76 @@ export function DashboardProvider({
     void port.saveAll(households);
   }, [households, hydrated, port]);
 
+  // ── 유통기한 임박·만료 데이터 로드 (거점별 배치 API → items 조인) ──
+  const 거점_유통기한_임박_만료_를_로드_한다 = useCallback(
+    async (loadedHouseholds: Household[]) => {
+      const purchaseList =
+        dataMode === "mock" ? getMockPurchasesSession() : getPurchases();
+
+      const toExpiryItem = (
+        batch: PurchaseBatchDto,
+        isExpired: boolean,
+        householdItems: InventoryRow[],
+      ): ExpiryAlertItem | null => {
+        const purchase = purchaseList.find((p) => p.id === batch.purchaseId);
+        if (!purchase?.inventoryItemId) return null;
+        const item = householdItems.find((i) => i.id === purchase.inventoryItemId);
+        if (!item) return null;
+        const dateStr = batch.expirationDate?.slice(0, 10) ?? null;
+        if (!dateStr) return null;
+        const daysLeft = 유통기한까지_일수를_구한다(dateStr);
+        if (daysLeft === null) return null;
+        return { item, daysLeft, isExpired };
+      };
+
+      const results = await Promise.all(
+        loadedHouseholds.map(async (h) => {
+          const [expiringBatches, expiredBatches] = await Promise.all([
+            port.loadExpiringBatches(h.id).catch(() => [] as PurchaseBatchDto[]),
+            port.loadExpiredBatches(h.id).catch(() => [] as PurchaseBatchDto[]),
+          ]);
+
+          // 같은 품목의 여러 배치 중 가장 임박한 것만 남긴다
+          const expiringByItem = new Map<string, ExpiryAlertItem>();
+          for (const b of expiringBatches) {
+            const it = toExpiryItem(b, false, h.items);
+            if (!it) continue;
+            const ex = expiringByItem.get(it.item.id);
+            if (!ex || it.daysLeft < ex.daysLeft) expiringByItem.set(it.item.id, it);
+          }
+
+          const expiredByItem = new Map<string, ExpiryAlertItem>();
+          for (const b of expiredBatches) {
+            const it = toExpiryItem(b, true, h.items);
+            if (!it) continue;
+            const ex = expiredByItem.get(it.item.id);
+            if (!ex || it.daysLeft < ex.daysLeft) expiredByItem.set(it.item.id, it);
+          }
+
+          return {
+            householdId: h.id,
+            expiring: Array.from(expiringByItem.values()).sort(
+              (a, b) => a.daysLeft - b.daysLeft,
+            ),
+            expired: Array.from(expiredByItem.values()).sort(
+              (a, b) => a.daysLeft - b.daysLeft,
+            ),
+          };
+        }),
+      );
+
+      const nextExpiring: Record<string, ExpiryAlertItem[]> = {};
+      const nextExpired: Record<string, ExpiryAlertItem[]> = {};
+      for (const { householdId, expiring, expired } of results) {
+        nextExpiring[householdId] = expiring;
+        nextExpired[householdId] = expired;
+      }
+      setExpiryAlertsByHousehold(nextExpiring);
+      setExpiredAlertsByHousehold(nextExpired);
+    },
+    [dataMode, port],
+  );
+
   // ── 거점 목록 로드 ──
   const 거점_목록을_불러온다 = useCallback(() => {
     setLoading(true);
@@ -292,6 +396,7 @@ export function DashboardProvider({
         const list = await port.list();
         const defs = kindDefsRef.current;
         setHouseholdsState(normalizeHouseholdKinds(list, defs));
+        void 거점_유통기한_임박_만료_를_로드_한다(list);
       } catch (err) {
         setError(
           err instanceof Error
@@ -303,7 +408,7 @@ export function DashboardProvider({
         setHydrated(true);
       }
     })();
-  }, [port]);
+  }, [port, 거점_유통기한_임박_만료_를_로드_한다]);
 
   useEffect(() => {
     거점_목록을_불러온다();
@@ -942,6 +1047,57 @@ export function DashboardProvider({
     [거점을_갱신_한다, port],
   );
 
+  const 재고_수량을_직접_설정_한다 = useCallback(
+    (
+      householdId: string,
+      itemId: string,
+      newQuantity: number,
+      memo?: string,
+    ): boolean => {
+      if (!Number.isFinite(newQuantity) || newQuantity < 0) return false;
+      const h = householdsRef.current.find((x) => x.id === householdId);
+      if (!h) return false;
+      const it = h.items.find((i) => i.id === itemId);
+      if (!it) return false;
+      const quantityDelta = newQuantity - it.quantity;
+      if (quantityDelta === 0) return true;
+      appendInventoryLedgerRow({
+        id: crypto.randomUUID(),
+        householdId,
+        inventoryItemId: itemId,
+        type: "adjust",
+        quantityDelta,
+        quantityAfter: newQuantity,
+        itemLabel: it.name,
+        memo: memo?.trim() || undefined,
+        createdAt: new Date().toISOString(),
+      });
+      거점을_갱신_한다(householdId, (prev) => ({
+        ...prev,
+        items: prev.items.map((row) =>
+          row.id === itemId ? { ...row, quantity: newQuantity } : row,
+        ),
+      }));
+      void port
+        .updateInventoryItemQuantity(householdId, itemId, newQuantity)
+        .catch((e) => console.error("수량 직접 설정 API 오류:", e));
+      return true;
+    },
+    [거점을_갱신_한다, port],
+  );
+
+  const 거점_유통기한_임박_목록을_가져온다 = useCallback(
+    (householdId: string): ExpiryAlertItem[] =>
+      expiryAlertsByHousehold[householdId] ?? [],
+    [expiryAlertsByHousehold],
+  );
+
+  const 거점_만료_목록을_가져온다 = useCallback(
+    (householdId: string): ExpiryAlertItem[] =>
+      expiredAlertsByHousehold[householdId] ?? [],
+    [expiredAlertsByHousehold],
+  );
+
   const value = useMemo<DashboardContextType>(
     () => ({
       dataMode,
@@ -977,6 +1133,9 @@ export function DashboardProvider({
       재고_품목을_등록_한다,
       구매에_재고를_연결_한다,
       재고_수량을_수동_조정_한다,
+      재고_수량을_직접_설정_한다,
+      거점_유통기한_임박_목록을_가져온다,
+      거점_만료_목록을_가져온다,
     }),
     [
       dataMode,
@@ -1012,6 +1171,9 @@ export function DashboardProvider({
       재고_품목을_등록_한다,
       구매에_재고를_연결_한다,
       재고_수량을_수동_조정_한다,
+      재고_수량을_직접_설정_한다,
+      거점_유통기한_임박_목록을_가져온다,
+      거점_만료_목록을_가져온다,
     ],
   );
 

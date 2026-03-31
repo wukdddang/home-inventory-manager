@@ -1,7 +1,6 @@
 "use client";
 
-import { 유통기한까지_일수를_구한다 } from "@/lib/purchase-lot-helpers";
-import { getPurchases } from "@/lib/local-store";
+import { useDashboard } from "../../_hooks/useDashboard";
 import type { Household, InventoryRow } from "@/types/domain";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -12,48 +11,15 @@ type ExpiryAlertsProps = {
   onWaste: (item: InventoryRow) => void;
 };
 
-type ExpiryItem = {
-  item: InventoryRow;
-  daysLeft: number;
-  isExpired: boolean;
-};
-
-const EXPIRY_THRESHOLD_DAYS = 7;
-
 export function ExpiryAlerts({ household, onUse, onWaste }: ExpiryAlertsProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const { 거점_유통기한_임박_목록을_가져온다, 거점_만료_목록을_가져온다 } = useDashboard();
 
   const expiryItems = useMemo(() => {
-    const purchases = getPurchases().filter(
-      (p) => p.householdId === household.id,
-    );
-    const result: ExpiryItem[] = [];
-
-    for (const item of household.items) {
-      // 이 재고에 연결된 구매 로트들의 가장 급한 유통기한 찾기
-      const linked = purchases.filter(
-        (p) => p.inventoryItemId === item.id,
-      );
-      let worstDays: number | null = null;
-      for (const p of linked) {
-        for (const batch of p.batches) {
-          const days = 유통기한까지_일수를_구한다(batch.expiresOn);
-          if (days !== null && (worstDays === null || days < worstDays)) {
-            worstDays = days;
-          }
-        }
-      }
-      if (worstDays !== null && worstDays <= EXPIRY_THRESHOLD_DAYS) {
-        result.push({
-          item,
-          daysLeft: worstDays,
-          isExpired: worstDays < 0,
-        });
-      }
-    }
-
-    return result.sort((a, b) => a.daysLeft - b.daysLeft);
-  }, [household]);
+    const expiring = 거점_유통기한_임박_목록을_가져온다(household.id);
+    const expired = 거점_만료_목록을_가져온다(household.id);
+    return [...expired, ...expiring].sort((a, b) => a.daysLeft - b.daysLeft);
+  }, [household.id, 거점_유통기한_임박_목록을_가져온다, 거점_만료_목록을_가져온다]);
 
   if (expiryItems.length === 0) return null;
 
