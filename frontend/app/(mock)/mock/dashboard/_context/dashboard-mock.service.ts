@@ -741,5 +741,18 @@ export function createDashboardMockHouseholdsService(): DashboardHouseholdsPort 
     async removeStorageLocation() {
       // no-op
     },
+
+    // ── 재고 품목 CUD (mock은 Context에서 로컬 상태만 관리) ──
+    async createInventoryItem() {
+      return { id: crypto.randomUUID() };
+    },
+
+    async linkPurchaseToInventoryItem() {
+      // no-op (mock은 Context에서 로컬 상태만 관리)
+    },
+
+    async recordInventoryAdjustment() {
+      // no-op (mock은 Context에서 로컬 상태만 관리)
+    },
   };
 }

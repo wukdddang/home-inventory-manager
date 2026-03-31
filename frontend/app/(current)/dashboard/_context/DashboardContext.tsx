@@ -40,6 +40,7 @@ import type {
   Household,
   HouseholdKindDefinition,
   HouseholdStructureDiagramLayout,
+  InventoryRow,
   MemberRole,
   MockInvitation,
   ProductCatalog,
@@ -192,6 +193,36 @@ export type DashboardContextType = {
     quantity: number,
     memo?: string,
     refId?: string,
+  ) => boolean;
+  /**
+   * 재고 품목을 등록한다.
+   * api 모드: POST /inventory-items → 서버 할당 id 를 row 에 반영 후 로컬 상태 추가.
+   * mock 모드: 로컬 상태에만 추가.
+   * 실패 시 null 반환.
+   */
+  재고_품목을_등록_한다: (
+    householdId: string,
+    row: InventoryRow,
+  ) => Promise<InventoryRow | null>;
+  /**
+   * 구매 기록을 재고 품목에 연결한다 (PATCH /purchases/:pid/link-inventory).
+   * api 모드만 실제 API 호출; mock은 no-op.
+   */
+  구매에_재고를_연결_한다: (
+    householdId: string,
+    purchaseId: string,
+    inventoryItemId: string,
+  ) => Promise<void>;
+  /**
+   * 재고 수량을 수동 조정한다 (delta).
+   * api 모드: POST /logs/adjustment + 로컬 상태 반영.
+   * mock 모드: 로컬 상태만 반영.
+   */
+  재고_수량을_수동_조정_한다: (
+    householdId: string,
+    itemId: string,
+    quantityDelta: number,
+    memo?: string,
   ) => boolean;
 };
 
@@ -837,6 +868,80 @@ export function DashboardProvider({
     [거점을_갱신_한다],
   );
 
+  const 재고_품목을_등록_한다 = useCallback(
+    async (householdId: string, row: InventoryRow): Promise<InventoryRow | null> => {
+      try {
+        const result = await port.createInventoryItem(householdId, {
+          productVariantId: row.productVariantId ?? "",
+          storageLocationId: row.storageLocationId ?? "",
+          quantity: row.quantity,
+          minStockLevel: row.minStockLevel,
+        });
+        const finalRow: InventoryRow = { ...row, id: result.id };
+        거점을_갱신_한다(householdId, (h) => ({
+          ...h,
+          items: [...h.items, finalRow],
+        }));
+        return finalRow;
+      } catch (e) {
+        console.error("재고 품목 등록 오류:", e);
+        return null;
+      }
+    },
+    [거점을_갱신_한다, port],
+  );
+
+  const 구매에_재고를_연결_한다 = useCallback(
+    async (
+      householdId: string,
+      purchaseId: string,
+      inventoryItemId: string,
+    ): Promise<void> => {
+      await port
+        .linkPurchaseToInventoryItem(householdId, purchaseId, inventoryItemId)
+        .catch((e) => console.error("구매-재고 연결 오류:", e));
+    },
+    [port],
+  );
+
+  const 재고_수량을_수동_조정_한다 = useCallback(
+    (
+      householdId: string,
+      itemId: string,
+      quantityDelta: number,
+      memo?: string,
+    ): boolean => {
+      if (!Number.isFinite(quantityDelta) || quantityDelta === 0) return false;
+      const h = householdsRef.current.find((x) => x.id === householdId);
+      if (!h) return false;
+      const it = h.items.find((i) => i.id === itemId);
+      if (!it) return false;
+      const nextQty = Math.max(0, it.quantity + quantityDelta);
+      appendInventoryLedgerRow({
+        id: crypto.randomUUID(),
+        householdId,
+        inventoryItemId: itemId,
+        type: "adjust",
+        quantityDelta,
+        quantityAfter: nextQty,
+        itemLabel: it.name,
+        memo: memo?.trim() || undefined,
+        createdAt: new Date().toISOString(),
+      });
+      거점을_갱신_한다(householdId, (prev) => ({
+        ...prev,
+        items: prev.items.map((row) =>
+          row.id === itemId ? { ...row, quantity: nextQty } : row,
+        ),
+      }));
+      void port
+        .recordInventoryAdjustment(householdId, itemId, quantityDelta, memo)
+        .catch((e) => console.error("수동 조정 API 오류:", e));
+      return true;
+    },
+    [거점을_갱신_한다, port],
+  );
+
   const value = useMemo<DashboardContextType>(
     () => ({
       dataMode,
@@ -869,6 +974,9 @@ export function DashboardProvider({
       재고_소비를_기록_한다,
       재고_폐기를_기록_한다,
       재고_장보기_보충을_기록_한다,
+      재고_품목을_등록_한다,
+      구매에_재고를_연결_한다,
+      재고_수량을_수동_조정_한다,
     }),
     [
       dataMode,
@@ -901,6 +1009,9 @@ export function DashboardProvider({
       재고_소비를_기록_한다,
       재고_폐기를_기록_한다,
       재고_장보기_보충을_기록_한다,
+      재고_품목을_등록_한다,
+      구매에_재고를_연결_한다,
+      재고_수량을_수동_조정_한다,
     ],
   );
 

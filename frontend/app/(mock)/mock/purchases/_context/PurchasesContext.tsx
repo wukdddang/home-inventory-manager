@@ -58,6 +58,14 @@ export function MockPurchasesProvider({ children }: { children: ReactNode }) {
       subscribeMockPurchasesSession(() => {
         setPurchases(getMockPurchasesSession());
       }),
+
+    linkInventoryItem: async (_, purchaseId, inventoryItemId) => {
+      updateMockPurchasesSession((prev) =>
+        prev.map((p) =>
+          p.id === purchaseId ? { ...p, inventoryItemId } : p,
+        ),
+      );
+    },
   }));
 
   return (

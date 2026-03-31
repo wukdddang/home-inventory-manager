@@ -56,6 +56,12 @@ export type PurchasesDataPort = {
    * 반환값은 구독 해제 함수다.
    */
   subscribe(setPurchases: (list: PurchaseRecord[]) => void): () => void;
+  /** 구매에 재고 품목을 나중에 연결한다 (PATCH /purchases/:pid/link-inventory). */
+  linkInventoryItem(
+    householdId: string,
+    purchaseId: string,
+    inventoryItemId: string,
+  ): Promise<void>;
 };
 
 /* ─────────────────────── API helpers ─────────────────────── */
@@ -174,6 +180,21 @@ const apiPurchasesService: PurchasesDataPort = {
   },
 
   subscribe: () => () => {},
+
+  async linkInventoryItem(householdId, purchaseId, inventoryItemId) {
+    try {
+      await apiFetch(
+        `/api/households/${householdId}/purchases/${purchaseId}/link-inventory`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ inventoryItemId }),
+        },
+      );
+    } catch (e) {
+      console.error("구매-재고 연결 API 오류:", e);
+    }
+  },
 };
 
 /* ─────────────────────── Context Type ─────────────────────── */
@@ -191,6 +212,12 @@ export type PurchasesContextType = {
   구매_목록을_불러온다: () => void;
   구매를_추가_한다: (draft: Omit<PurchaseRecord, "id">) => void;
   구매를_삭제_한다: (purchaseId: string) => void;
+  /** 구매에 재고 품목을 나중에 연결한다. api 모드에서만 실제 API 호출. */
+  구매에_재고를_나중에_연결_한다: (
+    householdId: string,
+    purchaseId: string,
+    inventoryItemId: string,
+  ) => Promise<void>;
 };
 
 export type PurchasesProviderProps = {
@@ -295,6 +322,23 @@ export function PurchasesProvider({
     [port, 구매_목록을_불러온다],
   );
 
+  const 구매에_재고를_나중에_연결_한다 = useCallback(
+    async (
+      householdId: string,
+      purchaseId: string,
+      inventoryItemId: string,
+    ): Promise<void> => {
+      await port.linkInventoryItem(householdId, purchaseId, inventoryItemId);
+      // 연결 후 목록 갱신하여 inventoryItemId 반영
+      setPurchasesState((prev) =>
+        prev.map((p) =>
+          p.id === purchaseId ? { ...p, inventoryItemId } : p,
+        ),
+      );
+    },
+    [port],
+  );
+
   const productCatalog = useMemo<ProductCatalog>(
     () => households[0]?.catalog ?? cloneDefaultCatalog(),
     [households],
@@ -312,6 +356,7 @@ export function PurchasesProvider({
       구매_목록을_불러온다,
       구매를_추가_한다,
       구매를_삭제_한다,
+      구매에_재고를_나중에_연결_한다,
     }),
     [
       dataMode,
@@ -324,6 +369,7 @@ export function PurchasesProvider({
       구매_목록을_불러온다,
       구매를_추가_한다,
       구매를_삭제_한다,
+      구매에_재고를_나중에_연결_한다,
     ],
   );
 

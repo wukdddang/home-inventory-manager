@@ -281,6 +281,8 @@ export function RoomItemAddWidget({
     거점을_갱신_한다,
     거점_카탈로그를_가져온다,
     카탈로그를_갱신_한다,
+    재고_품목을_등록_한다,
+    구매에_재고를_연결_한다,
   } = useDashboard();
   const catalog = 거점_카탈로그를_가져온다(selected.id);
   const catalogHydrated = true; // 거점 하이드레이션이 완료되면 카탈로그도 포함됨
@@ -533,7 +535,7 @@ export function RoomItemAddWidget({
         ? parsedMin
         : undefined;
 
-    const row: InventoryRow = {
+    const localRow: InventoryRow = {
       id: newEntityId(),
       name: "",
       quantity: qty,
@@ -547,63 +549,72 @@ export function RoomItemAddWidget({
       quantityPerUnit: variant.quantityPerUnit,
       minStockLevel: minStock,
     };
-    row.name = inventoryDisplayLine(catalog, row);
+    localRow.name = inventoryDisplayLine(catalog, localRow);
 
-    거점을_갱신_한다(selected.id, (h) => ({
-      ...h,
-      items: [...h.items, row],
-    }));
-    setStockQty("1");
-    setMinStockText("");
-
-    const expRaw = expiresOn.trim();
-    const parsedUnitPrice = Number.parseFloat(
-      unitPriceText.replace(/,/g, ""),
-    );
-    const unitPriceVal =
-      Number.isFinite(parsedUnitPrice) && parsedUnitPrice >= 0
-        ? parsedUnitPrice
-        : 0;
-
-    let lotNote = "";
-    if (expRaw.length >= 8 && qty > 0) {
-      const expTime = new Date(`${expRaw}T12:00:00`).getTime();
-      if (!Number.isNaN(expTime)) {
-        const prevP = 구매_스냅샷을_불러온다();
-        const purchaseRow: PurchaseRecord = {
-          id: crypto.randomUUID(),
-          householdId: selected.id,
-          inventoryItemId: row.id,
-          productId: product.id,
-          productVariantId: variant.id,
-          itemName: row.name,
-          variantCaption: row.variantCaption,
-          unitSymbol: unit.symbol,
-          purchasedOn: 오늘_날짜_문자열을_구한다(),
-          unitPrice: unitPriceVal,
-          totalPrice: unitPriceVal * qty,
-          batches: [
-            {
-              id: crypto.randomUUID(),
-              quantity: qty,
-              expiresOn: expRaw,
-            },
-          ],
-        };
-        구매_스냅샷을_저장한다([...prevP, purchaseRow]);
-        lotNote = ` · 로트(${expRaw}, ${qty}${unit.symbol}) 기록`;
+    // api 모드: 서버에 재고 품목 등록 (서버 할당 id 사용)
+    // mock 모드: 로컬 상태에만 추가
+    void (async () => {
+      const finalRow = await 재고_품목을_등록_한다(selected.id, localRow);
+      const row = finalRow ?? localRow; // 실패 시 로컬 id 사용
+      if (!finalRow) {
+        // API 실패 시 로컬에 직접 추가
+        거점을_갱신_한다(selected.id, (h) => ({
+          ...h,
+          items: [...h.items, row],
+        }));
       }
-    }
-    setExpiresOn("");
-    setUnitPriceText("");
+      setStockQty("1");
+      setMinStockText("");
 
-    const locLabel =
-      storageOptions.find((o) => o.id === slotId)?.label ?? room.name;
-    toast({
-      title: "재고 추가됨",
-      description: `${row.name} → ${locLabel}${lotNote}`,
-      variant: "success",
-    });
+      const expRaw = expiresOn.trim();
+      const parsedUnitPrice = Number.parseFloat(
+        unitPriceText.replace(/,/g, ""),
+      );
+      const unitPriceVal =
+        Number.isFinite(parsedUnitPrice) && parsedUnitPrice >= 0
+          ? parsedUnitPrice
+          : 0;
+
+      let lotNote = "";
+      if (expRaw.length >= 8 && qty > 0) {
+        const expTime = new Date(`${expRaw}T12:00:00`).getTime();
+        if (!Number.isNaN(expTime)) {
+          const prevP = 구매_스냅샷을_불러온다();
+          const purchaseRow: PurchaseRecord = {
+            id: crypto.randomUUID(),
+            householdId: selected.id,
+            inventoryItemId: row.id,
+            productId: product.id,
+            productVariantId: variant.id,
+            itemName: row.name,
+            variantCaption: row.variantCaption,
+            unitSymbol: unit.symbol,
+            purchasedOn: 오늘_날짜_문자열을_구한다(),
+            unitPrice: unitPriceVal,
+            totalPrice: unitPriceVal * qty,
+            batches: [
+              {
+                id: crypto.randomUUID(),
+                quantity: qty,
+                expiresOn: expRaw,
+              },
+            ],
+          };
+          구매_스냅샷을_저장한다([...prevP, purchaseRow]);
+          lotNote = ` · 로트(${expRaw}, ${qty}${unit.symbol}) 기록`;
+        }
+      }
+      setExpiresOn("");
+      setUnitPriceText("");
+
+      const locLabel =
+        storageOptions.find((o) => o.id === slotId)?.label ?? room.name;
+      toast({
+        title: "재고 추가됨",
+        description: `${row.name} → ${locLabel}${lotNote}`,
+        variant: "success",
+      });
+    })();
   };
 
   const handleAddFromPurchase = () => {
@@ -681,7 +692,7 @@ export function RoomItemAddWidget({
         ? parsedMinP
         : undefined;
 
-    const row: InventoryRow = {
+    const localRow: InventoryRow = {
       id: newEntityId(),
       name: "",
       quantity: qty,
@@ -697,42 +708,51 @@ export function RoomItemAddWidget({
     };
 
     if (catalog && product && variant && unit) {
-      row.name = inventoryDisplayLine(catalog, row);
+      localRow.name = inventoryDisplayLine(catalog, localRow);
     } else {
-      row.name = purchase.itemName;
+      localRow.name = purchase.itemName;
     }
 
-    거점을_갱신_한다(selected.id, (h) => ({
-      ...h,
-      items: [...h.items, row],
-    }));
+    // api 모드: 서버에 재고 품목 등록 + 구매 연결
+    void (async () => {
+      const finalRow = await 재고_품목을_등록_한다(selected.id, localRow);
+      const row = finalRow ?? localRow;
+      if (!finalRow) {
+        거점을_갱신_한다(selected.id, (h) => ({
+          ...h,
+          items: [...h.items, row],
+        }));
+      }
 
-    if (dataMode === "mock") {
-      updateMockPurchasesSession((prev) =>
-        prev.map((p) =>
-          p.id === purchase.id ? { ...p, inventoryItemId: row.id } : p,
-        ),
-      );
-    } else {
-      const prevP = 구매_스냅샷을_불러온다();
-      구매_스냅샷을_저장한다(
-        prevP.map((p) =>
-          p.id === purchase.id ? { ...p, inventoryItemId: row.id } : p,
-        ),
-      );
-    }
+      if (dataMode === "mock") {
+        updateMockPurchasesSession((prev) =>
+          prev.map((p) =>
+            p.id === purchase.id ? { ...p, inventoryItemId: row.id } : p,
+          ),
+        );
+      } else {
+        // api 모드: 구매-재고 연결 API 호출
+        await 구매에_재고를_연결_한다(selected.id, purchase.id, row.id);
+        const prevP = 구매_스냅샷을_불러온다();
+        구매_스냅샷을_저장한다(
+          prevP.map((p) =>
+            p.id === purchase.id ? { ...p, inventoryItemId: row.id } : p,
+          ),
+        );
+      }
 
-    setPurchasePickId("");
-    setStockQty("1");
-    setMinStockText("");
+      setPurchasePickId("");
+      setStockQty("1");
+      setMinStockText("");
 
-    const locLabel =
-      storageOptions.find((o) => o.id === slotId)?.label ?? room.name;
-    toast({
-      title: "구매·로트를 보관 장소에 반영했습니다",
-      description: `${row.name} → ${locLabel} · 구매 기록과 연결됨`,
-      variant: "success",
-    });
+      const locLabel =
+        storageOptions.find((o) => o.id === slotId)?.label ?? room.name;
+      toast({
+        title: "구매·로트를 보관 장소에 반영했습니다",
+        description: `${row.name} → ${locLabel} · 구매 기록과 연결됨`,
+        variant: "success",
+      });
+    })();
   };
 
   if (!room) {

@@ -20,6 +20,7 @@ import {
   type ReactNode,
 } from "react";
 import {
+  appendInventoryLedgerRow,
   getHouseholds,
   getInventoryLedger,
   subscribeInventoryHistoryBundle,
@@ -64,6 +65,23 @@ export type InventoryHistoryDataPort = {
     onH: (h: Household[]) => void,
     onL: (l: InventoryLedgerRow[]) => void,
   ): () => void;
+  /**
+   * API 에서 모든 거점의 재고 이력을 비동기로 로드한다 (optional).
+   * 반환된 행은 로컬 ledger 와 병합(id 기준 중복 제거)된다.
+   */
+  loadApiLedger?(): Promise<InventoryLedgerRow[]>;
+  /**
+   * 재고 수량을 수동 조정한다 (POST /logs/adjustment).
+   * api: 실제 API 호출 + 로컬 ledger 행 추가.
+   * mock: 로컬 ledger 행만 추가.
+   */
+  recordAdjustment?(
+    householdId: string,
+    itemId: string,
+    itemLabel: string,
+    quantityDelta: number,
+    memo?: string,
+  ): Promise<InventoryLedgerRow | null>;
 };
 
 /* ─────────────────────── Context Type ─────────────────────── */
@@ -107,6 +125,14 @@ export type InventoryHistoryContextType = {
   비고_모달을_닫는다: () => void;
   비고_모달_드래프트를_바꾼다: (v: string) => void;
   비고_모달에서_저장한다: () => void;
+  /** 재고 수량을 수동 조정한다. 성공 시 true, 실패 시 false. */
+  수량_수동_조정_한다: (
+    householdId: string,
+    itemId: string,
+    itemLabel: string,
+    quantityDelta: number,
+    memo?: string,
+  ) => Promise<boolean>;
 };
 
 export const InventoryHistoryContext = createContext<
@@ -134,6 +160,23 @@ export function InventoryHistoryProvider({
   // 포트 구독: api 모드는 local-store 변경 감지, mock 모드는 no-op
   useEffect(() => {
     return port.subscribe(setHouseholds, setLedger);
+  }, [port]);
+
+  // API 에서 이력 추가 로드 (optional) — 로컬 ledger 와 병합
+  useEffect(() => {
+    if (!port.loadApiLedger) return;
+    void port.loadApiLedger().then((apiRows) => {
+      if (apiRows.length === 0) return;
+      setLedger((prev) => {
+        const merged = new Map(prev.map((r) => [r.id, r]));
+        apiRows.forEach((r) => merged.set(r.id, r));
+        return Array.from(merged.values()).sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+        );
+      });
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [port]);
 
   const [filterHouseholdId, setFilterHouseholdId] = useState("all");
@@ -245,6 +288,39 @@ export function InventoryHistoryProvider({
     비고를_바꾼다(memoModalRow.id, memoDraft);
     setMemoModalRow(null);
   }, [memoModalRow, memoDraft, 비고를_바꾼다]);
+
+  const 수량_수동_조정_한다 = useCallback(
+    async (
+      householdId: string,
+      itemId: string,
+      itemLabel: string,
+      quantityDelta: number,
+      memo?: string,
+    ): Promise<boolean> => {
+      if (!port.recordAdjustment) return false;
+      try {
+        const row = await port.recordAdjustment(
+          householdId,
+          itemId,
+          itemLabel,
+          quantityDelta,
+          memo,
+        );
+        if (row) {
+          setLedger((prev) => {
+            const exists = prev.some((r) => r.id === row.id);
+            if (exists) return prev;
+            return [row, ...prev];
+          });
+        }
+        return true;
+      } catch (e) {
+        console.error("수동 조정 오류:", e);
+        return false;
+      }
+    },
+    [port],
+  );
 
   const baseRows = useMemo(() => {
     let rows = [...ledger];
@@ -382,6 +458,7 @@ export function InventoryHistoryProvider({
       비고_모달을_닫는다,
       비고_모달_드래프트를_바꾼다,
       비고_모달에서_저장한다,
+      수량_수동_조정_한다,
     }),
     [
       households,
@@ -421,6 +498,7 @@ export function InventoryHistoryProvider({
       비고_모달을_닫는다,
       비고_모달_드래프트를_바꾼다,
       비고_모달에서_저장한다,
+      수량_수동_조정_한다,
     ],
   );
 
@@ -433,7 +511,45 @@ export function InventoryHistoryProvider({
 
 /* ─────────────────────── Current Provider ─────────────────────── */
 
-/** current 경로 전용 Provider. localStorage + 구독 기반 데이터 소스를 주입한다. */
+/* ── API 로그 fetch 헬퍼 ── */
+
+async function apiFetch<T>(input: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(input, init);
+  const json = (await res.json()) as { success: boolean; data: T; message?: string };
+  if (!json.success) throw new Error(json.message ?? "API 오류");
+  return json.data;
+}
+
+interface ApiInventoryLog {
+  id: string;
+  inventoryItemId: string;
+  type: string;
+  quantity: number;
+  memo: string | null;
+  createdAt: string;
+}
+
+function mapLogToLedgerRow(
+  householdId: string,
+  itemLabel: string,
+  log: ApiInventoryLog,
+): InventoryLedgerRow {
+  const isOut = log.type === "out" || log.type === "waste";
+  const quantityDelta = isOut ? -Math.abs(log.quantity) : log.quantity;
+  return {
+    id: log.id,
+    householdId,
+    inventoryItemId: log.inventoryItemId,
+    type: log.type as InventoryLedgerRow["type"],
+    quantityDelta,
+    quantityAfter: 0,
+    itemLabel: itemLabel || undefined,
+    memo: log.memo ?? undefined,
+    createdAt: log.createdAt,
+  };
+}
+
+/** current 경로 전용 Provider. localStorage + API 데이터 소스를 주입한다. */
 export function CurrentInventoryHistoryProvider({
   children,
 }: {
@@ -447,6 +563,45 @@ export function CurrentInventoryHistoryProvider({
         onH(getHouseholds());
         onL(getInventoryLedger());
       }),
+
+    async loadApiLedger() {
+      const households = getHouseholds();
+      const rows: InventoryLedgerRow[] = [];
+      await Promise.all(
+        households.map(async (h) => {
+          await Promise.all(
+            (h.items ?? []).map(async (item) => {
+              const logs = await apiFetch<ApiInventoryLog[]>(
+                `/api/households/${h.id}/inventory-items/${item.id}/logs`,
+              ).catch(() => [] as ApiInventoryLog[]);
+              for (const log of logs) {
+                rows.push(mapLogToLedgerRow(h.id, item.name, log));
+              }
+            }),
+          );
+        }),
+      );
+      return rows;
+    },
+
+    async recordAdjustment(householdId, itemId, itemLabel, quantityDelta, memo) {
+      try {
+        const result = await apiFetch<ApiInventoryLog>(
+          `/api/households/${householdId}/inventory-items/${itemId}/logs/adjustment`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ quantityDelta, memo: memo?.trim() }),
+          },
+        );
+        const row = mapLogToLedgerRow(householdId, itemLabel, result);
+        appendInventoryLedgerRow(row);
+        return row;
+      } catch (e) {
+        console.error("수동 조정 API 오류:", e);
+        return null;
+      }
+    },
   }));
 
   return (

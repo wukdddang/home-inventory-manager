@@ -2,9 +2,11 @@ import {
   getHouseholds,
   getSharedHouseholdKindDefinitions,
   setHouseholds,
+  setPurchases,
   setSharedHouseholdKindDefinitions,
 } from "@/lib/local-store";
 import { cloneDefaultHouseholdKindDefinitions } from "@/lib/household-kind-defaults";
+import { inventoryDisplayLine } from "@/lib/product-catalog-helpers";
 import type {
   CatalogCategory,
   CatalogProduct,
@@ -15,9 +17,12 @@ import type {
   Household,
   HouseholdKindDefinition,
   HouseholdStructureDiagramLayout,
+  InventoryRow,
   MemberRole,
   MockInvitation,
   ProductCatalog,
+  PurchaseBatchLot,
+  PurchaseRecord,
   StorageLocationRow,
   StructureRoom,
 } from "@/types/domain";
@@ -222,6 +227,133 @@ function mapInvitation(raw: {
     token: raw.token,
     createdAt: raw.createdAt,
   };
+}
+
+/* ── 구매·로트 로드 (대시보드 재고 섹션용 localStorage 동기화) ── */
+
+interface ApiPurchaseRaw {
+  id: string;
+  householdId: string;
+  inventoryItemId: string | null;
+  unitPrice: number;
+  purchasedAt: string;
+  supplierName: string | null;
+  itemName: string | null;
+  variantCaption: string | null;
+  unitSymbol: string | null;
+}
+
+interface ApiPurchaseBatchRaw {
+  id: string;
+  purchaseId: string;
+  quantity: number;
+  expirationDate: string | null;
+}
+
+function mapApiToPurchaseRecord(
+  p: ApiPurchaseRaw,
+  batches: ApiPurchaseBatchRaw[],
+): PurchaseRecord {
+  const myBatches = batches.filter((b) => b.purchaseId === p.id);
+  const totalQty = myBatches.reduce((s, b) => s + b.quantity, 0);
+  return {
+    id: p.id,
+    householdId: p.householdId,
+    inventoryItemId: p.inventoryItemId ?? undefined,
+    itemName: p.itemName ?? "",
+    variantCaption: p.variantCaption ?? undefined,
+    unitSymbol: p.unitSymbol ?? "",
+    purchasedOn: p.purchasedAt.slice(0, 10),
+    unitPrice: p.unitPrice,
+    totalPrice: p.unitPrice * (totalQty || 1),
+    supplierName: p.supplierName ?? undefined,
+    batches: myBatches.map(
+      (b): PurchaseBatchLot => ({
+        id: b.id,
+        quantity: b.quantity,
+        expiresOn: b.expirationDate?.slice(0, 10) ?? "",
+      }),
+    ),
+  };
+}
+
+async function loadPurchasesForHousehold(
+  householdId: string,
+): Promise<PurchaseRecord[]> {
+  try {
+    const [purchases, batches] = await Promise.all([
+      apiFetch<ApiPurchaseRaw[]>(`/api/households/${householdId}/purchases`),
+      apiFetch<ApiPurchaseBatchRaw[]>(`/api/households/${householdId}/batches`),
+    ]);
+    return purchases.map((p) => mapApiToPurchaseRecord(p, batches));
+  } catch {
+    return [];
+  }
+}
+
+/* ── 재고 품목 로드 및 매핑 ── */
+
+async function loadInventoryItemsFromApi(
+  householdId: string,
+  catalog: ProductCatalog,
+  storageLocations: StorageLocationRow[],
+  furniturePlacements: FurniturePlacement[],
+): Promise<InventoryRow[]> {
+  const raw = await apiFetch<
+    Array<{
+      id: string;
+      householdId: string;
+      productVariantId: string;
+      storageLocationId: string;
+      quantity: number;
+      minStockLevel: number | null;
+    }>
+  >(`/api/households/${householdId}/inventory-items`).catch(() => []);
+
+  const slotById = new Map(storageLocations.map((s) => [s.id, s]));
+  const fpById = new Map(furniturePlacements.map((fp) => [fp.id, fp]));
+  const variantById = new Map(catalog.variants.map((v) => [v.id, v]));
+  const productById = new Map(catalog.products.map((p) => [p.id, p]));
+  const unitById = new Map(catalog.units.map((u) => [u.id, u]));
+
+  return raw.map((item) => {
+    const variant = variantById.get(item.productVariantId);
+    const product = variant ? productById.get(variant.productId) : undefined;
+    const unit = variant ? unitById.get(variant.unitId) : undefined;
+    const slot = slotById.get(item.storageLocationId);
+
+    // roomId 결정: 방 직속 슬롯이면 slot.roomId, 가구 하위 슬롯이면 furniture.roomId
+    let roomId = slot?.roomId ?? "";
+    if (!roomId && slot?.furniturePlacementId) {
+      roomId = fpById.get(slot.furniturePlacementId)?.roomId ?? "";
+    }
+
+    const variantCaption =
+      variant?.name ??
+      (variant && unit ? `${variant.quantityPerUnit}${unit.symbol}` : undefined);
+
+    const row: InventoryRow = {
+      id: item.id,
+      name: "",
+      quantity: item.quantity,
+      unit: unit?.symbol ?? "",
+      roomId,
+      storageLocationId: item.storageLocationId,
+      categoryId: product?.categoryId,
+      productId: product?.id,
+      productVariantId: item.productVariantId,
+      variantCaption,
+      quantityPerUnit: variant?.quantityPerUnit,
+      minStockLevel: item.minStockLevel ?? undefined,
+    };
+
+    row.name =
+      product && variant && unit
+        ? inventoryDisplayLine(catalog, row)
+        : (product?.name ?? "알 수 없는 품목");
+
+    return row;
+  });
 }
 
 /** 거점 카탈로그를 API에서 일괄 로드 */
@@ -517,11 +649,35 @@ export const dashboardApiHouseholdsClient: DashboardHouseholdsPort = {
             allRoomIds,
           ).catch(() => household.furniturePlacements ?? []);
           household.furniturePlacements = furniturePlacements;
+
+          // 재고 품목 로드 (카탈로그 + 보관장소 + 가구 배치 이후에 수행)
+          const inventoryItems = await loadInventoryItemsFromApi(
+            remote.id,
+            catalog,
+            storageLocations,
+            household.furniturePlacements,
+          ).catch(() => household.items ?? []);
+          household.items = inventoryItems;
+        } else {
+          // 가구 배치가 없어도 재고 품목 로드
+          const inventoryItems = await loadInventoryItemsFromApi(
+            remote.id,
+            catalog,
+            storageLocations,
+            [],
+          ).catch(() => household.items ?? []);
+          household.items = inventoryItems;
         }
 
         return household;
       }),
     );
+
+    // 구매 데이터 localStorage 동기화 (DashboardInventory 섹션의 purchases 표시용)
+    const allPurchases = (
+      await Promise.all(withData.map((h) => loadPurchasesForHousehold(h.id)))
+    ).flat();
+    setPurchases(allPurchases);
 
     // localStorage 동기화 (rooms/items/catalog 보존)
     setHouseholds(withData);
@@ -844,5 +1000,47 @@ export const dashboardApiHouseholdsClient: DashboardHouseholdsPort = {
       `/api/households/${householdId}/storage-locations/${id}`,
       { method: "DELETE" },
     ).catch((e) => console.error("보관 장소 삭제 API 오류:", e));
+  },
+
+  /* ── 재고 품목 등록 ── */
+  async createInventoryItem(householdId, data) {
+    const raw = await apiFetch<{ id: string }>(
+      `/api/households/${householdId}/inventory-items`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          productVariantId: data.productVariantId,
+          storageLocationId: data.storageLocationId,
+          quantity: data.quantity,
+          minStockLevel: data.minStockLevel ?? null,
+        }),
+      },
+    );
+    return { id: raw.id };
+  },
+
+  /* ── 구매-재고 품목 연결 ── */
+  async linkPurchaseToInventoryItem(householdId, purchaseId, inventoryItemId) {
+    await apiFetch<unknown>(
+      `/api/households/${householdId}/purchases/${purchaseId}/link-inventory`,
+      {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ inventoryItemId }),
+      },
+    ).catch((e) => console.error("구매-재고 연결 API 오류:", e));
+  },
+
+  /* ── 재고 수량 수동 조정 ── */
+  async recordInventoryAdjustment(householdId, itemId, quantityDelta, memo) {
+    await apiFetch<unknown>(
+      `/api/households/${householdId}/inventory-items/${itemId}/logs/adjustment`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quantityDelta, memo: memo?.trim() }),
+      },
+    ).catch((e) => console.error("재고 수동 조정 API 오류:", e));
   },
 };

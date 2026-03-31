@@ -1,4 +1,4 @@
-﻿# API 연결 현황 체크리스트
+# API 연결 현황 체크리스트
 
 **최초 작성**: 2026-03-31
 **기준**: feature-checklist.md v2.5
@@ -153,9 +153,9 @@
 
 | 기능 | API 라우트 | 상태 | 비고 |
 |------|-----------|------|------|
-| 재고 품목 목록 조회 | `GET /api/households/[id]/inventory-items` | 🚧 | `dashboard-api.service`가 items를 여전히 localStorage에서 가져옴 (API 연결 필요) |
-| 재고 품목 등록 | `POST /api/households/[id]/inventory-items` | 🚧 | route handler 있음, `DashboardContext`에서 미호출 |
-| 재고 수량 수정 | `PATCH /api/households/[id]/inventory-items/[iid]/quantity` | 🚧 | route handler 있음, context 미연결 |
+| 재고 품목 목록 조회 | `GET /api/households/[id]/inventory-items` | ✅ | `dashboard-api.service.ts` `loadInventoryItemsFromApi` — `list()` 내 카탈로그·보관장소·가구 배치 로드 후 병렬 호출, `InventoryRow`로 매핑 |
+| 재고 품목 등록 | `POST /api/households/[id]/inventory-items` | ✅ | `DashboardContext` `재고_품목을_등록_한다` → `port.createInventoryItem` — `DashboardItemForm.section` 카탈로그/구매 경로 모두 연결 |
+| 재고 수량 수정 (직접 set) | `PATCH /api/households/[id]/inventory-items/[iid]/quantity` | 🚧 | route handler 있음, UI 없음 (delta 조정은 logs/adjustment 사용) |
 
 ---
 
@@ -165,7 +165,7 @@
 |------|-----------|------|------|
 | 구매 목록 조회 | `GET /api/households/[id]/purchases` | ✅ | `PurchasesContext` api 모드에서 `loadPurchasesFromApi` 호출 |
 | 구매 등록 (로트 포함) | `POST /api/households/[id]/purchases` | ✅ | `구매를_추가_한다`에서 api 모드 시 POST |
-| 재고 나중에 연결 | `PATCH /api/households/[id]/purchases/[pid]/link-inventory` | 🚧 | route handler 있음, context 미연결 |
+| 재고 나중에 연결 | `PATCH /api/households/[id]/purchases/[pid]/link-inventory` | ✅ | `PurchasesContext` `구매에_재고를_나중에_연결_한다` / `DashboardContext` `구매에_재고를_연결_한다` — 구매에서 재고 배치 시 자동 호출 |
 
 ---
 
@@ -173,9 +173,9 @@
 
 | 기능 | API 라우트 | 상태 | 비고 |
 |------|-----------|------|------|
-| 로트 목록 조회 | `GET /api/households/[id]/batches` | 🚧 | route handler 있음, context 미연결 |
-| 유통기한 임박 목록 | `GET /api/households/[id]/batches/expiring` | 🚧 | route handler 있음, context 미연결 |
-| 만료된 목록 | `GET /api/households/[id]/batches/expired` | 🚧 | route handler 있음, context 미연결 |
+| 로트 목록 조회 | `GET /api/households/[id]/batches` | ✅ | `dashboard-api.service.ts` `loadPurchasesForHousehold`에서 구매 로드 시 함께 호출 → `setPurchases`로 localStorage 동기화, DashboardInventory 섹션에서 useSyncExternalStore로 소비 |
+| 유통기한 임박 목록 | `GET /api/households/[id]/batches/expiring` | 🚧 | route handler 있음; 현재는 전체 batches 데이터에서 클라이언트 필터링으로 대응 |
+| 만료된 목록 | `GET /api/households/[id]/batches/expired` | 🚧 | route handler 있음; 현재는 전체 batches 데이터에서 클라이언트 필터링으로 대응 |
 
 ---
 
@@ -183,10 +183,10 @@
 
 | 기능 | API 라우트 | 상태 | 비고 |
 |------|-----------|------|------|
-| 재고 변경 이력 조회 | `GET /api/households/[id]/inventory-items/[iid]/logs` | 🚧 | route handler 있음, `InventoryHistoryContext`가 mock 고정 데이터 사용 |
+| 재고 변경 이력 조회 | `GET /api/households/[id]/inventory-items/[iid]/logs` | ✅ | `CurrentInventoryHistoryProvider` `loadApiLedger` — 마운트 시 모든 거점·품목의 로그를 API에서 로드 후 localStorage ledger와 병합 |
 | 소비 기록 등록 | `POST /api/households/[id]/inventory-items/[iid]/logs/consumption` | ✅ | `재고_소비를_기록_한다`에서 api 모드 시 POST |
 | 폐기 기록 등록 | `POST /api/households/[id]/inventory-items/[iid]/logs/waste` | ✅ | `재고_폐기를_기록_한다`에서 api 모드 시 POST |
-| 수량 수동 조정 | `POST /api/households/[id]/inventory-items/[iid]/logs/adjustment` | 🚧 | route handler 있음, context 미연결 |
+| 수량 수동 조정 | `POST /api/households/[id]/inventory-items/[iid]/logs/adjustment` | ✅ | `InventoryHistoryContext` `수량_수동_조정_한다` → `port.recordAdjustment` — `DashboardContext` `재고_수량을_수동_조정_한다`도 동일 API 호출 |
 
 ---
 
@@ -250,8 +250,8 @@
 
 | 상태 | 항목 수 | 내용 |
 |------|---------|------|
-| ✅ 완료 | 인프라 6, 사용자 6+1(비밀번호변경), 거점 7, 거점초대 4+2(수락·토큰조회), 거점유형 2, 카테고리 4, 단위 4, 상품 4, 변형 4, **가구 CUD+조회 4**, **보관장소 생성+조회+삭제+수정 4**, **방/집구조 4**, 구매 2, 소비/폐기이력 2, 장보기 5, 알림 2, 알림설정 3, 만료규칙 4, 장보기자동제안 2, 스케줄러 2 | **총 89항목** |
-| 🚧 미연결 | 재고품목 3, 로트 3, 재고이력조회 1, 이력수동조정 1, 구매재고연결 1 | **총 ~9항목** |
+| ✅ 완료 | 인프라 6, 사용자 6+1(비밀번호변경), 거점 7, 거점초대 4+2(수락·토큰조회), 거점유형 2, 카테고리 4, 단위 4, 상품 4, 변형 4, 가구 CUD+조회 4, 보관장소 생성+조회+삭제+수정 4, 방/집구조 4, 구매 2+1(재고연결), **재고품목 목록+등록 2**, 소비/폐기이력 2, **이력조회+수동조정 2**, **로트 목록 1**, 장보기 5, 알림 2, 알림설정 3, 만료규칙 4, 장보기자동제안 2, 스케줄러 2 | **총 ~97항목** |
+| 🚧 미연결 | 재고수량직접수정 1, 유통기한임박/만료 전용 endpoint 2 | **총 ~3항목** |
 | ⬜ 개발 전 | 태그, 리포트 설정, 단건조회 UI, copy UI, 알림설정삭제 UI | **~7항목** |
 
 ### 잔여 미연결 원인
@@ -260,21 +260,25 @@
 |------|-----------|
 | ~~방/공간 편집기와 백엔드 모델 불일치~~ | ~~방 목록 조회·동기화, 집 구조 조회·저장 (4항목)~~ → **✅ 2026-03-31 완료** |
 | ~~가구·보관장소 write-through 미구현~~ | ~~가구 CUD, 보관장소 생성·삭제 (5항목)~~ → **✅ 2026-03-31 완료** |
-| 재고 품목 API 연결 미완료 | 재고 품목 목록·등록·수량수정 (3항목) |
-| 로트 별도 조회 미연결 | 로트 목록·유통기한임박·만료 (3항목) |
-| 이력 조회 API 미연결 | 재고 이력 조회·수동조정 (2항목) |
+| ~~재고 품목 API 연결 미완료~~ | ~~재고 품목 목록·등록 (2항목)~~ → **✅ 2026-03-31 완료** |
+| ~~로트 별도 조회 미연결~~ | ~~로트 목록 (1항목)~~ → **✅ 2026-03-31 완료** (batches GET, 임박/만료는 클라이언트 필터링) |
+| ~~이력 조회 API 미연결~~ | ~~재고 이력 조회·수동조정 (2항목)~~ → **✅ 2026-03-31 완료** |
 | ~~인증 UI 미구현~~ | ~~비밀번호 변경, 초대 링크 수락·토큰 조회 (3항목)~~ → **✅ 2026-03-31 완료** |
 | ~~보관장소 이름 수정 UI 없음~~ | ~~보관장소 수정 (1항목)~~ → **✅ 2026-03-31 완료** |
+| 직접 수량 set UI 없음 | 재고 수량 직접 수정 `PATCH /quantity` (1항목) — delta 조정으로 대체 |
+| 유통기한 임박/만료 전용 API 미연결 | batches/expiring, batches/expired (2항목) — 전체 배치 로드 후 클라이언트 필터로 대응 중 |
 
 ---
 
 ## 다음 연결 우선순위
 
-1. **재고 품목** — `dashboard-api.service.ts`에서 inventory-items API 로드 추가
-2. **로트** — `PurchasesContext` 또는 별도 컨텍스트에서 batches API 연결
-3. **이력 조회** — `InventoryHistoryContext`에서 API 기반 로드 추가
-4. ~~**가구·보관장소 CUD** — 2026-03-31 완료~~
-5. ~~**방/구조** — 2026-03-31 완료~~
+1. ~~**재고 품목** — 완료 (2026-03-31)~~
+2. ~~**로트** — 완료 (2026-03-31)~~
+3. ~~**이력 조회** — 완료 (2026-03-31)~~
+4. **유통기한 임박/만료 전용 API** — `batches/expiring`, `batches/expired`를 DashboardContext에 연결 (optional; 클라이언트 필터링으로 현재 동작)
+5. **재고 수량 직접 수정** — `PATCH /inventory-items/[iid]/quantity` UI 구현 (선택)
+6. ~~**가구·보관장소 CUD** — 2026-03-31 완료~~
+7. ~~**방/구조** — 2026-03-31 완료~~
 
 ---
 

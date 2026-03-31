@@ -4,6 +4,7 @@ import type {
   Household,
   HouseholdKindDefinition,
   HouseholdStructureDiagramLayout,
+  InventoryRow,
   MemberRole,
   MockInvitation,
   ProductCatalog,
@@ -113,6 +114,33 @@ export type DashboardHouseholdsPort = {
     itemId: string,
     quantity: number,
     reason: string,
+    memo?: string,
+  ): Promise<void>;
+
+  // ── 재고 품목 CRUD (API 전용; mock은 로컬 처리) ──
+  /** 재고 품목을 등록한다 (POST /inventory-items). 서버 할당 id가 포함된 InventoryRow 반환. */
+  createInventoryItem(
+    householdId: string,
+    data: {
+      productVariantId: string;
+      storageLocationId: string;
+      quantity: number;
+      minStockLevel?: number;
+    },
+  ): Promise<Pick<InventoryRow, "id">>;
+
+  /** 구매를 재고 품목에 나중에 연결한다 (PATCH /purchases/:pid/link-inventory). */
+  linkPurchaseToInventoryItem(
+    householdId: string,
+    purchaseId: string,
+    inventoryItemId: string,
+  ): Promise<void>;
+
+  /** 재고 수량을 수동 조정한다 (POST /inventory-items/:id/logs/adjustment). */
+  recordInventoryAdjustment(
+    householdId: string,
+    itemId: string,
+    quantityDelta: number,
     memo?: string,
   ): Promise<void>;
 };
