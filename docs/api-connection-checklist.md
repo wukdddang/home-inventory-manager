@@ -4,7 +4,7 @@
 **기준**: feature-checklist.md v2.5
 
 프론트엔드와 백엔드 API 연결 진행 상황을 추적합니다.
-범례: ✅ 완료 (context → route handler → backend 모두 연결) | 🚧 route handler 있음, context 미연결 | ⬜ UI 없음 (또는 개발 전)
+범례: ✅ 완료 (context → route handler → backend 모두 연결) | 🚧 route handler 있음, context 미연결 | 🚫 개발 범위 외 (1차 제외 또는 목록 기반 운영)
 
 ---
 
@@ -77,11 +77,11 @@
 | 기능 | API 라우트 | 상태 | 비고 |
 |------|-----------|------|------|
 | 카테고리 목록 조회 | `GET /api/households/[id]/categories` | ✅ | `dashboard-api.service.ts` `loadCatalogFromApi`에서 API 호출 |
-| 카테고리 단건 조회 | `GET /api/households/[id]/categories/[cid]` | ⬜ | 단건 조회 UI 없음 (목록 기반 운영) |
+| 카테고리 단건 조회 | `GET /api/households/[id]/categories/[cid]` | 🚫 | 단건 조회 UI 없음 (목록 기반 운영) |
 | 카테고리 생성 | `POST /api/households/[id]/categories` | ✅ | `DashboardContext` `syncCatalogDiff`에서 diff 감지 시 POST |
 | 카테고리 수정 | `PUT /api/households/[id]/categories/[cid]` | ✅ | `DashboardContext` `syncCatalogDiff`에서 diff 감지 시 PUT |
 | 카테고리 삭제 | `DELETE /api/households/[id]/categories/[cid]` | ✅ | `DashboardContext` `syncCatalogDiff`에서 diff 감지 시 DELETE |
-| 다른 거점 카테고리 가져오기 | `POST /api/households/[id]/categories/copy` | ⬜ | 가져오기 UI 없음 (1차 범위 외) |
+| 다른 거점 카테고리 가져오기 | `POST /api/households/[id]/categories/copy` | 🚫 | 가져오기 UI 없음 (1차 범위 외) |
 
 ---
 
@@ -123,11 +123,11 @@
 | 기능 | API 라우트 | 상태 | 비고 |
 |------|-----------|------|------|
 | 단위 목록 조회 | `GET /api/households/[id]/units` | ✅ | `loadCatalogFromApi`에서 API 호출 |
-| 단위 단건 조회 | `GET /api/households/[id]/units/[uid]` | ⬜ | 단건 조회 UI 없음 (목록 기반 운영) |
+| 단위 단건 조회 | `GET /api/households/[id]/units/[uid]` | 🚫 | 단건 조회 UI 없음 (목록 기반 운영) |
 | 단위 생성 | `POST /api/households/[id]/units` | ✅ | `syncCatalogDiff`에서 diff 감지 시 POST |
 | 단위 수정 | `PUT /api/households/[id]/units/[uid]` | ✅ | `syncCatalogDiff`에서 diff 감지 시 PUT |
 | 단위 삭제 | `DELETE /api/households/[id]/units/[uid]` | ✅ | `syncCatalogDiff`에서 diff 감지 시 DELETE |
-| 다른 거점 단위 가져오기 | `POST /api/households/[id]/units/copy` | ⬜ | 가져오기 UI 없음 (1차 범위 외) |
+| 다른 거점 단위 가져오기 | `POST /api/households/[id]/units/copy` | 🚫 | 가져오기 UI 없음 (1차 범위 외) |
 
 ---
 
@@ -136,13 +136,13 @@
 | 기능 | API 라우트 | 상태 | 비고 |
 |------|-----------|------|------|
 | 상품 목록 조회 | `GET /api/households/[id]/products` | ✅ | `loadCatalogFromApi`에서 API 호출 |
-| 상품 단건 조회 | `GET /api/households/[id]/products/[pid]` | ⬜ | 단건 조회 UI 없음 (목록 기반 운영) |
+| 상품 단건 조회 | `GET /api/households/[id]/products/[pid]` | 🚫 | 단건 조회 UI 없음 (목록 기반 운영) |
 | 상품 생성 | `POST /api/households/[id]/products` | ✅ | `syncCatalogDiff`에서 diff 감지 시 POST |
 | 상품 수정 | `PUT /api/households/[id]/products/[pid]` | ✅ | `syncCatalogDiff`에서 diff 감지 시 PUT |
 | 상품 삭제 | `DELETE /api/households/[id]/products/[pid]` | ✅ | `syncCatalogDiff`에서 diff 감지 시 DELETE |
-| 다른 거점 상품 가져오기 | `POST /api/households/[id]/products/copy` | ⬜ | 가져오기 UI 없음 (1차 범위 외) |
+| 다른 거점 상품 가져오기 | `POST /api/households/[id]/products/copy` | 🚫 | 가져오기 UI 없음 (1차 범위 외) |
 | 상품 변형 목록 조회 | `GET /api/households/[id]/products/[pid]/variants` | ✅ | `loadCatalogFromApi`에서 상품별 variant API 병렬 호출 |
-| 상품 변형 단건 조회 | `GET /api/households/[id]/products/[pid]/variants/[vid]` | ⬜ | 단건 조회 UI 없음 (목록 기반 운영) |
+| 상품 변형 단건 조회 | `GET /api/households/[id]/products/[pid]/variants/[vid]` | 🚫 | 단건 조회 UI 없음 (목록 기반 운영) |
 | 상품 변형 생성 | `POST /api/households/[id]/products/[pid]/variants` | ✅ | `syncCatalogDiff`에서 diff 감지 시 POST |
 | 상품 변형 수정 | `PUT /api/households/[id]/products/[pid]/variants/[vid]` | ✅ | `syncCatalogDiff`에서 diff 감지 시 PUT |
 | 상품 변형 삭제 | `DELETE /api/households/[id]/products/[pid]/variants/[vid]` | ✅ | `syncCatalogDiff`에서 diff 감지 시 DELETE |
@@ -237,12 +237,12 @@
 
 ---
 
-## 연결 제외 (P3)
+## 개발 범위 외 (P3)
 
 | 기능 | 상태 | 비고 |
 |------|------|------|
-| 태그 CRUD / 상품 태그 | ⬜ | 1차 개발 범위 외 |
-| 리포트 설정 CRUD | ⬜ | 1차 개발 범위 외 |
+| 태그 CRUD / 상품 태그 | 🚫 | 1차 개발 범위 외 |
+| 리포트 설정 CRUD | 🚫 | 1차 개발 범위 외 |
 
 ---
 
@@ -252,7 +252,7 @@
 |------|---------|------|
 | ✅ 완료 | 인프라 6, 사용자 6+1(비밀번호변경), 거점 7, 거점초대 4+2(수락·토큰조회), 거점유형 2, 카테고리 4, 단위 4, 상품 4, 변형 4, 가구 CUD+조회 4, 보관장소 생성+조회+삭제+수정 4, 방/집구조 4, 구매 2+1(재고연결), **재고품목 목록+등록+수량직접수정 3**, 소비/폐기이력 2, **이력조회+수동조정 2**, **로트 목록+임박+만료 3**, 장보기 5, 알림 2, 알림설정 4, 만료규칙 4, 장보기자동제안 2, 스케줄러 2 | **총 ~101항목** |
 | 🚧 미연결 | — | **0항목** |
-| ⬜ 개발 전 | 태그, 리포트 설정, 단건조회 UI, copy UI | **~6항목** |
+| 🚫 개발 범위 외 | 태그, 리포트 설정, 단건조회 UI, copy UI | **~6항목** |
 
 ### 완료된 연결 이력
 
