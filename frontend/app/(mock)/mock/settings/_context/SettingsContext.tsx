@@ -1,5 +1,17 @@
 "use client";
 
+/**
+ * mock 경로 전용 서비스 주입 래퍼.
+ *
+ * Provider 본체·Port 타입·CurrentSettingsProvider·API 서비스는
+ * `(current)/settings/_context/SettingsContext` 에 있다.
+ *
+ * 이 파일은 localStorage 기반 mock 서비스를 생성해 베이스 Provider 에 주입하는
+ * MockSettingsProvider 만 담당한다.
+ * API 호출은 일절 없으며, 만료 규칙의 개별 저장·삭제는
+ * persistSettings(전체 설정 저장) 로 함께 처리된다.
+ */
+
 import { useState, type ReactNode } from "react";
 import {
   SettingsProvider,

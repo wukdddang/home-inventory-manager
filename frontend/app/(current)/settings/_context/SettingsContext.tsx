@@ -1,5 +1,18 @@
 "use client";
 
+/**
+ * Settings 베이스 Provider + API 서비스 주입 래퍼.
+ *
+ * 구조:
+ *   SettingsProvider        — port 를 주입받아 동작하는 베이스 Provider.
+ *   createSettingsApiService — API 호출 기반 서비스 팩토리
+ *                              (notificationPrefId 를 클로저로 유지).
+ *   CurrentSettingsProvider — createSettingsApiService() 를 주입하는 API 전용 래퍼.
+ *
+ * mock 전용 래퍼(MockSettingsProvider)는
+ * `(mock)/mock/settings/_context/SettingsContext` 에 있다.
+ */
+
 import { APP_PAGE_MIN_LOADING_MS } from "@/app/_ui/app-loading-state";
 import {
   createContext,

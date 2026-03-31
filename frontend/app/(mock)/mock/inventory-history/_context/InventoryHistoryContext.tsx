@@ -1,5 +1,15 @@
 "use client";
 
+/**
+ * mock 경로 전용 서비스 주입 래퍼.
+ *
+ * Provider 본체·Port 타입·CurrentInventoryHistoryProvider 는
+ * `(current)/inventory-history/_context/InventoryHistoryContext` 에 있다.
+ *
+ * 이 파일은 인메모리 시드 데이터 포트를 생성해 베이스 Provider 에 주입하는
+ * MockInventoryHistoryProvider 만 담당한다.
+ */
+
 import { useState, type ReactNode } from "react";
 import {
   InventoryHistoryProvider,

@@ -1,5 +1,16 @@
 "use client";
 
+/**
+ * mock 경로 전용 서비스 주입 래퍼.
+ *
+ * Provider 본체·Port 타입·CurrentPurchasesProvider·API 서비스는
+ * `(current)/purchases/_context/PurchasesContext` 에 있다.
+ *
+ * 이 파일은 인메모리 세션 스토어(purchases-mock.service) 기반 포트를 생성해
+ * 베이스 Provider 에 주입하는 MockPurchasesProvider 만 담당한다.
+ * API 호출은 일절 없으며, 구독은 subscribeMockPurchasesSession 으로 처리된다.
+ */
+
 import { useState, type ReactNode } from "react";
 import {
   PurchasesProvider,

@@ -1,5 +1,19 @@
 "use client";
 
+/**
+ * mock 경로 전용 서비스 주입 래퍼.
+ *
+ * Provider 본체·Port 타입·CurrentDashboardProvider·API 서비스는
+ * `(current)/dashboard/_context/DashboardContext` 에 있다.
+ *
+ * 이 파일은 두 가지 역할만 담당한다.
+ *   1. createDashboardMockHouseholdsService() 로 생성한 mock 포트를
+ *      베이스 DashboardProvider 에 주입 (MockDashboardProvider).
+ *   2. localStorage 에 알림이 없을 때 시드 데이터를 한 번 채운다.
+ *
+ * API 호출은 일절 없으며 데이터는 인메모리 + localStorage 에 유지된다.
+ */
+
 import { useEffect, useState, type ReactNode } from "react";
 import {
   DashboardProvider,

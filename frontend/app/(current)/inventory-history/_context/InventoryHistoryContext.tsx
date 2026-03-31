@@ -1,5 +1,16 @@
 "use client";
 
+/**
+ * InventoryHistory 베이스 Provider + API 서비스 주입 래퍼.
+ *
+ * 구조:
+ *   InventoryHistoryProvider        — port 를 주입받아 동작하는 베이스 Provider.
+ *   CurrentInventoryHistoryProvider — local-store(API 대용) 를 주입하는 current 전용 래퍼.
+ *
+ * mock 전용 래퍼(MockInventoryHistoryProvider)는
+ * `(mock)/mock/inventory-history/_context/InventoryHistoryContext` 에 있다.
+ */
+
 import {
   createContext,
   useCallback,

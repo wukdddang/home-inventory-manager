@@ -1,5 +1,21 @@
 "use client";
 
+/**
+ * Dashboard 베이스 Provider + API 서비스 주입 래퍼.
+ *
+ * 구조:
+ *   DashboardProvider      — port 를 주입받아 동작하는 베이스 Provider.
+ *                            mock/api 구분 없이 공통 상태·이벤트 로직을 담당한다.
+ *   CurrentDashboardProvider — dashboardApiHouseholdsClient 를 주입하는 API 전용 래퍼.
+ *
+ * mock 전용 래퍼(MockDashboardProvider)는
+ * `(mock)/mock/dashboard/_context/DashboardContext` 에 있다.
+ *
+ * Port 인터페이스: `./dashboard-households.port`
+ * API 서비스 구현: `./dashboard-api.service`
+ * Mock 서비스 구현: `(mock)/mock/dashboard/_context/dashboard-mock.service`
+ */
+
 import {
   createContext,
   useCallback,

@@ -1,5 +1,20 @@
 "use client";
 
+/**
+ * Purchases 베이스 Provider + API 서비스 주입 래퍼.
+ *
+ * 구조:
+ *   PurchasesProvider        — port 를 주입받아 동작하는 베이스 Provider.
+ *   apiPurchasesService      — API 호출 기반 서비스 구현체.
+ *   CurrentPurchasesProvider — apiPurchasesService 를 주입하는 API 전용 래퍼.
+ *
+ * mock 전용 래퍼(MockPurchasesProvider)는
+ * `(mock)/mock/purchases/_context/PurchasesContext` 에 있다.
+ *
+ * addPurchase / removePurchase 는 onSuccess 콜백을 받아
+ * mock(동기)·API(비동기) 양쪽에서 일관된 목록 갱신을 보장한다.
+ */
+
 import {
   createContext,
   useCallback,
