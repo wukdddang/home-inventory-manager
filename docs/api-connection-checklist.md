@@ -183,10 +183,10 @@
 
 | 기능 | API 라우트 | 상태 | 비고 |
 |------|-----------|------|------|
-| 재고 변경 이력 조회 | `GET /api/households/[id]/inventory-items/[iid]/logs` | ✅ | `from`, `to` 쿼리 파라미터 지원 |
-| 소비 기록 등록 | `POST /api/households/[id]/inventory-items/[iid]/logs/consumption` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
-| 폐기 기록 등록 | `POST /api/households/[id]/inventory-items/[iid]/logs/waste` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
-| 수량 수동 조정 | `POST /api/households/[id]/inventory-items/[iid]/logs/adjustment` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
+| 재고 변경 이력 조회 | `GET /api/households/[id]/inventory-items/[iid]/logs` | 🚧 | 라우트 핸들러 파일 없음 |
+| 소비 기록 등록 | `POST /api/households/[id]/inventory-items/[iid]/logs/consumption` | 🚧 | 라우트 핸들러 파일 없음 |
+| 폐기 기록 등록 | `POST /api/households/[id]/inventory-items/[iid]/logs/waste` | 🚧 | 라우트 핸들러 파일 없음 |
+| 수량 수동 조정 | `POST /api/households/[id]/inventory-items/[iid]/logs/adjustment` | 🚧 | 라우트 핸들러 파일 없음 |
 
 ---
 
@@ -199,8 +199,8 @@
 | 장보기 항목 수정 | `PUT /api/households/[id]/shopping-list-items/[sid]` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
 | 장보기 항목 삭제 | `DELETE /api/households/[id]/shopping-list-items/[sid]` | ✅ | 라우트 핸들러 + 서비스 연결 완료 |
 | 장보기 항목 구매 완료 처리 | `POST /api/households/[id]/shopping-list-items/[sid]/complete` | ✅ | 트랜잭션 포함 |
-| 부족 품목 자동 제안 | — | 🚧 | 프론트 로직 존재, 백엔드 API 필요 시 추가 |
-| 유통기한 임박 품목 자동 제안 | — | 🚧 | 프론트 로직 존재, 백엔드 API 필요 시 추가 |
+| 부족 품목 자동 제안 | — | ✅ | 프론트에서 재고 API 응답값 기준으로 토스트/모달 처리 (별도 API 불필요) |
+| 유통기한 임박 품목 자동 제안 | — | ✅ | 프론트에서 배치 API 응답값 기준으로 토스트/모달 처리 (별도 API 불필요) |
 
 ---
 
@@ -246,16 +246,31 @@
 
 ---
 
+## 미연결 기능 요약
+
+### 🚧 라우트 핸들러 없음 (구현 필요)
+
+| 섹션 | 기능 | 필요한 라우트 |
+|------|------|--------------|
+| 재고 변경 이력 | 이력 조회 | `GET /api/households/[id]/inventory-items/[iid]/logs` |
+| 재고 변경 이력 | 소비 기록 등록 | `POST .../logs/consumption` |
+| 재고 변경 이력 | 폐기 기록 등록 | `POST .../logs/waste` |
+| 재고 변경 이력 | 수량 수동 조정 | `POST .../logs/adjustment` |
+
+### ⬜ 백엔드 미구현 (스케줄러)
+
+| 섹션 | 기능 |
+|------|------|
+| 알림 | 유통기한 임박 알림 스케줄러 |
+| 알림 | 부족 재고 알림 스케줄러 |
+
+---
+
 ## 다음 연결 우선순위 (권장)
 
-1. **카탈로그 (카테고리 / 단위 / 상품 / 상품 용량·변형)** — 다른 모든 기능의 기반 데이터
-2. **방 / 보관 장소 / 가구 배치** — 재고 품목 연결에 필요
-3. **재고 품목** — 구매·장보기·이력의 기준 데이터
-4. **구매 기록 + 로트** — 재고 자동 증가 트랜잭션 포함
-5. **재고 변경 이력** — 소비/폐기/조정
-6. **장보기 항목 + 제안** — 구매 완료 트랜잭션 포함
-7. **알림 설정 + 알림 + 만료 알림 설정**
-8. **초대 수락 UI** — 초대 링크 수락 페이지 미구현
+1. **재고 변경 이력** — 라우트 핸들러 4개 신규 생성 필요 (소비/폐기/조정/조회)
+2. **알림 스케줄러** — 백엔드 구현 필요
+3. **초대 수락 UI** — 초대 링크 수락 페이지 미구현
 
 ---
 
