@@ -16,8 +16,84 @@ import { APP_PAGE_MIN_LOADING_MS } from "@/app/_ui/app-loading-state";
 import type {
   Household,
   ProductCatalog,
+  PurchaseBatchLot,
   PurchaseRecord,
 } from "@/types/domain";
+
+/* ─────────────────────── API helpers ─────────────────────── */
+
+async function apiFetch<T>(input: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(input, init);
+  const json = (await res.json()) as { success: boolean; data: T; message?: string };
+  if (!json.success) throw new Error(json.message ?? "API 오류");
+  return json.data;
+}
+
+interface ApiPurchase {
+  id: string;
+  householdId: string;
+  inventoryItemId: string | null;
+  unitPrice: number;
+  purchasedAt: string;
+  supplierName: string | null;
+  itemName: string | null;
+  variantCaption: string | null;
+  unitSymbol: string | null;
+}
+
+interface ApiPurchaseBatch {
+  id: string;
+  purchaseId: string;
+  quantity: number;
+  expirationDate: string | null;
+}
+
+function mapApiToPurchaseRecord(
+  p: ApiPurchase,
+  batches: ApiPurchaseBatch[],
+): PurchaseRecord {
+  const myBatches = batches.filter((b) => b.purchaseId === p.id);
+  const totalQty = myBatches.reduce((s, b) => s + b.quantity, 0);
+  return {
+    id: p.id,
+    householdId: p.householdId,
+    inventoryItemId: p.inventoryItemId ?? undefined,
+    itemName: p.itemName ?? "",
+    variantCaption: p.variantCaption ?? undefined,
+    unitSymbol: p.unitSymbol ?? "",
+    purchasedOn: p.purchasedAt.slice(0, 10),
+    unitPrice: p.unitPrice,
+    totalPrice: p.unitPrice * (totalQty || 1),
+    supplierName: p.supplierName ?? undefined,
+    batches: myBatches.map(
+      (b): PurchaseBatchLot => ({
+        id: b.id,
+        quantity: b.quantity,
+        expiresOn: b.expirationDate?.slice(0, 10) ?? "",
+      }),
+    ),
+  };
+}
+
+async function loadPurchasesFromApi(
+  households: Household[],
+): Promise<PurchaseRecord[]> {
+  if (households.length === 0) return [];
+  const results = await Promise.all(
+    households.map(async (h) => {
+      try {
+        const [purchases, batches] = await Promise.all([
+          apiFetch<ApiPurchase[]>(`/api/households/${h.id}/purchases`),
+          apiFetch<ApiPurchaseBatch[]>(`/api/households/${h.id}/batches`),
+        ]);
+        return purchases.map((p) => mapApiToPurchaseRecord(p, batches));
+      } catch {
+        return [];
+      }
+    }),
+  );
+  return results.flat();
+}
 import {
   createContext,
   useCallback,
@@ -80,10 +156,16 @@ export function PurchasesProvider({
           dataMode === "mock"
             ? mock거점_스냅샷을_구한다(fromStoreH)
             : fromStoreH;
-        const nextPurchases =
-          dataMode === "mock"
-            ? getMockPurchasesSession()
-            : getPurchases();
+
+        let nextPurchases: PurchaseRecord[];
+        if (dataMode === "mock") {
+          nextPurchases = getMockPurchasesSession();
+        } else if (dataMode === "api") {
+          nextPurchases = await loadPurchasesFromApi(nextHouseholds);
+        } else {
+          nextPurchases = getPurchases();
+        }
+
         const elapsed =
           (typeof performance !== "undefined" ? performance.now() : Date.now()) -
           t0;
@@ -132,6 +214,11 @@ export function PurchasesProvider({
   }, [dataMode]);
 
   const 구매_목록을_불러온다 = useCallback(() => {
+    if (dataMode === "api") {
+      const hs = getHouseholds();
+      void loadPurchasesFromApi(hs).then((list) => setPurchasesState(list));
+      return;
+    }
     setPurchasesState(
       dataMode === "mock" ? getMockPurchasesSession() : getPurchases(),
     );
@@ -139,22 +226,49 @@ export function PurchasesProvider({
 
   const 구매를_추가_한다 = useCallback(
     (draft: Omit<PurchaseRecord, "id">) => {
-      const row: PurchaseRecord = {
-        ...draft,
-        id: crypto.randomUUID(),
-      };
       if (dataMode === "mock") {
+        const row: PurchaseRecord = { ...draft, id: crypto.randomUUID() };
         updateMockPurchasesSession((prev) => [...prev, row]);
         setPurchasesState(getMockPurchasesSession());
         return;
       }
+
+      if (dataMode === "api") {
+        void (async () => {
+          try {
+            await apiFetch(`/api/households/${draft.householdId}/purchases`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                inventoryItemId: draft.inventoryItemId,
+                unitPrice: draft.unitPrice,
+                purchasedAt: draft.purchasedOn,
+                supplierName: draft.supplierName,
+                itemName: draft.itemName,
+                variantCaption: draft.variantCaption,
+                unitSymbol: draft.unitSymbol,
+                batches: draft.batches.map((b) => ({
+                  quantity: b.quantity,
+                  expirationDate: b.expiresOn || undefined,
+                })),
+              }),
+            });
+            구매_목록을_불러온다();
+          } catch (e) {
+            console.error("구매 등록 오류:", e);
+          }
+        })();
+        return;
+      }
+
+      const row: PurchaseRecord = { ...draft, id: crypto.randomUUID() };
       setPurchasesState((prev) => {
         const next = [...prev, row];
         setPurchases(next);
         return next;
       });
     },
-    [dataMode],
+    [dataMode, 구매_목록을_불러온다],
   );
 
   const 구매를_삭제_한다 = useCallback(
@@ -166,13 +280,18 @@ export function PurchasesProvider({
         setPurchasesState(getMockPurchasesSession());
         return;
       }
+      if (dataMode === "api") {
+        // 백엔드에 구매 삭제 API 미존재 — 목록 새로고침만
+        구매_목록을_불러온다();
+        return;
+      }
       setPurchasesState((prev) => {
         const next = prev.filter((p) => p.id !== purchaseId);
         setPurchases(next);
         return next;
       });
     },
-    [dataMode],
+    [dataMode, 구매_목록을_불러온다],
   );
 
   /** 첫 번째 거점의 카탈로그를 대표로 사용 (구매 화면에서 카탈로그 직접 사용 안 함) */

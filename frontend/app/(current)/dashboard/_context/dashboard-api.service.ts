@@ -6,22 +6,26 @@ import {
 } from "@/lib/local-store";
 import { cloneDefaultHouseholdKindDefinitions } from "@/lib/household-kind-defaults";
 import type {
+  CatalogCategory,
+  CatalogProduct,
+  CatalogProductVariant,
+  CatalogUnit,
+  FurniturePlacement,
   GroupMember,
   Household,
   HouseholdKindDefinition,
   MemberRole,
   MockInvitation,
+  ProductCatalog,
+  StorageLocationRow,
 } from "@/types/domain";
-import type { CreateInvitationParams, DashboardHouseholdsPort } from "./dashboard-households.port";
+import type { DashboardHouseholdsPort } from "./dashboard-households.port";
 import { cloneDefaultCatalog } from "@/app/(mock)/mock/dashboard/_context/dashboard-mock.service";
 import { ensureHouseholdShape } from "@/lib/household-location";
 
 /* ─────────────────────────────────────────────────────── helpers ── */
 
-async function apiFetch<T>(
-  input: RequestInfo,
-  init?: RequestInit,
-): Promise<T> {
+async function apiFetch<T>(input: RequestInfo, init?: RequestInit): Promise<T> {
   const res = await fetch(input, init);
   const json = await res.json();
   if (!json.success) throw new Error(json.message ?? "API 오류");
@@ -94,43 +98,243 @@ function mapInvitation(raw: {
   };
 }
 
+/** 거점 카탈로그를 API에서 일괄 로드 */
+async function loadCatalogFromApi(
+  householdId: string,
+): Promise<ProductCatalog> {
+  const [rawCategories, rawUnits, rawProducts] = await Promise.all([
+    apiFetch<Array<{ id: string; name: string; sortOrder: number }>>(
+      `/api/households/${householdId}/categories`,
+    ).catch(() => [] as Array<{ id: string; name: string; sortOrder: number }>),
+    apiFetch<
+      Array<{
+        id: string;
+        symbol: string;
+        name: string | null;
+        sortOrder: number;
+      }>
+    >(`/api/households/${householdId}/units`).catch(
+      () =>
+        [] as Array<{
+          id: string;
+          symbol: string;
+          name: string | null;
+          sortOrder: number;
+        }>,
+    ),
+    apiFetch<
+      Array<{
+        id: string;
+        categoryId: string;
+        name: string;
+        isConsumable: boolean;
+        imageUrl: string | null;
+        description: string | null;
+      }>
+    >(`/api/households/${householdId}/products`).catch(
+      () =>
+        [] as Array<{
+          id: string;
+          categoryId: string;
+          name: string;
+          isConsumable: boolean;
+          imageUrl: string | null;
+          description: string | null;
+        }>,
+    ),
+  ]);
+
+  const categories: CatalogCategory[] = rawCategories.map((c) => ({
+    id: c.id,
+    name: c.name,
+    sortOrder: c.sortOrder,
+  }));
+
+  const units: CatalogUnit[] = rawUnits.map((u) => ({
+    id: u.id,
+    symbol: u.symbol,
+    name: u.name ?? undefined,
+    sortOrder: u.sortOrder,
+  }));
+
+  const products: CatalogProduct[] = rawProducts.map((p) => ({
+    id: p.id,
+    categoryId: p.categoryId,
+    name: p.name,
+    isConsumable: p.isConsumable,
+    imageUrl: p.imageUrl ?? undefined,
+    description: p.description ?? undefined,
+  }));
+
+  // 상품 변형 — 상품별로 병렬 로드
+  const variantArrays = await Promise.all(
+    rawProducts.map((p) =>
+      apiFetch<
+        Array<{
+          id: string;
+          productId?: string;
+          unitId: string;
+          quantityPerUnit: number;
+          name: string | null;
+          price: number | null;
+          sku: string | null;
+          isDefault: boolean;
+        }>
+      >(`/api/households/${householdId}/products/${p.id}/variants`).catch(
+        () => [],
+      ),
+    ),
+  );
+
+  const variants: CatalogProductVariant[] = variantArrays.flatMap((arr, i) =>
+    arr.map((v) => ({
+      id: v.id,
+      productId: rawProducts[i]!.id,
+      unitId: v.unitId,
+      quantityPerUnit: v.quantityPerUnit,
+      name: v.name ?? undefined,
+      price: v.price ?? undefined,
+      sku: v.sku ?? undefined,
+      isDefault: v.isDefault,
+    })),
+  );
+
+  return { categories, units, products, variants };
+}
+
+/** 거점 보관장소를 API에서 로드 */
+async function loadStorageLocationsFromApi(
+  householdId: string,
+): Promise<StorageLocationRow[]> {
+  const raw = await apiFetch<
+    Array<{
+      id: string;
+      name: string;
+      roomId: string | null;
+      furniturePlacementId: string | null;
+      sortOrder: number;
+    }>
+  >(`/api/households/${householdId}/storage-locations`).catch(() => []);
+  return raw.map((s) => ({
+    id: s.id,
+    name: s.name,
+    roomId: s.roomId,
+    furniturePlacementId: s.furniturePlacementId,
+    sortOrder: s.sortOrder,
+  }));
+}
+
+/** 거점 가구 배치를 API에서 로드 (방 ID 목록 기반) */
+async function loadFurniturePlacementsFromApi(
+  householdId: string,
+  roomIds: string[],
+): Promise<FurniturePlacement[]> {
+  if (roomIds.length === 0) return [];
+  const arrays = await Promise.all(
+    roomIds.map((rid) =>
+      apiFetch<
+        Array<{
+          id: string;
+          roomId?: string;
+          label: string;
+          anchorDirectStorageId: string | null;
+          sortOrder: number;
+        }>
+      >(
+        `/api/households/${householdId}/rooms/${rid}/furniture-placements`,
+      ).catch(() => []),
+    ),
+  );
+  return arrays.flatMap((arr, i) =>
+    arr.map((f) => ({
+      id: f.id,
+      roomId: roomIds[i]!,
+      label: f.label,
+      anchorDirectStorageId: f.anchorDirectStorageId ?? undefined,
+      sortOrder: f.sortOrder,
+    })),
+  );
+}
+
 /* ─────────────────────────────────────────────────────── service ── */
 
 export const dashboardApiHouseholdsClient: DashboardHouseholdsPort = {
   /* ── 거점 목록 ── */
   async list() {
-    const remoteList = await apiFetch<
-      { id: string; name: string; kind: string | null; createdAt: string }[]
-    >("/api/households");
+    const remoteList =
+      await apiFetch<
+        { id: string; name: string; kind: string | null; createdAt: string }[]
+      >("/api/households");
 
     const local = getHouseholds();
     const localById = new Map(local.map((h) => [h.id, h]));
 
-    // 각 거점의 멤버도 병렬로 fetch
-    const withMembers = await Promise.all(
+    // 각 거점 병렬 로드: 멤버 + 카탈로그 + 보관장소 + 가구 배치
+    const withData = await Promise.all(
       remoteList.map(async (remote) => {
         const household = mergeWithLocal(remote, localById.get(remote.id));
-        try {
-          const members = await apiFetch<
+
+        const [members, catalog, storageLocations] = await Promise.all([
+          apiFetch<
             { id: string; email: string; displayName: string; role: string }[]
-          >(`/api/households/${remote.id}/members`);
-          household.members = members.map(mapMember);
-        } catch {
-          household.members = [];
+          >(`/api/households/${remote.id}/members`).catch(
+            () =>
+              [] as {
+                id: string;
+                email: string;
+                displayName: string;
+                role: string;
+              }[],
+          ),
+          loadCatalogFromApi(remote.id).catch(
+            () => household.catalog ?? cloneDefaultCatalog(),
+          ),
+          loadStorageLocationsFromApi(remote.id).catch(
+            () => household.storageLocations ?? [],
+          ),
+        ]);
+
+        household.members = members.map(mapMember);
+        household.catalog = catalog;
+        household.storageLocations = storageLocations;
+
+        // 보관장소 roomId → 방 ID 목록 추출 후 가구 배치 로드
+        const roomIdsFromStorage = [
+          ...new Set(
+            storageLocations
+              .map((s) => s.roomId)
+              .filter((id): id is string => !!id),
+          ),
+        ];
+        const roomIdsFromRooms = household.rooms.map((r) => r.id);
+        const allRoomIds = [
+          ...new Set([...roomIdsFromRooms, ...roomIdsFromStorage]),
+        ];
+
+        if (allRoomIds.length > 0) {
+          const furniturePlacements = await loadFurniturePlacementsFromApi(
+            remote.id,
+            allRoomIds,
+          ).catch(() => household.furniturePlacements ?? []);
+          household.furniturePlacements = furniturePlacements;
         }
+
         return household;
       }),
     );
 
     // localStorage 동기화 (rooms/items/catalog 보존)
-    setHouseholds(withMembers);
-    return withMembers;
+    setHouseholds(withData);
+    return withData;
   },
 
   /* ── 거점 생성 ── */
   async create(name, kind) {
     const remote = await apiFetch<{
-      id: string; name: string; kind: string | null; createdAt: string;
+      id: string;
+      name: string;
+      kind: string | null;
+      createdAt: string;
     }>("/api/households", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -142,7 +346,10 @@ export const dashboardApiHouseholdsClient: DashboardHouseholdsPort = {
   /* ── 거점 수정 ── */
   async update(id, updates) {
     const remote = await apiFetch<{
-      id: string; name: string; kind: string | null; createdAt: string;
+      id: string;
+      name: string;
+      kind: string | null;
+      createdAt: string;
     }>(`/api/households/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
@@ -217,16 +424,21 @@ export const dashboardApiHouseholdsClient: DashboardHouseholdsPort = {
 
   /* ── 멤버 제거 ── */
   async removeMember(householdId, memberId) {
-    await apiFetch<void>(
-      `/api/households/${householdId}/members/${memberId}`,
-      { method: "DELETE" },
-    );
+    await apiFetch<void>(`/api/households/${householdId}/members/${memberId}`, {
+      method: "DELETE",
+    });
   },
 
   /* ── 초대 목록 ── */
   async listInvitations(householdId) {
     const raw = await apiFetch<
-      { id: string; householdId: string; role: string; token: string; createdAt: string }[]
+      {
+        id: string;
+        householdId: string;
+        role: string;
+        token: string;
+        createdAt: string;
+      }[]
     >(`/api/households/${householdId}/invitations`);
     return raw.map(mapInvitation);
   },
@@ -234,7 +446,11 @@ export const dashboardApiHouseholdsClient: DashboardHouseholdsPort = {
   /* ── 초대 생성 ── */
   async createInvitation(householdId, params) {
     const raw = await apiFetch<{
-      id: string; householdId: string; role: string; token: string; createdAt: string;
+      id: string;
+      householdId: string;
+      role: string;
+      token: string;
+      createdAt: string;
     }>(`/api/households/${householdId}/invitations`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },

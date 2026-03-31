@@ -3,10 +3,16 @@
 import {
   createContext,
   useCallback,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
 } from "react";
+import {
+  getHouseholds,
+  getInventoryLedger,
+  subscribeInventoryHistoryBundle,
+} from "@/lib/local-store";
 import {
   MOCK_HISTORY_HOUSEHOLDS,
   MOCK_HISTORY_LEDGER,
@@ -30,6 +36,8 @@ import {
   type SortColumn,
   type SortPhase,
 } from "./inventory-history-helpers.service";
+
+export type InventoryHistoryDataMode = "mock" | "api";
 
 export type InventoryHistoryContextType = {
   /* ── 데이터 ── */
@@ -83,15 +91,31 @@ export const InventoryHistoryContext = createContext<
   InventoryHistoryContextType | undefined
 >(undefined);
 
+export type InventoryHistoryProviderProps = {
+  children: ReactNode;
+  dataMode?: InventoryHistoryDataMode;
+};
+
 export function InventoryHistoryProvider({
   children,
-}: {
-  children: ReactNode;
-}) {
-  const households = useMemo(
-    () => structuredClone(MOCK_HISTORY_HOUSEHOLDS),
-    [],
+  dataMode = "mock",
+}: InventoryHistoryProviderProps) {
+  const [households, setHouseholds] = useState(() =>
+    dataMode === "mock"
+      ? structuredClone(MOCK_HISTORY_HOUSEHOLDS)
+      : getHouseholds(),
   );
+  const [ledger, setLedger] = useState(() =>
+    dataMode === "mock" ? MOCK_HISTORY_LEDGER : getInventoryLedger(),
+  );
+
+  useEffect(() => {
+    if (dataMode !== "api") return;
+    return subscribeInventoryHistoryBundle(() => {
+      setHouseholds(getHouseholds());
+      setLedger(getInventoryLedger());
+    });
+  }, [dataMode]);
 
   /* ── 상태 ── */
   const [filterHouseholdId, setFilterHouseholdId] = useState("all");
@@ -207,12 +231,12 @@ export function InventoryHistoryProvider({
 
   /* ── 파생 데이터 ── */
   const baseRows = useMemo(() => {
-    let rows = [...MOCK_HISTORY_LEDGER];
+    let rows = [...ledger];
     if (filterHouseholdId !== "all") {
       rows = rows.filter((r) => r.householdId === filterHouseholdId);
     }
     return rows;
-  }, [filterHouseholdId]);
+  }, [ledger, filterHouseholdId]);
 
   const columnFilterOptions = useMemo(
     () => 열_필터_옵션을_추출한다(baseRows, households),

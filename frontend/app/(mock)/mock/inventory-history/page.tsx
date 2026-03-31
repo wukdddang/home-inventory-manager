@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useDeviceLayout } from "@/hooks/useDeviceLayout";
 import { InventoryHistoryProvider } from "./_context/InventoryHistoryContext";
 import { InventoryHistoryScreen } from "./InventoryHistoryScreen";
@@ -7,9 +8,11 @@ import { InventoryHistoryMobilePanel } from "./_ui/InventoryHistoryMobile.panel"
 
 export default function InventoryHistoryPage() {
   const { isMobileLayout } = useDeviceLayout();
+  const pathname = usePathname();
+  const dataMode = pathname.startsWith("/mock") ? "mock" : "api";
 
   return (
-    <InventoryHistoryProvider>
+    <InventoryHistoryProvider dataMode={dataMode}>
       {isMobileLayout ? (
         <InventoryHistoryMobilePanel />
       ) : (

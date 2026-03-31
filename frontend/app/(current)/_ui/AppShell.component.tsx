@@ -107,6 +107,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             open={notificationOpen}
             onOpenChange={setNotificationOpen}
             householdId={household?.id ?? null}
+            dataMode={dataMode}
           />
         </>
       ) : (
@@ -190,6 +191,7 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             open={notificationOpen}
             onOpenChange={setNotificationOpen}
             householdId={household?.id ?? null}
+            dataMode={dataMode}
           />
         </div>
       )}

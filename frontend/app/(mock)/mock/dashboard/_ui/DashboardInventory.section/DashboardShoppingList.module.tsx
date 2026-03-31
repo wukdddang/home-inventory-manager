@@ -17,9 +17,13 @@ import type {
   ShoppingListEntry,
 } from "@/types/domain";
 import Link from "next/link";
-import { useId, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useId, useMemo, useState, useSyncExternalStore } from "react";
 import { useDashboard } from "../../_hooks/useDashboard";
 import { ShoppingListSuggestionsCard } from "./ShoppingListSuggestions.module";
+import {
+  shoppingApiFetch,
+  syncShoppingListFromApi,
+} from "@/app/api/households/[householdId]/shopping-list-items/route.adapter";
 
 function catalogVariantKey(productId: string, variantId: string) {
   return `${productId}\0${variantId}`;
@@ -34,6 +38,7 @@ export type ShoppingListQuickAddFromCatalogModalProps = {
   categoryId: string;
   productId: string;
   variantId: string;
+  dataMode?: "mock" | "api";
 };
 
 export type DashboardShoppingListModalProps = {
@@ -235,6 +240,11 @@ function ShoppingListDetailContent({
   const [depletedQty, setDepletedQty] = useState<Record<string, number>>({});
   const { saved, depletedItems } = useShoppingListDerived(household);
 
+  useEffect(() => {
+    if (dataMode !== "api") return;
+    syncShoppingListFromApi(household.id);
+  }, [dataMode, household.id]);
+
   const getDepletedRestock = (itemId: string) => {
     const q = depletedQty[itemId];
     return q != null && q >= 1 ? q : 1;
@@ -253,10 +263,29 @@ function ShoppingListDetailContent({
       e.id === entryId ? { ...e, restockQuantity: n } : e,
     );
     setShoppingList(next);
+    if (dataMode === "api") {
+      const entry = getShoppingList().find((e) => e.id === entryId);
+      if (entry) {
+        shoppingApiFetch(
+          `/api/households/${household.id}/shopping-list-items/${entryId}`,
+          {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ restockQuantity: n }),
+          },
+        ).catch((e) => console.error("장보기 수량 업데이트 오류:", e));
+      }
+    }
   };
 
   const removeSaved = (entryId: string) => {
     setShoppingList(getShoppingList().filter((e) => e.id !== entryId));
+    if (dataMode === "api") {
+      shoppingApiFetch(
+        `/api/households/${household.id}/shopping-list-items/${entryId}`,
+        { method: "DELETE" },
+      ).catch((e) => console.error("장보기 삭제 오류:", e));
+    }
   };
 
   const completeLinked = (
@@ -289,6 +318,16 @@ function ShoppingListDetailContent({
   };
 
   const completeSaved = (entry: ShoppingListEntry) => {
+    if (dataMode === "api") {
+      shoppingApiFetch(
+        `/api/households/${household.id}/shopping-list-items/${entry.id}/complete`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ restockQuantity: entry.restockQuantity }),
+        },
+      ).catch((e) => console.error("장보기 완료 API 오류:", e));
+    }
     if (entry.inventoryItemId) {
       completeLinked(entry.inventoryItemId, entry.restockQuantity, {
         removeEntryId: entry.id,
@@ -489,6 +528,7 @@ export function ShoppingListQuickAddFromCatalogModal({
   categoryId,
   productId,
   variantId,
+  dataMode = "api",
 }: ShoppingListQuickAddFromCatalogModalProps) {
   const titleId = useId().replace(/:/g, "");
   const descId = useId().replace(/:/g, "");
@@ -569,6 +609,24 @@ export function ShoppingListQuickAddFromCatalogModal({
       createdAt: new Date().toISOString(),
     };
     setShoppingList([...list, row]);
+    if (dataMode === "api") {
+      shoppingApiFetch(
+        `/api/households/${household.id}/shopping-list-items`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            label: row.label,
+            unit: row.unit,
+            variantCaption: row.variantCaption,
+            categoryId: row.categoryId,
+            productId: row.productId,
+            productVariantId: row.productVariantId,
+            restockQuantity: row.restockQuantity,
+          }),
+        },
+      ).catch((e) => console.error("장보기 추가 API 오류:", e));
+    }
     toast({
       title: "장보기에 담았습니다",
       description: resolved.label,

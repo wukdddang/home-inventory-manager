@@ -18,7 +18,11 @@ import {
   ShoppingCart,
   Trash2,
 } from "lucide-react";
-import { useCallback, useId, useMemo, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useId, useMemo, useSyncExternalStore } from "react";
+import {
+  loadNotificationsFromApi,
+  markNotificationReadApi,
+} from "@/app/api/notifications/route.adapter";
 
 function notificationIcon(type: NotificationType) {
   switch (type) {
@@ -149,15 +153,22 @@ export type NotificationCenterModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   householdId: string | null;
+  dataMode?: "mock" | "api";
 };
 
 export function NotificationCenterModal({
   open,
   onOpenChange,
   householdId,
+  dataMode = "api",
 }: NotificationCenterModalProps) {
   const titleId = useId().replace(/:/g, "");
   const descId = useId().replace(/:/g, "");
+
+  useEffect(() => {
+    if (!open || dataMode !== "api" || !householdId) return;
+    loadNotificationsFromApi(householdId);
+  }, [open, dataMode, householdId]);
 
   const allNotifications = useSyncExternalStore(
     subscribeNotifications,
@@ -192,8 +203,11 @@ export function NotificationCenterModal({
           n.id === id ? { ...n, readAt: new Date().toISOString() } : n,
         ),
       );
+      if (dataMode === "api") {
+        markNotificationReadApi(id);
+      }
     },
-    [],
+    [dataMode],
   );
 
   const 삭제_한다 = useCallback((id: string) => {
