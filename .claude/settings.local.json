@@ -79,7 +79,11 @@
       "Bash(find \"app/\\(current\\)/settings\" -type f)",
       "Bash(find \"app/\\(mock\\)/mock/dashboard\" -type f)",
       "Bash(find \"app/\\(mock\\)/mock/settings\" -type f)",
-      "Bash(find \"app/\\(current\\)\" -type f -name \"*hooks*\" -o -name \"*lib*\")"
+      "Bash(find \"app/\\(current\\)\" -type f -name \"*hooks*\" -o -name \"*lib*\")",
+      "Bash(find \"/c/Users/wukdd/dev/home-inventory-manager/frontend/app/\\(current\\)\" -type f -name \"*.tsx\")",
+      "Bash(ls -la /c/Users/wukdd/dev/home-inventory-manager/frontend/app/\\\\\\(mock\\\\\\)/mock/dashboard/_ui/)",
+      "Bash(grep -r \"getAccessToken\\\\|refreshToken\" /c/Users/wukdd/dev/home-inventory-manager/frontend --include=*.ts --include=*.tsx)",
+      "Bash(wc:*)"
     ]
   }
 }
