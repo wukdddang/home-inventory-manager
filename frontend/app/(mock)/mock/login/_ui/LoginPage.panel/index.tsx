@@ -5,7 +5,7 @@ import { LoginShowcaseSection } from "../LoginShowcase.section";
 
 export function LoginPanel() {
   return (
-    <div className="flex min-h-full w-full flex-col lg:min-h-0 lg:flex-row">
+    <div className="flex h-full w-full flex-1 flex-col lg:flex-row">
       <LoginShowcaseSection />
       <LoginFormSection />
     </div>

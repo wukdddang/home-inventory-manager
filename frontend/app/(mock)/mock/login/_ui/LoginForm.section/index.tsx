@@ -1,6 +1,7 @@
 "use client";
 
 import { useAppRoutePrefix } from "@/lib/use-app-route-prefix";
+import { motion } from "framer-motion";
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useLogin } from "../../_hooks/useLogin";
@@ -18,7 +19,12 @@ export function LoginFormSection() {
 
   return (
     <section className="flex w-full flex-1 items-center justify-center bg-zinc-950 px-6 py-12 lg:max-w-md lg:flex-none xl:max-w-lg">
-      <div className="w-full max-w-sm">
+      <motion.div
+        initial={{ opacity: 0, y: 24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        className="w-full max-w-sm"
+      >
         <h2 className="text-xl font-semibold text-white">로그인</h2>
         <p className="mt-1 text-sm text-zinc-300">
           이메일과 비밀번호를 입력하세요.
@@ -80,7 +86,7 @@ export function LoginFormSection() {
             회원가입
           </Link>
         </p>
-      </div>
+      </motion.div>
     </section>
   );
 }

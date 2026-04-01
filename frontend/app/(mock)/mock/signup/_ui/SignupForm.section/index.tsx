@@ -1,6 +1,7 @@
 "use client";
 
 import { useAppRoutePrefix } from "@/lib/use-app-route-prefix";
+import { motion } from "framer-motion";
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useSignup } from "../../_hooks/useSignup";
@@ -24,9 +25,14 @@ export function SignupFormSection() {
   };
 
   return (
-    <div className="flex min-h-full items-center justify-center bg-zinc-950 px-4 py-12">
-      <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900/50 p-8 shadow-xl shadow-black/40">
-        <h1 className="text-2xl font-semibold text-white">회원가입</h1>
+    <section className="flex w-full flex-1 items-center justify-center bg-zinc-950 px-6 py-12 lg:max-w-md lg:flex-none xl:max-w-lg">
+      <motion.div
+        initial={{ opacity: 0, y: -24 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+        className="w-full max-w-sm"
+      >
+        <h2 className="text-xl font-semibold text-white">회원가입</h2>
         <p className="mt-1 text-sm text-zinc-300">
           계정을 만들고 시작하세요.
         </p>
@@ -42,7 +48,7 @@ export function SignupFormSection() {
               id="name"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="mt-1.5 w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/30"
+              className="mt-1.5 w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-sm text-white outline-none ring-teal-500/40 focus:border-teal-500 focus:ring-2"
               placeholder="홍길동"
             />
           </div>
@@ -59,7 +65,7 @@ export function SignupFormSection() {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1.5 w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/30"
+              className="mt-1.5 w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-sm text-white outline-none ring-teal-500/40 focus:border-teal-500 focus:ring-2"
             />
           </div>
           <div>
@@ -75,7 +81,7 @@ export function SignupFormSection() {
               autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1.5 w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/30"
+              className="mt-1.5 w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-sm text-white outline-none ring-teal-500/40 focus:border-teal-500 focus:ring-2"
               placeholder="8자 이상"
             />
           </div>
@@ -92,7 +98,7 @@ export function SignupFormSection() {
               autoComplete="new-password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
-              className="mt-1.5 w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/30"
+              className="mt-1.5 w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-sm text-white outline-none ring-teal-500/40 focus:border-teal-500 focus:ring-2"
             />
           </div>
           {error ? (
@@ -117,7 +123,7 @@ export function SignupFormSection() {
             로그인
           </Link>
         </p>
-      </div>
-    </div>
+      </motion.div>
+    </section>
   );
 }
