@@ -17,11 +17,11 @@
 | 영역 | 기술 |
 |------|------|
 | 프론트엔드 | Next.js 16 (App Router), React 19, Tailwind CSS 4, framer-motion |
-| 백엔드 | NestJS 11, TypeORM, PostgreSQL 16+ |
-| 인증 | JWT + Refresh Token |
-| 파일 저장 | AWS S3 |
-| 빌드 | pnpm workspace + Turborepo |
-| 배포 | 프론트: Vercel / 백엔드: 로컬 리눅스 서버 + Docker + Cloudflare Tunnel |
+| 백엔드 | NestJS 11, TypeORM 0.3, PostgreSQL 17 |
+| 인증 | JWT + Refresh Token, Passport.js, bcrypt |
+| 빌드 | pnpm 9.15.4 workspace + Turborepo 2.5 |
+| 테스트 | Jest (단위/통합), Playwright (E2E) |
+| 배포 | 프론트: Vercel / 백엔드: Docker + Cloudflare Tunnel (로컬 리눅스 서버) |
 
 ## 모노레포 구조
 
@@ -32,9 +32,12 @@
 ├── packages/
 │   ├── app-styles/     # 공유 Tailwind 추가 스타일 (@him/app-styles)
 │   └── pretendard/     # Pretendard 폰트 에셋
+├── e2e/                # Playwright E2E 테스트 (12개 유스케이스)
 ├── docs/               # 공통 도메인 문서 (ERD, 엔티티 설계, 정합성 등)
+├── deploy/             # 배포 가이드
 ├── turbo.json
 ├── pnpm-workspace.yaml
+├── docker-compose.yml  # 개발용 PostgreSQL 17
 └── package.json
 ```
 
@@ -44,13 +47,16 @@
 
 - Node.js >= 20
 - pnpm 9.15.4+
-- PostgreSQL 16+
+- Docker (PostgreSQL 실행용)
 
 ### 설치 및 실행
 
 ```bash
 # 의존성 설치
 pnpm install
+
+# 개발용 DB 실행
+docker compose up -d
 
 # 전체 개발 서버 실행 (frontend + backend)
 pnpm dev
@@ -65,7 +71,17 @@ pnpm dev:backend       # http://localhost:4200
 ```bash
 pnpm build             # 전체 빌드
 pnpm lint              # 전체 lint
-pnpm test              # 전체 테스트
+pnpm test              # 전체 테스트 (Jest)
+pnpm e2e               # E2E 테스트 (Playwright, Docker 환경 자동 구성)
+```
+
+### E2E 테스트
+
+```bash
+pnpm e2e:up            # 테스트용 Docker 환경 시작
+pnpm e2e:test          # Playwright 테스트 실행
+pnpm e2e:down          # 테스트 환경 종료
+pnpm e2e:report        # 테스트 리포트 확인
 ```
 
 ## 문서
@@ -77,12 +93,14 @@ pnpm test              # 전체 테스트
 | [논리적 설계](docs/design/v2/entity-logical-design.md) | PK/FK/타입/제약 상세 |
 | [정합성 정리](docs/alignment/frontend-backend-alignment.md) | 프론트-백엔드 설계 정합성 (v1.8) |
 | [기능 체크리스트](docs/feature/feature-checklist.md) | 기능별 구현 현황 |
-| [배포 가이드](docs/infra/monorepo-and-deployment.md) | 모노레포 + 배포 설정 |
+| [배포 가이드](deploy/README.md) | 로컬 리눅스 서버 배포 방법 |
+| [인프라 설정](docs/infra/monorepo-and-deployment.md) | 모노레포 + 배포 설정 |
 | [프론트엔드 README](frontend/README.md) | 프론트엔드 상세 |
 | [백엔드 README](backend/README.md) | 백엔드 상세 |
 
 ## 현재 진행 상황
 
 - **프론트엔드**: 주요 화면 구현 완료 (대시보드, 구매, 재고 이력, 설정, 알림). localStorage 기반 mock 데이터로 동작
-- **백엔드**: 초기 scaffold 상태. v2.5 설계 기준으로 개발 시작 예정
+- **백엔드**: 엔티티 21개, 컨트롤러 17개, 비즈니스 서비스 17개 모듈 구성 완료. 서비스 로직 구현 진행 중
+- **E2E 테스트**: 12개 유스케이스 작성 완료 (인증, 비밀번호, 거점, 카탈로그, 재고, 구매, 소비/폐기, 장보기, 초대, 알림, 거점 삭제, 토큰 갱신)
 - **설계 문서**: v2.5 확정 (UUID PK, 엔티티 통합, Household-scoped 카탈로그)

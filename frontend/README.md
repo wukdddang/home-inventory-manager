@@ -10,7 +10,7 @@ Next.js 16 (App Router) + React 19 기반 프론트엔드. Tailwind CSS 4로 스
 | 스타일링 | Tailwind CSS 4, class-variance-authority, tailwind-merge, clsx |
 | 애니메이션 | framer-motion |
 | 아이콘 | lucide-react |
-| UI | @radix-ui/react-toast |
+| 토스트 | sonner (shadcn/ui 패턴) |
 | 구조도 | @xyflow/react (집 구조 플로우 차트) |
 | 폰트 | Pretendard (@him/pretendard) |
 
@@ -24,17 +24,30 @@ pnpm dev:frontend      # http://localhost:4100
 pnpm dev               # next dev -p 4100
 ```
 
+## 빌드
+
+```bash
+# 루트에서
+pnpm build:frontend
+
+# Docker 이미지 빌드 (루트에서 실행)
+docker build -f frontend/Dockerfile -t him-frontend .
+```
+
+프로덕션 Docker 이미지는 Next.js standalone 출력을 사용하며, 포트 3000에서 서비스된다.
+
 ## 라우트 구조
 
 | 경로 | 설명 |
 |------|------|
 | `/login` | 로그인 |
 | `/signup` | 회원가입 |
+| `/verify-email` | 이메일 인증 |
 | `/dashboard` | 대시보드 — 거점·방·구조도·재고·카탈로그·장보기 |
 | `/purchases` | 구매·로트 관리 |
 | `/inventory-history` | 재고 이력 타임라인 |
 | `/settings` | 설정 — 카탈로그·알림·계정·멤버 관리 |
-| `/mock/*` | 위 경로의 mock 버전 (sessionStorage 기반) |
+| `/mock/*` | 위 경로의 mock 버전 (localStorage 기반) |
 
 - `app/(current)/` — 실제 운영 페이지 (백엔드 API 연동 예정)
 - `app/(mock)/mock/` — 목업/프로토타입 페이지 (localStorage/sessionStorage 기반)
@@ -66,7 +79,7 @@ type DashboardHouseholdsPort = {
 
 ## 타입
 
-- `types/domain.ts` — 도메인 공통 타입 (Household, InventoryRow, PurchaseRecord 등)
+- `types/domain.ts` — 도메인 공통 타입 (Household, InventoryRow, PurchaseRecord 등 23개)
 - `types/index.ts` — 타입 re-export
 
 ## 유틸리티 (lib/)
@@ -102,7 +115,12 @@ type DashboardHouseholdsPort = {
 - 구매: 등록·목록·로트·유통기한 임박 뱃지
 - 재고 이력: 타임라인·거점 필터·기간 필터·컬럼 필터·정렬·페이지네이션·메모
 - 설정: 카탈로그·알림 선호·계정·보안·멤버 관리·거점 유형
-- 인증: 로그인·회원가입 (mock)
+- 인증: 로그인·회원가입·이메일 인증 (mock)
+
+## 배포
+
+- **Vercel**: Root Directory를 `frontend`로 지정, 환경 변수에 `NEXT_PUBLIC_API_URL` 설정
+- **Docker**: 루트에서 `docker build -f frontend/Dockerfile -t him-frontend .` → 포트 3000
 
 ## 관련 문서
 
