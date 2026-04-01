@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AuthService } from '../../_backend/modules/auth/auth.service';
-import { setRefreshTokenCookie, cacheTokens } from '../../_base';
+import { AuthService } from '@/app/api/_backend/modules/auth/auth.service';
+import { setRefreshTokenCookie, cacheTokens } from '@/app/api/_base';
 
 export const dynamic = 'force-dynamic';
 

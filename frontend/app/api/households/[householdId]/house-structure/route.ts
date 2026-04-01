@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAccessToken } from '../../../_base';
-import { SpaceService } from '../../../_backend/modules/space/space.service';
+import { getAccessToken } from '@/app/api/_base';
+import { SpaceService } from '@/app/api/_backend/modules/space/space.service';
 
 export const dynamic = 'force-dynamic';
 

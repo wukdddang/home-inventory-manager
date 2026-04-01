@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAccessToken } from '../../../../_base';
-import { ShoppingListService } from '../../../../_backend/modules/shopping-list/shopping-list.service';
+import { getAccessToken } from '@/app/api/_base';
+import { ShoppingListService } from '@/app/api/_backend/modules/shopping-list/shopping-list.service';
 
 export const dynamic = 'force-dynamic';
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAccessToken } from '../../../_base';
-import { ExpirationAlertRuleService } from '../../../_backend/modules/expiration-alert-rule/expiration-alert-rule.service';
+import { getAccessToken } from '@/app/api/_base';
+import { ExpirationAlertRuleService } from '@/app/api/_backend/modules/expiration-alert-rule/expiration-alert-rule.service';
 
 export const dynamic = 'force-dynamic';
 

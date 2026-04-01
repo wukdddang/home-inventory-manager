@@ -1,5 +1,17 @@
 "use client";
 
+/**
+ * Login 베이스 Context + API 서비스 주입 래퍼.
+ *
+ * 구조:
+ *   LoginContextType       — 공통 컨텍스트 타입
+ *   LoginContext            — React Context
+ *   CurrentLoginProvider    — API 호출 기반 래퍼 (current 경로 전용)
+ *
+ * mock 전용 래퍼(MockLoginProvider)는
+ * `(mock)/mock/login/_context/LoginContext` 에 있다.
+ */
+
 import { setAuthUser } from "@/lib/local-store";
 import { useRouter } from "next/navigation";
 import {
@@ -9,6 +21,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
+
+/* ─────────────────────── Context Type ─────────────────────── */
 
 export type LoginContextType = {
   error: string | null;
@@ -20,7 +34,10 @@ export const LoginContext = createContext<LoginContextType | undefined>(
   undefined,
 );
 
-export function LoginProvider({ children }: { children: ReactNode }) {
+/* ─────────────────────── Current Provider ─────────────────────── */
+
+/** current 경로 전용 Provider. 백엔드 API를 호출한다. */
+export function CurrentLoginProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);

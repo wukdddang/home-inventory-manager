@@ -5,7 +5,7 @@ import { AppLoadingState } from "@/app/_ui/app-loading-state";
 import { FormModal } from "@/app/_ui/form-modal";
 import { MotionModalLayer } from "@/app/_ui/motion-modal-layer";
 import { useDashboard } from "../../../dashboard/_hooks/useDashboard";
-import { CatalogModalsControls } from "@/app/(current)/dashboard/_ui/CatalogModals.controls";
+import { CatalogModalsControls } from "@/app/(mock)/mock/dashboard/_ui/CatalogModals.controls";
 import type {
   CatalogProduct,
   CatalogProductVariant,

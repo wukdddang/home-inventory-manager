@@ -4,8 +4,8 @@ import {
   getRefreshToken,
   clearRefreshTokenCookie,
   evictTokens,
-} from '../../_base';
-import { AuthService } from '../../_backend/modules/auth/auth.service';
+} from '@/app/api/_base';
+import { AuthService } from '@/app/api/_backend/modules/auth/auth.service';
 
 export const dynamic = 'force-dynamic';
 

@@ -7,13 +7,13 @@ import { useLogin } from "../../_hooks/useLogin";
 
 export function LoginFormSection() {
   const prefix = useAppRoutePrefix();
-  const { error, 로그인을_제출_한다 } = useLogin();
+  const { error, loading, 로그인을_제출_한다 } = useLogin();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    로그인을_제출_한다(email);
+    로그인을_제출_한다(email, password);
   };
 
   return (
@@ -21,7 +21,7 @@ export function LoginFormSection() {
       <div className="w-full max-w-sm">
         <h2 className="text-xl font-semibold text-white">로그인</h2>
         <p className="mt-1 text-sm text-zinc-300">
-          데모: 이메일만 입력해도 진입됩니다.
+          이메일과 비밀번호를 입력하세요.
         </p>
         <form onSubmit={handleSubmit} className="mt-8 space-y-4">
           <div>
@@ -65,9 +65,10 @@ export function LoginFormSection() {
           ) : null}
           <button
             type="submit"
-            className="w-full rounded-xl bg-teal-500 py-3 text-sm font-semibold text-zinc-950 transition hover:bg-teal-400"
+            disabled={loading}
+            className="w-full rounded-xl bg-teal-500 py-3 text-sm font-semibold text-zinc-950 transition hover:bg-teal-400 disabled:opacity-50"
           >
-            로그인
+            {loading ? "로그인 중…" : "로그인"}
           </button>
         </form>
         <p className="mt-6 text-center text-sm text-zinc-300">

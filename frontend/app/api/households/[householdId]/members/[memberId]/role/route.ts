@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAccessToken } from '../../../../../_base';
-import { HouseholdService } from '../../../../../_backend/modules/household/household.service';
+import { getAccessToken } from '@/app/api/_base';
+import { HouseholdService } from '@/app/api/_backend/modules/household/household.service';
 
 export const dynamic = 'force-dynamic';
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { InvitationService } from '../../_backend/modules/invitation/invitation.service';
+import { InvitationService } from '@/app/api/_backend/modules/invitation/invitation.service';
 
 export const dynamic = 'force-dynamic';
 

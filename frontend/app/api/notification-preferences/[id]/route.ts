@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAccessToken } from '../../_base';
-import { NotificationPreferenceService } from '../../_backend/modules/notification-preference/notification-preference.service';
+import { getAccessToken } from '@/app/api/_base';
+import { NotificationPreferenceService } from '@/app/api/_backend/modules/notification-preference/notification-preference.service';
 
 export const dynamic = 'force-dynamic';
 

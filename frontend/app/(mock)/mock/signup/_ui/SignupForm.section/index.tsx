@@ -7,7 +7,7 @@ import { useSignup } from "../../_hooks/useSignup";
 
 export function SignupFormSection() {
   const prefix = useAppRoutePrefix();
-  const { error, 가입을_제출_한다 } = useSignup();
+  const { error, loading, 가입을_제출_한다 } = useSignup();
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -28,7 +28,7 @@ export function SignupFormSection() {
       <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900/50 p-8 shadow-xl shadow-black/40">
         <h1 className="text-2xl font-semibold text-white">회원가입</h1>
         <p className="mt-1 text-sm text-zinc-300">
-          로컬 데모 계정이 생성됩니다. 실제 서버 검증은 추후 API로 연결하세요.
+          계정을 만들고 시작하세요.
         </p>
         <form onSubmit={handleSubmit} className="mt-8 space-y-4">
           <div>
@@ -76,6 +76,7 @@ export function SignupFormSection() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="mt-1.5 w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2.5 text-sm text-white outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-500/30"
+              placeholder="8자 이상"
             />
           </div>
           <div>
@@ -101,9 +102,10 @@ export function SignupFormSection() {
           ) : null}
           <button
             type="submit"
-            className="w-full rounded-xl bg-teal-500 py-3 text-sm font-semibold text-zinc-950 hover:bg-teal-400"
+            disabled={loading}
+            className="w-full rounded-xl bg-teal-500 py-3 text-sm font-semibold text-zinc-950 hover:bg-teal-400 disabled:opacity-50"
           >
-            가입하고 시작하기
+            {loading ? "가입 중…" : "가입하고 시작하기"}
           </button>
         </form>
         <p className="mt-6 text-center text-sm text-zinc-300">

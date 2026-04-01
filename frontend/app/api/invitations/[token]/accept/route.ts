@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAccessToken } from '../../../_base';
-import { InvitationService } from '../../../_backend/modules/invitation/invitation.service';
+import { getAccessToken } from '@/app/api/_base';
+import { InvitationService } from '@/app/api/_backend/modules/invitation/invitation.service';
 
 export const dynamic = 'force-dynamic';
 

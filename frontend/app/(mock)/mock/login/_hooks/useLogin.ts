@@ -1,7 +1,10 @@
 "use client";
 
 import { useContext } from "react";
-import { LoginContext, type LoginContextType } from "../_context/LoginContext";
+import {
+  LoginContext,
+  type LoginContextType,
+} from "@/app/(current)/login/_context/LoginContext";
 
 export function useLogin(): LoginContextType {
   const ctx = useContext(LoginContext);

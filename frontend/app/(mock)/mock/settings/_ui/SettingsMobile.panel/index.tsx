@@ -3,7 +3,7 @@
 import { useSettings } from "../../_hooks/useSettings";
 import { useDashboard } from "@/app/(mock)/mock/dashboard/_hooks/useDashboard";
 import { AppLoadingState } from "@/app/_ui/app-loading-state";
-import { MOBILE_HOUSEHOLD_SELECT_EVENT } from "@/app/(current)/_ui/AppShell.component";
+import { MOBILE_HOUSEHOLD_SELECT_EVENT } from "@/app/(mock)/mock/_ui/AppShell.component";
 import {
   getMockSettingsAccountUserSnapshot,
   subscribeMockSettingsAccountUser,

@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers';
-import { AUTH_ENDPOINTS } from '../_backend/api-endpoints';
+import { AUTH_ENDPOINTS } from '@/app/api/_backend/api-endpoints';
 
 const REFRESH_TOKEN_COOKIE = 'him_refresh_token';
 const COOKIE_MAX_AGE = 7 * 24 * 60 * 60; // 7일 (refreshToken 수명과 동일)

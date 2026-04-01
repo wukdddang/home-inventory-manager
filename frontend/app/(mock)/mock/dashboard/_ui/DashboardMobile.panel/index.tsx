@@ -1,8 +1,8 @@
 "use client";
 
 import { DashboardMobileSkeleton } from "@/app/_ui/mobile/MobileSkeleton.component";
-import { useSelectedHouseholdShell } from "@/app/(current)/_ui/selected-household-shell-bridge";
-import { MOBILE_HOUSEHOLD_SELECT_EVENT } from "@/app/(current)/_ui/AppShell.component";
+import { useSelectedHouseholdShell } from "@/app/(mock)/mock/_ui/selected-household-shell-bridge";
+import { MOBILE_HOUSEHOLD_SELECT_EVENT } from "@/app/(mock)/mock/_ui/AppShell.component";
 import { useEffect, useMemo, useState } from "react";
 import { useDashboard } from "../../_hooks/useDashboard";
 import { InventoryCardList } from "./InventoryCardList.section";

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAccessToken } from '../../../../_base';
-import { PurchaseBatchService } from '../../../../_backend/modules/purchase-batch/purchase-batch.service';
+import { getAccessToken } from '@/app/api/_base';
+import { PurchaseBatchService } from '@/app/api/_backend/modules/purchase-batch/purchase-batch.service';
 
 export const dynamic = 'force-dynamic';
 

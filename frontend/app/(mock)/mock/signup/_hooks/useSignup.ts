@@ -1,7 +1,10 @@
 "use client";
 
 import { useContext } from "react";
-import { SignupContext, type SignupContextType } from "../_context/SignupContext";
+import {
+  SignupContext,
+  type SignupContextType,
+} from "@/app/(current)/signup/_context/SignupContext";
 
 export function useSignup(): SignupContextType {
   const ctx = useContext(SignupContext);

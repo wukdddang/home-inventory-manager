@@ -7,7 +7,7 @@ import {
   appViewPresenceTransition,
   appViewPresenceVariants,
 } from "@/app/_ui/app-view-transition.motion";
-import { useSelectedHouseholdShell } from "@/app/(current)/_ui/selected-household-shell-bridge";
+import { useSelectedHouseholdShell } from "@/app/(mock)/mock/_ui/selected-household-shell-bridge";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import { useDashboard } from "../../_hooks/useDashboard";

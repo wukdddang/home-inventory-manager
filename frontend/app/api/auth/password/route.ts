@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAccessToken } from '../../_base';
-import { AuthService } from '../../_backend/modules/auth/auth.service';
+import { getAccessToken } from '@/app/api/_base';
+import { AuthService } from '@/app/api/_backend/modules/auth/auth.service';
 
 export const dynamic = 'force-dynamic';
 

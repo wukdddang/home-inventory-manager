@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { AuthService } from '../../_backend/modules/auth/auth.service';
+import { AuthService } from '@/app/api/_backend/modules/auth/auth.service';
 
 export const dynamic = 'force-dynamic';
 

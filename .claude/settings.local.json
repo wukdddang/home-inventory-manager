@@ -83,7 +83,9 @@
       "Bash(find \"/c/Users/wukdd/dev/home-inventory-manager/frontend/app/\\(current\\)\" -type f -name \"*.tsx\")",
       "Bash(ls -la /c/Users/wukdd/dev/home-inventory-manager/frontend/app/\\\\\\(mock\\\\\\)/mock/dashboard/_ui/)",
       "Bash(grep -r \"getAccessToken\\\\|refreshToken\" /c/Users/wukdd/dev/home-inventory-manager/frontend --include=*.ts --include=*.tsx)",
-      "Bash(wc:*)"
+      "Bash(wc:*)",
+      "Bash(node fix-imports.mjs)",
+      "WebFetch(domain:localhost)"
     ]
   }
 }

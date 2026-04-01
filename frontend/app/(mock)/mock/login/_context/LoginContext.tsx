@@ -1,35 +1,35 @@
 "use client";
 
+/**
+ * mock 경로 전용 서비스 주입 래퍼.
+ *
+ * LoginContextType·LoginContext·CurrentLoginProvider 는
+ * `(current)/login/_context/LoginContext` 에 있다.
+ *
+ * 이 파일은 localStorage 기반 mock 서비스를 주입하는
+ * MockLoginProvider 만 담당한다.
+ */
+
 import { useAppRoutePrefix } from "@/lib/use-app-route-prefix";
 import { setAuthUser } from "@/lib/local-store";
 import { useRouter } from "next/navigation";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import {
-  createContext,
-  useCallback,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+  LoginContext,
+  type LoginContextType,
+} from "@/app/(current)/login/_context/LoginContext";
 
-export type LoginContextType = {
-  error: string | null;
-  /** 데모 로그인: 이메일만 검증 후 세션 저장 및 대시보드로 이동 */
-  로그인을_제출_한다: (email: string) => void;
-};
+export type { LoginContextType };
+export { LoginContext } from "@/app/(current)/login/_context/LoginContext";
 
-export type LoginProviderProps = { children: ReactNode };
-
-export const LoginContext = createContext<LoginContextType | undefined>(
-  undefined,
-);
-
-export function LoginProvider({ children }: LoginProviderProps) {
+/** mock 경로 전용 Provider. API 호출 없이 localStorage로 처리한다. */
+export function MockLoginProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const prefix = useAppRoutePrefix();
   const [error, setError] = useState<string | null>(null);
 
   const 로그인을_제출_한다 = useCallback(
-    (email: string) => {
+    (email: string, _password: string) => {
       setError(null);
       const trimmed = email.trim();
       if (!trimmed) {
@@ -57,6 +57,7 @@ export function LoginProvider({ children }: LoginProviderProps) {
   const value = useMemo<LoginContextType>(
     () => ({
       error,
+      loading: false,
       로그인을_제출_한다,
     }),
     [error, 로그인을_제출_한다],

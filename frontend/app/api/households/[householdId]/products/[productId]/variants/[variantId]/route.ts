@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAccessToken } from '../../../../../../_base';
-import { ProductVariantService } from '../../../../../../_backend/modules/product-variant/product-variant.service';
+import { getAccessToken } from '@/app/api/_base';
+import { ProductVariantService } from '@/app/api/_backend/modules/product-variant/product-variant.service';
 
 export const dynamic = 'force-dynamic';
 

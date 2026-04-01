@@ -1,5 +1,17 @@
 "use client";
 
+/**
+ * Signup 베이스 Context + API 서비스 주입 래퍼.
+ *
+ * 구조:
+ *   SignupContextType       — 공통 컨텍스트 타입
+ *   SignupContext            — React Context
+ *   CurrentSignupProvider    — API 호출 기반 래퍼 (current 경로 전용)
+ *
+ * mock 전용 래퍼(MockSignupProvider)는
+ * `(mock)/mock/signup/_context/SignupContext` 에 있다.
+ */
+
 import { setAuthUser } from "@/lib/local-store";
 import { useRouter } from "next/navigation";
 import {
@@ -9,6 +21,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
+
+/* ─────────────────────── Types ─────────────────────── */
 
 export type SignupPayload = {
   displayName: string;
@@ -27,7 +41,10 @@ export const SignupContext = createContext<SignupContextType | undefined>(
   undefined,
 );
 
-export function SignupProvider({ children }: { children: ReactNode }) {
+/* ─────────────────────── Current Provider ─────────────────────── */
+
+/** current 경로 전용 Provider. 백엔드 API를 호출한다. */
+export function CurrentSignupProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);

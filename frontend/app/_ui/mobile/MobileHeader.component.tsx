@@ -1,6 +1,6 @@
 "use client";
 
-import { useSelectedHouseholdShell } from "@/app/(current)/_ui/selected-household-shell-bridge";
+import { useSelectedHouseholdShell } from "@/app/(mock)/mock/_ui/selected-household-shell-bridge";
 import { useUnreadNotificationCount } from "@/app/_ui/notification-center.modal";
 import { useDashboard } from "@/app/(mock)/mock/dashboard/_hooks/useDashboard";
 import { Bell, ChevronDown } from "lucide-react";

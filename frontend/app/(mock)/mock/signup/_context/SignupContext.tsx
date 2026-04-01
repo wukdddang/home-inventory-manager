@@ -1,36 +1,30 @@
 "use client";
 
+/**
+ * mock 경로 전용 서비스 주입 래퍼.
+ *
+ * SignupContextType·SignupContext·CurrentSignupProvider 는
+ * `(current)/signup/_context/SignupContext` 에 있다.
+ *
+ * 이 파일은 localStorage 기반 mock 서비스를 주입하는
+ * MockSignupProvider 만 담당한다.
+ */
+
 import { useAppRoutePrefix } from "@/lib/use-app-route-prefix";
 import { setAuthUser } from "@/lib/local-store";
 import { useRouter } from "next/navigation";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import {
-  createContext,
-  useCallback,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react";
+  SignupContext,
+  type SignupContextType,
+  type SignupPayload,
+} from "@/app/(current)/signup/_context/SignupContext";
 
-export type SignupPayload = {
-  displayName: string;
-  email: string;
-  password: string;
-  confirm: string;
-};
+export type { SignupContextType, SignupPayload };
+export { SignupContext } from "@/app/(current)/signup/_context/SignupContext";
 
-export type SignupContextType = {
-  error: string | null;
-  /** 유효성 검사 후 로컬 세션 저장 및 대시보드로 이동 */
-  가입을_제출_한다: (payload: SignupPayload) => void;
-};
-
-export type SignupProviderProps = { children: ReactNode };
-
-export const SignupContext = createContext<SignupContextType | undefined>(
-  undefined,
-);
-
-export function SignupProvider({ children }: SignupProviderProps) {
+/** mock 경로 전용 Provider. API 호출 없이 localStorage로 처리한다. */
+export function MockSignupProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const prefix = useAppRoutePrefix();
   const [error, setError] = useState<string | null>(null);
@@ -75,6 +69,7 @@ export function SignupProvider({ children }: SignupProviderProps) {
   const value = useMemo<SignupContextType>(
     () => ({
       error,
+      loading: false,
       가입을_제출_한다,
     }),
     [error, 가입을_제출_한다],

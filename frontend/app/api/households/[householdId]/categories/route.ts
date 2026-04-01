@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAccessToken } from '../../../_base';
-import { CategoryService } from '../../../_backend/modules/category/category.service';
+import { getAccessToken } from '@/app/api/_base';
+import { CategoryService } from '@/app/api/_backend/modules/category/category.service';
 
 export const dynamic = 'force-dynamic';
 

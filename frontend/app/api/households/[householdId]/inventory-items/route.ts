@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAccessToken } from '../../../_base';
-import { InventoryItemService } from '../../../_backend/modules/inventory-item/inventory-item.service';
+import { getAccessToken } from '@/app/api/_base';
+import { InventoryItemService } from '@/app/api/_backend/modules/inventory-item/inventory-item.service';
 
 export const dynamic = 'force-dynamic';
 

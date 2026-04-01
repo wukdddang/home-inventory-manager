@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getAccessToken } from '../../_base';
+import { getAccessToken } from '@/app/api/_base';
 
 export const dynamic = 'force-dynamic';
 

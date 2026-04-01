@@ -3,7 +3,7 @@
 import type { ReactNode } from "react";
 import { Fragment, useCallback, useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
-import { CatalogModalsControls } from "@/app/(current)/dashboard/_ui/CatalogModals.controls";
+import { CatalogModalsControls } from "@/app/(mock)/mock/dashboard/_ui/CatalogModals.controls";
 import { useDashboard } from "../../_hooks/useDashboard";
 import { newEntityId } from "../../_lib/dashboard-helpers";
 import { toast } from "@/hooks/use-toast";
