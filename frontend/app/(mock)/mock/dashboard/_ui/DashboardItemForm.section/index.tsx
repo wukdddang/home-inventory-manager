@@ -1393,7 +1393,6 @@ export function RoomItemAddWidget({
                               onCatalogUpdate={거점_카탈로그를_갱신_한다}
                               layout="panel"
                               buttonRowClassName="flex-nowrap items-center gap-2"
-                              showListButton
                             />
                           </div>
                         ) : null}
@@ -1517,7 +1516,6 @@ export function RoomItemAddWidget({
                   catalog={catalog}
                   onCatalogUpdate={거점_카탈로그를_갱신_한다}
                   layout="panel"
-                  showListButton
                 />
                 <ItemAddPanelHeaderCatalogHint className="mt-3 block text-left" />
               </div>
