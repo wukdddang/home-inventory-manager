@@ -330,6 +330,28 @@ await page.request.post(`/api/households/${hId}/storage-locations`, {
 await page.reload();
 ```
 
+### DB 직접 DML 금지 (INSERT / UPDATE / DELETE)
+
+`utils/db.ts`의 `query()`는 **검증용 SELECT 조회**와 **`resetDatabase()` 초기화**에만 사용한다. 테스트 도중 데이터를 생성·수정·삭제할 때는 반드시 **API 엔드포인트** (`page.request.post/put/patch/delete`) 또는 **UI 조작**을 통해야 한다.
+
+```typescript
+// ❌ 금지 — DB 직접 DML
+await query("DELETE FROM shopping_list_items WHERE id = $1", [id]);
+await query("INSERT INTO categories (id, name) VALUES ($1, $2)", [id, "식료품"]);
+await query("UPDATE inventory_items SET quantity = 10 WHERE id = $1", [id]);
+
+// ✅ 허용 — API 를 통한 데이터 조작
+await page.request.delete(`/api/households/${hId}/shopping-list-items/${id}`);
+await page.request.post(`/api/households/${hId}/categories`, { data: { name: "식료품" } });
+await page.request.patch(`/api/households/${hId}/inventory-items/${id}/quantity`, { data: { quantity: 10 } });
+
+// ✅ 허용 — DB 조회(SELECT)로 결과 검증
+const items = await query<{ quantity: string }>("SELECT quantity::text FROM inventory_items WHERE id = $1", [id]);
+expect(parseFloat(items[0].quantity)).toBe(10);
+```
+
+**이유**: E2E 테스트는 실제 사용자 흐름(UI → 프론트엔드 → Next.js API Route → 백엔드 → DB)을 검증하는 것이 목적이다. DB를 직접 조작하면 API 계층의 비즈니스 로직·유효성 검증·트랜잭션·사이드 이펙트(이력 생성, 수량 연동 등)를 우회하게 되어 테스트의 의미가 퇴색된다. `resetDatabase()`는 테스트 격리를 위한 예외적 초기화 용도로만 허용한다.
+
 ### waitForTimeout 사용 최소화
 
 `page.waitForTimeout()`은 flaky 테스트의 원인이 된다. 대신 구체적인 조건을 대기한다:
