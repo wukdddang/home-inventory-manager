@@ -1,0 +1,19 @@
+{
+  "name": "e2e",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "docker:up": "docker compose up -d --build --wait",
+    "docker:down": "docker compose down -v",
+    "docker:rebuild": "pnpm docker:down && pnpm docker:up",
+    "pretest": "rm -rf test-results playwright-report",
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.52.0",
+    "pg": "^8.20.0",
+    "@types/pg": "^8.15.4"
+  }
+}

@@ -19,7 +19,7 @@ function HouseStructureScreen() {
         <motion.img
           src="/showcase-structure.png"
           alt="집 구조도 예시 — 방, 직속 보관 장소, 가구 연결 구조"
-          className="w-full object-cover object-left-top"
+          className="w-full object-cover object-top-left"
           draggable={false}
           initial={{ y: "0%" }}
           animate={{ y: "-25%" }}
@@ -34,8 +34,8 @@ function HouseStructureScreen() {
           }}
         />
         {/* 상·하단 그라데이션 페이드 */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-6 bg-gradient-to-b from-black/50 to-transparent" />
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-gradient-to-t from-black/50 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-6 bg-linear-to-b from-black/50 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 h-6 bg-linear-to-t from-black/50 to-transparent" />
       </motion.div>
     </div>
   );
@@ -89,7 +89,8 @@ function InventoryTableScreen() {
         </div>
         {/* 풋터 요약 */}
         <div className="shrink-0 border-t border-white/10 bg-white/5 px-2.5 py-1.5 text-[8px] text-zinc-500">
-          총 {rows.length}건 · 유통기한 임박 <span className="text-amber-400">3건</span>
+          총 {rows.length}건 · 유통기한 임박{" "}
+          <span className="text-amber-400">3건</span>
         </div>
       </div>
     </div>

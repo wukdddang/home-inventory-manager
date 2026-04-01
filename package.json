@@ -15,7 +15,12 @@
     "lint:frontend": "turbo run lint --filter=frontend",
     "lint:backend": "turbo run lint --filter=backend",
     "test": "turbo run test",
-    "test:backend": "turbo run test --filter=backend"
+    "test:backend": "turbo run test --filter=backend",
+    "e2e:up": "cd e2e && pnpm docker:up",
+    "e2e:down": "cd e2e && pnpm docker:down",
+    "e2e:test": "cd e2e && pnpm test",
+    "e2e:report": "pnpm --filter e2e exec playwright show-report",
+    "e2e": "cd e2e && pnpm docker:up && pnpm test; pnpm docker:down"
   },
   "devDependencies": {
     "turbo": "^2.5.6"

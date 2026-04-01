@@ -85,7 +85,8 @@
       "Bash(grep -r \"getAccessToken\\\\|refreshToken\" /c/Users/wukdd/dev/home-inventory-manager/frontend --include=*.ts --include=*.tsx)",
       "Bash(wc:*)",
       "Bash(node fix-imports.mjs)",
-      "WebFetch(domain:localhost)"
+      "WebFetch(domain:localhost)",
+      "Bash(npx playwright:*)"
     ]
   }
 }

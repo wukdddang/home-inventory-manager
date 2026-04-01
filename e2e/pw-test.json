@@ -1,0 +1,129 @@
+{
+  "config": {
+    "configFile": "C:\\Users\\USER\\dev\\home-inventory-manager\\e2e\\playwright.config.ts",
+    "rootDir": "C:/Users/USER/dev/home-inventory-manager/e2e/tests",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/Users/USER/dev/home-inventory-manager/e2e/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "C:/Users/USER/dev/home-inventory-manager/e2e/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.59.0",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "uc-02-password.spec.ts",
+      "file": "uc-02-password.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "UC-02. 비밀번호 변경",
+          "file": "uc-02-password.spec.ts",
+          "line": 12,
+          "column": 6,
+          "specs": [
+            {
+              "title": "1. 사용자는 설정 페이지에서 현재 비밀번호와 새 비밀번호를 입력하여 비밀번호를 변경한다",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 11,
+                      "error": {
+                        "message": "AggregateError: ",
+                        "stack": "AggregateError: "
+                      },
+                      "errors": [
+                        {
+                          "message": "AggregateError: "
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-01T06:13:21.220Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Users\\USER\\dev\\home-inventory-manager\\e2e\\test-results\\uc-02-password-UC-02-비밀번호--b46fa-번호와-새-비밀번호를-입력하여-비밀번호를-변경한다-chromium\\error-context.md"
+                        }
+                      ]
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "d69ef96a95a6a667498d-ed0d0f37921754e2f33f",
+              "file": "uc-02-password.spec.ts",
+              "line": 69,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-04-01T06:13:20.052Z",
+    "duration": 1216.5249999999999,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}

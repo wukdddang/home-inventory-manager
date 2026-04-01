@@ -1,0 +1,78 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: him-e2e-postgres
+    ports:
+      - "54320:5432"
+    environment:
+      POSTGRES_USER: e2e
+      POSTGRES_PASSWORD: e2e
+      POSTGRES_DB: him_e2e
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U e2e -d him_e2e"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+    tmpfs:
+      - /var/lib/postgresql/data  # 메모리에 저장 → 빠른 리셋
+
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: him-e2e-mailhog
+    ports:
+      - "8025:8025"   # Web UI
+      - "1025:1025"   # SMTP
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8025/api/v2/messages?limit=1"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    container_name: him-e2e-backend
+    ports:
+      - "4200:4200"
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: e2e
+      DB_PASSWORD: e2e
+      DB_DATABASE: him_e2e
+      JWT_SECRET: e2e-jwt-secret-key-for-testing
+      JWT_REFRESH_SECRET: e2e-jwt-refresh-secret-key-for-testing
+      JWT_EXPIRES_IN: 30m
+      JWT_REFRESH_EXPIRES_IN: 7d
+      MAIL_HOST: mailhog
+      MAIL_PORT: 1025
+      MAIL_USER: test@test.com
+      MAIL_PASSWORD: test
+      MAIL_FROM: '"집비치기 E2E" <noreply@e2e.test>'
+      APP_URL: http://localhost:4100
+      PORT: 4200
+    depends_on:
+      postgres:
+        condition: service_healthy
+      mailhog:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:4200/api/auth/me').then(()=>process.exit(0)).catch(()=>process.exit(1))\""]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: frontend/Dockerfile
+    container_name: him-e2e-frontend
+    ports:
+      - "4100:3000"
+    environment:
+      BACKEND_URL: http://backend:4200
+      PORT: 3000
+    depends_on:
+      backend:
+        condition: service_healthy
