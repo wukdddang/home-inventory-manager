@@ -52,5 +52,5 @@ export async function DELETE(request: NextRequest, context: Context) {
     );
   }
 
-  return NextResponse.json({ success: true }, { status: 204 });
+  return new NextResponse(null, { status: 204 });
 }
