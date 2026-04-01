@@ -3,3 +3,7 @@ dist/
 test-results/
 playwright-report/
 blob-report/
+
+# Playwright / E2E 로컬 로그·디버그 산출물 (커밋 제외)
+pw-test.json
+*-debug.json

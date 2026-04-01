@@ -65,6 +65,26 @@ function TrashIcon({ className }: { className?: string }) {
   );
 }
 
+function PencilIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      className={cn("size-3.5", className)}
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+      />
+    </svg>
+  );
+}
+
 function PlusIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -669,8 +689,13 @@ export function DashboardHouseholdsHeader({
   onAfterAddHousehold,
   onDeleteHousehold,
 }: DashboardHouseholdsHeaderProps) {
-  const { households, householdKindDefinitions, 거점을_추가_한다, 거점을_갱신_한다 } =
-    useDashboard();
+  const {
+    households,
+    householdKindDefinitions,
+    거점을_추가_한다,
+    거점을_갱신_한다,
+    거점_기본정보를_수정_한다,
+  } = useDashboard();
   const [kindsManageOpen, setKindsManageOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [addStep, setAddStep] = useState<1 | 2>(1);
@@ -684,6 +709,37 @@ export function DashboardHouseholdsHeader({
   const [pendingDeleteHouseholdId, setPendingDeleteHouseholdId] = useState<
     string | null
   >(null);
+
+  // 우클릭 컨텍스트 메뉴
+  const [contextMenu, setContextMenu] = useState<{
+    householdId: string;
+    x: number;
+    y: number;
+  } | null>(null);
+  const contextMenuRef = useRef<HTMLDivElement>(null);
+
+  // 거점 이름 수정 모달
+  const [editHouseholdId, setEditHouseholdId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+
+  const editHousehold = editHouseholdId
+    ? households.find((h) => h.id === editHouseholdId)
+    : null;
+
+  // 컨텍스트 메뉴 외부 클릭 시 닫기
+  useEffect(() => {
+    if (!contextMenu) return;
+    const handleClick = (e: MouseEvent) => {
+      if (
+        contextMenuRef.current &&
+        !contextMenuRef.current.contains(e.target as Node)
+      ) {
+        setContextMenu(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [contextMenu]);
 
   const addTitleId = useId().replace(/:/g, "");
   const addDescId = useId().replace(/:/g, "");
@@ -800,6 +856,14 @@ export function DashboardHouseholdsHeader({
                     role="tab"
                     aria-selected={selected}
                     onClick={() => onSelectHousehold(h.id)}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      setContextMenu({
+                        householdId: h.id,
+                        x: e.clientX,
+                        y: e.clientY,
+                      });
+                    }}
                     className={cn(
                       "relative z-10 cursor-pointer px-2.5 py-1.5 text-left text-xs font-medium transition-colors sm:text-sm",
                       selected ? "text-teal-100" : "text-zinc-300 hover:text-white",
@@ -826,17 +890,6 @@ export function DashboardHouseholdsHeader({
                         {h.members!.length}
                       </span>
                     )}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setPendingDeleteHouseholdId(h.id);
-                    }}
-                    className="relative z-10 cursor-pointer rounded-md p-1.5 text-zinc-300 transition-colors hover:bg-rose-500/15 hover:text-rose-300"
-                    aria-label={`${h.name} 삭제`}
-                  >
-                    <TrashIcon />
                   </button>
                 </div>
               );
@@ -1036,6 +1089,81 @@ export function DashboardHouseholdsHeader({
         open={kindsManageOpen}
         onOpenChange={setKindsManageOpen}
       />
+
+      {/* ── 우클릭 컨텍스트 메뉴 ── */}
+      {contextMenu && (
+        <div
+          ref={contextMenuRef}
+          role="menu"
+          aria-label="거점 컨텍스트 메뉴"
+          className="fixed z-[10060] min-w-[120px] rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-xl"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+        >
+          <button
+            type="button"
+            role="menuitem"
+            className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-zinc-200 transition-colors hover:bg-zinc-800"
+            onClick={() => {
+              const h = households.find(
+                (h) => h.id === contextMenu.householdId,
+              );
+              if (h) {
+                setEditHouseholdId(h.id);
+                setEditName(h.name);
+              }
+              setContextMenu(null);
+            }}
+          >
+            <PencilIcon />
+            수정
+          </button>
+          <button
+            type="button"
+            role="menuitem"
+            className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-left text-sm text-rose-300 transition-colors hover:bg-zinc-800"
+            onClick={() => {
+              setPendingDeleteHouseholdId(contextMenu.householdId);
+              setContextMenu(null);
+            }}
+          >
+            <TrashIcon />
+            삭제
+          </button>
+        </div>
+      )}
+
+      {/* ── 거점 이름 수정 모달 ── */}
+      <FormModal
+        open={editHouseholdId !== null}
+        onOpenChange={(open) => {
+          if (!open) setEditHouseholdId(null);
+        }}
+        title="거점 이름 수정"
+        description="거점의 이름을 변경합니다."
+        submitLabel="저장"
+        submitDisabled={!editName.trim() || editName.trim() === editHousehold?.name}
+        onSubmit={async () => {
+          if (!editHouseholdId || !editName.trim()) return;
+          const h = households.find((h) => h.id === editHouseholdId);
+          await 거점_기본정보를_수정_한다(
+            editHouseholdId,
+            editName.trim(),
+            h?.kind ?? "",
+          );
+          setEditHouseholdId(null);
+        }}
+      >
+        <label className="block text-sm font-medium text-zinc-300">
+          거점 이름
+          <input
+            type="text"
+            value={editName}
+            onChange={(e) => setEditName(e.target.value)}
+            placeholder="예: 우리 집"
+            className="mt-1 block w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-white placeholder-zinc-500 outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+          />
+        </label>
+      </FormModal>
 
       <AlertModal
         open={pendingDeleteHouseholdId !== null}

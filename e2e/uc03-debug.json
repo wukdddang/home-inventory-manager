@@ -1,0 +1,155 @@
+{
+  "config": {
+    "configFile": "C:\\Users\\USER\\dev\\home-inventory-manager\\e2e\\playwright.config.ts",
+    "rootDir": "C:/Users/USER/dev/home-inventory-manager/e2e/tests",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "projects": [
+      {
+        "outputDir": "C:/Users/USER/dev/home-inventory-manager/e2e/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "C:/Users/USER/dev/home-inventory-manager/e2e/tests",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 30000
+      }
+    ],
+    "quiet": false,
+    "reporter": [
+      [
+        "json"
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "shard": null,
+    "tags": [],
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.59.0",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "uc-03-household.spec.ts",
+      "file": "uc-03-household.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "UC-03. 거점 생성 및 기본 설정",
+          "file": "uc-03-household.spec.ts",
+          "line": 11,
+          "column": 6,
+          "specs": [
+            {
+              "title": "3-C-9. 사용자는 집 구조 편집기에서 방을 추가한다",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 30000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 7010,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: >= \u001b[32m1\u001b[39m\nReceived:    \u001b[31m0\u001b[39m",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: >= \u001b[32m1\u001b[39m\nReceived:    \u001b[31m0\u001b[39m\n    at C:\\Users\\USER\\dev\\home-inventory-manager\\e2e\\tests\\uc-03-household.spec.ts:344:26",
+                        "location": {
+                          "file": "C:\\Users\\USER\\dev\\home-inventory-manager\\e2e\\tests\\uc-03-household.spec.ts",
+                          "column": 26,
+                          "line": 344
+                        },
+                        "snippet": "\u001b[0m \u001b[90m 342 |\u001b[39m       \u001b[32m'SELECT \"displayName\" FROM rooms'\u001b[39m\n \u001b[90m 343 |\u001b[39m     )\u001b[33m;\u001b[39m\n\u001b[31m\u001b[1m>\u001b[22m\u001b[39m\u001b[90m 344 |\u001b[39m     expect(rooms\u001b[33m.\u001b[39mlength)\u001b[33m.\u001b[39mtoBeGreaterThanOrEqual(\u001b[35m1\u001b[39m)\u001b[33m;\u001b[39m\n \u001b[90m     |\u001b[39m                          \u001b[31m\u001b[1m^\u001b[22m\u001b[39m\n \u001b[90m 345 |\u001b[39m   })\u001b[33m;\u001b[39m\n \u001b[90m 346 |\u001b[39m\n \u001b[90m 347 |\u001b[39m   test(\u001b[32m\"3-C-10. 사용자는 방 목록을 조회한다\"\u001b[39m\u001b[33m,\u001b[39m \u001b[36masync\u001b[39m ({ page }) \u001b[33m=>\u001b[39m {\u001b[0m"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "C:\\Users\\USER\\dev\\home-inventory-manager\\e2e\\tests\\uc-03-household.spec.ts",
+                            "column": 26,
+                            "line": 344
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mreceived\u001b[39m\u001b[2m).\u001b[22mtoBeGreaterThanOrEqual\u001b[2m(\u001b[22m\u001b[32mexpected\u001b[39m\u001b[2m)\u001b[22m\n\nExpected: >= \u001b[32m1\u001b[39m\nReceived:    \u001b[31m0\u001b[39m\n\n  342 |       'SELECT \"displayName\" FROM rooms'\n  343 |     );\n> 344 |     expect(rooms.length).toBeGreaterThanOrEqual(1);\n      |                          ^\n  345 |   });\n  346 |\n  347 |   test(\"3-C-10. 사용자는 방 목록을 조회한다\", async ({ page }) => {\n    at C:\\Users\\USER\\dev\\home-inventory-manager\\e2e\\tests\\uc-03-household.spec.ts:344:26"
+                        }
+                      ],
+                      "stdout": [],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-04-01T06:53:42.385Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "C:\\Users\\USER\\dev\\home-inventory-manager\\e2e\\test-results\\uc-03-household-UC-03-거점-생-efc7f-C-9-사용자는-집-구조-편집기에서-방을-추가한다-chromium\\test-failed-1.png"
+                        },
+                        {
+                          "name": "video",
+                          "contentType": "video/webm",
+                          "path": "C:\\Users\\USER\\dev\\home-inventory-manager\\e2e\\test-results\\uc-03-household-UC-03-거점-생-efc7f-C-9-사용자는-집-구조-편집기에서-방을-추가한다-chromium\\video.webm"
+                        },
+                        {
+                          "name": "error-context",
+                          "contentType": "text/markdown",
+                          "path": "C:\\Users\\USER\\dev\\home-inventory-manager\\e2e\\test-results\\uc-03-household-UC-03-거점-생-efc7f-C-9-사용자는-집-구조-편집기에서-방을-추가한다-chromium\\error-context.md"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "C:\\Users\\USER\\dev\\home-inventory-manager\\e2e\\tests\\uc-03-household.spec.ts",
+                        "column": 26,
+                        "line": 344
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "5deefee1e6cf2956d4fe-610b305abbb48b27e76a",
+              "file": "uc-03-household.spec.ts",
+              "line": 336,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-04-01T06:53:40.439Z",
+    "duration": 15044.219,
+    "expected": 0,
+    "skipped": 0,
+    "unexpected": 1,
+    "flaky": 0
+  }
+}
