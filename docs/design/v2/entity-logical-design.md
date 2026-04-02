@@ -1,6 +1,10 @@
 # 엔티티 논리적 설계 v2 (ERD·구현용)
 
-**버전**: v2.5 — UUID 확정 + Purchase 파생값 제거 + InventoryLog 비정규화 불요 (2026-03-27)
+**버전**: v2.6 — UserDeviceToken 신규 테이블 추가 (2026-04-02)
+
+**v2.6 변경**:
+- UserDeviceToken 신규 테이블 추가 (FCM 푸시 알림용 기기 토큰 관리)
+- 변경 근거: 모바일 환경 푸시 알림 지원을 위한 기기 토큰 저장 필요
 
 **v2.5 변경**:
 - 모든 엔티티 PK를 **UUID**로 확정 (기존 `bigint` → `uuid`)
@@ -89,6 +93,7 @@ erDiagram
     ShoppingListItem }o--o| ProductVariant : "productVariantId"
     ShoppingListItem }o--o| InventoryItem : "sourceInventoryItemId"
 
+    User ||--o{ UserDeviceToken : "userId"
     User ||--o{ Notification : "userId"
     Notification }o--o| Household : "householdId"
     User ||--o{ NotificationPreference : "userId"
@@ -878,6 +883,35 @@ PUT    /api/household-kind-definitions         — 유형 목록 전체 교체 (
 
 ---
 
+## 19. UserDeviceToken (기기 토큰) — v2.6 신규
+
+> **v2.6 추가**: 모바일/웹 푸시 알림을 위한 FCM 기기 토큰 관리. 한 사용자가 여러 기기에서 로그인할 수 있으므로 User와 1:N 관계.
+
+| 구분     | 항목                          | 타입/비고                    | 검토                                             |
+| -------- | ----------------------------- | ---------------------------- | ------------------------------------------------ |
+| **필수** | id                            | UUID (PK)                    | —                                                |
+| **필수** | userId                        | FK → User                    | —                                                |
+| **필수** | token                         | string, **UNIQUE**           | FCM 등록 토큰. 기기·브라우저마다 고유             |
+| **필수** | platform                      | enum: `'web'` \| `'android'` \| `'ios'` | 토큰 발급 플랫폼                     |
+| **선택** | deviceInfo                    | string, nullable             | User-Agent 등 기기 식별 정보                      |
+| **필수** | isActive                      | boolean, default **true**    | FCM 무효 응답 시 false로 비활성화                 |
+| **선택** | createdAt, updatedAt          | timestamp                    | —                                                |
+
+**관계**: User (N:1)
+
+### 식별·제약 (권장)
+
+- `token` **유일**(UNIQUE) — 같은 FCM 토큰 중복 등록 방지. 재등록(upsert) 시 기존 행 갱신.
+- `(userId, token)` — 한 사용자가 동일 토큰을 중복 보유하지 않음 (token UNIQUE로 자동 보장).
+
+### 운영 참고
+
+- **토큰 갱신**: FCM 토큰은 주기적으로 만료·갱신된다. 프론트에서 `getToken()` 호출 시 변경된 토큰을 백엔드에 upsert.
+- **무효 토큰 정리**: 알림 발송 시 FCM이 `messaging/registration-token-not-registered` 오류를 반환하면 `isActive = false` 처리.
+- **로그아웃 시 삭제**: 사용자 로그아웃 시 해당 기기의 토큰 행을 삭제하여 불필요한 푸시 방지.
+
+---
+
 ## v2 변경 요약
 
 | 변경 유형 | 항목 | 상세 |
@@ -912,6 +946,7 @@ PUT    /api/household-kind-definitions         — 유형 목록 전체 교체 (
 | **v2.5 변경** | 전체 PK 타입 | `bigint` → `uuid` 확정. 프론트 `crypto.randomUUID()`과 호환 |
 | **v2.5 제거** | Purchase.quantity | 파생값 — `SUM(PurchaseBatch.quantity)`로 대체 |
 | **v2.5 제거** | Purchase.totalPrice | 파생값 — `unitPrice × 총수량`으로 대체 |
+| **v2.6 추가** | UserDeviceToken (§19) | 신규 테이블. FCM 푸시 알림용 기기 토큰 관리 (User 1:N) |
 
 ### 정합성 제약 (v2.1 — 카탈로그 Household-scoped)
 

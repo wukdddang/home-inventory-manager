@@ -1,6 +1,11 @@
 # 기능 체크리스트 (Home Inventory Manager)
 
-**버전**: v2.5 — UUID 확정 + Purchase 파생값 제거 (2026-03-28)
+**버전**: v2.6 — UserDeviceToken 추가 + FCM 푸시 알림 기능 (2026-04-02)
+
+**v2.6 변경**:
+- UserDeviceToken 엔티티 추가 (FCM 기기 토큰 관리)
+- 기기 토큰 등록·삭제·관리 기능 추가
+- 푸시 알림 발송 기능 추가
 
 **v2.5 변경**:
 - Purchase에서 `quantity`(파생값), `totalPrice`(파생값) 제거 — 구매 기록 기능 설명 갱신
@@ -213,12 +218,23 @@
 
 ---
 
+## 기기 토큰 (FCM 푸시 알림) — v2.6 신규
+
+- [ ] 시스템은_모바일_환경에서_알림_권한을_요청한다 **(v2.6 추가)**
+- [ ] 시스템은_FCM_토큰을_발급하고_백엔드에_등록한다 (upsert) **(v2.6 추가)**
+- [ ] 시스템은_토큰_갱신_시_백엔드에_업데이트한다 **(v2.6 추가)**
+- [ ] 사용자는_로그아웃_시_기기_토큰을_삭제한다 **(v2.6 추가)**
+- [ ] 시스템은_무효_토큰을_비활성화한다 (FCM 오류 응답 시) **(v2.6 추가)**
+
+---
+
 ## 알림
 
 - [x] 시스템은_유통기한_임박_알림을_보낸다 (알림 생성, 스케줄러)
 - [x] 시스템은_부족_재고에_대한_알림을_보낸다 (알림 생성, 스케줄러)
 - [x] 사용자는_알림_목록을_조회한다 (거점 기준 필터)
 - [x] 사용자는_알림을_읽음_처리한다
+- [ ] 시스템은_알림_생성_시_사용자의_활성_기기에_푸시를_전송한다 **(v2.6 추가)**
 
 ---
 
@@ -253,4 +269,4 @@
 
 ---
 
-*본 문서는 v2.5 디자인 문서([er-diagram.md](../design/v2/er-diagram.md), [entity-conceptual-design.md](../design/v2/entity-conceptual-design.md), [entity-logical-design.md](../design/v2/entity-logical-design.md))와 동기화합니다.*
+*본 문서는 v2.6 디자인 문서([er-diagram.md](../design/v2/er-diagram.md), [entity-conceptual-design.md](../design/v2/entity-conceptual-design.md), [entity-logical-design.md](../design/v2/entity-logical-design.md))와 동기화합니다.*

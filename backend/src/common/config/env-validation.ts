@@ -21,6 +21,10 @@ export const envValidationSchema = Joi.object({
   MAIL_PASSWORD: Joi.string().required(),
   MAIL_FROM: Joi.string().default('"집비치기" <noreply@example.com>'),
 
+  // ── Firebase (FCM) ──
+  FIREBASE_SERVICE_ACCOUNT_PATH: Joi.string().optional(),
+  FIREBASE_SERVICE_ACCOUNT_JSON: Joi.string().optional(),
+
   // ── App ──
   APP_URL: Joi.string().default('http://localhost:4100'),
   PORT: Joi.number().default(4200),

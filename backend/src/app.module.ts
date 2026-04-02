@@ -22,6 +22,7 @@ import { ShoppingListInterfaceModule } from './interface/shopping-list/shopping-
 import { NotificationPreferenceInterfaceModule } from './interface/notification-preference/notification-preference.module';
 import { NotificationInterfaceModule } from './interface/notification/notification.module';
 import { ExpirationAlertRuleInterfaceModule } from './interface/expiration-alert-rule/expiration-alert-rule.module';
+import { FcmInterfaceModule } from './interface/fcm/fcm.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { ExpirationAlertRuleInterfaceModule } from './interface/expiration-alert
     NotificationPreferenceInterfaceModule,
     NotificationInterfaceModule,
     ExpirationAlertRuleInterfaceModule,
+    FcmInterfaceModule,
   ],
 })
 export class AppModule {}

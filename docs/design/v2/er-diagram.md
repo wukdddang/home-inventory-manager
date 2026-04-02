@@ -1,6 +1,9 @@
 # ER 다이어그램 & 엔티티 명세 v2 (Home Inventory Manager)
 
-**버전**: v2.5 — UUID 확정 + Purchase 파생값 제거 (2026-03-27)
+**버전**: v2.6 — UserDeviceToken 신규 엔티티 추가 (2026-04-02)
+
+**v2.6 변경**:
+- UserDeviceToken 신규 엔티티 추가 (FCM 푸시 알림용 기기 토큰 관리)
 
 **v2.5 변경**:
 - 모든 엔티티 PK를 UUID로 확정
@@ -63,6 +66,7 @@
 | 18   | FurniturePlacement  | 방 안 가구(인스턴스)                                                  | Room                                 | P1       | `anchorDirectStorageId` 추가 |
 | 20   | HouseholdInvitation | 거점 초대 (링크·이메일)                                               | Household, User                      | P1       | **신규 (v2.2)** |
 | 21   | HouseholdKindDefinition | 거점 유형 정의 (사용자별 라벨·순서)                               | User                                 | P1       | **신규 (v2.3)** |
+| 22   | UserDeviceToken     | FCM 기기 토큰 (푸시 알림용)                                            | User                                 | P1       | **신규 (v2.6)** |
 
 ### 사용하지 않음 (P3 — 1차 개발 범위 외)
 
@@ -107,6 +111,7 @@ User
   ├── Household (N:N)
   ├── HouseholdInvitation (1:N) — 초대한 초대 (v2.2)
   ├── HouseholdKindDefinition (1:N) — 거점 유형 정의 (v2.3)
+  ├── UserDeviceToken (1:N) — FCM 기기 토큰 (v2.6)
   ├── Notification (1:N)
   ├── NotificationPreference (1:N) — 알림 설정 (v2.1, 거점별 오버라이드 가능)
   └── ExpirationAlertRule (1:N, 선택, 품목별)
@@ -157,6 +162,7 @@ erDiagram
     Household ||--o{ ShoppingListItem : has
     Household ||--o{ ExpirationAlertRule : "optional"
 
+    User ||--o{ UserDeviceToken : "device tokens"
     User ||--o{ Notification : receives
     Notification }o--o| Household : "optional householdId"
     User ||--o{ NotificationPreference : "settings"

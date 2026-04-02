@@ -1,6 +1,9 @@
 # 개념적 설계 v2 — 엔티티와 속성
 
-**버전**: v2.5 — UUID 확정 + Purchase 파생값 제거 (2026-03-27)
+**버전**: v2.6 — UserDeviceToken 신규 엔티티 추가 (2026-04-02)
+
+**v2.6 변경**:
+- UserDeviceToken 신규 엔티티 추가 (FCM 푸시 알림용 기기 토큰 관리)
 
 **v2.5 변경**:
 - 모든 엔티티 PK를 UUID로 확정
@@ -77,6 +80,7 @@ erDiagram
     ShoppingListItem }o--o| ProductVariant : "용량 힌트(선택)"
     ShoppingListItem }o--o| InventoryItem : "알림 출처(선택)"
 
+    User ||--o{ UserDeviceToken : "기기 토큰"
     User ||--o{ Notification : "알림"
     Notification }o--o| Household : "소속 거점(선택)"
     User ||--o{ NotificationPreference : "알림 설정"
@@ -336,6 +340,18 @@ erDiagram
 
 ---
 
+## UserDeviceToken (기기 토큰) — v2.6 신규
+
+- 소유 사용자 (userId)
+- FCM 등록 토큰 (고유)
+- 플랫폼 (web / android / ios)
+- (선택) 기기 식별 정보 (User-Agent 등)
+- 활성 여부 — FCM 무효 응답 시 비활성화
+
+> 한 사용자가 여러 기기에서 로그인할 수 있으므로 User와 1:N. 알림 발송 시 사용자의 활성 토큰 전체에 푸시를 전송한다. 로그아웃 시 해당 토큰 삭제.
+
+---
+
 ---
 
 ## 사용하지 않음 (P3 — 1차 개발 범위 외)
@@ -367,6 +383,7 @@ erDiagram
 - **v2.2 초대·권한 확장**: HouseholdInvitation 테이블 추가로 링크/이메일 초대 플로우 지원. HouseholdMember.role을 admin/editor/viewer 3단계로 세분화하여 거점별 접근 제어 실현.
 - **v2.1 카탈로그 Household-scoped**: Category·Unit·Product가 거점에 귀속. 같은 거점 멤버끼리 공유하며, "다른 거점 카탈로그 가져오기"로 거점 간 복사 가능.
 - **v2.1 알림 설정 테이블화**: NotificationPreference를 별도 테이블로 분리. 사용자 기본값 + 거점별 오버라이드 구조.
+- **v2.6 기기 토큰 테이블**: UserDeviceToken 추가로 FCM 푸시 알림 지원. 한 사용자가 여러 기기에서 토큰을 등록하며, 알림 발송 시 활성 토큰 전체에 전송. NotificationPreference의 "알림 채널 확장" 방향과 연계.
 - **위치 계층(권장)**: `Room`(방) → `FurniturePlacement`(가구) → `StorageLocation`(보관 슬롯) → `InventoryItem`(재고).
 - **알림 → 장보기 → 재고**: 만료 임박·재고 부족 → 장보기에 항목 추가 → 구매 완료 시 Purchase·InventoryItem 반영 + 장보기 행 삭제.
 

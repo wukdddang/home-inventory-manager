@@ -5,6 +5,7 @@ import { NotificationModule } from '../../domain/notification/notification.modul
 import { NotificationPreferenceModule } from '../../domain/notification-preference/notification-preference.module';
 import { InventoryItemModule } from '../../domain/inventory-item/inventory-item.module';
 import { PurchaseBatchModule } from '../../domain/purchase-batch/purchase-batch.module';
+import { FcmContextModule } from '../fcm-context/fcm-context.module';
 import { Household } from '../../domain/household/household.entity';
 import { HouseholdMember } from '../../domain/household/household-member.entity';
 import { NotificationContextService } from './notification-context.service';
@@ -20,6 +21,7 @@ import { MarkNotificationReadHandler } from './handlers/commands/mark-notificati
     NotificationPreferenceModule,
     InventoryItemModule,
     PurchaseBatchModule,
+    FcmContextModule,
   ],
   providers: [
     NotificationContextService,

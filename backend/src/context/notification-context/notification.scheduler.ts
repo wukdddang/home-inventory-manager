@@ -8,6 +8,7 @@ import { NotificationService } from '../../domain/notification/notification.serv
 import { NotificationPreferenceService } from '../../domain/notification-preference/notification-preference.service';
 import { InventoryItemService } from '../../domain/inventory-item/inventory-item.service';
 import { PurchaseBatchService } from '../../domain/purchase-batch/purchase-batch.service';
+import { FcmService } from '../fcm-context/fcm.service';
 
 @Injectable()
 export class NotificationScheduler {
@@ -22,6 +23,7 @@ export class NotificationScheduler {
     private readonly preferenceService: NotificationPreferenceService,
     private readonly inventoryItemService: InventoryItemService,
     private readonly purchaseBatchService: PurchaseBatchService,
+    private readonly fcmService: FcmService,
   ) {}
 
   /**
@@ -70,15 +72,18 @@ export class NotificationScheduler {
     let created = 0;
     for (const batch of batches) {
       const itemName = batch.purchase?.itemName ?? '품목';
+      const title = `유통기한 임박: ${itemName}`;
+      const body = `${itemName}의 유통기한이 ${batch.expirationDate}에 만료됩니다.`;
       await this.notificationService.알림을_생성한다({
         userId,
         householdId,
         type: 'expiration',
-        title: `유통기한 임박: ${itemName}`,
-        body: `${itemName}의 유통기한이 ${batch.expirationDate}에 만료됩니다.`,
+        title,
+        body,
         refType: 'purchase_batch',
         refId: batch.id,
       });
+      await this.fcmService.사용자에게_푸시를_전송한다(userId, title, body);
       created++;
     }
     return created;
@@ -101,15 +106,18 @@ export class NotificationScheduler {
     let created = 0;
     for (const item of items) {
       const productName = item.productVariant?.product?.name ?? '품목';
+      const title = `재고 부족: ${productName}`;
+      const body = `${productName}의 재고가 ${Number(item.quantity)}개로 최소 기준(${Number(item.minStockLevel)}개) 이하입니다.`;
       await this.notificationService.알림을_생성한다({
         userId,
         householdId,
         type: 'low_stock',
-        title: `재고 부족: ${productName}`,
-        body: `${productName}의 재고가 ${Number(item.quantity)}개로 최소 기준(${Number(item.minStockLevel)}개) 이하입니다.`,
+        title,
+        body,
         refType: 'inventory_item',
         refId: item.id,
       });
+      await this.fcmService.사용자에게_푸시를_전송한다(userId, title, body);
       created++;
     }
     return created;
