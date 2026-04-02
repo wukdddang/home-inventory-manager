@@ -33,6 +33,14 @@
 |------|------|
 | [monorepo-and-deployment.md](./infra/monorepo-and-deployment.md) | 모노레포·배포 가이드 |
 
+## 추가 예정 (`upcoming/`)
+
+| 문서 | 설명 |
+|------|------|
+| [entity-conceptual-design.md](./upcoming/entity-conceptual-design.md) | 가계부·투자 포트폴리오 개념적 설계 — 엔티티·속성 |
+| [entity-logical-design.md](./upcoming/entity-logical-design.md) | 가계부·투자 포트폴리오 논리적 설계 — PK/FK·타입·제약 |
+| [reference.md](./upcoming/reference.md) | 참고 내용 (실시간 협업, 자산 API, 스케줄링, 감사 로그 등) |
+
 ## 정책 (`policy/`)
 
 | 문서 | 설명 |
