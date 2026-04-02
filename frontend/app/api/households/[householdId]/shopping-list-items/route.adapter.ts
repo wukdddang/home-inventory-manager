@@ -3,19 +3,42 @@ import { getShoppingList, setShoppingList } from "@/lib/local-store";
 
 // ── Response DTO ──────────────────────────────────────────────────────────────
 
+/**
+ * 백엔드가 반환하는 장보기 항목 DTO.
+ *
+ * 백엔드 필드명 → 프론트엔드 필드명 매핑:
+ *   memo                  → label
+ *   sourceInventoryItemId → inventoryItemId
+ *   quantity              → restockQuantity
+ *   product?.name         → (label 파생)
+ *   productVariant?.name  → variantCaption
+ */
 export interface ApiShoppingListItem {
   id: string;
   householdId: string;
-  inventoryItemId: string | null;
-  label: string | null;
-  unit: string | null;
-  variantCaption: string | null;
+  // 백엔드 필드��
+  sourceInventoryItemId?: string | null;
+  memo?: string | null;
+  quantity?: number | null;
+  // 프론트엔드 기대 필드명 (하위 호환)
+  inventoryItemId?: string | null;
+  label?: string | null;
+  unit?: string | null;
+  variantCaption?: string | null;
+  restockQuantity?: number;
+  // ��통
   categoryId: string | null;
   productId: string | null;
   productVariantId: string | null;
-  restockQuantity: number;
   targetStorageLocationId: string | null;
   createdAt: string;
+  // 백엔드 relations (eager-loaded)
+  product?: { id: string; name: string } | null;
+  productVariant?: {
+    id: string;
+    name: string | null;
+    unit?: { id: string; symbol: string } | null;
+  } | null;
 }
 
 // ── Mapper ────────────────────────────────────────────────────────────────────
@@ -23,17 +46,30 @@ export interface ApiShoppingListItem {
 export function mapApiToShoppingEntry(
   item: ApiShoppingListItem,
 ): ShoppingListEntry {
+  // 백엔드 필드명 → 프론트엔드 필드명 매핑 (양쪽 모두 지원)
+  const label =
+    item.label ?? item.memo ?? item.product?.name ?? undefined;
+  const inventoryItemId =
+    item.inventoryItemId ?? item.sourceInventoryItemId ?? null;
+  const rawQty = item.restockQuantity ?? item.quantity;
+  const restockQuantity =
+    rawQty != null ? Number(rawQty) || 1 : 1;
+  const unit =
+    item.unit ?? item.productVariant?.unit?.symbol ?? undefined;
+  const variantCaption =
+    item.variantCaption ?? item.productVariant?.name ?? undefined;
+
   return {
     id: item.id,
     householdId: item.householdId,
-    inventoryItemId: item.inventoryItemId,
-    label: item.label ?? undefined,
-    unit: item.unit ?? undefined,
-    variantCaption: item.variantCaption ?? undefined,
+    inventoryItemId,
+    label,
+    unit,
+    variantCaption,
     categoryId: item.categoryId ?? undefined,
     productId: item.productId ?? undefined,
     productVariantId: item.productVariantId ?? undefined,
-    restockQuantity: item.restockQuantity,
+    restockQuantity,
     targetStorageLocationId: item.targetStorageLocationId ?? undefined,
     createdAt: item.createdAt,
   };

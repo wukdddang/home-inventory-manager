@@ -43,7 +43,7 @@ export function LoginFormSection() {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1.5 w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-sm text-white outline-none ring-teal-500/40 placeholder:text-zinc-300 focus:border-teal-500 focus:ring-2"
+              className="mt-1.5 w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-base text-white outline-none ring-teal-500/40 placeholder:text-zinc-300 focus:border-teal-500 focus:ring-2"
               placeholder="you@example.com"
             />
           </div>
@@ -60,7 +60,7 @@ export function LoginFormSection() {
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1.5 w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-sm text-white outline-none ring-teal-500/40 focus:border-teal-500 focus:ring-2"
+              className="mt-1.5 w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-base text-white outline-none ring-teal-500/40 focus:border-teal-500 focus:ring-2"
               placeholder="••••••••"
             />
           </div>
@@ -72,7 +72,7 @@ export function LoginFormSection() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-teal-500 py-3 text-sm font-semibold text-zinc-950 transition hover:bg-teal-400 disabled:opacity-50"
+            className="w-full rounded-xl bg-teal-500 py-3.5 text-sm font-semibold text-zinc-950 transition hover:bg-teal-400 disabled:opacity-50"
           >
             {loading ? "로그인 중…" : "로그인"}
           </button>

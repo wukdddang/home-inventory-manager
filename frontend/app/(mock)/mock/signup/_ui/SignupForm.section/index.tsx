@@ -48,7 +48,7 @@ export function SignupFormSection() {
               id="name"
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
-              className="mt-1.5 w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-sm text-white outline-none ring-teal-500/40 focus:border-teal-500 focus:ring-2"
+              className="mt-1.5 w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-base text-white outline-none ring-teal-500/40 focus:border-teal-500 focus:ring-2"
               placeholder="홍길동"
             />
           </div>
@@ -65,7 +65,7 @@ export function SignupFormSection() {
               autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1.5 w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-sm text-white outline-none ring-teal-500/40 focus:border-teal-500 focus:ring-2"
+              className="mt-1.5 w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-base text-white outline-none ring-teal-500/40 focus:border-teal-500 focus:ring-2"
             />
           </div>
           <div>
@@ -81,7 +81,7 @@ export function SignupFormSection() {
               autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1.5 w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-sm text-white outline-none ring-teal-500/40 focus:border-teal-500 focus:ring-2"
+              className="mt-1.5 w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-base text-white outline-none ring-teal-500/40 focus:border-teal-500 focus:ring-2"
               placeholder="8자 이상"
             />
           </div>
@@ -98,7 +98,7 @@ export function SignupFormSection() {
               autoComplete="new-password"
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
-              className="mt-1.5 w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-sm text-white outline-none ring-teal-500/40 focus:border-teal-500 focus:ring-2"
+              className="mt-1.5 w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2.5 text-base text-white outline-none ring-teal-500/40 focus:border-teal-500 focus:ring-2"
             />
           </div>
           {error ? (
@@ -109,7 +109,7 @@ export function SignupFormSection() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-teal-500 py-3 text-sm font-semibold text-zinc-950 hover:bg-teal-400 disabled:opacity-50"
+            className="w-full rounded-xl bg-teal-500 py-3.5 text-sm font-semibold text-zinc-950 hover:bg-teal-400 disabled:opacity-50"
           >
             {loading ? "가입 중…" : "가입하고 시작하기"}
           </button>

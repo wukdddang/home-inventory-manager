@@ -1,6 +1,13 @@
 import { test, expect, type Page } from "@playwright/test";
-import { resetDatabase, query } from "../utils/db";
-import { clearAllMails } from "../utils/mailhog";
+import { resetDatabase, query } from "../../utils/db";
+import { clearAllMails } from "../../utils/mailhog";
+import {
+  seedFullCatalogAndInventory,
+  seedProduct,
+  seedProductVariant,
+  seedInventoryItem,
+  type FullSeedResult,
+} from "../../utils/seed";
 
 const TEST_USER = {
   displayName: "테스트유저",
@@ -45,183 +52,13 @@ test.describe("UC-05. 재고 등록 및 관리", () => {
     return rows[0].id;
   }
 
-  /** house_structure 등록 (방 sync 선행 조건) */
-  async function ensureHouseStructure(page: Page, householdId: string) {
-    await page.request.put(
-      `/api/households/${householdId}/house-structure`,
-      {
-        data: {
-          name: "default",
-          structurePayload: { rooms: {} },
-          diagramLayout: null,
-        },
-      }
-    );
-  }
-
-  /** 방을 API 로 추가한다 */
-  async function addRoomApi(
-    page: Page,
-    householdId: string,
-    roomName: string
-  ): Promise<string> {
-    const existingRooms = await query<{
-      structureRoomKey: string;
-      displayName: string | null;
-      sortOrder: number;
-    }>(
-      `SELECT r."structureRoomKey", r."displayName", r."sortOrder"
-       FROM rooms r
-       INNER JOIN house_structures hs ON r."houseStructureId" = hs.id
-       WHERE hs."householdId" = $1`,
-      [householdId]
-    );
-    const newKey = "room-" + Date.now();
-    const syncPayload = [
-      ...existingRooms.map((r) => ({
-        structureRoomKey: r.structureRoomKey,
-        displayName: r.displayName,
-        sortOrder: r.sortOrder,
-      })),
-      {
-        structureRoomKey: newKey,
-        displayName: roomName,
-        sortOrder: existingRooms.length,
-      },
-    ];
-    await page.request.put(`/api/households/${householdId}/rooms/sync`, {
-      data: { rooms: syncPayload },
-    });
-    const rows = await query<{ id: string }>(
-      'SELECT id FROM rooms WHERE "displayName" = $1',
-      [roomName]
-    );
-    return rows[0].id;
-  }
-
-  /** 직속 보관 장소를 API 로 추가한다 */
-  async function addStorageLocationApi(
-    page: Page,
-    householdId: string,
-    roomId: string,
-    name: string
-  ): Promise<string> {
-    const res = await page.request.post(
-      `/api/households/${householdId}/storage-locations`,
-      { data: { name, roomId, furniturePlacementId: null, sortOrder: 0 } }
-    );
-    expect(res.ok()).toBe(true);
-    const body = await res.json();
-    return body.data.id;
-  }
-
-  /** 카테고리를 API 로 생성한다 */
-  async function createCategoryApi(
-    page: Page,
-    householdId: string,
-    name: string
-  ): Promise<string> {
-    const res = await page.request.post(
-      `/api/households/${householdId}/categories`,
-      { data: { name, sortOrder: 0 } }
-    );
-    expect(res.ok()).toBe(true);
-    const body = await res.json();
-    return body.data.id;
-  }
-
-  /** 단위를 API 로 생성한다 */
-  async function createUnitApi(
-    page: Page,
-    householdId: string,
-    symbol: string,
-    name?: string
-  ): Promise<string> {
-    const res = await page.request.post(
-      `/api/households/${householdId}/units`,
-      { data: { symbol, name: name ?? null, sortOrder: 0 } }
-    );
-    expect(res.ok()).toBe(true);
-    const body = await res.json();
-    return body.data.id;
-  }
-
-  /** 품목을 API 로 생성한다 */
-  async function createProductApi(
-    page: Page,
-    householdId: string,
-    categoryId: string,
-    name: string,
-    isConsumable = true
-  ): Promise<string> {
-    const res = await page.request.post(
-      `/api/households/${householdId}/products`,
-      { data: { categoryId, name, isConsumable } }
-    );
-    expect(res.ok()).toBe(true);
-    const body = await res.json();
-    return body.data.id;
-  }
-
-  /** 변형을 API 로 생성한다 */
-  async function createVariantApi(
-    page: Page,
-    householdId: string,
-    productId: string,
-    unitId: string,
-    quantityPerUnit: number,
-    name?: string
-  ): Promise<string> {
-    const res = await page.request.post(
-      `/api/households/${householdId}/products/${productId}/variants`,
-      {
-        data: {
-          unitId,
-          quantityPerUnit,
-          name: name ?? null,
-          isDefault: true,
-        },
-      }
-    );
-    expect(res.ok()).toBe(true);
-    const body = await res.json();
-    return body.data.id;
-  }
-
-  /** 재고 품목을 API 로 직접 등록한다 */
-  async function createInventoryItemApi(
-    page: Page,
-    householdId: string,
-    productVariantId: string,
-    storageLocationId: string,
-    quantity: number,
-    minStockLevel?: number
-  ): Promise<string> {
-    const res = await page.request.post(
-      `/api/households/${householdId}/inventory-items`,
-      {
-        data: {
-          productVariantId,
-          storageLocationId,
-          quantity,
-          minStockLevel: minStockLevel ?? null,
-        },
-      }
-    );
-    expect(res.ok()).toBe(true);
-    const body = await res.json();
-    return body.data.id;
-  }
-
   /**
    * 전체 사전 조건 세팅:
-   * 회원가입 → 거점 생성 → 방 추가 → 보관장소 추가 → 카테고리·단위·품목·변형 생성
-   * 반환: { householdId, roomId, storageId, categoryId, unitId, productId, variantId }
+   * 회원가입 → 거점 생성 → DB 시드(방·보관장소·카테고리·단위·품목·변형·재고)
    */
-  async function setupFullPrerequisites(page: Page) {
+  async function setupFullPrerequisites(page: Page): Promise<FullSeedResult> {
     await signupAndWait(page);
     await createHousehold(page, "우리 집");
-
     await expect(
       page.locator(
         'button[role="tab"][aria-selected="true"]:has-text("우리 집")'
@@ -229,41 +66,15 @@ test.describe("UC-05. 재고 등록 및 관리", () => {
     ).toBeVisible({ timeout: 5_000 });
 
     const householdId = await getHouseholdId();
-    await ensureHouseStructure(page, householdId);
+    const seed = await seedFullCatalogAndInventory(householdId, {
+      inventoryQuantity: 10,
+    });
 
-    const roomId = await addRoomApi(page, householdId, "주방");
-    const storageId = await addStorageLocationApi(
-      page,
-      householdId,
-      roomId,
-      "냉장고"
-    );
-    const categoryId = await createCategoryApi(page, householdId, "식료품");
-    const unitId = await createUnitApi(page, householdId, "ml", "밀리리터");
-    const productId = await createProductApi(
-      page,
-      householdId,
-      categoryId,
-      "우유"
-    );
-    const variantId = await createVariantApi(
-      page,
-      householdId,
-      productId,
-      unitId,
-      1000,
-      "1L"
-    );
+    // 대시보드를 새로고침하여 시드 데이터를 localStorage 에 반영
+    await page.reload();
+    await page.waitForLoadState("networkidle");
 
-    return {
-      householdId,
-      roomId,
-      storageId,
-      categoryId,
-      unitId,
-      productId,
-      variantId,
-    };
+    return seed;
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -348,7 +159,7 @@ test.describe("UC-05. 재고 등록 및 관리", () => {
       .last()
       .click();
 
-    // DB 에서 재고 품목이 생성되었는지 확인
+    // DB 에서 UI가 생성한 재고 품목 확인 (시드 아이템 제외)
     await expect(async () => {
       const items = await query<{
         quantity: string;
@@ -356,8 +167,9 @@ test.describe("UC-05. 재고 등록 및 관리", () => {
       }>(
         `SELECT i.quantity::text, i."minStockLevel"::text
          FROM inventory_items i
-         WHERE i."productVariantId" = $1 AND i."storageLocationId" = $2`,
-        [ctx.variantId, ctx.storageId]
+         WHERE i."productVariantId" = $1 AND i."storageLocationId" = $2
+           AND i.id != $3`,
+        [ctx.variantId, ctx.storageLocationId, ctx.inventoryItemId]
       );
       expect(items).toHaveLength(1);
       expect(parseFloat(items[0].quantity)).toBe(5);
@@ -368,38 +180,10 @@ test.describe("UC-05. 재고 등록 및 관리", () => {
   test("5-2. 사용자는 재고 품목 목록을 조회한다", async ({ page }) => {
     const ctx = await setupFullPrerequisites(page);
 
-    // API 로 재고 품목 2개 등록
-    await createInventoryItemApi(
-      page,
-      ctx.householdId,
-      ctx.variantId,
-      ctx.storageId,
-      10,
-      3
-    );
-
-    // 두 번째 품목 (같은 카테고리, 다른 product)
-    const prodId2 = await createProductApi(
-      page,
-      ctx.householdId,
-      ctx.categoryId,
-      "요거트"
-    );
-    const varId2 = await createVariantApi(
-      page,
-      ctx.householdId,
-      prodId2,
-      ctx.unitId,
-      500,
-      "500ml"
-    );
-    await createInventoryItemApi(
-      page,
-      ctx.householdId,
-      varId2,
-      ctx.storageId,
-      3
-    );
+    // 두 번째 품목 (같은 카테고리, 다른 product) — DB 시드
+    const prodId2 = await seedProduct(ctx.householdId, ctx.categoryId, "요거트");
+    const varId2 = await seedProductVariant(prodId2, ctx.unitId, 500, "500ml");
+    await seedInventoryItem(varId2, ctx.storageLocationId, 3);
 
     // 대시보드 새로고침
     await page.reload();
@@ -427,19 +211,7 @@ test.describe("UC-05. 재고 등록 및 관리", () => {
 
   test("5-3. 사용자는 재고 수량을 직접 설정한다", async ({ page }) => {
     const ctx = await setupFullPrerequisites(page);
-
-    // API 로 재고 품목 등록 (초기 수량 5)
-    const itemId = await createInventoryItemApi(
-      page,
-      ctx.householdId,
-      ctx.variantId,
-      ctx.storageId,
-      5
-    );
-
-    // 대시보드 새로고침
-    await page.reload();
-    await page.waitForLoadState("networkidle");
+    const itemId = ctx.inventoryItemId;
 
     // "재고 목록 (표)" 뷰로 전환
     const tableToggle = page.locator('button:has-text("재고 목록 (표)")');
@@ -489,19 +261,7 @@ test.describe("UC-05. 재고 등록 및 관리", () => {
     page,
   }) => {
     const ctx = await setupFullPrerequisites(page);
-
-    // API 로 재고 품목 등록 (초기 수량 5)
-    const itemId = await createInventoryItemApi(
-      page,
-      ctx.householdId,
-      ctx.variantId,
-      ctx.storageId,
-      5
-    );
-
-    // ── UI 에서 수량 직접 설정 ──
-    await page.reload();
-    await page.waitForLoadState("networkidle");
+    const itemId = ctx.inventoryItemId;
 
     const tableToggle = page.locator('button:has-text("재고 목록 (표)")');
     await expect(tableToggle).toBeVisible({ timeout: 10_000 });

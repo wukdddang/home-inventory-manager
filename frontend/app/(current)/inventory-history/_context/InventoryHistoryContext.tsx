@@ -565,17 +565,51 @@ export function CurrentInventoryHistoryProvider({
       }),
 
     async loadApiLedger() {
-      const households = getHouseholds();
+      // localStorage + API households를 병합
+      const localHouseholds = getHouseholds();
+      const apiHouseholds = await apiFetch<
+        Array<{ id: string; name: string }>
+      >("/api/households").catch(() => [] as Array<{ id: string; name: string }>);
+
+      // id 기반 병합
+      const householdMap = new Map<string, { id: string; items: Array<{ id: string; name: string }> }>();
+      for (const h of localHouseholds) {
+        householdMap.set(h.id, { id: h.id, items: h.items ?? [] });
+      }
+      for (const h of apiHouseholds) {
+        if (!householdMap.has(h.id)) {
+          householdMap.set(h.id, { id: h.id, items: [] });
+        }
+      }
+
       const rows: InventoryLedgerRow[] = [];
       await Promise.all(
-        households.map(async (h) => {
+        Array.from(householdMap.values()).map(async (h) => {
+          const localItems = h.items ?? [];
+          const apiItems = await apiFetch<
+            Array<{ id: string; name?: string }>
+          >(`/api/households/${h.id}/inventory-items`).catch(
+            () => [] as Array<{ id: string; name?: string }>,
+          );
+
+          // id 기반 병합 (중복 제거)
+          const itemMap = new Map<string, string>();
+          for (const item of localItems) {
+            itemMap.set(item.id, item.name);
+          }
+          for (const item of apiItems) {
+            if (!itemMap.has(item.id)) {
+              itemMap.set(item.id, item.name ?? "품목");
+            }
+          }
+
           await Promise.all(
-            (h.items ?? []).map(async (item) => {
+            Array.from(itemMap.entries()).map(async ([itemId, itemName]) => {
               const logs = await apiFetch<ApiInventoryLog[]>(
-                `/api/households/${h.id}/inventory-items/${item.id}/logs`,
+                `/api/households/${h.id}/inventory-items/${itemId}/logs`,
               ).catch(() => [] as ApiInventoryLog[]);
               for (const log of logs) {
-                rows.push(mapLogToLedgerRow(h.id, item.name, log));
+                rows.push(mapLogToLedgerRow(h.id, itemName, log));
               }
             }),
           );

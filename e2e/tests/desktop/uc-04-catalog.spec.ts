@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
-import { resetDatabase, query } from "../utils/db";
-import { clearAllMails } from "../utils/mailhog";
+import { resetDatabase, query } from "../../utils/db";
+import { clearAllMails } from "../../utils/mailhog";
+import { seedCategory, seedUnit, seedProduct, seedProductVariant } from "../../utils/seed";
 
 const TEST_USER = {
   displayName: "테스트유저",
@@ -74,77 +75,41 @@ test.describe("UC-04. 카탈로그 설정 (카테고리 · 단위 · 상품)", (
     return rows[0].id;
   }
 
-  /** API 로 카테고리를 직접 생성한다 */
+  /** DB seed 로 카테고리를 직접 생성한다 */
   async function createCategoryApi(
-    page: Page,
     householdId: string,
     name: string
   ): Promise<string> {
-    const res = await page.request.post(
-      `/api/households/${householdId}/categories`,
-      { data: { name, sortOrder: 0 } }
-    );
-    expect(res.ok()).toBe(true);
-    const body = await res.json();
-    return body.data.id;
+    return seedCategory(householdId, name);
   }
 
-  /** API 로 단위를 직접 생성한다 */
+  /** DB seed 로 단위를 직접 생성한다 */
   async function createUnitApi(
-    page: Page,
     householdId: string,
     symbol: string,
     name?: string
   ): Promise<string> {
-    const res = await page.request.post(
-      `/api/households/${householdId}/units`,
-      { data: { symbol, name: name ?? null, sortOrder: 0 } }
-    );
-    expect(res.ok()).toBe(true);
-    const body = await res.json();
-    return body.data.id;
+    return seedUnit(householdId, symbol, name ?? null);
   }
 
-  /** API 로 품목을 직접 생성한다 */
+  /** DB seed 로 품목을 직접 생성한다 */
   async function createProductApi(
-    page: Page,
     householdId: string,
     categoryId: string,
     name: string,
     isConsumable = true
   ): Promise<string> {
-    const res = await page.request.post(
-      `/api/households/${householdId}/products`,
-      { data: { categoryId, name, isConsumable } }
-    );
-    expect(res.ok()).toBe(true);
-    const body = await res.json();
-    return body.data.id;
+    return seedProduct(householdId, categoryId, name, isConsumable);
   }
 
-  /** API 로 변형을 직접 생성한다 */
+  /** DB seed 로 변형을 직접 생성한다 */
   async function createVariantApi(
-    page: Page,
-    householdId: string,
     productId: string,
     unitId: string,
     quantityPerUnit: number,
     name?: string
   ): Promise<string> {
-    const res = await page.request.post(
-      `/api/households/${householdId}/products/${productId}/variants`,
-      {
-        data: {
-          unitId,
-          quantityPerUnit,
-          name: name ?? null,
-          isDefault: false,
-        },
-      }
-    );
-    expect(res.ok()).toBe(true);
-    const body = await res.json();
-    return body.data.id;
+    return seedProductVariant(productId, unitId, quantityPerUnit, name ?? null);
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -173,10 +138,10 @@ test.describe("UC-04. 카탈로그 설정 (카테고리 · 단위 · 상품)", (
     const householdId = await getHouseholdId();
 
     // API 로 카테고리와 품목 생성
-    const catId = await createCategoryApi(page, householdId, "식료품");
-    await createProductApi(page, householdId, catId, "라면");
-    await createProductApi(page, householdId, catId, "우유");
-    await createCategoryApi(page, householdId, "생활용품");
+    const catId = await createCategoryApi(householdId, "식료품");
+    await createProductApi(householdId, catId, "라면");
+    await createProductApi(householdId, catId, "우유");
+    await createCategoryApi(householdId, "생활용품");
 
     await goToSettings(page);
     await page.locator('button:has-text("카테고리 관리")').click();
@@ -237,7 +202,7 @@ test.describe("UC-04. 카탈로그 설정 (카테고리 · 단위 · 상품)", (
   }) => {
     await setupHousehold(page);
     const householdId = await getHouseholdId();
-    await createCategoryApi(page, householdId, "식료품");
+    await createCategoryApi(householdId, "식료품");
 
     await goToSettings(page);
     await page.locator('button:has-text("카테고리 관리")').click();
@@ -283,15 +248,14 @@ test.describe("UC-04. 카탈로그 설정 (카테고리 · 단위 · 상품)", (
   }) => {
     await setupHousehold(page);
     const householdId = await getHouseholdId();
-    const catId = await createCategoryApi(page, householdId, "식료품");
-    const unitId = await createUnitApi(page, householdId, "개");
+    const catId = await createCategoryApi(householdId, "식료품");
+    const unitId = await createUnitApi(householdId, "개");
     const prodId = await createProductApi(
-      page,
       householdId,
       catId,
       "라면"
     );
-    await createVariantApi(page, householdId, prodId, unitId, 1);
+    await createVariantApi(prodId, unitId, 1);
 
     await goToSettings(page);
     await page.locator('button:has-text("카테고리 관리")').click();
@@ -345,8 +309,8 @@ test.describe("UC-04. 카탈로그 설정 (카테고리 · 단위 · 상품)", (
   }) => {
     await setupHousehold(page);
     const householdId = await getHouseholdId();
-    await createCategoryApi(page, householdId, "식료품");
-    await createUnitApi(page, householdId, "개");
+    await createCategoryApi(householdId, "식료품");
+    await createUnitApi(householdId, "개");
 
     await goToSettings(page);
     await page.locator('button:has-text("카테고리 관리")').click();
@@ -372,8 +336,8 @@ test.describe("UC-04. 카탈로그 설정 (카테고리 · 단위 · 상품)", (
   }) => {
     await setupHousehold(page);
     const householdId = await getHouseholdId();
-    await createCategoryApi(page, householdId, "식료품");
-    await createUnitApi(page, householdId, "개");
+    await createCategoryApi(householdId, "식료품");
+    await createUnitApi(householdId, "개");
 
     await goToSettings(page);
     await page.locator('button:has-text("용량·포장 관리")').click();
@@ -415,16 +379,15 @@ test.describe("UC-04. 카탈로그 설정 (카테고리 · 단위 · 상품)", (
   }) => {
     await setupHousehold(page);
     const householdId = await getHouseholdId();
-    const catId = await createCategoryApi(page, householdId, "식료품");
-    const unitId = await createUnitApi(page, householdId, "ml", "밀리리터");
-    await createUnitApi(page, householdId, "개");
+    const catId = await createCategoryApi(householdId, "식료품");
+    const unitId = await createUnitApi(householdId, "ml", "밀리리터");
+    await createUnitApi(householdId, "개");
     const prodId = await createProductApi(
-      page,
       householdId,
       catId,
       "우유"
     );
-    await createVariantApi(page, householdId, prodId, unitId, 500);
+    await createVariantApi(prodId, unitId, 500);
 
     await goToSettings(page);
     await page.locator('button:has-text("용량·포장 관리")').click();
@@ -442,8 +405,8 @@ test.describe("UC-04. 카탈로그 설정 (카테고리 · 단위 · 상품)", (
   }) => {
     await setupHousehold(page);
     const householdId = await getHouseholdId();
-    await createCategoryApi(page, householdId, "식료품");
-    await createUnitApi(page, householdId, "ml", "밀리리터");
+    await createCategoryApi(householdId, "식료품");
+    await createUnitApi(householdId, "ml", "밀리리터");
 
     await goToSettings(page);
     await page.locator('button:has-text("용량·포장 관리")').click();
@@ -485,9 +448,9 @@ test.describe("UC-04. 카탈로그 설정 (카테고리 · 단위 · 상품)", (
   test("4-B-9. 사용자는 단위를 삭제한다", async ({ page }) => {
     await setupHousehold(page);
     const householdId = await getHouseholdId();
-    await createCategoryApi(page, householdId, "식료품");
-    await createUnitApi(page, householdId, "ml", "밀리리터");
-    await createUnitApi(page, householdId, "개");
+    await createCategoryApi(householdId, "식료품");
+    await createUnitApi(householdId, "ml", "밀리리터");
+    await createUnitApi(householdId, "개");
 
     await goToSettings(page);
     await page.locator('button:has-text("용량·포장 관리")').click();
@@ -536,11 +499,11 @@ test.describe("UC-04. 카탈로그 설정 (카테고리 · 단위 · 상품)", (
   }) => {
     await setupHousehold(page);
     const householdId = await getHouseholdId();
-    const catId1 = await createCategoryApi(page, householdId, "식료품");
-    const catId2 = await createCategoryApi(page, householdId, "생활용품");
-    await createProductApi(page, householdId, catId1, "라면");
-    await createProductApi(page, householdId, catId1, "우유");
-    await createProductApi(page, householdId, catId2, "세제");
+    const catId1 = await createCategoryApi(householdId, "식료품");
+    const catId2 = await createCategoryApi(householdId, "생활용품");
+    await createProductApi(householdId, catId1, "라면");
+    await createProductApi(householdId, catId1, "우유");
+    await createProductApi(householdId, catId2, "세제");
 
     await goToSettings(page);
     await page.locator('button:has-text("품목 관리")').click();
@@ -563,10 +526,10 @@ test.describe("UC-04. 카탈로그 설정 (카테고리 · 단위 · 상품)", (
   }) => {
     await setupHousehold(page);
     const householdId = await getHouseholdId();
-    const catId1 = await createCategoryApi(page, householdId, "식료품");
-    const catId2 = await createCategoryApi(page, householdId, "생활용품");
-    await createProductApi(page, householdId, catId1, "라면");
-    await createProductApi(page, householdId, catId2, "세제");
+    const catId1 = await createCategoryApi(householdId, "식료품");
+    const catId2 = await createCategoryApi(householdId, "생활용품");
+    await createProductApi(householdId, catId1, "라면");
+    await createProductApi(householdId, catId2, "세제");
 
     await goToSettings(page);
     await page.locator('button:has-text("품목 관리")').click();
@@ -599,7 +562,7 @@ test.describe("UC-04. 카탈로그 설정 (카테고리 · 단위 · 상품)", (
   }) => {
     await setupHousehold(page);
     const householdId = await getHouseholdId();
-    await createCategoryApi(page, householdId, "식료품");
+    await createCategoryApi(householdId, "식료품");
 
     await goToSettings(page);
     await page.locator('button:has-text("품목 관리")').click();
@@ -649,8 +612,8 @@ test.describe("UC-04. 카탈로그 설정 (카테고리 · 단위 · 상품)", (
   }) => {
     await setupHousehold(page);
     const householdId = await getHouseholdId();
-    const catId = await createCategoryApi(page, householdId, "식료품");
-    await createProductApi(page, householdId, catId, "라면");
+    const catId = await createCategoryApi(householdId, "식료품");
+    await createProductApi(householdId, catId, "라면");
 
     await goToSettings(page);
     await page.locator('button:has-text("품목 관리")').click();
@@ -688,15 +651,14 @@ test.describe("UC-04. 카탈로그 설정 (카테고리 · 단위 · 상품)", (
   }) => {
     await setupHousehold(page);
     const householdId = await getHouseholdId();
-    const catId = await createCategoryApi(page, householdId, "식료품");
-    const unitId = await createUnitApi(page, householdId, "개");
+    const catId = await createCategoryApi(householdId, "식료품");
+    const unitId = await createUnitApi(householdId, "개");
     const prodId = await createProductApi(
-      page,
       householdId,
       catId,
       "라면"
     );
-    await createVariantApi(page, householdId, prodId, unitId, 5);
+    await createVariantApi(prodId, unitId, 5);
 
     await goToSettings(page);
     await page.locator('button:has-text("품목 관리")').click();
@@ -734,8 +696,8 @@ test.describe("UC-04. 카탈로그 설정 (카테고리 · 단위 · 상품)", (
   }) => {
     await setupHousehold(page);
     const householdId = await getHouseholdId();
-    await createCategoryApi(page, householdId, "식료품");
-    await createUnitApi(page, householdId, "개");
+    await createCategoryApi(householdId, "식료품");
+    await createUnitApi(householdId, "개");
 
     await goToSettings(page);
     await page.locator('button:has-text("품목 관리")').click();
@@ -761,8 +723,8 @@ test.describe("UC-04. 카탈로그 설정 (카테고리 · 단위 · 상품)", (
   }) => {
     await setupHousehold(page);
     const householdId = await getHouseholdId();
-    await createCategoryApi(page, householdId, "식료품");
-    await createUnitApi(page, householdId, "개");
+    await createCategoryApi(householdId, "식료품");
+    await createUnitApi(householdId, "개");
 
     await goToSettings(page);
     await page.locator('button:has-text("용량·포장 관리")').click();
@@ -779,15 +741,14 @@ test.describe("UC-04. 카탈로그 설정 (카테고리 · 단위 · 상품)", (
   }) => {
     await setupHousehold(page);
     const householdId = await getHouseholdId();
-    const catId = await createCategoryApi(page, householdId, "식료품");
-    const unitId = await createUnitApi(page, householdId, "ml", "밀리리터");
+    const catId = await createCategoryApi(householdId, "식료품");
+    const unitId = await createUnitApi(householdId, "ml", "밀리리터");
     const prodId = await createProductApi(
-      page,
       householdId,
       catId,
       "우유"
     );
-    await createVariantApi(page, householdId, prodId, unitId, 500, "500ml");
+    await createVariantApi(prodId, unitId, 500, "500ml");
 
     await goToSettings(page);
     await page.locator('button:has-text("용량·포장 관리")').click();
@@ -814,9 +775,9 @@ test.describe("UC-04. 카탈로그 설정 (카테고리 · 단위 · 상품)", (
   }) => {
     await setupHousehold(page);
     const householdId = await getHouseholdId();
-    const catId = await createCategoryApi(page, householdId, "식료품");
-    const unitId = await createUnitApi(page, householdId, "ml", "밀리리터");
-    await createProductApi(page, householdId, catId, "우유");
+    const catId = await createCategoryApi(householdId, "식료품");
+    const unitId = await createUnitApi(householdId, "ml", "밀리리터");
+    await createProductApi(householdId, catId, "우유");
 
     await goToSettings(page);
     await page.locator('button:has-text("용량·포장 관리")').click();
@@ -868,15 +829,14 @@ test.describe("UC-04. 카탈로그 설정 (카테고리 · 단위 · 상품)", (
   }) => {
     await setupHousehold(page);
     const householdId = await getHouseholdId();
-    const catId = await createCategoryApi(page, householdId, "식료품");
-    const unitId = await createUnitApi(page, householdId, "ml", "밀리리터");
+    const catId = await createCategoryApi(householdId, "식료품");
+    const unitId = await createUnitApi(householdId, "ml", "밀리리터");
     const prodId = await createProductApi(
-      page,
       householdId,
       catId,
       "우유"
     );
-    await createVariantApi(page, householdId, prodId, unitId, 500, "500ml");
+    await createVariantApi(prodId, unitId, 500, "500ml");
 
     await goToSettings(page);
     await page.locator('button:has-text("용량·포장 관리")').click();
@@ -920,17 +880,14 @@ test.describe("UC-04. 카탈로그 설정 (카테고리 · 단위 · 상품)", (
   }) => {
     await setupHousehold(page);
     const householdId = await getHouseholdId();
-    const catId = await createCategoryApi(page, householdId, "식료품");
-    const unitId = await createUnitApi(page, householdId, "ml", "밀리리터");
+    const catId = await createCategoryApi(householdId, "식료품");
+    const unitId = await createUnitApi(householdId, "ml", "밀리리터");
     const prodId = await createProductApi(
-      page,
       householdId,
       catId,
       "우유"
     );
     const variantId = await createVariantApi(
-      page,
-      householdId,
       prodId,
       unitId,
       500,
@@ -969,8 +926,8 @@ test.describe("UC-04. 카탈로그 설정 (카테고리 · 단위 · 상품)", (
   }) => {
     await setupHousehold(page);
     const householdId = await getHouseholdId();
-    await createCategoryApi(page, householdId, "식료품");
-    await createUnitApi(page, householdId, "개");
+    await createCategoryApi(householdId, "식료품");
+    await createUnitApi(householdId, "개");
 
     await goToSettings(page);
     await page.locator('button:has-text("용량·포장 관리")').click();
@@ -1011,15 +968,14 @@ test.describe("UC-04. 카탈로그 설정 (카테고리 · 단위 · 상품)", (
   }) => {
     await setupHousehold(page);
     const householdId = await getHouseholdId();
-    const catId = await createCategoryApi(page, householdId, "식료품");
-    const unitId = await createUnitApi(page, householdId, "ml", "밀리리터");
+    const catId = await createCategoryApi(householdId, "식료품");
+    const unitId = await createUnitApi(householdId, "ml", "밀리리터");
     const prodId = await createProductApi(
-      page,
       householdId,
       catId,
       "우유"
     );
-    await createVariantApi(page, householdId, prodId, unitId, 500, "500ml");
+    await createVariantApi(prodId, unitId, 500, "500ml");
 
     await goToSettings(page);
     await page.locator('button:has-text("카탈로그 관리")').click();
@@ -1050,10 +1006,10 @@ test.describe("UC-04. 카탈로그 설정 (카테고리 · 단위 · 상품)", (
   }) => {
     await setupHousehold(page);
     const householdId = await getHouseholdId();
-    const catId1 = await createCategoryApi(page, householdId, "식료품");
-    const catId2 = await createCategoryApi(page, householdId, "생활용품");
-    await createProductApi(page, householdId, catId1, "라면");
-    await createProductApi(page, householdId, catId2, "세제");
+    const catId1 = await createCategoryApi(householdId, "식료품");
+    const catId2 = await createCategoryApi(householdId, "생활용품");
+    await createProductApi(householdId, catId1, "라면");
+    await createProductApi(householdId, catId2, "세제");
 
     await goToSettings(page);
     await page.locator('button:has-text("카탈로그 관리")').click();
@@ -1077,8 +1033,8 @@ test.describe("UC-04. 카탈로그 설정 (카테고리 · 단위 · 상품)", (
   }) => {
     await setupHousehold(page);
     const householdId = await getHouseholdId();
-    const catId = await createCategoryApi(page, householdId, "식료품");
-    await createProductApi(page, householdId, catId, "라면");
+    const catId = await createCategoryApi(householdId, "식료품");
+    await createProductApi(householdId, catId, "라면");
 
     await goToSettings(page);
     await page.locator('button:has-text("카탈로그 관리")').click();
@@ -1107,8 +1063,8 @@ test.describe("UC-04. 카탈로그 설정 (카테고리 · 단위 · 상품)", (
   }) => {
     await setupHousehold(page);
     const householdId = await getHouseholdId();
-    await createCategoryApi(page, householdId, "식료품");
-    await createUnitApi(page, householdId, "개");
+    await createCategoryApi(householdId, "식료품");
+    await createUnitApi(householdId, "개");
 
     await goToSettings(page);
     await page.locator('button:has-text("카탈로그 관리")').click();

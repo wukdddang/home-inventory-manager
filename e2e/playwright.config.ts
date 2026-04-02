@@ -1,7 +1,6 @@
 import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
-  testDir: "./tests",
   fullyParallel: false, // UC 간 순서 보장
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
@@ -16,13 +15,18 @@ export default defineConfig({
     trace: "on-first-retry",
     screenshot: "only-on-failure",
     video: "on",
-    viewport: { width: 1280, height: 720 },
   },
 
   projects: [
     {
-      name: "chromium",
+      name: "desktop-chromium",
+      testDir: "./tests/desktop",
       use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 720 } },
+    },
+    {
+      name: "mobile-chromium",
+      testDir: "./tests/mobile",
+      use: { ...devices["Pixel 7"], viewport: { width: 375, height: 812 } },
     },
   ],
 });

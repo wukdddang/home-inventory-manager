@@ -7,9 +7,12 @@ import { MOBILE_HOUSEHOLD_SELECT_EVENT } from "@/app/(mock)/mock/_ui/AppShell.co
 import {
   getMockSettingsAccountUserSnapshot,
   subscribeMockSettingsAccountUser,
+  getAuthUserSnapshot,
+  subscribeAuthUser,
   setAuthUser,
 } from "@/lib/local-store";
 import { useAppRoutePrefix } from "@/lib/use-app-route-prefix";
+import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { useSyncExternalStore, useState, useCallback } from "react";
 import { LogOut, Monitor, Home, ChevronRight, Bell } from "lucide-react";
@@ -20,11 +23,22 @@ export function SettingsMobilePanel() {
   const prefix = useAppRoutePrefix();
   const router = useRouter();
 
-  const user = useSyncExternalStore(
+  const pathname = usePathname();
+  const isMock = pathname.startsWith("/mock");
+
+  const mockUser = useSyncExternalStore(
     subscribeMockSettingsAccountUser,
     getMockSettingsAccountUserSnapshot,
     () => ({ email: "", displayName: "", emailVerified: false }),
   );
+  const authUser = useSyncExternalStore(
+    subscribeAuthUser,
+    getAuthUserSnapshot,
+    () => null,
+  );
+  const user = isMock
+    ? mockUser
+    : authUser ?? { email: "", displayName: "", emailVerified: false };
 
   // 푸시 알림 mock 상태
   const [pushEnabled, setPushEnabled] = useState(false);

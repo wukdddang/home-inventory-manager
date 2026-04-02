@@ -5,26 +5,70 @@ import { getShoppingList, setShoppingList } from "@/lib/local-store";
 import { useDashboard } from "../../_hooks/useDashboard";
 import { ShoppingCart, Check } from "lucide-react";
 import type { Household, ShoppingListEntry } from "@/types/domain";
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { subscribeShoppingList } from "@/lib/local-store";
+import { usePathname } from "next/navigation";
 
 type ShoppingListFabProps = {
   household: Household;
 };
 
+/** API에서 장보기 항목을 가져와 ShoppingListEntry 형태로 변환 */
+async function fetchApiShoppingItems(
+  householdId: string,
+): Promise<ShoppingListEntry[]> {
+  try {
+    const res = await fetch(`/api/households/${householdId}/shopping-list-items`);
+    const json = await res.json();
+    if (!json.success) return [];
+    return (json.data as Array<{
+      id: string;
+      memo: string | null;
+      quantity: number | null;
+      sourceInventoryItemId: string | null;
+      createdAt?: string;
+    }>).map((item) => ({
+      id: item.id,
+      householdId,
+      inventoryItemId: item.sourceInventoryItemId ?? null,
+      label: item.memo ?? "품목",
+      restockQuantity: item.quantity ?? 1,
+      createdAt: item.createdAt ?? new Date().toISOString(),
+    }));
+  } catch {
+    return [];
+  }
+}
+
 export function ShoppingListFab({ household }: ShoppingListFabProps) {
   const [open, setOpen] = useState(false);
-  const allEntries = useSyncExternalStore(
+  const pathname = usePathname();
+  const isMock = pathname.startsWith("/mock");
+
+  // localStorage 기반 (mock 모드)
+  const allLocalEntries = useSyncExternalStore(
     subscribeShoppingList,
     getShoppingList,
     () => [] as ShoppingListEntry[],
   );
+
+  // API 기반 (current 모드)
+  const [apiEntries, setApiEntries] = useState<ShoppingListEntry[]>([]);
+  const loadApiEntries = useCallback(() => {
+    if (!isMock && household.id) {
+      fetchApiShoppingItems(household.id).then(setApiEntries);
+    }
+  }, [isMock, household.id]);
+  useEffect(() => { loadApiEntries(); }, [loadApiEntries]);
+
   const { 재고_장보기_보충을_기록_한다 } = useDashboard();
 
-  const entries = useMemo(
-    () => allEntries.filter((e) => e.householdId === household.id),
-    [allEntries, household.id],
-  );
+  const entries = useMemo(() => {
+    if (isMock) {
+      return allLocalEntries.filter((e) => e.householdId === household.id);
+    }
+    return apiEntries;
+  }, [isMock, allLocalEntries, apiEntries, household.id]);
 
   const [checked, setChecked] = useState<Set<string>>(new Set());
 
@@ -37,23 +81,46 @@ export function ShoppingListFab({ household }: ShoppingListFabProps) {
     });
   };
 
-  const handleComplete = () => {
+  const handleComplete = async () => {
     const toComplete = entries.filter((e) => checked.has(e.id));
-    for (const entry of toComplete) {
-      if (entry.inventoryItemId) {
-        재고_장보기_보충을_기록_한다(
-          household.id,
-          entry.inventoryItemId,
-          entry.restockQuantity,
-          "장보기 완료 (모바일)",
-        );
+
+    if (isMock) {
+      for (const entry of toComplete) {
+        if (entry.inventoryItemId) {
+          재고_장보기_보충을_기록_한다(
+            household.id,
+            entry.inventoryItemId,
+            entry.restockQuantity,
+            "장보기 완료 (모바일)",
+          );
+        }
       }
+      const remaining = allLocalEntries.filter((e) => !checked.has(e.id));
+      setShoppingList(remaining);
+    } else {
+      // API 모드: 각 항목별 complete API 호출
+      await Promise.all(
+        toComplete.map(async (entry) => {
+          await fetch(
+            `/api/households/${household.id}/shopping-list-items/${entry.id}/complete`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                inventoryItemId: entry.inventoryItemId ?? null,
+                quantity: entry.restockQuantity,
+              }),
+            },
+          ).catch(() => {});
+        }),
+      );
+      // API 항목 다시 불러오기
+      loadApiEntries();
     }
-    // 완료된 항목 제거
-    const remaining = allEntries.filter((e) => !checked.has(e.id));
-    setShoppingList(remaining);
+
     setChecked(new Set());
-    if (remaining.filter((e) => e.householdId === household.id).length === 0) {
+    const remainingCount = entries.filter((e) => !checked.has(e.id)).length;
+    if (remainingCount === 0) {
       setOpen(false);
     }
   };

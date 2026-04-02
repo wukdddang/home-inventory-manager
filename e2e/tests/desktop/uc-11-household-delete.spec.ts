@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
-import { resetDatabase, query } from "../utils/db";
-import { clearAllMails } from "../utils/mailhog";
+import { resetDatabase, query } from "../../utils/db";
+import { clearAllMails } from "../../utils/mailhog";
+import { seedFullCatalogAndInventory } from "../../utils/seed";
 
 const TEST_USER = {
   displayName: "테스트유저",
@@ -41,59 +42,11 @@ test.describe("UC-11. 거점 삭제", () => {
     return (await query<{ id: string }>("SELECT id FROM households WHERE name = $1", [name]))[0].id;
   }
 
-  async function ensureHouseStructure(page: Page, hId: string) {
-    await page.request.put(`/api/households/${hId}/house-structure`, {
-      data: { name: "default", structurePayload: { rooms: {} }, diagramLayout: null },
-    });
-  }
-
-  async function addRoomApi(page: Page, hId: string, name: string): Promise<string> {
-    const existing = await query<{ structureRoomKey: string; displayName: string | null; sortOrder: number }>(
-      `SELECT r."structureRoomKey", r."displayName", r."sortOrder" FROM rooms r INNER JOIN house_structures hs ON r."houseStructureId" = hs.id WHERE hs."householdId" = $1`, [hId]);
-    await page.request.put(`/api/households/${hId}/rooms/sync`, {
-      data: { rooms: [...existing.map(r => ({ structureRoomKey: r.structureRoomKey, displayName: r.displayName, sortOrder: r.sortOrder })),
-        { structureRoomKey: "room-" + Date.now(), displayName: name, sortOrder: existing.length }] },
-    });
-    return (await query<{ id: string }>('SELECT id FROM rooms WHERE "displayName" = $1', [name]))[0].id;
-  }
-
-  async function addStorageApi(page: Page, hId: string, roomId: string, name: string): Promise<string> {
-    return (await (await page.request.post(`/api/households/${hId}/storage-locations`, { data: { name, roomId, furniturePlacementId: null, sortOrder: 0 } })).json()).data.id;
-  }
-
-  async function createCatApi(page: Page, hId: string, name: string): Promise<string> {
-    return (await (await page.request.post(`/api/households/${hId}/categories`, { data: { name, sortOrder: 0 } })).json()).data.id;
-  }
-
-  async function createUnitApi(page: Page, hId: string, symbol: string): Promise<string> {
-    return (await (await page.request.post(`/api/households/${hId}/units`, { data: { symbol, name: null, sortOrder: 0 } })).json()).data.id;
-  }
-
-  async function createProdApi(page: Page, hId: string, catId: string, name: string): Promise<string> {
-    return (await (await page.request.post(`/api/households/${hId}/products`, { data: { categoryId: catId, name, isConsumable: true } })).json()).data.id;
-  }
-
-  async function createVarApi(page: Page, hId: string, prodId: string, unitId: string, qty: number, name?: string): Promise<string> {
-    return (await (await page.request.post(`/api/households/${hId}/products/${prodId}/variants`, { data: { unitId, quantityPerUnit: qty, name: name ?? null, isDefault: true } })).json()).data.id;
-  }
-
-  async function createItemApi(page: Page, hId: string, pvId: string, slId: string, qty: number): Promise<string> {
-    return (await (await page.request.post(`/api/households/${hId}/inventory-items`, { data: { productVariantId: pvId, storageLocationId: slId, quantity: qty, minStockLevel: null } })).json()).data.id;
-  }
-
-  /** 거점 + 방 + 보관장소 + 카탈로그 + 재고 풀세팅 */
   async function setupFullHousehold(page: Page, householdName: string) {
     await createHousehold(page, householdName);
     const hId = await getHouseholdId(householdName);
-    await ensureHouseStructure(page, hId);
-    const roomId = await addRoomApi(page, hId, "주방");
-    const slId = await addStorageApi(page, hId, roomId, "냉장고");
-    const catId = await createCatApi(page, hId, "식료품");
-    const unitId = await createUnitApi(page, hId, "팩");
-    const prodId = await createProdApi(page, hId, catId, "우유");
-    const varId = await createVarApi(page, hId, prodId, unitId, 1, "1L");
-    const itemId = await createItemApi(page, hId, varId, slId, 5);
-    return { hId, roomId, slId, catId, unitId, prodId, varId, itemId };
+    const seed = await seedFullCatalogAndInventory(hId);
+    return { hId, ...seed, itemId: seed.inventoryItemId };
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

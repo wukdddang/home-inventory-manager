@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
-import { resetDatabase, query } from "../utils/db";
-import { clearAllMails } from "../utils/mailhog";
+import { resetDatabase, query } from "../../utils/db";
+import { clearAllMails } from "../../utils/mailhog";
+import { seedFullCatalogAndInventory, seedProduct, type FullSeedResult } from "../../utils/seed";
 
 const TEST_USER = {
   displayName: "테스트유저",
@@ -41,60 +42,18 @@ test.describe("UC-10. 알림 설정 및 알림 조회", () => {
     return (await query<{ id: string }>("SELECT id FROM households LIMIT 1"))[0].id;
   }
 
-  async function ensureHouseStructure(page: Page, hId: string) {
-    await page.request.put(`/api/households/${hId}/house-structure`, {
-      data: { name: "default", structurePayload: { rooms: {} }, diagramLayout: null },
-    });
-  }
-
-  async function addRoomApi(page: Page, hId: string, name: string): Promise<string> {
-    const existing = await query<{ structureRoomKey: string; displayName: string | null; sortOrder: number }>(
-      `SELECT r."structureRoomKey", r."displayName", r."sortOrder" FROM rooms r INNER JOIN house_structures hs ON r."houseStructureId" = hs.id WHERE hs."householdId" = $1`, [hId]);
-    await page.request.put(`/api/households/${hId}/rooms/sync`, {
-      data: { rooms: [...existing.map(r => ({ structureRoomKey: r.structureRoomKey, displayName: r.displayName, sortOrder: r.sortOrder })),
-        { structureRoomKey: "room-" + Date.now(), displayName: name, sortOrder: existing.length }] },
-    });
-    return (await query<{ id: string }>('SELECT id FROM rooms WHERE "displayName" = $1', [name]))[0].id;
-  }
-
-  async function addStorageApi(page: Page, hId: string, roomId: string, name: string): Promise<string> {
-    return (await (await page.request.post(`/api/households/${hId}/storage-locations`, { data: { name, roomId, furniturePlacementId: null, sortOrder: 0 } })).json()).data.id;
-  }
-
-  async function createCatApi(page: Page, hId: string, name: string): Promise<string> {
-    return (await (await page.request.post(`/api/households/${hId}/categories`, { data: { name, sortOrder: 0 } })).json()).data.id;
-  }
-
-  async function createUnitApi(page: Page, hId: string, symbol: string): Promise<string> {
-    return (await (await page.request.post(`/api/households/${hId}/units`, { data: { symbol, name: null, sortOrder: 0 } })).json()).data.id;
-  }
-
-  async function createProdApi(page: Page, hId: string, catId: string, name: string): Promise<string> {
-    return (await (await page.request.post(`/api/households/${hId}/products`, { data: { categoryId: catId, name, isConsumable: true } })).json()).data.id;
-  }
-
-  async function createVarApi(page: Page, hId: string, prodId: string, unitId: string, qty: number, name?: string): Promise<string> {
-    return (await (await page.request.post(`/api/households/${hId}/products/${prodId}/variants`, { data: { unitId, quantityPerUnit: qty, name: name ?? null, isDefault: true } })).json()).data.id;
-  }
-
-  async function createItemApi(page: Page, hId: string, pvId: string, slId: string, qty: number, minStock?: number): Promise<string> {
-    return (await (await page.request.post(`/api/households/${hId}/inventory-items`, { data: { productVariantId: pvId, storageLocationId: slId, quantity: qty, minStockLevel: minStock ?? null } })).json()).data.id;
-  }
-
   /** 전체 사전 조건 세팅 */
-  async function setupFull(page: Page) {
+  async function setupFull(page: Page): Promise<FullSeedResult & { hId: string; itemId: string }> {
     await signupAndWait(page);
     await createHousehold(page, "우리 집");
-    const hId = await getHouseholdId();
-    await ensureHouseStructure(page, hId);
-    const roomId = await addRoomApi(page, hId, "주방");
-    const slId = await addStorageApi(page, hId, roomId, "냉장고");
-    const catId = await createCatApi(page, hId, "식료품");
-    const unitId = await createUnitApi(page, hId, "팩");
-    const prodId = await createProdApi(page, hId, catId, "우유");
-    const varId = await createVarApi(page, hId, prodId, unitId, 1, "1L");
-    const itemId = await createItemApi(page, hId, varId, slId, 5, 3);
-    return { hId, roomId, slId, catId, unitId, prodId, varId, itemId };
+    const householdId = await getHouseholdId();
+    const seed = await seedFullCatalogAndInventory(householdId, {
+      inventoryQuantity: 5,
+      minStockLevel: 3,
+    });
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+    return { ...seed, hId: seed.householdId, itemId: seed.inventoryItemId };
   }
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -249,12 +208,12 @@ test.describe("UC-10. 알림 설정 및 알림 조회", () => {
 
     // 만료 알림 규칙 생성
     const res = await page.request.post(`/api/households/${ctx.hId}/expiration-alert-rules`, {
-      data: { productId: ctx.prodId, daysBefore: 5, isActive: true },
+      data: { productId: ctx.productId, daysBefore: 5, isActive: true },
     });
     expect(res.ok()).toBe(true);
     const body = await res.json();
 
-    expect(body.data.productId).toBe(ctx.prodId);
+    expect(body.data.productId).toBe(ctx.productId);
     expect(body.data.daysBefore).toBe(5);
     expect(body.data.isActive).toBe(true);
 
@@ -271,9 +230,9 @@ test.describe("UC-10. 알림 설정 및 알림 조회", () => {
     const ctx = await setupFull(page);
 
     // 두 번째 품목 + 규칙 생성
-    const prodId2 = await createProdApi(page, ctx.hId, ctx.catId, "치즈");
+    const prodId2 = await seedProduct(ctx.hId, ctx.categoryId, "치즈");
     await page.request.post(`/api/households/${ctx.hId}/expiration-alert-rules`, {
-      data: { productId: ctx.prodId, daysBefore: 3, isActive: true },
+      data: { productId: ctx.productId, daysBefore: 3, isActive: true },
     });
     await page.request.post(`/api/households/${ctx.hId}/expiration-alert-rules`, {
       data: { productId: prodId2, daysBefore: 7, isActive: false },
@@ -291,7 +250,7 @@ test.describe("UC-10. 알림 설정 및 알림 조회", () => {
 
     // 규칙 생성
     const createRes = await page.request.post(`/api/households/${ctx.hId}/expiration-alert-rules`, {
-      data: { productId: ctx.prodId, daysBefore: 5, isActive: true },
+      data: { productId: ctx.productId, daysBefore: 5, isActive: true },
     });
     const ruleId = (await createRes.json()).data.id;
 
@@ -318,7 +277,7 @@ test.describe("UC-10. 알림 설정 및 알림 조회", () => {
 
     // 규칙 생성
     const createRes = await page.request.post(`/api/households/${ctx.hId}/expiration-alert-rules`, {
-      data: { productId: ctx.prodId, daysBefore: 5, isActive: true },
+      data: { productId: ctx.productId, daysBefore: 5, isActive: true },
     });
     const ruleId = (await createRes.json()).data.id;
 

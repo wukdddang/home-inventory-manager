@@ -318,36 +318,52 @@ function ShoppingListDetailContent({
   };
 
   const completeSaved = (entry: ShoppingListEntry) => {
-    if (dataMode === "api") {
+    // 재고 연결된 inventoryItemId 결정
+    let linkedItemId = entry.inventoryItemId ?? null;
+    if (!linkedItemId && entry.productId && entry.productVariantId) {
+      const match = household.items.find(
+        (i) =>
+          i.productId === entry.productId &&
+          i.productVariantId === entry.productVariantId,
+      );
+      if (match) linkedItemId = match.id;
+    }
+
+    if (dataMode === "api" && linkedItemId) {
+      // 백엔드 complete API 호출 (재고 증가 + 이력 생성 + 항목 삭제를 한 트랜잭션으로 처리)
       shoppingApiFetch(
         `/api/households/${household.id}/shopping-list-items/${entry.id}/complete`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ restockQuantity: entry.restockQuantity }),
+          body: JSON.stringify({
+            inventoryItemId: linkedItemId,
+            quantity: entry.restockQuantity,
+          }),
         },
-      ).catch((e) => console.error("장보기 완료 API 오류:", e));
-    }
-    if (entry.inventoryItemId) {
-      completeLinked(entry.inventoryItemId, entry.restockQuantity, {
-        removeEntryId: entry.id,
+      )
+        .then(() => {
+          // 백엔드가 항목을 삭제했으므로 로컬 목록에서도 제거 (DELETE API 호출 없이)
+          setShoppingList(
+            getShoppingList().filter((e) => e.id !== entry.id),
+          );
+        })
+        .catch((e) => console.error("장보기 완료 API 오류:", e));
+
+      // 로컬 재고 수량 반영 (UI 즉시 갱신용)
+      completeLinked(linkedItemId, entry.restockQuantity, {
         label: entry.label ?? "",
       });
       return;
     }
-    if (entry.productId && entry.productVariantId) {
-      const matches = household.items.filter(
-        (i) =>
-          i.productId === entry.productId &&
-          i.productVariantId === entry.productVariantId,
-      );
-      if (matches.length >= 1) {
-        completeLinked(matches[0].id, entry.restockQuantity, {
-          removeEntryId: entry.id,
-          label: entry.label ?? "",
-        });
-        return;
-      }
+
+    // 재고 미연결 — 로컬 처리만
+    if (linkedItemId) {
+      completeLinked(linkedItemId, entry.restockQuantity, {
+        removeEntryId: entry.id,
+        label: entry.label ?? "",
+      });
+      return;
     }
     removeSaved(entry.id);
     toast({

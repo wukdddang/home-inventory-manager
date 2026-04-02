@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
-import { resetDatabase, query } from "../utils/db";
-import { clearAllMails } from "../utils/mailhog";
+import { resetDatabase, query } from "../../utils/db";
+import { clearAllMails } from "../../utils/mailhog";
 
 const TEST_USER = {
   displayName: "테스트유저",
@@ -61,6 +61,9 @@ test.describe("UC-12. 토큰 자동 갱신 및 세션 유지", () => {
     );
     expect(refreshCookie).toBeTruthy();
     const refreshToken = refreshCookie!.value;
+
+    // JWT iat(초 단위)가 달라져야 토큰이 바뀌므로 1초 대기
+    await page.waitForTimeout(1_000);
 
     // 백엔드 /auth/refresh 엔드포인트를 직접 호출하여
     // 토큰 갱신 메커니즘(토큰 로테이션)이 정상 동작하는지 검증한다

@@ -1,6 +1,7 @@
 import { test, expect, type Page } from "@playwright/test";
-import { resetDatabase, query } from "../utils/db";
-import { clearAllMails } from "../utils/mailhog";
+import { resetDatabase, query } from "../../utils/db";
+import { clearAllMails } from "../../utils/mailhog";
+import { seedHouseStructure, seedRoom, seedStorageLocation } from "../../utils/seed";
 
 const TEST_USER = {
   displayName: "테스트유저",
@@ -56,16 +57,7 @@ test.describe("UC-03. 거점 생성 및 기본 설정", () => {
       [name]
     );
     if (households.length > 0) {
-      await page.request.put(
-        `/api/households/${households[0].id}/house-structure`,
-        {
-          data: {
-            name: "default",
-            structurePayload: { rooms: {} },
-            diagramLayout: null,
-          },
-        }
-      );
+      await seedHouseStructure(households[0].id);
     }
   }
 
@@ -87,74 +79,36 @@ test.describe("UC-03. 거점 생성 및 기본 설정", () => {
       page.locator(`button[role="tab"]:has-text("${name}")`)
     ).toBeVisible({ timeout: 10_000 });
 
-    // DB 에 rooms 레코드가 생성되었는지 확인, 없으면 API 로 직접 sync
-    let dbRoom = await query<{ id: string }>(
+    // DB 에 rooms 레코드가 생성되었는지 확인, 없으면 DB seed 로 직접 생성
+    const dbRoom = await query<{ id: string }>(
       'SELECT id FROM rooms WHERE "displayName" = $1 OR "structureRoomKey" = $1',
       [name]
     );
     if (dbRoom.length === 0) {
-      // 프론트엔드의 첫 번째 sync 가 실패할 수 있으므로 API 직접 호출
       const households = await query<{ id: string }>(
         "SELECT id FROM households LIMIT 1"
       );
       if (households.length > 0) {
         const hId = households[0].id;
-        // 기존 rooms 조회 (다른 방이 있을 수 있음)
-        const existingRooms = await query<{
-          structureRoomKey: string;
-          displayName: string | null;
-          sortOrder: number;
-        }>(
-          `SELECT r."structureRoomKey", r."displayName", r."sortOrder"
-           FROM rooms r
-           INNER JOIN house_structures hs ON r."houseStructureId" = hs.id
-           WHERE hs."householdId" = $1`,
+        // house_structure 존재 확인 및 생성
+        let hs = await query<{ id: string }>(
+          'SELECT id FROM house_structures WHERE "householdId" = $1',
           [hId]
         );
-        const newKey = "room-" + Date.now();
-        const syncPayload = [
-          ...existingRooms.map((r) => ({
-            structureRoomKey: r.structureRoomKey,
-            displayName: r.displayName,
-            sortOrder: r.sortOrder,
-          })),
-          {
-            structureRoomKey: newKey,
-            displayName: name,
-            sortOrder: existingRooms.length,
-          },
-        ];
-        const syncRes = await page.request.put(
-          `/api/households/${hId}/rooms/sync`,
-          { data: { rooms: syncPayload } }
-        );
-        // sync 실패 시 house_structure 가 없을 수 있으므로 생성 후 재시도
-        if (!syncRes.ok()) {
-          await page.request.put(
-            `/api/households/${hId}/house-structure`,
-            {
-              data: {
-                name: "default",
-                structurePayload: { rooms: {} },
-                diagramLayout: null,
-              },
-            }
-          );
-          await page.request.put(
-            `/api/households/${hId}/rooms/sync`,
-            { data: { rooms: syncPayload } }
-          );
+        if (hs.length === 0) {
+          const hsId = await seedHouseStructure(hId);
+          hs = [{ id: hsId }];
         }
-        // DB 에서 방 생성 확인
-        dbRoom = await query<{ id: string }>(
-          'SELECT id FROM rooms WHERE "displayName" = $1',
-          [name]
+        const existingRooms = await query<{ id: string }>(
+          'SELECT id FROM rooms WHERE "houseStructureId" = $1',
+          [hs[0].id]
         );
+        await seedRoom(hs[0].id, name, existingRooms.length);
       }
     }
   }
 
-  /** 직속 보관 장소를 API 로 추가한다 (UI 모달이 프론트 상태 문제로 열리지 않는 경우 대비) */
+  /** 직속 보관 장소를 DB seed 로 추가한다 (UI 모달이 프론트 상태 문제로 열리지 않는 경우 대비) */
   async function addDirectSlot(page: Page, roomName: string, slotName: string) {
     // 해당 방의 roomId 를 DB 에서 조회
     let rooms = await query<{ id: string }>(
@@ -162,7 +116,7 @@ test.describe("UC-03. 거점 생성 및 기본 설정", () => {
       [roomName]
     );
 
-    // rooms sync 가 실패한 경우 API 로 직접 생성
+    // rooms 가 없으면 DB seed 로 직접 생성
     if (rooms.length === 0) {
       const households = await query<{ id: string }>(
         "SELECT id FROM households LIMIT 1"
@@ -170,55 +124,22 @@ test.describe("UC-03. 거점 생성 및 기본 설정", () => {
       const hId = households[0].id;
 
       // house_structure 존재 확인 및 생성
-      const hs = await query<{ id: string }>(
+      let hs = await query<{ id: string }>(
         'SELECT id FROM house_structures WHERE "householdId" = $1',
         [hId]
       );
       if (hs.length === 0) {
-        await page.request.put(
-          `/api/households/${hId}/house-structure`,
-          {
-            data: {
-              name: "default",
-              structurePayload: { rooms: {} },
-              diagramLayout: null,
-            },
-          }
-        );
+        const hsId = await seedHouseStructure(hId);
+        hs = [{ id: hsId }];
       }
 
-      // 기존 rooms 조회 후 새 방 추가하여 sync
-      const existingRooms = await query<{
-        structureRoomKey: string;
-        displayName: string | null;
-        sortOrder: number;
-      }>(
-        `SELECT r."structureRoomKey", r."displayName", r."sortOrder"
-         FROM rooms r
-         INNER JOIN house_structures hs ON r."houseStructureId" = hs.id
-         WHERE hs."householdId" = $1`,
-        [hId]
+      const existingRooms = await query<{ id: string }>(
+        'SELECT id FROM rooms WHERE "houseStructureId" = $1',
+        [hs[0].id]
       );
-      const syncPayload = [
-        ...existingRooms.map((r) => ({
-          structureRoomKey: r.structureRoomKey,
-          displayName: r.displayName,
-          sortOrder: r.sortOrder,
-        })),
-        {
-          structureRoomKey: "room-" + Date.now(),
-          displayName: roomName,
-          sortOrder: existingRooms.length,
-        },
-      ];
-      await page.request.put(`/api/households/${hId}/rooms/sync`, {
-        data: { rooms: syncPayload },
-      });
+      const roomId = await seedRoom(hs[0].id, roomName, existingRooms.length);
 
-      rooms = await query<{ id: string }>(
-        `SELECT id FROM rooms WHERE "displayName" = $1`,
-        [roomName]
-      );
+      rooms = [{ id: roomId }];
     }
 
     expect(rooms.length).toBeGreaterThanOrEqual(1);
@@ -231,19 +152,8 @@ test.describe("UC-03. 거점 생성 및 기본 설정", () => {
     );
     const householdId = structures[0].householdId;
 
-    // API 로 직속 보관 장소 생성
-    const res = await page.request.post(
-      `/api/households/${householdId}/storage-locations`,
-      {
-        data: {
-          name: slotName,
-          roomId,
-          furniturePlacementId: null,
-          sortOrder: 0,
-        },
-      }
-    );
-    expect(res.ok()).toBe(true);
+    // DB seed 로 직속 보관 장소 생성
+    await seedStorageLocation(householdId, roomId, slotName);
 
     // 페이지 새로고침하여 새 보관 장소 반영
     await page.reload();

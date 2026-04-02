@@ -26,11 +26,18 @@ pnpm e2e:down    # 종료
 ```bash
 cd e2e
 
-# 전체 실행
+# 전체 실행 (데스크탑 + 모바일)
 npx playwright test
 
+# 데스크탑만 실행
+npx playwright test --project=desktop-chromium
+
+# 모바일만 실행
+npx playwright test --project=mobile-chromium
+
 # 단일 파일
-npx playwright test tests/uc-01-auth.spec.ts
+npx playwright test tests/desktop/uc-01-auth.spec.ts
+npx playwright test tests/mobile/muc-01-shell-navigation.spec.ts
 
 # 특정 테스트
 npx playwright test -g "1. 사용자는"
@@ -46,10 +53,22 @@ npx playwright show-report
 ```
 e2e/
 ├── tests/
-│   ├── uc-01-auth.spec.ts          # UC-01 신규 사용자 가입 및 인증
-│   ├── uc-02-password.spec.ts      # UC-02 비밀번호 변경
-│   ├── uc-03-household.spec.ts     # UC-03 거점 생성 및 기본 설정
-│   └── ...
+│   ├── desktop/                     # 데스크탑 E2E 테스트 (1280x720)
+│   │   ├── uc-01-auth.spec.ts       # UC-01 신규 사용자 가입 및 인증
+│   │   ├── uc-02-password.spec.ts   # UC-02 비밀번호 변경
+│   │   ├── uc-03-household.spec.ts  # UC-03 거점 생성 및 기본 설정
+│   │   └── ...                      # uc-04 ~ uc-12
+│   └── mobile/                      # 모바일 E2E 테스트 (375x812)
+│       ├── muc-01-shell-navigation.spec.ts   # MUC-01 모바일 셸 및 네비게이션
+│       ├── muc-02-inventory-cards.spec.ts     # MUC-02 재고 카드 목록
+│       ├── muc-03-expiry-alerts.spec.ts       # MUC-03 유통기한 알림
+│       ├── muc-04-item-action-sheet.spec.ts   # MUC-04 품목 액션 시트
+│       ├── muc-05-shopping-fab.spec.ts        # MUC-05 장보기 FAB
+│       ├── muc-06-inventory-history.spec.ts   # MUC-06 재고 이력
+│       ├── muc-07-settings.spec.ts            # MUC-07 설정
+│       ├── muc-08-auth-responsive.spec.ts     # MUC-08 로그인/회원가입 반응형
+│       ├── muc-09-bottom-sheet.spec.ts        # MUC-09 바텀시트 공통
+│       └── muc-10-skeleton-loading.spec.ts    # MUC-10 스켈레톤 로딩
 ├── utils/
 │   ├── db.ts                       # DB 헬퍼 (resetDatabase, query)
 │   └── mailhog.ts                  # MailHog 헬퍼
@@ -60,8 +79,8 @@ e2e/
 
 ### 파일 네이밍 규칙
 
-- `uc-{번호}-{영문키워드}.spec.ts`
-- 예: `uc-01-auth.spec.ts`, `uc-03-household.spec.ts`
+- 데스크탑: `uc-{번호}-{영문키워드}.spec.ts` — 예: `uc-01-auth.spec.ts`
+- 모바일: `muc-{번호}-{영문키워드}.spec.ts` — 예: `muc-01-shell-navigation.spec.ts`
 
 ### 타입 체크
 
@@ -84,8 +103,8 @@ cd e2e && npx tsc --noEmit
 
 ```typescript
 import { test, expect, type Page } from "@playwright/test";
-import { resetDatabase, query } from "../utils/db";
-import { clearAllMails } from "../utils/mailhog";
+import { resetDatabase, query } from "../../utils/db";
+import { clearAllMails } from "../../utils/mailhog";
 
 const TEST_USER = {
   displayName: "테스트유저",
@@ -296,16 +315,12 @@ expect(res.ok()).toBe(true);
 
 ### 거점 생성 시 house_structure 선행 등록
 
-거점(household) 생성 후 방을 추가하려면 `house_structure`가 먼저 존재해야 한다. 프론트엔드의 첫 번째 rooms/sync 호출이 실패할 수 있으므로, 거점 생성 직후 API로 빈 house_structure를 등록한다:
+거점(household) 생성 후 방을 추가하려면 `house_structure`가 먼저 존재해야 한다. `utils/seed.ts`의 `seedHouseStructure`를 사용한다 (upsert 방식으로 중복 안전):
 
 ```typescript
-await page.request.put(`/api/households/${householdId}/house-structure`, {
-  data: {
-    name: "default",
-    structurePayload: { rooms: {} },
-    diagramLayout: null,
-  },
-});
+import { seedHouseStructure } from "../../utils/seed";
+
+await seedHouseStructure(householdId);
 ```
 
 ### 방 추가 후 rooms DB sync 보장
@@ -330,27 +345,46 @@ await page.request.post(`/api/households/${hId}/storage-locations`, {
 await page.reload();
 ```
 
-### DB 직접 DML 금지 (INSERT / UPDATE / DELETE)
+### 사�� 데이터 준비 (DB 시드)
 
-`utils/db.ts`의 `query()`는 **검증용 SELECT 조회**와 **`resetDatabase()` 초기화**에만 사용한다. 테스트 도중 데이터를 생성·수정·삭제할 때는 반드시 **API 엔드포인트** (`page.request.post/put/patch/delete`) 또는 **UI 조작**을 통해야 한다.
+테스트의 **사전 조건 데이터**(카탈로그, 재고, 구매 등)는 `utils/seed.ts`의 DB 시드 함수로 준비한다. 테스트 **동작**(버튼 클릭, 폼 제출 등)은 반드시 UI 조작 또는 API를 통해야 한다.
 
 ```typescript
-// ❌ 금지 — DB 직접 DML
-await query("DELETE FROM shopping_list_items WHERE id = $1", [id]);
-await query("INSERT INTO categories (id, name) VALUES ($1, $2)", [id, "식료품"]);
-await query("UPDATE inventory_items SET quantity = 10 WHERE id = $1", [id]);
+import { seedFullCatalogAndInventory, seedPurchase, seedPurchaseBatch } from "../../utils/seed";
 
-// ✅ 허용 — API 를 통한 데이터 조작
-await page.request.delete(`/api/households/${hId}/shopping-list-items/${id}`);
-await page.request.post(`/api/households/${hId}/categories`, { data: { name: "식료품" } });
-await page.request.patch(`/api/households/${hId}/inventory-items/${id}/quantity`, { data: { quantity: 10 } });
+// ✅ 사전 데이터 — DB 시드 함수 ���용
+const seed = await seedFullCatalogAndInventory(householdId, { inventoryQuantity: 10 });
 
-// ✅ 허용 — DB 조회(SELECT)로 결과 검증
+// ✅ 테스트 동작 — UI 조작
+await page.locator('button:has-text("소비")').first().click();
+
+// ✅ 결과 검증 — DB 조회(SELECT)
 const items = await query<{ quantity: string }>("SELECT quantity::text FROM inventory_items WHERE id = $1", [id]);
-expect(parseFloat(items[0].quantity)).toBe(10);
+expect(parseFloat(items[0].quantity)).toBe(7);
 ```
 
-**이유**: E2E 테스트는 실제 사용자 흐름(UI → 프론트엔드 → Next.js API Route → 백엔드 → DB)을 검증하는 것이 목적이다. DB를 직접 조작하면 API 계층의 비즈니스 로직·유효성 검증·트랜잭션·사이드 이펙트(이력 생성, 수량 연동 등)를 우회하게 되어 테스트의 의미가 퇴색된다. `resetDatabase()`는 테스트 격리를 위한 예외적 초기화 용도로만 허용한다.
+**중요**: DB 시드 후에는 `page.reload()` + `page.waitForLoadState("networkidle")`로 프론트엔드가 시드 데이터를 인식하도록 한다.
+
+### 프론트엔드-백엔드 필드명 불일치 대응 (route.adapter.ts)
+
+Next.js API Route 어댑터(`frontend/app/api/.../**/route.adapter.ts`)는 백엔드 응답을 프론트엔드가 기대하는 형식으로 매핑하는 역할을 한다. E2E 테스트에서 DB 시드 데이터가 UI에 표시되지 않으면, **백엔드 응답 필드명과 프론트엔드 기대 필드명이 다를 가능성**이 높다.
+
+**진단 방법:**
+1. 브라우저 DevTools > Network 탭에서 API 응답 확인
+2. `route.adapter.ts`의 `ApiXxxItem` 인터페이스와 `mapApiToXxxEntry` 함수 확인
+3. 백엔드 엔티티/DTO 필드명과 비교
+
+**수정 절차:**
+1. `route.adapter.ts`의 인터페이스에 백엔드 필드명 추가 (하위 호환 유지)
+2. `mapApiToXxx` 함수에서 양쪽 필드명 모두 지원하도록 fallback 체이닝
+
+```typescript
+// 예: 백엔드 "memo" → 프론트엔드 "label" 매핑
+const label = item.label ?? item.memo ?? item.product?.name ?? undefined;
+const inventoryItemId = item.inventoryItemId ?? item.sourceInventoryItemId ?? null;
+```
+
+**참고 사례**: `shopping-list-items/route.adapter.ts`에서 `memo→label`, `sourceInventoryItemId→inventoryItemId`, `quantity→restockQuantity` 매핑.
 
 ### waitForTimeout 사용 최소화
 
@@ -393,7 +427,16 @@ await query("SELECT passwordHash FROM users WHERE email = $1", [email]);
 
 ## 8. 테스트 실행 순서
 
-`playwright.config.ts`에서 `fullyParallel: false`, `workers: 1`로 설정되어 있어 파일 이름순으로 순차 실행된다. UC 번호 체계가 파일명에 반영되어 자연스러운 순서가 보장된다.
+`playwright.config.ts`에서 `fullyParallel: false`, `workers: 1`로 설정되어 있어 파일 이름순으로 순차 실행된다. UC/MUC 번호 체계가 파일명에 반영되어 자연스러운 순서가 보장된다.
+
+### Playwright 프로젝트 구성
+
+| 프로젝트 | testDir | 뷰포트 | 디바이스 |
+|---------|---------|--------|---------|
+| `desktop-chromium` | `tests/desktop` | 1280x720 | Desktop Chrome |
+| `mobile-chromium` | `tests/mobile` | 375x812 | Pixel 7 |
+
+모바일 테스트는 375x812 뷰포트에서 실행되며, 프론트엔드의 `useDeviceLayout` 훅이 `isMobileLayout: true`를 반환하여 모바일 전용 컴포넌트(MobileShell, BottomNav, BottomSheet 등)가 자동으로 렌더링된다.
 
 ---
 

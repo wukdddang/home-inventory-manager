@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
-import { resetDatabase, query } from "../utils/db";
-import { getLatestMailTo, extractVerifyLink, clearAllMails } from "../utils/mailhog";
+import { resetDatabase, query } from "../../utils/db";
+import { getLatestMailTo, extractVerifyLink, clearAllMails } from "../../utils/mailhog";
 
 const TEST_USER = {
   displayName: "테스트유저",
