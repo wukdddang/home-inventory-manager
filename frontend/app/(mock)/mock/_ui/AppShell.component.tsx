@@ -190,7 +190,6 @@ function AppShellInner({ children }: { children: React.ReactNode }) {
             open={shoppingOpen}
             onOpenChange={setShoppingOpen}
             household={household}
-            dataMode={dataMode}
           />
           <NotificationCenterModal
             open={notificationOpen}

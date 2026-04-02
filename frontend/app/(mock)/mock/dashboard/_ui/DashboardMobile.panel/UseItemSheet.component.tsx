@@ -5,7 +5,7 @@ import { QuantityStepper } from "@/app/_ui/mobile/QuantityStepper.component";
 import { toast } from "@/hooks/use-toast";
 import { useDashboard } from "../../_hooks/useDashboard";
 import type { InventoryRow } from "@/types/domain";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 type UseItemSheetProps = {
   item: InventoryRow | null;
@@ -17,9 +17,13 @@ export function UseItemSheet({ item, householdId, onClose }: UseItemSheetProps) 
   const { 재고_소비를_기록_한다 } = useDashboard();
   const [quantity, setQuantity] = useState(1);
 
-  useEffect(() => {
-    if (item) setQuantity(1);
-  }, [item]);
+  const [prevItem, setPrevItem] = useState(item);
+  if (prevItem !== item && item) {
+    setPrevItem(item);
+    setQuantity(1);
+  } else if (prevItem !== item) {
+    setPrevItem(item);
+  }
 
   const handleConfirm = () => {
     if (!item) return;

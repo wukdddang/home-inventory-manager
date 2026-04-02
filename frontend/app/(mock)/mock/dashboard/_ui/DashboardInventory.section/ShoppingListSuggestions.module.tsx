@@ -28,6 +28,7 @@ import {
   getMockPurchasesSession,
   subscribeMockPurchasesSession,
 } from "../../../purchases/_context/purchases-mock.service";
+import { useDashboard } from "../../_hooks/useDashboard";
 
 function reasonLabel(r: ShoppingSuggestion["reasons"][number]): string {
   if (r === "expiring_soon") return "유통기한 임박";
@@ -73,17 +74,16 @@ function appendInventoryToShoppingList(
 
 export type ShoppingListSuggestionsCardProps = {
   household: Household;
-  dataMode: "mock" | "api";
   /** 플로팅 패널 등 좁은 레이아웃 */
   compact?: boolean;
 };
 
 export function ShoppingListSuggestionsCard({
   household,
-  dataMode,
   compact = false,
 }: ShoppingListSuggestionsCardProps) {
   const prefix = useAppRoutePrefix();
+  const { dataMode } = useDashboard();
 
   const purchases = useSyncExternalStore(
     dataMode === "mock" ? subscribeMockPurchasesSession : subscribePurchases,

@@ -10,7 +10,7 @@ import { cn } from "@/lib/utils";
 import type { PurchaseBatchLot, PurchaseRecord } from "@/types/domain";
 import { ArrowDown, ArrowUp, Search } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { usePurchases } from "../../_hooks/usePurchases";
 import {
   구매_로트_행_배분_총액을_구한다,
@@ -440,10 +440,9 @@ export function PurchaseLotsSection() {
     구매를_삭제_한다,
   } = usePurchases();
 
-  const [catalog, setCatalog] = useState<import("@/types/domain").ProductCatalog | null>(null);
-  useEffect(() => {
-    setCatalog(getSharedProductCatalog());
-  }, []);
+  const [catalog] = useState<import("@/types/domain").ProductCatalog | null>(
+    () => getSharedProductCatalog(),
+  );
 
   const [selectedHouseholdId, setSelectedHouseholdId] = useState<string | null>(
     null,

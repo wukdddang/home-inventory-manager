@@ -1,10 +1,8 @@
 import type {
   GroupMember,
   Household,
-  HouseholdKindDefinition,
   InventoryLedgerRow,
   InventoryLedgerType,
-  MemberRole,
   MockInvitation,
   NotificationItem,
   ProductCatalog,
@@ -20,7 +18,6 @@ import {
 import { 유통기한까지_일수를_구한다 } from "@/lib/purchase-lot-helpers";
 import { getMockPurchasesSession } from "@/app/(mock)/mock/purchases/_context/purchases-mock.service";
 import type {
-  CreateInvitationParams,
   DashboardHouseholdsPort,
   PurchaseBatchDto,
 } from "./dashboard-households.port";
@@ -808,5 +805,12 @@ export function createDashboardMockHouseholdsService(): DashboardHouseholdsPort 
       }
       return result;
     },
+
+    // ── 장보기 (mock은 localStorage 기반이므로 no-op) ──
+    async syncShoppingList() {},
+    async addShoppingListItem() {},
+    async updateShoppingListItem() {},
+    async removeShoppingListItem() {},
+    async completeShoppingListItem() {},
   };
 }

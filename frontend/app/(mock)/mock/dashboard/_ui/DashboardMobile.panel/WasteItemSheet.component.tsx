@@ -5,7 +5,7 @@ import { QuantityStepper } from "@/app/_ui/mobile/QuantityStepper.component";
 import { toast } from "@/hooks/use-toast";
 import { useDashboard } from "../../_hooks/useDashboard";
 import type { InventoryRow } from "@/types/domain";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 const WASTE_REASONS = [
   { code: "expired", label: "유통기한 만료" },
@@ -28,12 +28,14 @@ export function WasteItemSheet({
   const [quantity, setQuantity] = useState(1);
   const [reason, setReason] = useState<string>("expired");
 
-  useEffect(() => {
-    if (item) {
-      setQuantity(1);
-      setReason("expired");
-    }
-  }, [item]);
+  const [prevItem, setPrevItem] = useState(item);
+  if (prevItem !== item && item) {
+    setPrevItem(item);
+    setQuantity(1);
+    setReason("expired");
+  } else if (prevItem !== item) {
+    setPrevItem(item);
+  }
 
   const handleConfirm = () => {
     if (!item) return;

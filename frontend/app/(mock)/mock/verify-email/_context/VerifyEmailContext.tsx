@@ -30,15 +30,15 @@ export function VerifyEmailProvider({
   token: string | null;
   children: ReactNode;
 }) {
-  const [status, setStatus] = useState<VerifyEmailStatus>("loading");
-  const [message, setMessage] = useState<string | null>(null);
+  const [status, setStatus] = useState<VerifyEmailStatus>(() =>
+    token ? "loading" : "error",
+  );
+  const [message, setMessage] = useState<string | null>(() =>
+    token ? null : "유효하지 않은 인증 링크입니다.",
+  );
 
   useEffect(() => {
-    if (!token) {
-      setStatus("error");
-      setMessage("유효하지 않은 인증 링크입니다.");
-      return;
-    }
+    if (!token) return;
 
     // mock: 짧은 딜레이 후 성공 시뮬레이션
     const timer = setTimeout(() => {

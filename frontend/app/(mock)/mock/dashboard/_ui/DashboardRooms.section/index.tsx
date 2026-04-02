@@ -5,8 +5,8 @@ import { MotionModalLayer } from "@/app/_ui/motion-modal-layer";
 import { toast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
-import type { Household, StorageLocationRow, StructureRoom } from "@/types/domain";
-import { useEffect, useId, useState, type MouseEvent } from "react";
+import type { Household, StructureRoom } from "@/types/domain";
+import { useId, useState, type MouseEvent } from "react";
 import { useDashboard } from "../../_hooks/useDashboard";
 import { defaultRoomGrid, newEntityId } from "../../_lib/dashboard-helpers";
 
@@ -113,16 +113,23 @@ export function DashboardRoomsSection({
   const editTitleId = useId().replace(/:/g, "");
   const editDescId = useId().replace(/:/g, "");
 
-  useEffect(() => {
-    if (!addOpen) return;
+  const [prevAddOpen, setPrevAddOpen] = useState(addOpen);
+  if (addOpen && !prevAddOpen) {
+    setPrevAddOpen(addOpen);
     setNewRoomName("");
-  }, [addOpen]);
+  } else if (prevAddOpen !== addOpen) {
+    setPrevAddOpen(addOpen);
+  }
 
-  useEffect(() => {
-    if (!editOpen || !editRoomId || !selected) return;
-    const r = selected.rooms.find((x) => x.id === editRoomId);
-    setEditRoomName(r?.name ?? "");
-  }, [editOpen, editRoomId, selected]);
+  const editKey = editOpen && editRoomId ? editRoomId : null;
+  const [prevEditKey, setPrevEditKey] = useState<string | null>(null);
+  if (editKey !== prevEditKey) {
+    setPrevEditKey(editKey);
+    if (editKey && selected) {
+      const r = selected.rooms.find((x) => x.id === editKey);
+      setEditRoomName(r?.name ?? "");
+    }
+  }
 
   if (!selected) return null;
 

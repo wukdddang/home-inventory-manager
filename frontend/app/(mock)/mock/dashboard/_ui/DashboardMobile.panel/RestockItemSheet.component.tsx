@@ -5,7 +5,7 @@ import { QuantityStepper } from "@/app/_ui/mobile/QuantityStepper.component";
 import { toast } from "@/hooks/use-toast";
 import { useDashboard } from "../../_hooks/useDashboard";
 import type { InventoryRow } from "@/types/domain";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 
 type RestockItemSheetProps = {
   item: InventoryRow | null;
@@ -21,14 +21,17 @@ export function RestockItemSheet({
   const { 재고_장보기_보충을_기록_한다 } = useDashboard();
   const [quantity, setQuantity] = useState(1);
 
-  useEffect(() => {
-    if (!item) return;
+  const [prevItem, setPrevItem] = useState(item);
+  if (prevItem !== item && item) {
+    setPrevItem(item);
     const gap =
       item.minStockLevel != null
         ? Math.max(1, item.minStockLevel - item.quantity)
         : 1;
     setQuantity(gap);
-  }, [item]);
+  } else if (prevItem !== item) {
+    setPrevItem(item);
+  }
 
   const handleConfirm = () => {
     if (!item) return;

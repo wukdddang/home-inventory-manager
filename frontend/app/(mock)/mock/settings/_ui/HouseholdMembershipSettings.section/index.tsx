@@ -153,7 +153,7 @@ export function HouseholdMembershipSettingsSection() {
     [households, selectedId],
   );
 
-  const members: GroupMember[] = selected?.members ?? [];
+  const members: GroupMember[] = useMemo(() => selected?.members ?? [], [selected]);
 
   const pendingRemoveMember = useMemo(
     () => members.find((m) => m.id === pendingRemoveMemberId) ?? null,

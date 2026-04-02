@@ -5,70 +5,41 @@ import { getShoppingList, setShoppingList } from "@/lib/local-store";
 import { useDashboard } from "../../_hooks/useDashboard";
 import { ShoppingCart, Check } from "lucide-react";
 import type { Household, ShoppingListEntry } from "@/types/domain";
-import { useCallback, useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { subscribeShoppingList } from "@/lib/local-store";
-import { usePathname } from "next/navigation";
 
 type ShoppingListFabProps = {
   household: Household;
 };
 
-/** API에서 장보기 항목을 가져와 ShoppingListEntry 형태로 변환 */
-async function fetchApiShoppingItems(
-  householdId: string,
-): Promise<ShoppingListEntry[]> {
-  try {
-    const res = await fetch(`/api/households/${householdId}/shopping-list-items`);
-    const json = await res.json();
-    if (!json.success) return [];
-    return (json.data as Array<{
-      id: string;
-      memo: string | null;
-      quantity: number | null;
-      sourceInventoryItemId: string | null;
-      createdAt?: string;
-    }>).map((item) => ({
-      id: item.id,
-      householdId,
-      inventoryItemId: item.sourceInventoryItemId ?? null,
-      label: item.memo ?? "품목",
-      restockQuantity: item.quantity ?? 1,
-      createdAt: item.createdAt ?? new Date().toISOString(),
-    }));
-  } catch {
-    return [];
-  }
-}
-
 export function ShoppingListFab({ household }: ShoppingListFabProps) {
   const [open, setOpen] = useState(false);
-  const pathname = usePathname();
-  const isMock = pathname.startsWith("/mock");
 
-  // localStorage 기반 (mock 모드)
+  const {
+    dataMode,
+    재고_장보기_보충을_기록_한다,
+    장보기_목록을_동기화_한다,
+    장보기_구매를_완료_한다,
+  } = useDashboard();
+
+  // localStorage 기반 — mock/api 모두 localStorage를 source of truth로 사용
   const allLocalEntries = useSyncExternalStore(
     subscribeShoppingList,
     getShoppingList,
     () => [] as ShoppingListEntry[],
   );
 
-  // API 기반 (current 모드)
-  const [apiEntries, setApiEntries] = useState<ShoppingListEntry[]>([]);
-  const loadApiEntries = useCallback(() => {
-    if (!isMock && household.id) {
-      fetchApiShoppingItems(household.id).then(setApiEntries);
+  // API 모드에서 초기 동기화 (API → localStorage)
+  useEffect(() => {
+    if (dataMode === "api" && household.id) {
+      장보기_목록을_동기화_한다(household.id);
     }
-  }, [isMock, household.id]);
-  useEffect(() => { loadApiEntries(); }, [loadApiEntries]);
+  }, [dataMode, household.id, 장보기_목록을_동기화_한다]);
 
-  const { 재고_장보기_보충을_기록_한다 } = useDashboard();
-
-  const entries = useMemo(() => {
-    if (isMock) {
-      return allLocalEntries.filter((e) => e.householdId === household.id);
-    }
-    return apiEntries;
-  }, [isMock, allLocalEntries, apiEntries, household.id]);
+  const entries = useMemo(
+    () => allLocalEntries.filter((e) => e.householdId === household.id),
+    [allLocalEntries, household.id],
+  );
 
   const [checked, setChecked] = useState<Set<string>>(new Set());
 
@@ -84,39 +55,35 @@ export function ShoppingListFab({ household }: ShoppingListFabProps) {
   const handleComplete = async () => {
     const toComplete = entries.filter((e) => checked.has(e.id));
 
-    if (isMock) {
-      for (const entry of toComplete) {
-        if (entry.inventoryItemId) {
-          재고_장보기_보충을_기록_한다(
-            household.id,
-            entry.inventoryItemId,
-            entry.restockQuantity,
-            "장보기 완료 (모바일)",
-          );
-        }
+    for (const entry of toComplete) {
+      if (entry.inventoryItemId) {
+        재고_장보기_보충을_기록_한다(
+          household.id,
+          entry.inventoryItemId,
+          entry.restockQuantity,
+          "장보기 완료 (모바일)",
+        );
       }
-      const remaining = allLocalEntries.filter((e) => !checked.has(e.id));
-      setShoppingList(remaining);
-    } else {
-      // API 모드: 각 항목별 complete API 호출
+    }
+
+    if (dataMode === "api") {
+      // API 모드: 재고 연결된 항목은 complete API, 나머지는 로컬만 정리
       await Promise.all(
         toComplete.map(async (entry) => {
-          await fetch(
-            `/api/households/${household.id}/shopping-list-items/${entry.id}/complete`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                inventoryItemId: entry.inventoryItemId ?? null,
-                quantity: entry.restockQuantity,
-              }),
-            },
-          ).catch(() => {});
+          if (entry.inventoryItemId) {
+            await 장보기_구매를_완료_한다(household.id, entry.id, {
+              inventoryItemId: entry.inventoryItemId,
+              quantity: entry.restockQuantity,
+            });
+          }
         }),
       );
       // API 항목 다시 불러오기
-      loadApiEntries();
+      await 장보기_목록을_동기화_한다(household.id);
     }
+
+    const remaining = allLocalEntries.filter((e) => !checked.has(e.id));
+    setShoppingList(remaining);
 
     setChecked(new Set());
     const remainingCount = entries.filter((e) => !checked.has(e.id)).length;
@@ -172,9 +139,7 @@ export function ShoppingListFab({ household }: ShoppingListFabProps) {
                 </div>
                 <span
                   className={`flex-1 text-sm ${
-                    isChecked
-                      ? "text-zinc-500 line-through"
-                      : "text-zinc-200"
+                    isChecked ? "text-zinc-500 line-through" : "text-zinc-200"
                   }`}
                 >
                   {entry.label ?? "품목"}

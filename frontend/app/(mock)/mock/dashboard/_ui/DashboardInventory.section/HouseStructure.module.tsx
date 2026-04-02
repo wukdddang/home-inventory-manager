@@ -21,7 +21,7 @@ export function HouseStructure({
 
   if (household.rooms.length === 0) {
     return (
-      <div className="flex h-[320px] items-center justify-center text-sm text-zinc-300">
+      <div className="flex h-80 items-center justify-center text-sm text-zinc-300">
         방을 먼저 추가하면 구조도가 표시됩니다.
       </div>
     );
@@ -31,7 +31,7 @@ export function HouseStructure({
     <>
       <svg
         viewBox={VIEW_BOX}
-        className="h-[320px] w-full touch-none"
+        className="h-80 w-full touch-none"
         role="img"
         aria-label="집 구조 2D"
       >
@@ -50,7 +50,12 @@ export function HouseStructure({
             />
           </pattern>
         </defs>
-        <rect width="100%" height="100%" fill={`url(#${gridId})`} opacity={0.5} />
+        <rect
+          width="100%"
+          height="100%"
+          fill={`url(#${gridId})`}
+          opacity={0.5}
+        />
         {household.rooms.map((r) => {
           const active = r.id === selectedRoomId;
           return (
@@ -61,16 +66,15 @@ export function HouseStructure({
                 width={r.width}
                 height={r.height}
                 rx={8}
-                fill={
-                  active ? "rgba(45,212,191,0.25)" : "rgba(63,63,70,0.6)"
-                }
+                fill={active ? "rgba(45,212,191,0.25)" : "rgba(63,63,70,0.6)"}
                 stroke={active ? "rgb(45,212,191)" : "rgb(82,82,91)"}
                 strokeWidth={active ? 2 : 1}
                 className="cursor-pointer transition-colors"
                 onClick={() => onRoomSelect(r.id)}
                 onDoubleClick={() => {
                   const next = window.prompt("방 이름", r.name);
-                  if (next != null && next.trim()) onRoomRename(r.id, next.trim());
+                  if (next != null && next.trim())
+                    onRoomRename(r.id, next.trim());
                 }}
               />
               <text

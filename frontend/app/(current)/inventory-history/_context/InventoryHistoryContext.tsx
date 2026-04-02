@@ -176,7 +176,6 @@ export function InventoryHistoryProvider({
         );
       });
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [port]);
 
   const [filterHouseholdId, setFilterHouseholdId] = useState("all");

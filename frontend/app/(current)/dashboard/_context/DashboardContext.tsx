@@ -250,6 +250,36 @@ export type DashboardContextType = {
   거점_유통기한_임박_목록을_가져온다: (householdId: string) => ExpiryAlertItem[];
   /** 거점의 만료된 품목 목록을 반환한다 (API 기반). */
   거점_만료_목록을_가져온다: (householdId: string) => ExpiryAlertItem[];
+  // ── 장보기 ──
+  /** 장보기 목록을 API에서 불러와 localStorage와 동기화한다. */
+  장보기_목록을_동기화_한다: (householdId: string) => Promise<void>;
+  /** 장보기 항목을 추가한다. */
+  장보기_항목을_추가_한다: (
+    householdId: string,
+    data: {
+      label?: string;
+      unit?: string;
+      variantCaption?: string;
+      categoryId?: string;
+      productId?: string;
+      productVariantId?: string;
+      restockQuantity: number;
+    },
+  ) => Promise<void>;
+  /** 장보기 항목의 보충 수량을 수정한다. */
+  장보기_수량을_수정_한다: (
+    householdId: string,
+    itemId: string,
+    restockQuantity: number,
+  ) => Promise<void>;
+  /** 장보기 항목을 삭제한다. */
+  장보기_항목을_삭제_한다: (householdId: string, itemId: string) => Promise<void>;
+  /** 장보기 항목을 구매 완료 처리한다 (재고 증가 + 이력 + 항목 삭제). */
+  장보기_구매를_완료_한다: (
+    householdId: string,
+    itemId: string,
+    data: { inventoryItemId: string; quantity: number },
+  ) => Promise<void>;
 };
 
 export type DashboardProviderProps = {
@@ -1086,6 +1116,57 @@ export function DashboardProvider({
     [거점을_갱신_한다, port],
   );
 
+  // ── 장보기 ──
+  const 장보기_목록을_동기화_한다 = useCallback(
+    async (householdId: string) => {
+      await port.syncShoppingList(householdId);
+    },
+    [port],
+  );
+
+  const 장보기_항목을_추가_한다 = useCallback(
+    async (
+      householdId: string,
+      data: {
+        label?: string;
+        unit?: string;
+        variantCaption?: string;
+        categoryId?: string;
+        productId?: string;
+        productVariantId?: string;
+        restockQuantity: number;
+      },
+    ) => {
+      await port.addShoppingListItem(householdId, data);
+    },
+    [port],
+  );
+
+  const 장보기_수량을_수정_한다 = useCallback(
+    async (householdId: string, itemId: string, restockQuantity: number) => {
+      await port.updateShoppingListItem(householdId, itemId, { restockQuantity });
+    },
+    [port],
+  );
+
+  const 장보기_항목을_삭제_한다 = useCallback(
+    async (householdId: string, itemId: string) => {
+      await port.removeShoppingListItem(householdId, itemId);
+    },
+    [port],
+  );
+
+  const 장보기_구매를_완료_한다 = useCallback(
+    async (
+      householdId: string,
+      itemId: string,
+      data: { inventoryItemId: string; quantity: number },
+    ) => {
+      await port.completeShoppingListItem(householdId, itemId, data);
+    },
+    [port],
+  );
+
   const 거점_유통기한_임박_목록을_가져온다 = useCallback(
     (householdId: string): ExpiryAlertItem[] =>
       expiryAlertsByHousehold[householdId] ?? [],
@@ -1136,6 +1217,11 @@ export function DashboardProvider({
       재고_수량을_직접_설정_한다,
       거점_유통기한_임박_목록을_가져온다,
       거점_만료_목록을_가져온다,
+      장보기_목록을_동기화_한다,
+      장보기_항목을_추가_한다,
+      장보기_수량을_수정_한다,
+      장보기_항목을_삭제_한다,
+      장보기_구매를_완료_한다,
     }),
     [
       dataMode,
@@ -1174,6 +1260,11 @@ export function DashboardProvider({
       재고_수량을_직접_설정_한다,
       거점_유통기한_임박_목록을_가져온다,
       거점_만료_목록을_가져온다,
+      장보기_목록을_동기화_한다,
+      장보기_항목을_추가_한다,
+      장보기_수량을_수정_한다,
+      장보기_항목을_삭제_한다,
+      장보기_구매를_완료_한다,
     ],
   );
 

@@ -7,6 +7,7 @@ import {
 } from "@/lib/local-store";
 import { cloneDefaultHouseholdKindDefinitions } from "@/lib/household-kind-defaults";
 import { inventoryDisplayLine } from "@/lib/product-catalog-helpers";
+import { syncShoppingListFromApi as syncShoppingListFromApiImpl } from "@/app/api/households/[householdId]/shopping-list-items/route.adapter";
 import type {
   CatalogCategory,
   CatalogProduct,
@@ -1080,5 +1081,54 @@ export const dashboardApiHouseholdsClient: DashboardHouseholdsPort = {
       console.error("만료된 배치 조회 오류:", e);
       return [];
     }
+  },
+
+  /* ── 장보기 목록 동기화 ── */
+  async syncShoppingList(householdId) {
+    await syncShoppingListFromApiImpl(householdId);
+  },
+
+  /* ── 장보기 항목 추가 ── */
+  async addShoppingListItem(householdId, data) {
+    await apiFetch(
+      `/api/households/${householdId}/shopping-list-items`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      },
+    ).catch((e) => console.error("장보기 추가 API 오류:", e));
+  },
+
+  /* ── 장보기 항목 수량 수정 ── */
+  async updateShoppingListItem(householdId, itemId, data) {
+    await apiFetch(
+      `/api/households/${householdId}/shopping-list-items/${itemId}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      },
+    ).catch((e) => console.error("장보기 수량 업데이트 API 오류:", e));
+  },
+
+  /* ── 장보기 항목 삭제 ── */
+  async removeShoppingListItem(householdId, itemId) {
+    await apiFetch(
+      `/api/households/${householdId}/shopping-list-items/${itemId}`,
+      { method: "DELETE" },
+    ).catch((e) => console.error("장보기 삭제 API 오류:", e));
+  },
+
+  /* ── 장보기 구매 완료 ── */
+  async completeShoppingListItem(householdId, itemId, data) {
+    await apiFetch(
+      `/api/households/${householdId}/shopping-list-items/${itemId}/complete`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      },
+    ).catch((e) => console.error("장보기 완료 API 오류:", e));
   },
 };

@@ -10,7 +10,14 @@ import { useAppRoutePrefix } from "@/lib/use-app-route-prefix";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import Link from "next/link";
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { FormModal } from "@/app/_ui/form-modal";
 import { toast } from "@/hooks/use-toast";
 import type { GroupMember, MemberRole } from "@/types/domain";
@@ -189,8 +196,9 @@ function DashboardScreenHelpHint() {
             }}
             className="absolute left-0 top-full z-100 mt-1.5 w-[min(calc(100vw-2rem),22rem)] origin-top-left rounded-lg border border-zinc-600 bg-zinc-950 p-2.5 text-xs leading-relaxed text-zinc-300 shadow-xl ring-1 ring-black sm:text-sm"
           >
-            <span className="font-medium text-zinc-200">이 화면</span>에서는 방·보관
-            장소에 재고를 바로 맞춥니다. 장만 하고 보관 장소 정리는 나중이면{" "}
+            <span className="font-medium text-zinc-200">이 화면</span>에서는
+            방·보관 장소에 재고를 바로 맞춥니다. 장만 하고 보관 장소 정리는
+            나중이면{" "}
             <Link
               href={`${prefix}/purchases`}
               className="font-medium text-teal-400 underline-offset-2 hover:underline"
@@ -331,7 +339,7 @@ function HouseholdMembersSummary({
     () => households.find((h) => h.id === selectedHouseholdId) ?? null,
     [households, selectedHouseholdId],
   );
-  const members = selected?.members ?? [];
+  const members = useMemo(() => selected?.members ?? [], [selected]);
   const candidates = useKnownMemberCandidates(selectedHouseholdId, households);
 
   const [addMemberOpen, setAddMemberOpen] = useState(false);
@@ -393,7 +401,11 @@ function HouseholdMembersSummary({
   const handlePickFromList = useCallback(
     (candidate: GroupMember, pickedRole: MemberRole) => {
       if (!selected) return;
-      if (members.some((m) => m.email.toLowerCase() === candidate.email.toLowerCase())) {
+      if (
+        members.some(
+          (m) => m.email.toLowerCase() === candidate.email.toLowerCase(),
+        )
+      ) {
         toast({ title: "이미 추가된 이메일입니다", variant: "warning" });
         return;
       }
@@ -474,11 +486,7 @@ function HouseholdMembersSummary({
           if (!open) resetFields();
         }}
         title="멤버 추가"
-        description={
-          selected
-            ? `대상 거점: ${selected.name}`
-            : ""
-        }
+        description={selected ? `대상 거점: ${selected.name}` : ""}
         submitLabel={tab === "direct" ? "추가" : undefined}
         cancelLabel="닫기"
         onSubmit={tab === "direct" ? handleDirectSubmit : undefined}
@@ -490,7 +498,11 @@ function HouseholdMembersSummary({
             {(
               [
                 { key: "direct", label: "직접 추가" },
-                { key: "list", label: "목록에서 추가", badge: candidates.length || undefined },
+                {
+                  key: "list",
+                  label: "목록에서 추가",
+                  badge: candidates.length || undefined,
+                },
                 { key: "invite", label: "초대 링크 · 메일" },
               ] as const
             ).map((t) => (
@@ -529,7 +541,9 @@ function HouseholdMembersSummary({
                 />
               </div>
               <div className="space-y-1">
-                <label className="text-xs text-zinc-300">표시 이름 (선택)</label>
+                <label className="text-xs text-zinc-300">
+                  표시 이름 (선택)
+                </label>
                 <input
                   value={label}
                   onChange={(e) => setLabel(e.target.value)}
@@ -590,7 +604,9 @@ function HouseholdMembersSummary({
             <div className="space-y-5">
               {/* 초대 링크 */}
               <div className="space-y-2">
-                <p className="text-xs font-medium text-zinc-200">초대 링크 생성</p>
+                <p className="text-xs font-medium text-zinc-200">
+                  초대 링크 생성
+                </p>
                 <p className="text-xs text-zinc-500">
                   링크를 받은 사람이 아래 역할로 거점에 참여합니다. (모의 데모)
                 </p>
@@ -634,7 +650,9 @@ function HouseholdMembersSummary({
                     <p className="min-w-0 flex-1 truncate text-xs text-zinc-400">
                       {inviteLinkUrl}
                     </p>
-                    <span className="shrink-0 text-[10px] text-zinc-500">클릭하여 복사</span>
+                    <span className="shrink-0 text-[10px] text-zinc-500">
+                      클릭하여 복사
+                    </span>
                   </div>
                 )}
               </div>
@@ -645,7 +663,8 @@ function HouseholdMembersSummary({
               <div className="space-y-2">
                 <p className="text-xs font-medium text-zinc-200">메일로 초대</p>
                 <p className="text-xs text-zinc-500">
-                  초대 링크가 포함된 메일을 보냅니다. (모의: 메일 클라이언트가 열립니다)
+                  초대 링크가 포함된 메일을 보냅니다. (모의: 메일 클라이언트가
+                  열립니다)
                 </p>
                 <div className="flex items-center gap-2">
                   <input
@@ -659,14 +678,21 @@ function HouseholdMembersSummary({
                     type="button"
                     disabled={!inviteMailTo.trim()}
                     onClick={() => {
-                      const link = inviteLinkUrl ?? `${typeof window !== "undefined" ? window.location.origin : ""}/mock/invite/${crypto.randomUUID().slice(0, 8)}`;
+                      const link =
+                        inviteLinkUrl ??
+                        `${typeof window !== "undefined" ? window.location.origin : ""}/mock/invite/${crypto.randomUUID().slice(0, 8)}`;
                       if (!inviteLinkUrl) setInviteLinkUrl(link);
                       const householdName = selected?.name ?? "거점";
-                      const subject = encodeURIComponent(`[집비치기] ${householdName}에 초대합니다`);
+                      const subject = encodeURIComponent(
+                        `[집비치기] ${householdName}에 초대합니다`,
+                      );
                       const body = encodeURIComponent(
                         `안녕하세요!\n\n「${householdName}」 거점에 초대합니다.\n아래 링크를 클릭하여 참여하세요:\n\n${link}\n\n역할: ${MEMBER_ROLE_LABELS[inviteLinkRole]}`,
                       );
-                      window.open(`mailto:${inviteMailTo.trim()}?subject=${subject}&body=${body}`, "_self");
+                      window.open(
+                        `mailto:${inviteMailTo.trim()}?subject=${subject}&body=${body}`,
+                        "_self",
+                      );
                       toast({ title: "메일 클라이언트를 여는 중…" });
                     }}
                     className="shrink-0 cursor-pointer rounded-xl bg-blue-500/15 px-4 py-2 text-xs font-semibold text-blue-300 ring-1 ring-blue-500/40 transition-colors hover:bg-blue-500/25 disabled:cursor-not-allowed disabled:opacity-40"
@@ -701,7 +727,9 @@ export function DashboardHouseholdsHeader({
   const [addStep, setAddStep] = useState<1 | 2>(1);
   const [newHouseName, setNewHouseName] = useState("");
   const [newHouseKind, setNewHouseKind] = useState("");
-  const [createdHouseholdId, setCreatedHouseholdId] = useState<string | null>(null);
+  const [createdHouseholdId, setCreatedHouseholdId] = useState<string | null>(
+    null,
+  );
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteLabel, setInviteLabel] = useState("");
   const [inviteRole, setInviteRole] = useState<MemberRole>("editor");
@@ -747,8 +775,9 @@ export function DashboardHouseholdsHeader({
   const kindOptions = sortHouseholdKindDefinitions(householdKindDefinitions);
   const defaultKindId = kindOptions[0]?.id ?? "";
 
-  useEffect(() => {
-    if (!addOpen) return;
+  const [prevAddOpen, setPrevAddOpen] = useState(addOpen);
+  if (addOpen && !prevAddOpen) {
+    setPrevAddOpen(addOpen);
     setNewHouseName("");
     setNewHouseKind(defaultKindId);
     setAddStep(1);
@@ -757,7 +786,9 @@ export function DashboardHouseholdsHeader({
     setInviteLabel("");
     setInviteRole("editor");
     setInviteLink(null);
-  }, [addOpen, defaultKindId]);
+  } else if (prevAddOpen !== addOpen) {
+    setPrevAddOpen(addOpen);
+  }
 
   const handleAddHousehold = async () => {
     const trimmed = newHouseName.trim();
@@ -866,7 +897,9 @@ export function DashboardHouseholdsHeader({
                     }}
                     className={cn(
                       "relative z-10 cursor-pointer px-2.5 py-1.5 text-left text-xs font-medium transition-colors sm:text-sm",
-                      selected ? "text-teal-100" : "text-zinc-300 hover:text-white",
+                      selected
+                        ? "text-teal-100"
+                        : "text-zinc-300 hover:text-white",
                     )}
                   >
                     <span className="whitespace-nowrap">{h.name}</span>
@@ -947,7 +980,9 @@ export function DashboardHouseholdsHeader({
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-xs font-medium text-zinc-300">유형</label>
+                  <label className="text-xs font-medium text-zinc-300">
+                    유형
+                  </label>
                   <select
                     value={newHouseKind}
                     onChange={(e) => setNewHouseKind(e.target.value)}
@@ -985,12 +1020,15 @@ export function DashboardHouseholdsHeader({
                 멤버 초대
               </h2>
               <p id={addDescId} className="mt-2 text-sm text-zinc-300">
-                새 거점에 멤버를 초대합니다. 나중에 설정에서도 추가할 수 있습니다.
+                새 거점에 멤버를 초대합니다. 나중에 설정에서도 추가할 수
+                있습니다.
               </p>
 
               <div className="mt-5 space-y-3">
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-zinc-300">이메일</label>
+                  <label className="text-xs font-medium text-zinc-300">
+                    이메일
+                  </label>
                   <input
                     type="email"
                     value={inviteEmail}
@@ -1011,10 +1049,14 @@ export function DashboardHouseholdsHeader({
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-zinc-300">역할</label>
+                  <label className="text-xs font-medium text-zinc-300">
+                    역할
+                  </label>
                   <select
                     value={inviteRole}
-                    onChange={(e) => setInviteRole(e.target.value as MemberRole)}
+                    onChange={(e) =>
+                      setInviteRole(e.target.value as MemberRole)
+                    }
                     className="w-full rounded-xl border border-zinc-700 bg-zinc-950 px-3 py-2 text-sm text-white outline-none focus:border-teal-500"
                   >
                     <option value="viewer">조회자 — 조회만</option>
@@ -1051,25 +1093,34 @@ export function DashboardHouseholdsHeader({
               </div>
 
               {/* 추가된 멤버 미리보기 */}
-              {createdHouseholdId && (() => {
-                const h = households.find((x) => x.id === createdHouseholdId);
-                const members = h?.members ?? [];
-                if (members.length === 0) return null;
-                return (
-                  <div className="mt-4 border-t border-zinc-800 pt-3">
-                    <p className="text-xs text-zinc-400">추가된 멤버</p>
-                    <ul className="mt-1.5 space-y-1">
-                      {members.map((m) => (
-                        <li key={m.id} className="flex items-center gap-2 text-xs text-zinc-300">
-                          <MemberAvatarBadge label={m.label ?? m.email} role={m.role} />
-                          <span>{m.label ?? m.email}</span>
-                          <span className="text-zinc-500">({MEMBER_ROLE_LABELS[m.role]})</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                );
-              })()}
+              {createdHouseholdId &&
+                (() => {
+                  const h = households.find((x) => x.id === createdHouseholdId);
+                  const members = h?.members ?? [];
+                  if (members.length === 0) return null;
+                  return (
+                    <div className="mt-4 border-t border-zinc-800 pt-3">
+                      <p className="text-xs text-zinc-400">추가된 멤버</p>
+                      <ul className="mt-1.5 space-y-1">
+                        {members.map((m) => (
+                          <li
+                            key={m.id}
+                            className="flex items-center gap-2 text-xs text-zinc-300"
+                          >
+                            <MemberAvatarBadge
+                              label={m.label ?? m.email}
+                              role={m.role}
+                            />
+                            <span>{m.label ?? m.email}</span>
+                            <span className="text-zinc-500">
+                              ({MEMBER_ROLE_LABELS[m.role]})
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })()}
 
               <div className="mt-5 flex justify-end gap-2">
                 <button
@@ -1096,7 +1147,7 @@ export function DashboardHouseholdsHeader({
           ref={contextMenuRef}
           role="menu"
           aria-label="거점 컨텍스트 메뉴"
-          className="fixed z-[10060] min-w-[120px] rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-xl"
+          className="fixed z-10060 min-w-30 rounded-lg border border-zinc-700 bg-zinc-900 py-1 shadow-xl"
           style={{ left: contextMenu.x, top: contextMenu.y }}
         >
           <button
@@ -1141,7 +1192,9 @@ export function DashboardHouseholdsHeader({
         title="거점 이름 수정"
         description="거점의 이름을 변경합니다."
         submitLabel="저장"
-        submitDisabled={!editName.trim() || editName.trim() === editHousehold?.name}
+        submitDisabled={
+          !editName.trim() || editName.trim() === editHousehold?.name
+        }
         onSubmit={async () => {
           if (!editHouseholdId || !editName.trim()) return;
           const h = households.find((h) => h.id === editHouseholdId);

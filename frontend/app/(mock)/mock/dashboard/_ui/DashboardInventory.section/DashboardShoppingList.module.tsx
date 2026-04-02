@@ -17,13 +17,16 @@ import type {
   ShoppingListEntry,
 } from "@/types/domain";
 import Link from "next/link";
-import { useEffect, useId, useMemo, useState, useSyncExternalStore } from "react";
+import {
+  useEffect,
+  useId,
+  useMemo,
+  useState,
+  useSyncExternalStore,
+} from "react";
 import { useDashboard } from "../../_hooks/useDashboard";
 import { ShoppingListSuggestionsCard } from "./ShoppingListSuggestions.module";
-import {
-  shoppingApiFetch,
-  syncShoppingListFromApi,
-} from "@/app/api/households/[householdId]/shopping-list-items/route.adapter";
+import { syncShoppingListFromApi } from "@/app/api/households/[householdId]/shopping-list-items/route.adapter";
 
 function catalogVariantKey(productId: string, variantId: string) {
   return `${productId}\0${variantId}`;
@@ -38,15 +41,12 @@ export type ShoppingListQuickAddFromCatalogModalProps = {
   categoryId: string;
   productId: string;
   variantId: string;
-  dataMode?: "mock" | "api";
 };
 
 export type DashboardShoppingListModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   household: Household | null;
-  /** 구매 데이터 소스 — 제안·로트와 동일하게 맞춤 */
-  dataMode?: "mock" | "api";
   /** true면 목록만 표시(구매 완료·삭제 비활성). 필요 시 스토리북·데모용 */
   readOnly?: boolean;
 };
@@ -115,10 +115,13 @@ function ShoppingListDetailReadOnly({ household }: { household: Household }) {
   const hasRows = depletedItems.length > 0 || saved.length > 0;
 
   return (
-    <div className="flex min-w-0 flex-col gap-4" aria-label="장보기 목록 (읽기)">
+    <div
+      className="flex min-w-0 flex-col gap-4"
+      aria-label="장보기 목록 (읽기)"
+    >
       <p className="text-sm leading-relaxed text-zinc-300">
-        결제가 아니라 살 것·다 쓴 품목을 모아 두는 목록입니다. 이 모드에서는 목록만
-        보입니다.
+        결제가 아니라 살 것·다 쓴 품목을 모아 두는 목록입니다. 이 모드에서는
+        목록만 보입니다.
       </p>
 
       {!hasRows ? (
@@ -212,8 +215,8 @@ function ShoppingListAddFromDashboardHint() {
       <p className="text-xs font-medium text-zinc-300">항목 추가</p>
       <p className="mt-2 text-sm leading-relaxed text-zinc-300">
         목록에 품목을 담으려면 메인(대시보드)에서 거점·방을 선택한 뒤, 화면의
-        <span className="font-medium text-zinc-200">「재고 등록」</span> 패널에서
-        카탈로그를 고르고
+        <span className="font-medium text-zinc-200">「재고 등록」</span>{" "}
+        패널에서 카탈로그를 고르고
         <span className="font-medium text-zinc-200">「장보기에만 담기」</span>를
         사용하세요.
       </p>
@@ -229,20 +232,21 @@ function ShoppingListAddFromDashboardHint() {
   );
 }
 
-function ShoppingListDetailContent({
-  household,
-  dataMode,
-}: {
-  household: Household;
-  dataMode: "mock" | "api";
-}) {
-  const { 재고_장보기_보충을_기록_한다 } = useDashboard();
+function ShoppingListDetailContent({ household }: { household: Household }) {
+  const {
+    dataMode,
+    재고_장보기_보충을_기록_한다,
+    장보기_수량을_수정_한다,
+    장보기_항목을_삭제_한다,
+    장보기_구매를_완료_한다,
+  } = useDashboard();
   const [depletedQty, setDepletedQty] = useState<Record<string, number>>({});
   const { saved, depletedItems } = useShoppingListDerived(household);
 
   useEffect(() => {
-    if (dataMode !== "api") return;
-    syncShoppingListFromApi(household.id);
+    if (dataMode === "api") {
+      syncShoppingListFromApi(household.id);
+    }
   }, [dataMode, household.id]);
 
   const getDepletedRestock = (itemId: string) => {
@@ -263,29 +267,12 @@ function ShoppingListDetailContent({
       e.id === entryId ? { ...e, restockQuantity: n } : e,
     );
     setShoppingList(next);
-    if (dataMode === "api") {
-      const entry = getShoppingList().find((e) => e.id === entryId);
-      if (entry) {
-        shoppingApiFetch(
-          `/api/households/${household.id}/shopping-list-items/${entryId}`,
-          {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ restockQuantity: n }),
-          },
-        ).catch((e) => console.error("장보기 수량 업데이트 오류:", e));
-      }
-    }
+    장보기_수량을_수정_한다(household.id, entryId, n);
   };
 
   const removeSaved = (entryId: string) => {
     setShoppingList(getShoppingList().filter((e) => e.id !== entryId));
-    if (dataMode === "api") {
-      shoppingApiFetch(
-        `/api/households/${household.id}/shopping-list-items/${entryId}`,
-        { method: "DELETE" },
-      ).catch((e) => console.error("장보기 삭제 오류:", e));
-    }
+    장보기_항목을_삭제_한다(household.id, entryId);
   };
 
   const completeLinked = (
@@ -329,42 +316,22 @@ function ShoppingListDetailContent({
       if (match) linkedItemId = match.id;
     }
 
-    if (dataMode === "api" && linkedItemId) {
-      // 백엔드 complete API 호출 (재고 증가 + 이력 생성 + 항목 삭제를 한 트랜잭션으로 처리)
-      shoppingApiFetch(
-        `/api/households/${household.id}/shopping-list-items/${entry.id}/complete`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            inventoryItemId: linkedItemId,
-            quantity: entry.restockQuantity,
-          }),
-        },
-      )
-        .then(() => {
-          // 백엔드가 항목을 삭제했으므로 로컬 목록에서도 제거 (DELETE API 호출 없이)
-          setShoppingList(
-            getShoppingList().filter((e) => e.id !== entry.id),
-          );
-        })
-        .catch((e) => console.error("장보기 완료 API 오류:", e));
-
-      // 로컬 재고 수량 반영 (UI 즉시 갱신용)
-      completeLinked(linkedItemId, entry.restockQuantity, {
-        label: entry.label ?? "",
-      });
-      return;
-    }
-
-    // 재고 미연결 — 로컬 처리만
     if (linkedItemId) {
+      // 로컬 재고 수량 반영 (UI 즉시 갱신)
       completeLinked(linkedItemId, entry.restockQuantity, {
-        removeEntryId: entry.id,
         label: entry.label ?? "",
       });
+      // port 호출 (mock: no-op, api: 백엔드 트랜잭션 처리)
+      장보기_구매를_완료_한다(household.id, entry.id, {
+        inventoryItemId: linkedItemId,
+        quantity: entry.restockQuantity,
+      }).catch((e) => console.error("장보기 완료 오류:", e));
+      // 로컬 장보기 목록에서 제거 (port의 삭제 API와 별개로 localStorage 정리)
+      setShoppingList(getShoppingList().filter((e) => e.id !== entry.id));
       return;
     }
+
+    // 재고 미연결 — 목록만 정리
     removeSaved(entry.id);
     toast({
       title: "목록에서 뺐습니다",
@@ -388,12 +355,12 @@ function ShoppingListDetailContent({
         완료」하면 재고 수량이 늘고, 이력에는 입고로 남습니다.
       </p>
 
-      <ShoppingListSuggestionsCard household={household} dataMode={dataMode} />
+      <ShoppingListSuggestionsCard household={household} />
 
       {!hasRows ? (
         <p className="rounded-lg border border-dashed border-zinc-700 bg-zinc-950/40 px-4 py-3 text-center text-sm text-zinc-300">
-          목록이 비어 있어요. 항목을 담는 방법은 아래에 안내해 두었습니다. 수량이
-          0인 품목은 자동으로 표시됩니다.
+          목록이 비어 있어요. 항목을 담는 방법은 아래에 안내해 두었습니다.
+          수량이 0인 품목은 자동으로 표시됩니다.
         </p>
       ) : null}
 
@@ -544,8 +511,8 @@ export function ShoppingListQuickAddFromCatalogModal({
   categoryId,
   productId,
   variantId,
-  dataMode = "api",
 }: ShoppingListQuickAddFromCatalogModalProps) {
+  const { 장보기_항목을_추가_한다 } = useDashboard();
   const titleId = useId().replace(/:/g, "");
   const descId = useId().replace(/:/g, "");
   const [qtyDraft, setQtyDraft] = useState("1");
@@ -625,24 +592,15 @@ export function ShoppingListQuickAddFromCatalogModal({
       createdAt: new Date().toISOString(),
     };
     setShoppingList([...list, row]);
-    if (dataMode === "api") {
-      shoppingApiFetch(
-        `/api/households/${household.id}/shopping-list-items`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            label: row.label,
-            unit: row.unit,
-            variantCaption: row.variantCaption,
-            categoryId: row.categoryId,
-            productId: row.productId,
-            productVariantId: row.productVariantId,
-            restockQuantity: row.restockQuantity,
-          }),
-        },
-      ).catch((e) => console.error("장보기 추가 API 오류:", e));
-    }
+    장보기_항목을_추가_한다(household.id, {
+      label: row.label,
+      unit: row.unit,
+      variantCaption: row.variantCaption,
+      categoryId: row.categoryId,
+      productId: row.productId,
+      productVariantId: row.productVariantId,
+      restockQuantity: row.restockQuantity,
+    });
     toast({
       title: "장보기에 담았습니다",
       description: resolved.label,
@@ -668,16 +626,14 @@ export function ShoppingListQuickAddFromCatalogModal({
           장보기에 담기
         </h2>
         <p id={descId} className="mt-2 text-sm leading-relaxed text-zinc-300">
-          보관 장소·수량·유통기한 없이 목록에만 남깁니다. 헤더「장보기」에서 구매 완료·
-          삭제를 할 수 있습니다.
+          보관 장소·수량·유통기한 없이 목록에만 남깁니다. 헤더「장보기」에서
+          구매 완료· 삭제를 할 수 있습니다.
         </p>
 
         {resolved ? (
           <div className="mt-4 space-y-4">
             <div className="rounded-xl border border-teal-500/25 bg-teal-950/25 px-3 py-2.5">
-              <p className="text-xs font-medium text-teal-200/90">
-                담을 품목
-              </p>
+              <p className="text-xs font-medium text-teal-200/90">담을 품목</p>
               <p className="mt-1 text-sm font-medium text-zinc-100">
                 {resolved.label}
               </p>
@@ -740,7 +696,6 @@ export function DashboardShoppingListModal({
   open,
   onOpenChange,
   household,
-  dataMode = "api",
   readOnly = false,
 }: DashboardShoppingListModalProps) {
   const titleId = useId().replace(/:/g, "");
@@ -786,7 +741,6 @@ export function DashboardShoppingListModal({
               <ShoppingListDetailContent
                 key={household.id}
                 household={household}
-                dataMode={dataMode}
               />
             )
           ) : (

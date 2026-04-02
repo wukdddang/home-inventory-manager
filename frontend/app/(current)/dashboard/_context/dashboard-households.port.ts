@@ -159,6 +159,37 @@ export type DashboardHouseholdsPort = {
 
   /** 만료된 배치 목록을 조회한다 (GET /batches/expired). */
   loadExpiredBatches(householdId: string): Promise<PurchaseBatchDto[]>;
+
+  // ── 장보기 목록 (API 전용; mock은 no-op) ──
+  /** 장보기 목록을 API에서 불러와 localStorage와 동기화한다. */
+  syncShoppingList(householdId: string): Promise<void>;
+  /** 장보기 항목을 추가한다 (POST /shopping-list-items). */
+  addShoppingListItem(
+    householdId: string,
+    data: {
+      label?: string;
+      unit?: string;
+      variantCaption?: string;
+      categoryId?: string;
+      productId?: string;
+      productVariantId?: string;
+      restockQuantity: number;
+    },
+  ): Promise<void>;
+  /** 장보기 항목의 보충 수량을 수정한다 (PUT /shopping-list-items/:id). */
+  updateShoppingListItem(
+    householdId: string,
+    itemId: string,
+    data: { restockQuantity: number },
+  ): Promise<void>;
+  /** 장보기 항목을 삭제한다 (DELETE /shopping-list-items/:id). */
+  removeShoppingListItem(householdId: string, itemId: string): Promise<void>;
+  /** 장보기 항목을 구매 완료 처리한다 (POST /shopping-list-items/:id/complete). */
+  completeShoppingListItem(
+    householdId: string,
+    itemId: string,
+    data: { inventoryItemId: string; quantity: number },
+  ): Promise<void>;
 };
 
 /** 배치 API DTO (route handler 응답 형태). */

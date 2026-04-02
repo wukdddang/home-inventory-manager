@@ -214,11 +214,13 @@ export function ItemDetailDrawer({
   }, [open, onClose, editingQty]);
 
   // 아이템이 바뀌면 편집 상태 초기화
-  useEffect(() => {
+  const [prevItemId, setPrevItemId] = useState(item?.id);
+  if (prevItemId !== item?.id) {
+    setPrevItemId(item?.id);
     setEditingQty(false);
     setQtyText("");
     setMemoText("");
-  }, [item?.id]);
+  }
 
   const openQtyEdit = () => {
     setQtyText(item ? String(item.quantity) : "0");

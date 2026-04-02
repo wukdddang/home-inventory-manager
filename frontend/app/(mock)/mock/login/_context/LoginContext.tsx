@@ -29,6 +29,7 @@ export function MockLoginProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
 
   const 로그인을_제출_한다 = useCallback(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     (email: string, _password: string) => {
       setError(null);
       const trimmed = email.trim();

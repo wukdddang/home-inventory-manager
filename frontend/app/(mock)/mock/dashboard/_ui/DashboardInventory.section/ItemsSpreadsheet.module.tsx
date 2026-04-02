@@ -6,7 +6,7 @@ import { formatLocationBreadcrumb } from "@/lib/household-location";
 import { 구매목록에서_품목_로트_요약을_구한다 } from "@/lib/inventory-lot-from-purchases";
 import { resolveInventoryRowColumns, resolveProductImageUrl } from "@/lib/product-catalog-helpers";
 import { cn } from "@/lib/utils";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import type {
   Household,
   InventoryRow,
@@ -42,9 +42,12 @@ function MinStockInput({
   const [text, setText] = useState(() =>
     initial != null ? String(initial) : "",
   );
-  useEffect(() => {
+  const currentKey = `${itemId}-${initial}`;
+  const [prevKey, setPrevKey] = useState(currentKey);
+  if (prevKey !== currentKey) {
+    setPrevKey(currentKey);
     setText(initial != null ? String(initial) : "");
-  }, [itemId, initial]);
+  }
 
   const commit = () => {
     const raw = text.trim();
