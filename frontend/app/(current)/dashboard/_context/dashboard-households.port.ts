@@ -8,6 +8,7 @@ import type {
   MemberRole,
   MockInvitation,
   ProductCatalog,
+  PurchaseRecord,
   StorageLocationRow,
   StructureRoom,
 } from "@/types/domain";
@@ -150,6 +151,9 @@ export type DashboardHouseholdsPort = {
     itemId: string,
     quantity: number,
   ): Promise<void>;
+
+  /** 거점의 구매 기록 목록을 조회한다. */
+  listPurchases(householdId: string): Promise<PurchaseRecord[]>;
 
   /** 유통기한 임박 배치 목록을 조회한다 (GET /batches/expiring?days=N). */
   loadExpiringBatches(

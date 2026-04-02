@@ -1021,6 +1021,11 @@ export const dashboardApiHouseholdsClient: DashboardHouseholdsPort = {
     return { id: raw.id };
   },
 
+  /* ── 구매 목록 조회 ── */
+  async listPurchases(householdId) {
+    return loadPurchasesForHousehold(householdId);
+  },
+
   /* ── 구매-재고 품목 연결 ── */
   async linkPurchaseToInventoryItem(householdId, purchaseId, inventoryItemId) {
     await apiFetch<unknown>(

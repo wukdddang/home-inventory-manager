@@ -34,10 +34,8 @@ import {
 import {
   appendInventoryLedgerRow,
   getSharedHouseholdKindDefinitions,
-  getPurchases,
 } from "@/lib/local-store";
 import { 유통기한까지_일수를_구한다 } from "@/lib/purchase-lot-helpers";
-import { getMockPurchasesSession } from "@/app/(mock)/mock/purchases/_context/purchases-mock.service";
 import type {
   FurniturePlacement,
   Household,
@@ -47,6 +45,7 @@ import type {
   MemberRole,
   MockInvitation,
   ProductCatalog,
+  PurchaseRecord,
   StorageLocationRow,
   StructureRoom,
 } from "@/types/domain";
@@ -350,36 +349,34 @@ export function DashboardProvider({
   // ── 유통기한 임박·만료 데이터 로드 (거점별 배치 API → items 조인) ──
   const 거점_유통기한_임박_만료_를_로드_한다 = useCallback(
     async (loadedHouseholds: Household[]) => {
-      const purchaseList =
-        dataMode === "mock" ? getMockPurchasesSession() : getPurchases();
-
-      const toExpiryItem = (
-        batch: PurchaseBatchDto,
-        isExpired: boolean,
-        householdItems: InventoryRow[],
-      ): ExpiryAlertItem | null => {
-        const purchase = purchaseList.find((p) => p.id === batch.purchaseId);
-        if (!purchase?.inventoryItemId) return null;
-        const item = householdItems.find((i) => i.id === purchase.inventoryItemId);
-        if (!item) return null;
-        const dateStr = batch.expirationDate?.slice(0, 10) ?? null;
-        if (!dateStr) return null;
-        const daysLeft = 유통기한까지_일수를_구한다(dateStr);
-        if (daysLeft === null) return null;
-        return { item, daysLeft, isExpired };
-      };
-
       const results = await Promise.all(
         loadedHouseholds.map(async (h) => {
-          const [expiringBatches, expiredBatches] = await Promise.all([
-            port.loadExpiringBatches(h.id).catch(() => [] as PurchaseBatchDto[]),
-            port.loadExpiredBatches(h.id).catch(() => [] as PurchaseBatchDto[]),
-          ]);
+          const [purchaseList, expiringBatches, expiredBatches] =
+            await Promise.all([
+              port.listPurchases(h.id).catch(() => [] as PurchaseRecord[]),
+              port.loadExpiringBatches(h.id).catch(() => [] as PurchaseBatchDto[]),
+              port.loadExpiredBatches(h.id).catch(() => [] as PurchaseBatchDto[]),
+            ]);
+
+          const toExpiryItem = (
+            batch: PurchaseBatchDto,
+            isExpired: boolean,
+          ): ExpiryAlertItem | null => {
+            const purchase = purchaseList.find((p) => p.id === batch.purchaseId);
+            if (!purchase?.inventoryItemId) return null;
+            const item = h.items.find((i) => i.id === purchase.inventoryItemId);
+            if (!item) return null;
+            const dateStr = batch.expirationDate?.slice(0, 10) ?? null;
+            if (!dateStr) return null;
+            const daysLeft = 유통기한까지_일수를_구한다(dateStr);
+            if (daysLeft === null) return null;
+            return { item, daysLeft, isExpired };
+          };
 
           // 같은 품목의 여러 배치 중 가장 임박한 것만 남긴다
           const expiringByItem = new Map<string, ExpiryAlertItem>();
           for (const b of expiringBatches) {
-            const it = toExpiryItem(b, false, h.items);
+            const it = toExpiryItem(b, false);
             if (!it) continue;
             const ex = expiringByItem.get(it.item.id);
             if (!ex || it.daysLeft < ex.daysLeft) expiringByItem.set(it.item.id, it);
@@ -387,7 +384,7 @@ export function DashboardProvider({
 
           const expiredByItem = new Map<string, ExpiryAlertItem>();
           for (const b of expiredBatches) {
-            const it = toExpiryItem(b, true, h.items);
+            const it = toExpiryItem(b, true);
             if (!it) continue;
             const ex = expiredByItem.get(it.item.id);
             if (!ex || it.daysLeft < ex.daysLeft) expiredByItem.set(it.item.id, it);
@@ -414,7 +411,7 @@ export function DashboardProvider({
       setExpiryAlertsByHousehold(nextExpiring);
       setExpiredAlertsByHousehold(nextExpired);
     },
-    [dataMode, port],
+    [port],
   );
 
   // ── 거점 목록 로드 ──

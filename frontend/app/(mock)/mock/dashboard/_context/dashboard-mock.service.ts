@@ -762,6 +762,12 @@ export function createDashboardMockHouseholdsService(): DashboardHouseholdsPort 
       // no-op (mock은 Context에서 로컬 상태만 관리)
     },
 
+    async listPurchases(householdId) {
+      return getMockPurchasesSession().filter(
+        (p) => p.householdId === householdId,
+      );
+    },
+
     async loadExpiringBatches(householdId, days = 7) {
       const purchases = getMockPurchasesSession().filter(
         (p) => p.householdId === householdId,
