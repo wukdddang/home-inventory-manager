@@ -14,12 +14,12 @@ pnpm e2e:up      # Docker Compose (postgres, mailhog, backend, frontend) 기동
 pnpm e2e:down    # 종료
 ```
 
-| 서비스      | 호스트            | 포트    | 용도                    |
-| --------- | --------------- | ----- | --------------------- |
-| postgres  | localhost:54320 | 54320 | E2E 전용 DB (him_e2e)   |
-| mailhog   | localhost:8025  | 8025  | 메일 캡처 (SMTP 1025)     |
-| backend   | localhost:4200  | 4200  | NestJS API            |
-| frontend  | localhost:4100  | 4100  | Next.js (baseURL)     |
+| 서비스   | 호스트          | 포트  | 용도                  |
+| -------- | --------------- | ----- | --------------------- |
+| postgres | localhost:54320 | 54320 | E2E 전용 DB (him_e2e) |
+| mailhog  | localhost:8025  | 8025  | 메일 캡처 (SMTP 1025) |
+| backend  | localhost:4200  | 4200  | NestJS API            |
+| frontend | localhost:4100  | 4100  | Next.js (baseURL)     |
 
 ### 테스트 실행
 
@@ -91,6 +91,7 @@ cd e2e && npx tsc --noEmit
 ```
 
 특히 다음 상황에서는 반드시 타입 체크를 돌릴 것:
+
 - 헬퍼 함수의 **파라미터를 추가/변경/삭제**한 뒤
 - 여러 테스트 파일에서 **공유 유틸(`utils/`)을 수정**한 뒤
 - **대량의 테스트 코드를 일괄 수정**(find & replace 등)한 뒤
@@ -114,13 +115,15 @@ const TEST_USER = {
 
 test.describe("UC-XX. 유즈케이스 제목", () => {
   test.beforeEach(async () => {
-    await resetDatabase();    // 매 테스트 전 DB 초기화
-    await clearAllMails();    // 매 테스트 전 메일 초기화
+    await resetDatabase(); // 매 테스트 전 DB 초기화
+    await clearAllMails(); // 매 테스트 전 메일 초기화
   });
 
   // ── 헬퍼 ──
 
-  async function signupAndWait(page: Page) { /* ... */ }
+  async function signupAndWait(page: Page) {
+    /* ... */
+  }
 
   // ── #1: 테스트 케이스 ──
 
@@ -148,15 +151,15 @@ test.describe("UC-XX. 유즈케이스 제목", () => {
 
 UI 검증만으로 부족한 경우 DB 직접 조회를 수행한다:
 
-| 상황 | 예시 | DB 조회 여부 |
-|------|------|------------|
-| **데이터 생성 확인** | 회원가입 후 users 테이블 확인 | ✅ 필수 |
-| **데이터 변경 확인** | 비밀번호 해시 변경, 이름 수정 | ✅ 필수 |
-| **데이터 삭제 확인** | 방 삭제 후 rooms 행 제거 | ✅ 필수 |
-| **보안 속성 검증** | 비밀번호가 해시 저장되었는지 | ✅ 필수 |
-| **캐스케이드 동작** | 가구 삭제 → 하위 보관장소 SET NULL | ✅ 필수 |
-| **단순 화면 표시** | 목록에 항목이 보이는지 | ❌ UI만 |
-| **토스트/메시지 표시** | 성공 메시지 확인 | ❌ UI만 |
+| 상황                   | 예시                               | DB 조회 여부 |
+| ---------------------- | ---------------------------------- | ------------ |
+| **데이터 생성 확인**   | 회원가입 후 users 테이블 확인      | ✅ 필수      |
+| **데이터 변경 확인**   | 비밀번호 해시 변경, 이름 수정      | ✅ 필수      |
+| **데이터 삭제 확인**   | 방 삭제 후 rooms 행 제거           | ✅ 필수      |
+| **보안 속성 검증**     | 비밀번호가 해시 저장되었는지       | ✅ 필수      |
+| **캐스케이드 동작**    | 가구 삭제 → 하위 보관장소 SET NULL | ✅ 필수      |
+| **단순 화면 표시**     | 목록에 항목이 보이는지             | ❌ UI만      |
+| **토스트/메시지 표시** | 성공 메시지 확인                   | ❌ UI만      |
 
 ### query 헬퍼 사용법
 
@@ -166,29 +169,29 @@ import { query } from "../utils/db";
 // 단일 행 조회
 const users = await query<{ email: string; passwordHash: string }>(
   'SELECT email, "passwordHash" FROM users WHERE email = $1',
-  [TEST_USER.email]
+  [TEST_USER.email],
 );
 expect(users).toHaveLength(1);
 expect(users[0].passwordHash).not.toBe(TEST_USER.password);
 
 // 카운트 조회
 const result = await query<{ cnt: string }>(
-  "SELECT count(*) as cnt FROM rooms"
+  "SELECT count(*) as cnt FROM rooms",
 );
 expect(Number(result[0].cnt)).toBe(2);
 ```
 
 ### 주요 테이블 · 컬럼 참조
 
-| 테이블 | 주요 컬럼 | 참고 |
-|--------|----------|------|
-| `users` | `email`, `displayName`, `passwordHash`, `emailVerifiedAt`, `refreshTokenHash` | camelCase 컬럼명 → 쿼리 시 `"camelCase"` 따옴표 필수 |
-| `households` | `name`, `kind` | |
-| `household_kind_definitions` | `userId`, `kindId`, `label`, `sortOrder` | Unique: (userId, kindId) |
-| `house_structures` | `householdId`, `name`, `structurePayload`, `diagramLayout` | JSONB 컬럼 |
-| `rooms` | `houseStructureId`, `structureRoomKey`, `displayName`, `sortOrder` | |
-| `furniture_placements` | `roomId`, `label`, `anchorDirectStorageId`, `sortOrder` | |
-| `storage_locations` | `householdId`, `name`, `roomId`, `furniturePlacementId`, `sortOrder` | roomId·furniturePlacementId 모두 nullable |
+| 테이블                       | 주요 컬럼                                                                     | 참고                                                 |
+| ---------------------------- | ----------------------------------------------------------------------------- | ---------------------------------------------------- |
+| `users`                      | `email`, `displayName`, `passwordHash`, `emailVerifiedAt`, `refreshTokenHash` | camelCase 컬럼명 → 쿼리 시 `"camelCase"` 따옴표 필수 |
+| `households`                 | `name`, `kind`                                                                |                                                      |
+| `household_kind_definitions` | `userId`, `kindId`, `label`, `sortOrder`                                      | Unique: (userId, kindId)                             |
+| `house_structures`           | `householdId`, `name`, `structurePayload`, `diagramLayout`                    | JSONB 컬럼                                           |
+| `rooms`                      | `houseStructureId`, `structureRoomKey`, `displayName`, `sortOrder`            |                                                      |
+| `furniture_placements`       | `roomId`, `label`, `anchorDirectStorageId`, `sortOrder`                       |                                                      |
+| `storage_locations`          | `householdId`, `name`, `roomId`, `furniturePlacementId`, `sortOrder`          | roomId·furniturePlacementId 모두 nullable            |
 
 ### 캐스케이드 삭제 관계
 
@@ -214,11 +217,11 @@ Household  ──CASCADE──▸  StorageLocation                              
 
 ### 모달 패턴
 
-| 컴포넌트 | role | 용도 |
-|---------|------|------|
-| `FormModal` | `dialog` | 폼 입력 (추가, 수정) |
-| `AlertModal` | `alertdialog` | 확인/삭제 경고 |
-| `MotionModalLayer` | `dialog` (기본) | 커스텀 모달 |
+| 컴포넌트           | role            | 용도                 |
+| ------------------ | --------------- | -------------------- |
+| `FormModal`        | `dialog`        | 폼 입력 (추가, 수정) |
+| `AlertModal`       | `alertdialog`   | 확인/삭제 경고       |
+| `MotionModalLayer` | `dialog` (기본) | 커스텀 모달          |
 
 ```typescript
 // FormModal 대기 → 입력 → 제출
@@ -246,25 +249,25 @@ await tablist.locator('button[role="tab"]:has-text("거실")').click();
 
 // 선택된 탭 확인
 await expect(
-  page.locator('button[role="tab"][aria-selected="true"]:has-text("거실")')
+  page.locator('button[role="tab"][aria-selected="true"]:has-text("거실")'),
 ).toBeVisible();
 ```
 
 ### 주요 aria-label 목록
 
-| 요소 | aria-label 패턴 | 위치 |
-|-----|----------------|------|
-| 거점 추가 버튼 | `"거점 추가"` | 대시보드 헤더 |
-| 거점 삭제 버튼 | `"${name} 삭제"` | 대시보드 거점 탭 |
-| 거점 유형 관리 버튼 | `"거점 유형 관리"` | 대시보드 헤더 |
-| 방 추가 버튼 | `"방 추가"` | 방 관리 섹션 |
-| 방 이름 수정 버튼 | `"${name} 이름 수정"` | 방 탭 |
-| 방 삭제 버튼 | `"${name} 삭제"` | 방 탭 |
-| 직속 보관 장소 이름 수정 | `"「${name}」 직속 보관 장소 이름 수정"` | 보관 장소 탭 |
-| 직속 보관 장소 삭제 | `"「${name}」 직속 보관 장소 삭제"` | 보관 장소 탭 |
-| 가구 삭제 | `"「${name}」 가구 삭제"` | 가구 상세 영역 |
-| 세부 보관 장소 이름 수정 | `"「${name}」 세부 보관 장소 이름 수정"` | 가구 하위 |
-| 세부 보관 장소 삭제 | `"「${name}」 세부 보관 장소 삭제"` | 가구 하위 |
+| 요소                     | aria-label 패턴                          | 위치             |
+| ------------------------ | ---------------------------------------- | ---------------- |
+| 거점 추가 버튼           | `"거점 추가"`                            | 대시보드 헤더    |
+| 거점 삭제 버튼           | `"${name} 삭제"`                         | 대시보드 거점 탭 |
+| 거점 유형 관리 버튼      | `"거점 유형 관리"`                       | 대시보드 헤더    |
+| 방 추가 버튼             | `"방 추가"`                              | 방 관리 섹션     |
+| 방 이름 수정 버튼        | `"${name} 이름 수정"`                    | 방 탭            |
+| 방 삭제 버튼             | `"${name} 삭제"`                         | 방 탭            |
+| 직속 보관 장소 이름 수정 | `"「${name}」 직속 보관 장소 이름 수정"` | 보관 장소 탭     |
+| 직속 보관 장소 삭제      | `"「${name}」 직속 보관 장소 삭제"`      | 보관 장소 탭     |
+| 가구 삭제                | `"「${name}」 가구 삭제"`                | 가구 상세 영역   |
+| 세부 보관 장소 이름 수정 | `"「${name}」 세부 보관 장소 이름 수정"` | 가구 하위        |
+| 세부 보관 장소 삭제      | `"「${name}」 세부 보관 장소 삭제"`      | 가구 하위        |
 
 ---
 
@@ -328,7 +331,9 @@ await seedHouseStructure(householdId);
 UI에서 방을 추가해도 프론트엔드의 rooms/sync API가 비동기적으로 실패할 수 있다. 방 추가 후 DB에 room이 없으면 직접 rooms/sync API를 호출한다:
 
 ```typescript
-const rooms = await query('SELECT id FROM rooms WHERE "displayName" = $1', [name]);
+const rooms = await query('SELECT id FROM rooms WHERE "displayName" = $1', [
+  name,
+]);
 if (rooms.length === 0) {
   // house_structure 확인 → rooms/sync API 직접 호출
 }
@@ -345,21 +350,30 @@ await page.request.post(`/api/households/${hId}/storage-locations`, {
 await page.reload();
 ```
 
-### 사�� 데이터 준비 (DB 시드)
+### 사전 데이터 준비 (DB 시드)
 
 테스트의 **사전 조건 데이터**(카탈로그, 재고, 구매 등)는 `utils/seed.ts`의 DB 시드 함수로 준비한다. 테스트 **동작**(버튼 클릭, 폼 제출 등)은 반드시 UI 조작 또는 API를 통해야 한다.
 
 ```typescript
-import { seedFullCatalogAndInventory, seedPurchase, seedPurchaseBatch } from "../../utils/seed";
+import {
+  seedFullCatalogAndInventory,
+  seedPurchase,
+  seedPurchaseBatch,
+} from "../../utils/seed";
 
-// ✅ 사전 데이터 — DB 시드 함수 ���용
-const seed = await seedFullCatalogAndInventory(householdId, { inventoryQuantity: 10 });
+// ✅ 사전 데이터 — DB 시드 함수 추가용
+const seed = await seedFullCatalogAndInventory(householdId, {
+  inventoryQuantity: 10,
+});
 
 // ✅ 테스트 동작 — UI 조작
 await page.locator('button:has-text("소비")').first().click();
 
 // ✅ 결과 검증 — DB 조회(SELECT)
-const items = await query<{ quantity: string }>("SELECT quantity::text FROM inventory_items WHERE id = $1", [id]);
+const items = await query<{ quantity: string }>(
+  "SELECT quantity::text FROM inventory_items WHERE id = $1",
+  [id],
+);
 expect(parseFloat(items[0].quantity)).toBe(7);
 ```
 
@@ -370,18 +384,21 @@ expect(parseFloat(items[0].quantity)).toBe(7);
 Next.js API Route 어댑터(`frontend/app/api/.../**/route.adapter.ts`)는 백엔드 응답을 프론트엔드가 기대하는 형식으로 매핑하는 역할을 한다. E2E 테스트에서 DB 시드 데이터가 UI에 표시되지 않으면, **백엔드 응답 필드명과 프론트엔드 기대 필드명이 다를 가능성**이 높다.
 
 **진단 방법:**
+
 1. 브라우저 DevTools > Network 탭에서 API 응답 확인
 2. `route.adapter.ts`의 `ApiXxxItem` 인터페이스와 `mapApiToXxxEntry` 함수 확인
 3. 백엔드 엔티티/DTO 필드명과 비교
 
 **수정 절차:**
+
 1. `route.adapter.ts`의 인터페이스에 백엔드 필드명 추가 (하위 호환 유지)
 2. `mapApiToXxx` 함수에서 양쪽 필드명 모두 지원하도록 fallback 체이닝
 
 ```typescript
 // 예: 백엔드 "memo" → 프론트엔드 "label" 매핑
 const label = item.label ?? item.memo ?? item.product?.name ?? undefined;
-const inventoryItemId = item.inventoryItemId ?? item.sourceInventoryItemId ?? null;
+const inventoryItemId =
+  item.inventoryItemId ?? item.sourceInventoryItemId ?? null;
 ```
 
 **참고 사례**: `shopping-list-items/route.adapter.ts`에서 `memo→label`, `sourceInventoryItemId→inventoryItemId`, `quantity→restockQuantity` 매핑.
@@ -431,13 +448,13 @@ await query("SELECT passwordHash FROM users WHERE email = $1", [email]);
 
 ### Playwright 프로젝트 구성
 
-| 프로젝트 | testDir | 뷰포트 | 디바이스 |
-|---------|---------|--------|---------|
+| 프로젝트           | testDir         | 뷰포트   | 디바이스       |
+| ------------------ | --------------- | -------- | -------------- |
 | `desktop-chromium` | `tests/desktop` | 1280x720 | Desktop Chrome |
-| `mobile-chromium` | `tests/mobile` | 375x812 | Pixel 7 |
+| `mobile-chromium`  | `tests/mobile`  | 375x812  | Pixel 7        |
 
 모바일 테스트는 375x812 뷰포트에서 실행되며, 프론트엔드의 `useDeviceLayout` 훅이 `isMobileLayout: true`를 반환하여 모바일 전용 컴포넌트(MobileShell, BottomNav, BottomSheet 등)가 자동으로 렌더링된다.
 
 ---
 
-*본 문서는 프로젝트 E2E 테스트 작성 시 참고 가이드로, 실제 셀렉터와 구조는 소스코드를 기준으로 한다.*
+_본 문서는 프로젝트 E2E 테스트 작성 시 참고 가이드로, 실제 셀렉터와 구조는 소스코드를 기준으로 한다._

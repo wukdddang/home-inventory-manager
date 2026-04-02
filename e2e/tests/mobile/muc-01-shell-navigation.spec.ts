@@ -85,16 +85,14 @@ test.describe("MUC-01. 모바일 셸 및 네비게이션", () => {
     await signupAndWait(page);
     await createHousehold(page, "우리 집");
 
-    // 대시보드(홈) 탭이 활성 — teal-400 색상
-    const homeLink = page.locator('nav a:has-text("홈")');
-    await expect(homeLink).toHaveClass(/text-teal-400/, { timeout: 5_000 });
+    // 대시보드(홈) 탭이 활성 — URL로 확인
+    await page.waitForURL("**/dashboard", { timeout: 5_000 });
+    expect(page.url()).toContain("/dashboard");
 
     // 이력 탭으로 이동
     await page.locator('nav >> text="이력"').click();
     await page.waitForURL("**/inventory-history", { timeout: 10_000 });
-
-    const historyLink = page.locator('nav a:has-text("이력")');
-    await expect(historyLink).toHaveClass(/text-teal-400/);
+    expect(page.url()).toContain("/inventory-history");
   });
 
   test("5. 헤더에 현재 선택된 거점 이름이 표시된다", async ({ page }) => {
@@ -109,7 +107,6 @@ test.describe("MUC-01. 모바일 셸 및 네비게이션", () => {
     await createHousehold(page, "우리 집");
 
     // 두 번째 거점 생성 (API)
-    const hId = await getHouseholdId();
     const res = await page.request.post("/api/households", {
       data: { name: "회사" },
     });

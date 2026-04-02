@@ -89,6 +89,13 @@ html {
   font-size: clamp(14px, 0.625rem + 0.25vw, 22px);
 }
 
+/* 모바일: iOS Safari 입력란 자동 확대(auto-zoom) 방지를 위해 최소 16px */
+@media (max-width: 767px) {
+  html {
+    font-size: 16px;
+  }
+}
+
 body {
   height: 100%;
   min-height: 100%;

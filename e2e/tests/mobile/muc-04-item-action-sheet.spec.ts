@@ -1,6 +1,10 @@
 import { test, expect, type Page } from "@playwright/test";
 import { resetDatabase, query } from "../../utils/db";
 import { clearAllMails } from "../../utils/mailhog";
+import {
+  seedFullCatalogAndInventory,
+  type FullSeedResult,
+} from "../../utils/seed";
 
 const TEST_USER = {
   displayName: "테스트유저",
@@ -39,65 +43,21 @@ test.describe("MUC-04. 대시보드 — 품목 액션 시트", () => {
     return (await query<{ id: string }>("SELECT id FROM households LIMIT 1"))[0].id;
   }
 
-  async function ensureHouseStructure(page: Page, hId: string) {
-    await page.request.put(`/api/households/${hId}/house-structure`, {
-      data: { name: "default", structurePayload: { rooms: {} }, diagramLayout: null },
-    });
-  }
-
-  async function addRoomApi(page: Page, hId: string, name: string): Promise<string> {
-    const existing = await query<{ structureRoomKey: string; displayName: string | null; sortOrder: number }>(
-      `SELECT r."structureRoomKey", r."displayName", r."sortOrder" FROM rooms r INNER JOIN house_structures hs ON r."houseStructureId" = hs.id WHERE hs."householdId" = $1`, [hId]);
-    await page.request.put(`/api/households/${hId}/rooms/sync`, {
-      data: { rooms: [...existing.map(r => ({ structureRoomKey: r.structureRoomKey, displayName: r.displayName, sortOrder: r.sortOrder })),
-        { structureRoomKey: "room-" + Date.now(), displayName: name, sortOrder: existing.length }] },
-    });
-    return (await query<{ id: string }>('SELECT id FROM rooms WHERE "displayName" = $1', [name]))[0].id;
-  }
-
-  async function addStorageApi(page: Page, hId: string, roomId: string, name: string): Promise<string> {
-    return (await (await page.request.post(`/api/households/${hId}/storage-locations`, { data: { name, roomId, furniturePlacementId: null, sortOrder: 0 } })).json()).data.id;
-  }
-
-  async function createCatApi(page: Page, hId: string, name: string): Promise<string> {
-    return (await (await page.request.post(`/api/households/${hId}/categories`, { data: { name, sortOrder: 0 } })).json()).data.id;
-  }
-
-  async function createUnitApi(page: Page, hId: string, symbol: string): Promise<string> {
-    return (await (await page.request.post(`/api/households/${hId}/units`, { data: { symbol, name: null, sortOrder: 0 } })).json()).data.id;
-  }
-
-  async function createProdApi(page: Page, hId: string, catId: string, name: string): Promise<string> {
-    return (await (await page.request.post(`/api/households/${hId}/products`, { data: { categoryId: catId, name, isConsumable: true } })).json()).data.id;
-  }
-
-  async function createVarApi(page: Page, hId: string, prodId: string, unitId: string, qty: number, name?: string): Promise<string> {
-    return (await (await page.request.post(`/api/households/${hId}/products/${prodId}/variants`, { data: { unitId, quantityPerUnit: qty, name: name ?? null, isDefault: true } })).json()).data.id;
-  }
-
-  async function createItemApi(page: Page, hId: string, pvId: string, slId: string, qty: number, minStock?: number): Promise<string> {
-    return (await (await page.request.post(`/api/households/${hId}/inventory-items`, { data: { productVariantId: pvId, storageLocationId: slId, quantity: qty, minStockLevel: minStock ?? null } })).json()).data.id;
-  }
-
-  async function setupFull(page: Page, qty = 10) {
+  async function setupFull(page: Page, qty = 10): Promise<FullSeedResult> {
     await signupAndWait(page);
     await createHousehold(page, "우리 집");
     const hId = await getHouseholdId();
-    await ensureHouseStructure(page, hId);
-    const roomId = await addRoomApi(page, hId, "주방");
-    const slId = await addStorageApi(page, hId, roomId, "냉장고");
-    const catId = await createCatApi(page, hId, "식료품");
-    const unitId = await createUnitApi(page, hId, "팩");
-    const prodId = await createProdApi(page, hId, catId, "우유");
-    const varId = await createVarApi(page, hId, prodId, unitId, 1, "1L");
-    const itemId = await createItemApi(page, hId, varId, slId, qty, 3);
-    return { hId, roomId, slId, catId, unitId, prodId, varId, itemId };
+    const seed = await seedFullCatalogAndInventory(hId, {
+      inventoryQuantity: qty,
+      minStockLevel: 3,
+    });
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+    return seed;
   }
 
   /** 대시보드에서 "우유" 재고 카드를 탭하여 액션 시트를 연다 */
   async function openItemActionSheet(page: Page) {
-    await page.reload();
-    await page.waitForLoadState("networkidle");
     const card = page.locator('button:has-text("우유")').first();
     await expect(card).toBeVisible({ timeout: 10_000 });
     await card.click();
@@ -172,7 +132,7 @@ test.describe("MUC-04. 대시보드 — 품목 액션 시트", () => {
     await expect(async () => {
       const logs = await query<{ type: string; quantityDelta: string }>(
         `SELECT type, "quantityDelta"::text FROM inventory_logs WHERE "inventoryItemId" = $1 ORDER BY "createdAt" DESC LIMIT 1`,
-        [ctx.itemId]
+        [ctx.inventoryItemId]
       );
       expect(logs).toHaveLength(1);
       expect(logs[0].type).toBe("out");
@@ -190,7 +150,7 @@ test.describe("MUC-04. 대시보드 — 품목 액션 시트", () => {
     // 재고 수량 감소 확인
     await expect(async () => {
       const items = await query<{ quantity: string }>(
-        `SELECT quantity::text FROM inventory_items WHERE id = $1`, [ctx.itemId]);
+        `SELECT quantity::text FROM inventory_items WHERE id = $1`, [ctx.inventoryItemId]);
       expect(parseFloat(items[0].quantity)).toBeLessThan(10);
     }).toPass({ timeout: 10_000 });
   });
@@ -247,7 +207,7 @@ test.describe("MUC-04. 대시보드 — 품목 액션 시트", () => {
     await expect(async () => {
       const logs = await query<{ type: string; reason: string | null }>(
         `SELECT type, reason FROM inventory_logs WHERE "inventoryItemId" = $1 ORDER BY "createdAt" DESC LIMIT 1`,
-        [ctx.itemId]
+        [ctx.inventoryItemId]
       );
       expect(logs).toHaveLength(1);
       expect(logs[0].type).toBe("waste");
