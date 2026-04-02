@@ -1,2 +1,4 @@
 # Monorepo: common patterns are in repo root .gitignore.
 # Backend-only (NestJS dist, etc.) are already covered there.
+
+*.json
