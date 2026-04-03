@@ -19,6 +19,8 @@
     "e2e:up": "cd e2e && pnpm docker:up",
     "e2e:down": "cd e2e && pnpm docker:down",
     "e2e:test": "cd e2e && pnpm test",
+    "e2e:desktop": "cd e2e && npx playwright test --project=desktop-chromium",
+    "e2e:mobile": "cd e2e && npx playwright test --project=mobile-chromium",
     "e2e:file": "cd e2e && npx playwright test",
     "e2e:report": "pnpm --filter e2e exec playwright show-report",
     "e2e": "cd e2e && pnpm docker:up && pnpm test; pnpm docker:down"
