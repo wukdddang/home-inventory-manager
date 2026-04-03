@@ -23,41 +23,45 @@ import { NotificationPreferenceInterfaceModule } from './interface/notification-
 import { NotificationInterfaceModule } from './interface/notification/notification.module';
 import { ExpirationAlertRuleInterfaceModule } from './interface/expiration-alert-rule/expiration-alert-rule.module';
 import { FcmInterfaceModule } from './interface/fcm/fcm.module';
+import { BackupContextModule } from './context/backup-context';
 
 @Module({
-  imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-      validationSchema: envValidationSchema,
-    }),
-    ScheduleModule.forRoot(),
-    DatabaseModule,
+    imports: [
+        ConfigModule.forRoot({
+            isGlobal: true,
+            validationSchema: envValidationSchema,
+        }),
+        ScheduleModule.forRoot(),
+        DatabaseModule,
 
-    // Infrastructure
-    AuthInfrastructureModule,
+        // Infrastructure
+        AuthInfrastructureModule,
 
-    // Domain
-    HouseholdModule,
+        // Domain
+        HouseholdModule,
 
-    // Interface (각 Interface 모듈이 Business → Context → Domain 의존성을 자체 포함)
-    CategoryInterfaceModule,
-    AuthInterfaceModule,
-    HouseholdInterfaceModule,
-    InvitationInterfaceModule,
-    HouseholdKindInterfaceModule,
-    SpaceInterfaceModule,
-    UnitInterfaceModule,
-    ProductInterfaceModule,
-    ProductVariantInterfaceModule,
-    InventoryItemInterfaceModule,
-    PurchaseInterfaceModule,
-    PurchaseBatchInterfaceModule,
-    InventoryLogInterfaceModule,
-    ShoppingListInterfaceModule,
-    NotificationPreferenceInterfaceModule,
-    NotificationInterfaceModule,
-    ExpirationAlertRuleInterfaceModule,
-    FcmInterfaceModule,
-  ],
+        // Interface (각 Interface 모듈이 Business → Context → Domain 의존성을 자체 포함)
+        CategoryInterfaceModule,
+        AuthInterfaceModule,
+        HouseholdInterfaceModule,
+        InvitationInterfaceModule,
+        HouseholdKindInterfaceModule,
+        SpaceInterfaceModule,
+        UnitInterfaceModule,
+        ProductInterfaceModule,
+        ProductVariantInterfaceModule,
+        InventoryItemInterfaceModule,
+        PurchaseInterfaceModule,
+        PurchaseBatchInterfaceModule,
+        InventoryLogInterfaceModule,
+        ShoppingListInterfaceModule,
+        NotificationPreferenceInterfaceModule,
+        NotificationInterfaceModule,
+        ExpirationAlertRuleInterfaceModule,
+        FcmInterfaceModule,
+
+        // Context
+        BackupContextModule,
+    ],
 })
 export class AppModule {}

@@ -25,6 +25,13 @@ export const envValidationSchema = Joi.object({
   FIREBASE_SERVICE_ACCOUNT_PATH: Joi.string().optional(),
   FIREBASE_SERVICE_ACCOUNT_JSON: Joi.string().optional(),
 
+  // ── Backup ──
+  BACKUP_ENABLED: Joi.string().default('false'),
+  BACKUP_PATH: Joi.string().default('./backups/database'),
+  BACKUP_COMPRESS: Joi.string().default('true'),
+  BACKUP_MAX_RETRIES: Joi.number().default(3),
+  BACKUP_RETRY_DELAY_MS: Joi.number().default(5000),
+
   // ── App ──
   APP_URL: Joi.string().default('http://localhost:4100'),
   PORT: Joi.number().default(4200),
