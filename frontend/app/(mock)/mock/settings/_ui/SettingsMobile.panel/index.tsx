@@ -54,17 +54,12 @@ export function SettingsMobilePanel() {
     : authUser ?? { email: "", displayName: "", emailVerified: false };
 
   // PWA 설치
-  const {
-    state: pwaState,
-    설치를_요청한다,
-    나중에_설치한다: _나중에,
-  } = usePwaInstall();
+  const { state: pwaState, 설치를_요청한다 } = usePwaInstall();
 
   // 푸시 토큰 관리
   const {
     token: pushToken,
     loading: pushRequesting,
-    granted: pushGranted,
     토큰을_발급한다,
     토큰을_삭제한다,
   } = usePushToken();

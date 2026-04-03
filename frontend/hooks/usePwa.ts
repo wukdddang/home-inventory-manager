@@ -50,22 +50,20 @@ function isDismissedRecently(): boolean {
   }
 }
 
+function getInitialPwaState(): PwaInstallState {
+  if (typeof window === "undefined") return "idle";
+  if (window.matchMedia("(display-mode: standalone)").matches) return "installed";
+  if (isDismissedRecently()) return "dismissed";
+  return "idle";
+}
+
 export function usePwaInstall() {
   const deferredPrompt = useRef<BeforeInstallPromptEvent | null>(null);
-  const [state, setState] = useState<PwaInstallState>("idle");
+  const [state, setState] = useState<PwaInstallState>(getInitialPwaState);
 
   useEffect(() => {
-    // 이미 standalone으로 실행 중이면 installed
-    if (window.matchMedia("(display-mode: standalone)").matches) {
-      setState("installed");
-      return;
-    }
-
-    // 이전에 닫은 지 7일 미만이면 표시 안 함
-    if (isDismissedRecently()) {
-      setState("dismissed");
-      return;
-    }
+    // standalone이거나 dismiss 상태면 이벤트 리스너 불필요
+    if (state === "installed" || state === "dismissed") return;
 
     const handler = (e: Event) => {
       e.preventDefault();
@@ -82,7 +80,7 @@ export function usePwaInstall() {
       window.removeEventListener("beforeinstallprompt", handler);
       window.removeEventListener("appinstalled", installedHandler);
     };
-  }, []);
+  }, [state]);
 
   const 설치를_요청한다 = useCallback(async () => {
     const prompt = deferredPrompt.current;
