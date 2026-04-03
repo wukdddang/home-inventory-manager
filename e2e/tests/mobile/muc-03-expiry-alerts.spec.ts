@@ -60,12 +60,17 @@ test.describe("MUC-03. 대시보드 — 유통기한 알림", () => {
     return seed;
   }
 
+  /** 로컬 타임존 기준 YYYY-MM-DD 문자열을 반환한다 */
+  function localDateStr(d: Date): string {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  }
+
   /** 유통기한 임박 배치를 DB 시드로 등록한다 */
   async function createExpiringBatch(hId: string, inventoryItemId: string, daysFromNow: number) {
     const date = new Date();
     date.setDate(date.getDate() + daysFromNow);
-    const expiryDate = date.toISOString().slice(0, 10);
-    const purchasedAt = new Date().toISOString().slice(0, 10);
+    const expiryDate = localDateStr(date);
+    const purchasedAt = localDateStr(new Date());
 
     const purchaseId = await seedPurchase(hId, {
       inventoryItemId,

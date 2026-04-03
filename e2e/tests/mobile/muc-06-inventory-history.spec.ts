@@ -89,11 +89,11 @@ test.describe("MUC-06. 재고 이력 (모바일)", () => {
     await page.goto("/inventory-history");
     await page.waitForLoadState("networkidle");
 
-    await expect(page.getByText("전체", { exact: true }).first()).toBeVisible({ timeout: 10_000 });
-    await expect(page.getByText("입고", { exact: true })).toBeVisible();
-    await expect(page.getByText("소비", { exact: true })).toBeVisible();
-    await expect(page.getByText("조정", { exact: true })).toBeVisible();
-    await expect(page.getByText("폐기", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "전체" })).toBeVisible({ timeout: 10_000 });
+    await expect(page.getByRole("button", { name: "입고" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "소비" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "조정" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "폐기" })).toBeVisible();
   });
 
   test("5. 사용자는 타입 칩을 탭하여 해당 유형만 필터링한다", async ({ page }) => {

@@ -23,7 +23,8 @@ import {
   appendInventoryLedgerRow,
   getHouseholds,
   getInventoryLedger,
-  subscribeInventoryHistoryBundle,
+  subscribeHouseholds,
+  subscribeInventoryLedger,
 } from "@/lib/local-store";
 import {
   iso를_날짜키로_만든다,
@@ -545,11 +546,11 @@ export function CurrentInventoryHistoryProvider({
   const [port] = useState<InventoryHistoryDataPort>(() => ({
     initialHouseholds: () => getHouseholds(),
     initialLedger: () => getInventoryLedger(),
-    subscribe: (onH, onL) =>
-      subscribeInventoryHistoryBundle(() => {
-        onH(getHouseholds());
-        onL(getInventoryLedger());
-      }),
+    subscribe: (onH, onL) => {
+      const u1 = subscribeHouseholds(() => onH(getHouseholds()));
+      const u2 = subscribeInventoryLedger(() => onL(getInventoryLedger()));
+      return () => { u1(); u2(); };
+    },
 
     async loadApiLedger() {
       // API 거점 목록 + localStorage 거점 병합
