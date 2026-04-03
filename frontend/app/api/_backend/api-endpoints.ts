@@ -140,6 +140,16 @@ export const PURCHASE_BATCH_ENDPOINTS = {
     api(`/households/${householdId}/batches/expired`),
 } as const;
 
+// ── Aggregate (대시보드·이력·구매 일괄 조회) ──
+export const AGGREGATE_ENDPOINTS = {
+  대시보드뷰: (householdId: string) =>
+    api(`/households/${householdId}/dashboard-view`),
+  재고이력일괄: (householdId: string) =>
+    api(`/households/${householdId}/inventory-logs`),
+  구매전체: (householdId: string) =>
+    api(`/households/${householdId}/purchases-full`),
+} as const;
+
 // ── Inventory Log ──
 export const INVENTORY_LOG_ENDPOINTS = {
   이력목록: (householdId: string, inventoryItemId: string) =>

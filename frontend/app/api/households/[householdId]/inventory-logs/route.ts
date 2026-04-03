@@ -1,0 +1,34 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getAccessToken } from '@/app/api/_base';
+import { AggregateService } from '@/app/api/_backend/modules/aggregate/aggregate.service';
+
+export const dynamic = 'force-dynamic';
+
+type Context = { params: Promise<{ householdId: string }> };
+
+export async function GET(request: NextRequest, context: Context) {
+  const { householdId } = await context.params;
+  const accessToken = await getAccessToken();
+  if (!accessToken) {
+    return NextResponse.json(
+      { success: false, message: '인증 토큰이 필요합니다.' },
+      { status: 401 },
+    );
+  }
+
+  const url = new URL(request.url);
+  const from = url.searchParams.get('from') ?? undefined;
+  const to = url.searchParams.get('to') ?? undefined;
+
+  const service = new AggregateService(accessToken);
+  const result = await service.재고_이력을_일괄_조회한다(householdId, from, to);
+
+  if (!result.success) {
+    return NextResponse.json(
+      { success: false, message: result.message },
+      { status: 500 },
+    );
+  }
+
+  return NextResponse.json({ success: true, data: result.data });
+}

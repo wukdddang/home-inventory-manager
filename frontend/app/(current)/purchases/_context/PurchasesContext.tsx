@@ -123,20 +123,39 @@ function mapApiToPurchaseRecord(
   };
 }
 
+/** purchases-full aggregate 응답 타입 */
+interface PurchasesFullResponse {
+  purchases: ApiPurchase[];
+  allBatches: ApiPurchaseBatch[];
+  expiringBatches: ApiPurchaseBatch[];
+  expiredBatches: ApiPurchaseBatch[];
+}
+
 async function loadPurchasesFromApi(
   households: Household[],
 ): Promise<PurchaseRecord[]> {
   if (households.length === 0) return [];
+  // ★ aggregate API 사용: 거점당 1회 호출 (기존 2회 → 1회)
   const results = await Promise.all(
     households.map(async (h) => {
       try {
-        const [purchases, batches] = await Promise.all([
-          apiFetch<ApiPurchase[]>(`/api/households/${h.id}/purchases`),
-          apiFetch<ApiPurchaseBatch[]>(`/api/households/${h.id}/batches`),
-        ]);
-        return purchases.map((p) => mapApiToPurchaseRecord(p, batches));
+        const full = await apiFetch<PurchasesFullResponse>(
+          `/api/households/${h.id}/purchases-full`,
+        );
+        return full.purchases.map((p) =>
+          mapApiToPurchaseRecord(p, full.allBatches),
+        );
       } catch {
-        return [];
+        // aggregate 실패 시 기존 개별 API 폴백
+        try {
+          const [purchases, batches] = await Promise.all([
+            apiFetch<ApiPurchase[]>(`/api/households/${h.id}/purchases`),
+            apiFetch<ApiPurchaseBatch[]>(`/api/households/${h.id}/batches`),
+          ]);
+          return purchases.map((p) => mapApiToPurchaseRecord(p, batches));
+        } catch {
+          return [];
+        }
       }
     }),
   );

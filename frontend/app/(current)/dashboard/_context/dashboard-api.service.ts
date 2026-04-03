@@ -581,10 +581,130 @@ async function loadFurniturePlacementsFromApi(
   );
 }
 
+/* ─────── aggregate 응답 → 프론트 Household 매핑 ─────── */
+
+/** 백엔드 dashboard-view aggregate 응답 타입 */
+interface DashboardViewResponse {
+  members: { id: string; userId: string; email: string; displayName: string; role: string; createdAt: string }[];
+  catalog: {
+    categories: { id: string; householdId: string; name: string; sortOrder: number }[];
+    units: { id: string; householdId: string; symbol: string; name: string | null; sortOrder: number }[];
+    products: { id: string; householdId: string; categoryId: string; name: string; isConsumable: boolean; imageUrl: string | null; description: string | null }[];
+    variants: { id: string; productId: string; unitId: string; quantityPerUnit: number; name: string | null; price: number | null; sku: string | null; isDefault: boolean }[];
+  };
+  houseStructure: { id: string; structurePayload: Record<string, unknown>; diagramLayout: Record<string, unknown> | null } | null;
+  rooms: { id: string; structureRoomKey: string; displayName: string | null; sortOrder: number }[];
+  furniturePlacements: { id: string; roomId: string; label: string; anchorDirectStorageId: string | null; sortOrder: number }[];
+  storageLocations: { id: string; name: string; roomId: string | null; furniturePlacementId: string | null; sortOrder: number }[];
+  inventoryItems: {
+    id: string; productVariantId: string; storageLocationId: string; quantity: number; minStockLevel: number | null;
+    productVariant?: { id: string; name: string | null; quantityPerUnit: number; product?: { id: string; name: string; isConsumable: boolean }; unit?: { id: string; symbol: string; name: string } };
+    storageLocation?: { id: string; name: string };
+  }[];
+  purchases: { id: string; householdId: string; inventoryItemId: string | null; unitPrice: number; purchasedAt: string; supplierName: string | null; itemName: string | null; variantCaption: string | null; unitSymbol: string | null; memo: string | null }[];
+  allBatches: { id: string; purchaseId: string; quantity: number; expirationDate: string | null }[];
+  expiringBatches: { id: string; purchaseId: string; quantity: number; expirationDate: string | null }[];
+  expiredBatches: { id: string; purchaseId: string; quantity: number; expirationDate: string | null }[];
+}
+
+/** aggregate 응답에서 카탈로그 추출 */
+function mapAggregateCatalog(raw: DashboardViewResponse["catalog"]): ProductCatalog {
+  return {
+    categories: raw.categories.map((c): CatalogCategory => ({ id: c.id, name: c.name, sortOrder: c.sortOrder })),
+    units: raw.units.map((u): CatalogUnit => ({ id: u.id, symbol: u.symbol, name: u.name ?? undefined, sortOrder: u.sortOrder })),
+    products: raw.products.map((p): CatalogProduct => ({ id: p.id, categoryId: p.categoryId, name: p.name, isConsumable: p.isConsumable, imageUrl: p.imageUrl ?? undefined, description: p.description ?? undefined })),
+    variants: raw.variants.map((v): CatalogProductVariant => ({ id: v.id, productId: v.productId, unitId: v.unitId, quantityPerUnit: v.quantityPerUnit, name: v.name ?? undefined, price: v.price ?? undefined, sku: v.sku ?? undefined, isDefault: v.isDefault })),
+  };
+}
+
+/** aggregate 응답에서 재고 품목 매핑 (relation + 카탈로그 보완) */
+function mapAggregateInventoryItems(
+  items: DashboardViewResponse["inventoryItems"],
+  catalog: ProductCatalog,
+  storageLocations: StorageLocationRow[],
+  furniturePlacements: FurniturePlacement[],
+): InventoryRow[] {
+  const fpById = new Map(furniturePlacements.map((fp) => [fp.id, fp]));
+  const slotById = new Map(storageLocations.map((s) => [s.id, s]));
+  const catalogProductById = new Map(catalog.products.map((p) => [p.id, p]));
+
+  return items.map((item) => {
+    const pv = item.productVariant;
+    const product = pv?.product;
+    const unit = pv?.unit;
+    const slot = slotById.get(item.storageLocationId);
+    // categoryId는 nested relation에 없으므로 카탈로그에서 조회
+    const catalogProduct = product ? catalogProductById.get(product.id) : undefined;
+
+    let roomId = slot?.roomId ?? "";
+    if (!roomId && slot?.furniturePlacementId) {
+      roomId = fpById.get(slot.furniturePlacementId)?.roomId ?? "";
+    }
+
+    const variantCaption =
+      pv?.name ?? (pv && unit ? `${pv.quantityPerUnit}${unit.symbol}` : undefined);
+
+    const row: InventoryRow = {
+      id: item.id,
+      name: "",
+      quantity: Number(item.quantity),
+      unit: unit?.symbol ?? "",
+      roomId,
+      storageLocationId: item.storageLocationId,
+      categoryId: catalogProduct?.categoryId,
+      productId: product?.id,
+      productVariantId: item.productVariantId,
+      variantCaption,
+      quantityPerUnit: pv?.quantityPerUnit,
+      minStockLevel: item.minStockLevel != null ? Number(item.minStockLevel) : undefined,
+    };
+
+    row.name =
+      product && pv && unit
+        ? inventoryDisplayLine(catalog, row)
+        : (product?.name ?? "알 수 없는 품목");
+
+    return row;
+  });
+}
+
+/** aggregate 응답에서 방 목록 + 구조도 레이아웃 매핑 */
+function mapAggregateRooms(
+  rawRooms: DashboardViewResponse["rooms"],
+  houseStructure: DashboardViewResponse["houseStructure"],
+  localRooms: StructureRoom[],
+): { rooms: StructureRoom[]; structureDiagramLayout?: HouseholdStructureDiagramLayout } {
+  const localById = new Map(localRooms.map((r) => [r.id, r]));
+  const coordMap: RoomCoordMap =
+    houseStructure
+      ? ((houseStructure.structurePayload?.rooms ?? {}) as RoomCoordMap)
+      : {};
+  const diagramLayout: HouseholdStructureDiagramLayout | undefined =
+    houseStructure?.diagramLayout
+      ? (houseStructure.diagramLayout as HouseholdStructureDiagramLayout)
+      : undefined;
+
+  const rooms: StructureRoom[] = rawRooms
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .map((r) => {
+      const coord = coordMap[r.id] ?? localById.get(r.id);
+      return {
+        id: r.id,
+        name: r.displayName ?? r.structureRoomKey,
+        x: coord?.x ?? 0,
+        y: coord?.y ?? 0,
+        width: coord?.width ?? 120,
+        height: coord?.height ?? 80,
+      };
+    });
+
+  return { rooms: rooms.length > 0 ? rooms : localRooms, structureDiagramLayout: diagramLayout };
+}
+
 /* ─────────────────────────────────────────────────────── service ── */
 
 export const dashboardApiHouseholdsClient: DashboardHouseholdsPort = {
-  /* ── 거점 목록 ── */
+  /* ── 거점 목록 (aggregate API 사용) ── */
   async list() {
     const remoteList =
       await apiFetch<
@@ -594,93 +714,102 @@ export const dashboardApiHouseholdsClient: DashboardHouseholdsPort = {
     const local = getHouseholds();
     const localById = new Map(local.map((h) => [h.id, h]));
 
-    // 각 거점 병렬 로드: 멤버 + 카탈로그 + 보관장소 + 가구 배치
+    const allPurchases: PurchaseRecord[] = [];
+
     const withData = await Promise.all(
       remoteList.map(async (remote) => {
         const household = mergeWithLocal(remote, localById.get(remote.id));
 
-        const [members, catalog, storageLocations, roomsAndStructure] =
-          await Promise.all([
-            apiFetch<
-              { id: string; email: string; displayName: string; role: string }[]
-            >(`/api/households/${remote.id}/members`).catch(
-              () =>
-                [] as {
-                  id: string;
-                  email: string;
-                  displayName: string;
-                  role: string;
-                }[],
-            ),
-            loadCatalogFromApi(remote.id).catch(
-              () => household.catalog ?? cloneDefaultCatalog(),
-            ),
-            loadStorageLocationsFromApi(remote.id).catch(
-              () => household.storageLocations ?? [],
-            ),
-            loadRoomsAndStructureFromApi(remote.id, household.rooms).catch(
-              () => ({ rooms: household.rooms, structureDiagramLayout: household.structureDiagramLayout }),
-            ),
-          ]);
+        // ★ aggregate API 1회 호출로 모든 데이터 조회 (기존 ~15회 → 1회)
+        try {
+          const view = await apiFetch<DashboardViewResponse>(
+            `/api/households/${remote.id}/dashboard-view`,
+          );
 
-        household.members = members.map(mapMember);
-        household.catalog = catalog;
-        household.storageLocations = storageLocations;
-        household.rooms = roomsAndStructure.rooms;
-        if (roomsAndStructure.structureDiagramLayout !== undefined) {
-          household.structureDiagramLayout = roomsAndStructure.structureDiagramLayout;
-        }
+          // 멤버
+          household.members = view.members.map(mapMember);
 
-        // 보관장소 roomId + rooms에서 방 ID 목록 추출 후 가구 배치 로드
-        const roomIdsFromStorage = [
-          ...new Set(
-            storageLocations
-              .map((s) => s.roomId)
-              .filter((id): id is string => !!id),
-          ),
-        ];
-        const roomIdsFromRooms = household.rooms.map((r) => r.id);
-        const allRoomIds = [
-          ...new Set([...roomIdsFromRooms, ...roomIdsFromStorage]),
-        ];
+          // 카탈로그
+          household.catalog = mapAggregateCatalog(view.catalog);
 
-        if (allRoomIds.length > 0) {
-          const furniturePlacements = await loadFurniturePlacementsFromApi(
-            remote.id,
-            allRoomIds,
-          ).catch(() => household.furniturePlacements ?? []);
-          household.furniturePlacements = furniturePlacements;
+          // 보관장소
+          household.storageLocations = view.storageLocations.map((s) => ({
+            id: s.id,
+            name: s.name,
+            roomId: s.roomId,
+            furniturePlacementId: s.furniturePlacementId,
+            sortOrder: s.sortOrder,
+          }));
 
-          // 재고 품목 로드 (카탈로그 + 보관장소 + 가구 배치 이후에 수행)
-          const inventoryItems = await loadInventoryItemsFromApi(
-            remote.id,
-            catalog,
-            storageLocations,
+          // 방 + 구조도
+          const { rooms, structureDiagramLayout } = mapAggregateRooms(
+            view.rooms,
+            view.houseStructure,
+            household.rooms,
+          );
+          household.rooms = rooms;
+          if (structureDiagramLayout !== undefined) {
+            household.structureDiagramLayout = structureDiagramLayout;
+          }
+
+          // 가구 배치
+          household.furniturePlacements = view.furniturePlacements.map((f) => ({
+            id: f.id,
+            roomId: f.roomId,
+            label: f.label,
+            anchorDirectStorageId: f.anchorDirectStorageId ?? undefined,
+            sortOrder: f.sortOrder,
+          }));
+
+          // 재고 품목 (relation 데이터 기반 매핑)
+          household.items = mapAggregateInventoryItems(
+            view.inventoryItems,
+            household.catalog,
+            household.storageLocations,
             household.furniturePlacements,
-          ).catch(() => household.items ?? []);
-          household.items = inventoryItems;
-        } else {
-          // 가구 배치가 없어도 재고 품목 로드
-          const inventoryItems = await loadInventoryItemsFromApi(
-            remote.id,
-            catalog,
-            storageLocations,
-            [],
-          ).catch(() => household.items ?? []);
-          household.items = inventoryItems;
+          );
+
+          // 구매 데이터 매핑
+          const purchaseRecords = view.purchases.map((p) =>
+            mapApiToPurchaseRecord(p as ApiPurchaseRaw, view.allBatches as ApiPurchaseBatchRaw[]),
+          );
+          allPurchases.push(...purchaseRecords);
+        } catch (e) {
+          console.error(`거점 ${remote.id} aggregate 로드 실패, 개별 API 폴백:`, e);
+          // aggregate 실패 시 기존 개별 API 호출 폴백
+          const [members, catalog, storageLocations, roomsAndStructure] =
+            await Promise.all([
+              apiFetch<{ id: string; email: string; displayName: string; role: string }[]>(
+                `/api/households/${remote.id}/members`,
+              ).catch(() => [] as { id: string; email: string; displayName: string; role: string }[]),
+              loadCatalogFromApi(remote.id).catch(() => household.catalog ?? cloneDefaultCatalog()),
+              loadStorageLocationsFromApi(remote.id).catch(() => household.storageLocations ?? []),
+              loadRoomsAndStructureFromApi(remote.id, household.rooms).catch(
+                () => ({ rooms: household.rooms, structureDiagramLayout: household.structureDiagramLayout }),
+              ),
+            ]);
+          household.members = members.map(mapMember);
+          household.catalog = catalog;
+          household.storageLocations = storageLocations;
+          household.rooms = roomsAndStructure.rooms;
+          if (roomsAndStructure.structureDiagramLayout !== undefined) {
+            household.structureDiagramLayout = roomsAndStructure.structureDiagramLayout;
+          }
+          const allRoomIds = [...new Set([
+            ...household.rooms.map((r) => r.id),
+            ...storageLocations.map((s) => s.roomId).filter((id): id is string => !!id),
+          ])];
+          household.furniturePlacements = await loadFurniturePlacementsFromApi(remote.id, allRoomIds).catch(() => household.furniturePlacements ?? []);
+          household.items = await loadInventoryItemsFromApi(remote.id, catalog, storageLocations, household.furniturePlacements).catch(() => household.items ?? []);
+          const purchases = await loadPurchasesForHousehold(remote.id);
+          allPurchases.push(...purchases);
         }
 
         return household;
       }),
     );
 
-    // 구매 데이터 localStorage 동기화 (DashboardInventory 섹션의 purchases 표시용)
-    const allPurchases = (
-      await Promise.all(withData.map((h) => loadPurchasesForHousehold(h.id)))
-    ).flat();
     setPurchases(allPurchases);
-
-    // localStorage 동기화 (rooms/items/catalog 보존)
     setHouseholds(withData);
     return withData;
   },

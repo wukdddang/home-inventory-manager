@@ -168,6 +168,7 @@ export function InventoryHistoryProvider({
   useEffect(() => {
     if (!port.loadApiLedger) return;
     void port.loadApiLedger().then((apiRows) => {
+      console.log("[Provider] apiRows received:", apiRows.length);
       if (apiRows.length === 0) {
         setLoading(false);
         return;
@@ -175,13 +176,18 @@ export function InventoryHistoryProvider({
       setLedger((prev) => {
         const merged = new Map(prev.map((r) => [r.id, r]));
         apiRows.forEach((r) => merged.set(r.id, r));
-        return Array.from(merged.values()).sort(
+        const result = Array.from(merged.values()).sort(
           (a, b) =>
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
         );
+        console.log("[Provider] setLedger merged:", result.length, JSON.stringify(result[0]?.type));
+        return result;
       });
       setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch((err) => {
+      console.error("[Provider] loadApiLedger error:", err);
+      setLoading(false);
+    });
   }, [port]);
 
   const [filterHouseholdId, setFilterHouseholdId] = useState("all");
@@ -398,12 +404,15 @@ export function InventoryHistoryProvider({
   const activePageIndex = Math.min(Math.max(0, pageIndex), maxPageIndex);
 
   const paginatedRows = useMemo(
-    () =>
-      sortedRows.slice(
+    () => {
+      const result = sortedRows.slice(
         activePageIndex * LEDGER_PAGE_SIZE,
         activePageIndex * LEDGER_PAGE_SIZE + LEDGER_PAGE_SIZE,
-      ),
-    [sortedRows, activePageIndex],
+      );
+      console.log("[Provider] paginatedRows:", result.length, "ledger:", ledger.length, "base:", baseRows.length, "sorted:", sortedRows.length, "loading:", loading);
+      return result;
+    },
+    [sortedRows, activePageIndex, ledger.length, baseRows.length, loading],
   );
 
   const hasFilterContext =
@@ -527,35 +536,6 @@ async function apiFetch<T>(input: string, init?: RequestInit): Promise<T> {
   return json.data;
 }
 
-interface ApiInventoryLog {
-  id: string;
-  inventoryItemId: string;
-  type: string;
-  quantity: number;
-  memo: string | null;
-  createdAt: string;
-}
-
-function mapLogToLedgerRow(
-  householdId: string,
-  itemLabel: string,
-  log: ApiInventoryLog,
-): InventoryLedgerRow {
-  const isOut = log.type === "out" || log.type === "waste";
-  const quantityDelta = isOut ? -Math.abs(log.quantity) : log.quantity;
-  return {
-    id: log.id,
-    householdId,
-    inventoryItemId: log.inventoryItemId,
-    type: log.type as InventoryLedgerRow["type"],
-    quantityDelta,
-    quantityAfter: 0,
-    itemLabel: itemLabel || undefined,
-    memo: log.memo ?? undefined,
-    createdAt: log.createdAt,
-  };
-}
-
 /** current 경로 전용 Provider. localStorage + API 데이터 소스를 주입한다. */
 export function CurrentInventoryHistoryProvider({
   children,
@@ -572,71 +552,52 @@ export function CurrentInventoryHistoryProvider({
       }),
 
     async loadApiLedger() {
-      // localStorage + API households를 병합
+      // API 거점 목록 + localStorage 거점 병합
       const localHouseholds = getHouseholds();
       const apiHouseholds = await apiFetch<
         Array<{ id: string; name: string }>
       >("/api/households").catch(() => [] as Array<{ id: string; name: string }>);
 
-      // id 기반 병합
-      const householdMap = new Map<string, { id: string; items: Array<{ id: string; name: string }> }>();
-      for (const h of localHouseholds) {
-        householdMap.set(h.id, { id: h.id, items: h.items ?? [] });
-      }
-      for (const h of apiHouseholds) {
-        if (!householdMap.has(h.id)) {
-          householdMap.set(h.id, { id: h.id, items: [] });
-        }
-      }
+      const householdIds = new Set<string>();
+      for (const h of localHouseholds) householdIds.add(h.id);
+      for (const h of apiHouseholds) householdIds.add(h.id);
 
+      // ★ aggregate API 사용: 거점당 1회 호출로 모든 이력 조회 (기존 1+H+Σ(items) → H회)
       const rows: InventoryLedgerRow[] = [];
       await Promise.all(
-        Array.from(householdMap.values()).map(async (h) => {
-          const localItems = h.items ?? [];
-          const apiItems = await apiFetch<
-            Array<{
-              id: string;
-              name?: string;
-              productVariant?: {
-                product?: { name?: string };
-                name?: string | null;
-              };
-            }>
-          >(`/api/households/${h.id}/inventory-items`).catch(
-            () => [],
-          );
-
-          // id 기반 병합 (중복 제거)
-          const itemMap = new Map<string, string>();
-          for (const item of localItems) {
-            itemMap.set(item.id, item.name);
-          }
-          for (const item of apiItems) {
-            if (!itemMap.has(item.id)) {
-              const label =
-                item.productVariant?.product?.name ?? item.name ?? "품목";
-              itemMap.set(item.id, label);
+        Array.from(householdIds).map(async (hId) => {
+          try {
+            const logs = await apiFetch<InventoryLedgerRow[]>(
+              `/api/households/${hId}/inventory-logs`,
+            );
+            // householdId가 응답에 없으므로 주입
+            for (const log of logs) {
+              if (!log.householdId) (log as InventoryLedgerRow).householdId = hId;
             }
+            rows.push(...logs);
+          } catch {
+            // aggregate 실패 시 기존 개별 API 폴백
+            const apiItems = await apiFetch<
+              Array<{ id: string }>
+            >(`/api/households/${hId}/inventory-items`).catch(() => []);
+            await Promise.all(
+              apiItems.map(async (item) => {
+                const logs = await apiFetch<InventoryLedgerRow[]>(
+                  `/api/households/${hId}/inventory-items/${item.id}/logs`,
+                ).catch(() => [] as InventoryLedgerRow[]);
+                rows.push(...logs);
+              }),
+            );
           }
-
-          await Promise.all(
-            Array.from(itemMap.entries()).map(async ([itemId, itemName]) => {
-              const logs = await apiFetch<ApiInventoryLog[]>(
-                `/api/households/${h.id}/inventory-items/${itemId}/logs`,
-              ).catch(() => [] as ApiInventoryLog[]);
-              for (const log of logs) {
-                rows.push(mapLogToLedgerRow(h.id, itemName, log));
-              }
-            }),
-          );
         }),
       );
       return rows;
     },
 
-    async recordAdjustment(householdId, itemId, itemLabel, quantityDelta, memo) {
+    async recordAdjustment(householdId, itemId, _itemLabel, quantityDelta, memo) {
       try {
-        const result = await apiFetch<ApiInventoryLog>(
+        // route.handler에서 InventoryLedgerRow로 정규화됨
+        const row = await apiFetch<InventoryLedgerRow>(
           `/api/households/${householdId}/inventory-items/${itemId}/logs/adjustment`,
           {
             method: "POST",
@@ -644,7 +605,6 @@ export function CurrentInventoryHistoryProvider({
             body: JSON.stringify({ quantityDelta, memo: memo?.trim() }),
           },
         );
-        const row = mapLogToLedgerRow(householdId, itemLabel, result);
         appendInventoryLedgerRow(row);
         return row;
       } catch (e) {
