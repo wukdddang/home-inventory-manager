@@ -1,24 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-
-type InvitationInfo = {
-  id: string;
-  householdName: string;
-  role: string;
-  invitedByDisplayName?: string;
-  inviteeEmail?: string | null;
-  expiresAt?: string;
-  status?: string;
-};
-
-type PageState =
-  | { phase: "loading" }
-  | { phase: "ready"; invitation: InvitationInfo }
-  | { phase: "accepting" }
-  | { phase: "success"; householdName: string }
-  | { phase: "error"; message: string };
+import { use } from "react";
+import { InviteContext } from "../_context/InviteContext";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "관리자",
@@ -26,74 +9,16 @@ const ROLE_LABELS: Record<string, string> = {
   viewer: "조회자",
 };
 
-export default function InviteAcceptPage() {
-  const params = useParams<{ token: string }>();
-  const router = useRouter();
-  const token = params.token;
+export function InvitePanel() {
+  const ctx = use(InviteContext);
+  if (!ctx) throw new Error("InvitePanel은 InviteProvider 안에서 사용해야 합니다.");
 
-  const [state, setState] = useState<PageState>({ phase: "loading" });
-
-  useEffect(() => {
-    if (!token) return;
-    void (async () => {
-      try {
-        const res = await fetch(`/api/invitations/${token}`);
-        const json = (await res.json()) as {
-          success: boolean;
-          data?: InvitationInfo;
-          message?: string;
-        };
-        if (!json.success || !json.data) {
-          setState({
-            phase: "error",
-            message: json.message ?? "초대 링크를 찾을 수 없습니다.",
-          });
-          return;
-        }
-        setState({ phase: "ready", invitation: json.data });
-      } catch {
-        setState({
-          phase: "error",
-          message: "초대 정보를 불러오는 중 오류가 발생했습니다.",
-        });
-      }
-    })();
-  }, [token]);
-
-  const handleAccept = async () => {
-    if (state.phase !== "ready") return;
-    const householdName = state.invitation.householdName;
-    setState({ phase: "accepting" });
-    try {
-      const res = await fetch(`/api/invitations/${token}/accept`, {
-        method: "POST",
-      });
-      const json = (await res.json()) as {
-        success: boolean;
-        message?: string;
-      };
-      if (!json.success) {
-        setState({
-          phase: "error",
-          message: json.message ?? "초대 수락에 실패했습니다.",
-        });
-        return;
-      }
-      setState({ phase: "success", householdName });
-      setTimeout(() => {
-        router.push("/dashboard");
-      }, 2500);
-    } catch {
-      setState({
-        phase: "error",
-        message: "초대 수락 중 오류가 발생했습니다.",
-      });
-    }
-  };
+  const { state, 초대를_수락_한다, 대시보드로_이동_한다, 로그인으로_이동_한다 } = ctx;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-950 px-4">
       <div className="w-full max-w-md rounded-2xl border border-zinc-800 bg-zinc-900/60 p-8 shadow-xl">
+        {/* ── 헤더 ── */}
         <div className="mb-6 flex items-center gap-3">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-teal-500/15">
             <svg
@@ -118,6 +43,7 @@ export default function InviteAcceptPage() {
           </div>
         </div>
 
+        {/* ── Loading ── */}
         {state.phase === "loading" && (
           <div className="space-y-3">
             <div className="h-4 w-3/4 animate-pulse rounded-md bg-zinc-800" />
@@ -126,6 +52,7 @@ export default function InviteAcceptPage() {
           </div>
         )}
 
+        {/* ── Ready ── */}
         {state.phase === "ready" && (
           <div className="space-y-5">
             <div className="rounded-xl border border-zinc-700/60 bg-zinc-950/40 p-4">
@@ -165,14 +92,14 @@ export default function InviteAcceptPage() {
 
             <button
               type="button"
-              onClick={() => void handleAccept()}
+              onClick={() => void 초대를_수락_한다()}
               className="w-full cursor-pointer rounded-xl bg-teal-500 py-3 text-sm font-semibold text-zinc-950 transition-colors hover:bg-teal-400 active:bg-teal-600"
             >
               거점 참여하기
             </button>
             <button
               type="button"
-              onClick={() => router.push("/dashboard")}
+              onClick={대시보드로_이동_한다}
               className="w-full cursor-pointer rounded-xl border border-zinc-700 py-3 text-sm font-medium text-zinc-300 transition-colors hover:bg-zinc-800"
             >
               거절
@@ -180,6 +107,7 @@ export default function InviteAcceptPage() {
           </div>
         )}
 
+        {/* ── Accepting ── */}
         {state.phase === "accepting" && (
           <div className="flex flex-col items-center gap-4 py-6">
             <div className="size-8 animate-spin rounded-full border-2 border-zinc-700 border-t-teal-400" />
@@ -187,6 +115,7 @@ export default function InviteAcceptPage() {
           </div>
         )}
 
+        {/* ── Success ── */}
         {state.phase === "success" && (
           <div className="flex flex-col items-center gap-4 py-4 text-center">
             <div className="flex size-14 items-center justify-center rounded-full bg-teal-500/15">
@@ -207,9 +136,7 @@ export default function InviteAcceptPage() {
               </svg>
             </div>
             <div>
-              <p className="text-base font-semibold text-white">
-                참여 완료!
-              </p>
+              <p className="text-base font-semibold text-white">참여 완료!</p>
               <p className="mt-1 text-sm text-zinc-300">
                 <span className="font-medium text-teal-300">
                   {state.householdName}
@@ -222,7 +149,7 @@ export default function InviteAcceptPage() {
             </div>
             <button
               type="button"
-              onClick={() => router.push("/dashboard")}
+              onClick={대시보드로_이동_한다}
               className="mt-2 cursor-pointer rounded-xl bg-teal-500 px-6 py-2.5 text-sm font-semibold text-zinc-950 hover:bg-teal-400"
             >
               대시보드로 이동
@@ -230,6 +157,7 @@ export default function InviteAcceptPage() {
           </div>
         )}
 
+        {/* ── Error ── */}
         {state.phase === "error" && (
           <div className="flex flex-col items-center gap-4 py-4 text-center">
             <div className="flex size-14 items-center justify-center rounded-full bg-rose-500/10">
@@ -255,7 +183,7 @@ export default function InviteAcceptPage() {
             </div>
             <button
               type="button"
-              onClick={() => router.push("/login")}
+              onClick={로그인으로_이동_한다}
               className="mt-2 cursor-pointer rounded-xl border border-zinc-700 px-6 py-2.5 text-sm font-medium text-zinc-300 hover:bg-zinc-800"
             >
               로그인 페이지로
