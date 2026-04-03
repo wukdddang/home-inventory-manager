@@ -23,6 +23,8 @@ import { NotificationPreferenceInterfaceModule } from './interface/notification-
 import { NotificationInterfaceModule } from './interface/notification/notification.module';
 import { ExpirationAlertRuleInterfaceModule } from './interface/expiration-alert-rule/expiration-alert-rule.module';
 import { FcmInterfaceModule } from './interface/fcm/fcm.module';
+import { ApplianceInterfaceModule } from './interface/appliance/appliance.module';
+import { AggregateInterfaceModule } from './interface/aggregate/aggregate.module';
 import { BackupContextModule } from './context/backup-context';
 
 @Module({
@@ -59,6 +61,8 @@ import { BackupContextModule } from './context/backup-context';
         NotificationInterfaceModule,
         ExpirationAlertRuleInterfaceModule,
         FcmInterfaceModule,
+        ApplianceInterfaceModule,
+        AggregateInterfaceModule,
 
         // Context
         BackupContextModule,

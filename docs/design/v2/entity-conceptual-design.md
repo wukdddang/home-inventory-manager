@@ -1,6 +1,11 @@
 # 개념적 설계 v2 — 엔티티와 속성
 
-**버전**: v2.6 — UserDeviceToken 신규 엔티티 추가 (2026-04-02)
+**버전**: v2.7 — Appliance·MaintenanceSchedule·MaintenanceLog 신규 엔티티 추가 (2026-04-03)
+
+**v2.7 변경**:
+- Appliance, MaintenanceSchedule, MaintenanceLog 신규 엔티티 추가 (가전/설비 관리)
+- 가전은 재고 Item과 별도 테이블 — 장기 자산(보증·유지보수)과 소모품(수량 추적)은 관심사가 다름
+- 재고 시스템 출시 전 선행 필요 (사용자가 가전을 Item으로 잘못 등록하는 것 방지)
 
 **v2.6 변경**:
 - UserDeviceToken 신규 엔티티 추가 (FCM 푸시 알림용 기기 토큰 관리)
@@ -86,6 +91,14 @@ erDiagram
     User ||--o{ NotificationPreference : "알림 설정"
     NotificationPreference }o--o| Household : "거점별 오버라이드(선택)"
     User ||--o{ ExpirationAlertRule : "개인 만료 설정"
+
+    Household ||--o{ Appliance : "가전/설비"
+    Room ||--o{ Appliance : "설치 위치(선택)"
+    User ||--o{ Appliance : "등록자"
+    Appliance ||--o{ MaintenanceSchedule : "유지보수 스케줄"
+    Appliance ||--o{ MaintenanceLog : "유지보수 이력"
+    MaintenanceSchedule ||--o{ MaintenanceLog : "정기 유지보수 연결(선택)"
+    HouseholdMember ||--o{ MaintenanceLog : "수행자(선택)"
 ```
 
 ---
@@ -352,6 +365,55 @@ erDiagram
 
 ---
 
+## Appliance (가전/설비) — v2.7 신규
+
+- 소속 거점 (Household)
+- 설치 위치 (Room, 선택)
+- 등록자 (User)
+- 이름 — 예: "드럼세탁기", "에어컨(거실)"
+- 브랜드 (선택)
+- 모델명 (선택)
+- 시리얼넘버 (선택)
+- 구매일 (선택)
+- 구매 가격 (선택)
+- 보증 만료일 (선택)
+- 매뉴얼 URL (선택)
+- 상태 — `active`(사용 중) / `retired`(폐기/교체)
+- 메모 (선택)
+
+> 재고 관리의 InventoryItem과는 별도 테이블. InventoryItem은 소모성 물품(수량 추적), Appliance는 장기 자산(보증·유지보수 추적). 재고 시스템 출시 전에 이 기능이 먼저 나와야 사용자가 가전을 Item으로 잘못 등록하는 것을 방지할 수 있다.
+
+---
+
+## MaintenanceSchedule (유지보수 스케줄) — v2.7 신규
+
+- 대상 가전 (Appliance)
+- 작업명 — 예: "에어컨 필터 교체", "정수기 필터 교체"
+- 설명 (선택)
+- 반복 규칙 (recurrenceRule, JSONB)
+- 다음 예정일 (nextOccurrenceAt)
+- 활성 여부
+
+> 스케줄러가 매일 `nextOccurrenceAt`을 확인하여 알림 생성. 완료 시 MaintenanceLog에 기록하고 다음 예정일 갱신. recurrenceRule은 upcoming 가계부의 RecurringTransaction과 동일한 JSONB 구조를 사용할 예정.
+
+---
+
+## MaintenanceLog (유지보수·A/S 이력) — v2.7 신규
+
+- 대상 가전 (Appliance)
+- 연결 스케줄 (MaintenanceSchedule, 선택) — 정기 유지보수에서 발생한 경우
+- 유형 — `scheduled`(정기) / `repair`(수리) / `inspection`(점검) / `other`(기타)
+- 작업 내용
+- 수행자 (HouseholdMember, 선택) — 가구 구성원이 직접 한 경우
+- 수행 업체 (선택) — 외부 A/S인 경우
+- 비용 (선택)
+- 수행일
+- 메모 (선택)
+
+> 정기 유지보수와 비정기 수리/A/S를 하나의 테이블에서 관리. 비용이 있으면 향후 가계부 연동 가능.
+
+---
+
 ---
 
 ## 사용하지 않음 (P3 — 1차 개발 범위 외)
@@ -384,6 +446,8 @@ erDiagram
 - **v2.1 카탈로그 Household-scoped**: Category·Unit·Product가 거점에 귀속. 같은 거점 멤버끼리 공유하며, "다른 거점 카탈로그 가져오기"로 거점 간 복사 가능.
 - **v2.1 알림 설정 테이블화**: NotificationPreference를 별도 테이블로 분리. 사용자 기본값 + 거점별 오버라이드 구조.
 - **v2.6 기기 토큰 테이블**: UserDeviceToken 추가로 FCM 푸시 알림 지원. 한 사용자가 여러 기기에서 토큰을 등록하며, 알림 발송 시 활성 토큰 전체에 전송. NotificationPreference의 "알림 채널 확장" 방향과 연계.
+- **v2.7 가전/설비 분리 결정**: Appliance를 InventoryItem과 별도 테이블로 분리. Item은 소모품(수량·유통기한 추적), Appliance는 장기 자산(보증·유지보수·A/S 이력 추적). 재고 시스템 출시 전에 가전 기능이 선행되어야 Item으로의 잘못된 등록을 방지.
+- **v2.7 recurrenceRule 재활용**: MaintenanceSchedule의 반복 규칙은 upcoming 가계부 도메인의 RecurringTransaction과 동일한 JSONB 구조를 사용하여 도메인 간 일관성 확보.
 - **위치 계층(권장)**: `Room`(방) → `FurniturePlacement`(가구) → `StorageLocation`(보관 슬롯) → `InventoryItem`(재고).
 - **알림 → 장보기 → 재고**: 만료 임박·재고 부족 → 장보기에 항목 추가 → 구매 완료 시 Purchase·InventoryItem 반영 + 장보기 행 삭제.
 

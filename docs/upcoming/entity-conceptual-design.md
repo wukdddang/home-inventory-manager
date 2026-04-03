@@ -1,8 +1,10 @@
-# 개념적 설계 — 가계부·투자 포트폴리오
+# 개념적 설계 — 가계부·투자 포트폴리오·집안일·식단
 
-**버전**: v1.0 — 초기 설계 (2026-04-02)
+**버전**: v1.1 — 집안일·식단 도메인 추가 (2026-04-03)
 
-**범위**: 가계부(개인/그룹) + 정기 거래 + 투자 포트폴리오(개인/그룹)
+**범위**: 가계부(개인/그룹) + 정기 거래 + 투자 포트폴리오(개인/그룹) + 집안일 관리 + 식단/레시피 관리
+
+> **가전/설비 관리**는 재고 시스템 출시 전 선행 필요하여 `docs/design/v2/` (v2.7)로 이동했습니다.
 
 **관련 문서**:
 - [논리적 설계](./entity-logical-design.md)
@@ -31,8 +33,17 @@
 | 12 | PortfolioHolding | 보유 자산 | 투자 | P1 |
 | 13 | PortfolioTransaction | 매매·배당 기록 | 투자 | P1 |
 | 14 | AuditLog | CRUD 감사 로그 (가계부·포트폴리오 공용) | 공통 | P0 |
+| 15 | Chore | 가사 항목 정의 (반복 규칙 포함) | 집안일 | P1 |
+| 16 | ChoreAssignment | 가사 담당자 할당 | 집안일 | P1 |
+| 17 | ChoreLog | 가사 완료 기록 | 집안일 | P1 |
+| 18 | Recipe | 레시피 | 식단 | P1 |
+| 19 | RecipeIngredient | 레시피 필요 재료 (Product 연결) | 식단 | P1 |
+| 20 | MealPlan | 식단 계획 | 식단 | P1 |
+| 21 | MealPlanEntry | 식단 계획 내 개별 항목 (날짜+끼니+레시피) | 식단 | P1 |
 
-> **기존 공유 엔티티**: User (집비치기)
+> **기존 공유 엔티티**: User, Household, HouseholdMember, Room, Product (집비치기)
+>
+> **가전/설비 (Appliance, MaintenanceSchedule, MaintenanceLog)** — `docs/design/v2/` v2.7로 이동. 재고 시스템 출시 전 선행 필요.
 
 ---
 
@@ -67,6 +78,20 @@ erDiagram
     Ledger ||--o{ AuditLog : "감사 로그"
     Portfolio ||--o{ AuditLog : "감사 로그"
     User ||--o{ AuditLog : "수행자"
+
+    Household ||--o{ Chore : "소속"
+    Chore ||--o{ ChoreAssignment : "할당"
+    HouseholdMember ||--o{ ChoreAssignment : "담당자"
+    Chore ||--o{ ChoreLog : "완료 기록"
+    HouseholdMember ||--o{ ChoreLog : "수행자"
+
+    Household ||--o{ Recipe : "소속"
+    User ||--o{ Recipe : "작성자"
+    Recipe ||--o{ RecipeIngredient : "재료"
+    Product ||--o{ RecipeIngredient : "제품 연결"
+    Household ||--o{ MealPlan : "소속"
+    MealPlan ||--o{ MealPlanEntry : "항목"
+    Recipe ||--o{ MealPlanEntry : "레시피"
 ```
 
 ---
@@ -277,3 +302,91 @@ erDiagram
 - 롤백 시각 (rolledBackAt, 선택)
 
 > 그룹 관리자가 AuditLog를 조회하고, 특정 작업을 롤백할 수 있다. 롤백 시 beforeSnapshot을 기반으로 엔티티를 복원하고, 롤백 자체도 새 AuditLog로 기록한다.
+
+---
+
+## Chore (집안일)
+
+- 소속 가구 (householdId)
+- 이름 — 예: "거실 청소", "분리수거", "화장실 청소"
+- 설명 (선택)
+- 반복 규칙 (recurrenceRule, JSONB) — 동일 구조 재활용
+- 다음 예정일 (nextOccurrenceAt)
+- 활성 여부 (isActive)
+- 아이콘 (선택)
+- 색상 (선택)
+
+> Household 스코프. 반복 규칙은 RecurringTransaction·MaintenanceSchedule과 동일한 `recurrenceRule` JSONB 패턴.
+
+---
+
+## ChoreAssignment (가사 담당자 할당)
+
+- 가사 (choreId)
+- 담당자 (householdMemberId)
+
+> 하나의 가사에 여러 담당자 할당 가능. 가사 예정일에 할당된 담당자에게 알림 전송.
+
+---
+
+## ChoreLog (가사 완료 기록)
+
+- 가사 (choreId)
+- 수행자 (householdMemberId)
+- 완료 일시 (completedAt)
+- 메모 (선택)
+
+> 완료 기록 시 Chore의 `nextOccurrenceAt`을 반복 규칙에 따라 갱신. 소모품 연동 시 관련 InventoryItem의 재고 차감도 가능 (향후 확장).
+
+---
+
+## Recipe (레시피)
+
+- 소속 가구 (householdId)
+- 작성자 (userId)
+- 이름 — 예: "김치찌개", "파스타"
+- 설명 (선택)
+- 인분 수 (servings) — 기본 몇 인분 기준인지
+- 조리 시간 (cookingMinutes, 선택)
+- 메모 (선택)
+
+> Household 스코프. 가구 구성원 누구나 레시피 추가 가능.
+
+---
+
+## RecipeIngredient (레시피 재료)
+
+- 레시피 (recipeId)
+- 연결 제품 (productId, 선택) — 재고 도메인의 Product와 연결
+- 재료명 (name) — Product가 없을 때 자유 입력용
+- 수량 (quantity)
+- 단위 (unit) — 예: "g", "ml", "개", "큰술"
+- 필수 여부 (isOptional) — 선택 재료 표시
+
+> productId가 있으면 재고 시스템과 연동 가능 (재고 비교 → 장보기 목록 자동 생성). 없으면 자유 텍스트로만 사용.
+
+---
+
+## MealPlan (식단 계획)
+
+- 소속 가구 (householdId)
+- 이름 — 예: "4월 1주차", "다이어트 식단"
+- 시작일 (startDate)
+- 종료일 (endDate)
+- 메모 (선택)
+
+> 기간 기반 식단 계획. 주간 단위가 일반적이나 제한 없음.
+
+---
+
+## MealPlanEntry (식단 항목)
+
+- 식단 계획 (mealPlanId)
+- 레시피 (recipeId, 선택) — 레시피 연결 또는 자유 입력
+- 날짜 (date)
+- 끼니 — `breakfast`(아침) / `lunch`(점심) / `dinner`(저녁) / `snack`(간식)
+- 자유 입력 메뉴명 (menuName, 선택) — 레시피 없이 직접 입력
+- 인분 수 (servings) — 레시피 기본 인분 대비 조정 가능
+- 메모 (선택)
+
+> recipeId가 있으면 RecipeIngredient를 통해 필요 재료 자동 산출. 재고와 비교하여 부족분을 ShoppingListItem으로 자동 생성 가능 (향후 확장).

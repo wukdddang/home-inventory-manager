@@ -1,6 +1,8 @@
-# 논리적 설계 — 가계부·투자 포트폴리오 (ERD·구현용)
+# 논리적 설계 — 가계부·투자 포트폴리오·집안일·식단 (ERD·구현용)
 
-**버전**: v1.0 — 초기 설계 (2026-04-02)
+**버전**: v1.1 — 집안일·식단 도메인 추가 (2026-04-03)
+
+> **가전/설비 관리**는 `docs/design/v2/` (v2.7)로 이동했습니다.
 
 **관련 문서**:
 - [개념적 설계](./entity-conceptual-design.md)
@@ -43,6 +45,20 @@ erDiagram
     Ledger ||--o{ AuditLog : "scopeId"
     Portfolio ||--o{ AuditLog : "scopeId"
     User ||--o{ AuditLog : "userId"
+
+    Household ||--o{ Chore : "householdId"
+    Chore ||--o{ ChoreAssignment : "choreId"
+    HouseholdMember ||--o{ ChoreAssignment : "householdMemberId"
+    Chore ||--o{ ChoreLog : "choreId"
+    HouseholdMember ||--o{ ChoreLog : "householdMemberId"
+
+    Household ||--o{ Recipe : "householdId"
+    User ||--o{ Recipe : "userId"
+    Recipe ||--o{ RecipeIngredient : "recipeId"
+    Product ||--o{ RecipeIngredient : "productId"
+    Household ||--o{ MealPlan : "householdId"
+    MealPlan ||--o{ MealPlanEntry : "mealPlanId"
+    Recipe ||--o{ MealPlanEntry : "recipeId"
 ```
 
 ---
@@ -198,6 +214,86 @@ erDiagram
         timestamp transactedAt
         uuid userId FK
         string memo "nullable"
+        timestamp createdAt
+    }
+```
+
+### 집안일 관리
+
+```mermaid
+erDiagram
+    Chore {
+        uuid id PK
+        uuid householdId FK
+        string name
+        text description "nullable"
+        jsonb recurrenceRule
+        date nextOccurrenceAt
+        boolean isActive "default true"
+        string icon "nullable"
+        string color "nullable"
+        timestamp createdAt
+        timestamp updatedAt
+    }
+    ChoreAssignment {
+        uuid id PK
+        uuid choreId FK
+        uuid householdMemberId FK
+    }
+    ChoreLog {
+        uuid id PK
+        uuid choreId FK
+        uuid householdMemberId FK
+        timestamp completedAt
+        text memo "nullable"
+        timestamp createdAt
+    }
+```
+
+### 식단/레시피 관리
+
+```mermaid
+erDiagram
+    Recipe {
+        uuid id PK
+        uuid householdId FK
+        uuid userId FK
+        string name
+        text description "nullable"
+        int servings
+        int cookingMinutes "nullable"
+        text memo "nullable"
+        timestamp createdAt
+        timestamp updatedAt
+    }
+    RecipeIngredient {
+        uuid id PK
+        uuid recipeId FK
+        uuid productId "FK nullable"
+        string name
+        decimal quantity
+        string unit
+        boolean isOptional "default false"
+    }
+    MealPlan {
+        uuid id PK
+        uuid householdId FK
+        string name
+        date startDate
+        date endDate
+        text memo "nullable"
+        timestamp createdAt
+        timestamp updatedAt
+    }
+    MealPlanEntry {
+        uuid id PK
+        uuid mealPlanId FK
+        uuid recipeId "FK nullable"
+        date date
+        string meal "breakfast | lunch | dinner | snack"
+        string menuName "nullable"
+        int servings
+        text memo "nullable"
         timestamp createdAt
     }
 ```
@@ -456,6 +552,103 @@ interface RecurrenceRule {
 
 > 인덱스 권장: `(domain, scopeId, createdAt)` — 특정 가계부/포트폴리오의 로그 시간순 조회
 
+### §15 Chore (집안일)
+
+| 속성 | 타입 | 필수/선택 | 제약 | 비고 |
+|------|------|----------|------|------|
+| id | uuid | 필수 | PK | — |
+| householdId | uuid | 필수 | FK (Household.id) | — |
+| name | varchar(100) | 필수 | — | 예: "거실 청소" |
+| description | text | 선택 | — | — |
+| recurrenceRule | jsonb | 필수 | — | 동일 JSONB 구조 |
+| nextOccurrenceAt | date | 필수 | — | 다음 예정일 |
+| isActive | boolean | 필수 | — | 기본값 true |
+| icon | varchar(50) | 선택 | — | 아이콘 식별자 |
+| color | varchar(20) | 선택 | — | HEX 색상 |
+| createdAt | timestamptz | 필수 | — | — |
+| updatedAt | timestamptz | 필수 | — | — |
+
+### §16 ChoreAssignment (가사 담당자 할당)
+
+| 속성 | 타입 | 필수/선택 | 제약 | 비고 |
+|------|------|----------|------|------|
+| id | uuid | 필수 | PK | — |
+| choreId | uuid | 필수 | FK (Chore.id) | — |
+| householdMemberId | uuid | 필수 | FK (HouseholdMember.id) | — |
+
+> UK: `(choreId, householdMemberId)` — 동일 가사에 중복 할당 방지
+
+### §17 ChoreLog (가사 완료 기록)
+
+| 속성 | 타입 | 필수/선택 | 제약 | 비고 |
+|------|------|----------|------|------|
+| id | uuid | 필수 | PK | — |
+| choreId | uuid | 필수 | FK (Chore.id) | — |
+| householdMemberId | uuid | 필수 | FK (HouseholdMember.id) | 수행자 |
+| completedAt | timestamptz | 필수 | — | 완료 일시 |
+| memo | text | 선택 | — | — |
+| createdAt | timestamptz | 필수 | — | — |
+
+> 완료 시 Chore.nextOccurrenceAt을 recurrenceRule에 따라 갱신
+
+### §18 Recipe (레시피)
+
+| 속성 | 타입 | 필수/선택 | 제약 | 비고 |
+|------|------|----------|------|------|
+| id | uuid | 필수 | PK | — |
+| householdId | uuid | 필수 | FK (Household.id) | — |
+| userId | uuid | 필수 | FK (User.id) | 작성자 |
+| name | varchar(100) | 필수 | — | 예: "김치찌개" |
+| description | text | 선택 | — | — |
+| servings | int | 필수 | — | 기준 인분 수 (기본값: 1) |
+| cookingMinutes | int | 선택 | — | 조리 시간(분) |
+| memo | text | 선택 | — | — |
+| createdAt | timestamptz | 필수 | — | — |
+| updatedAt | timestamptz | 필수 | — | — |
+
+### §19 RecipeIngredient (레시피 재료)
+
+| 속성 | 타입 | 필수/선택 | 제약 | 비고 |
+|------|------|----------|------|------|
+| id | uuid | 필수 | PK | — |
+| recipeId | uuid | 필수 | FK (Recipe.id) | — |
+| productId | uuid | 선택 | FK (Product.id) | 재고 도메인 제품 연결 |
+| name | varchar(100) | 필수 | — | 재료명 (Product 없을 시 자유 입력) |
+| quantity | decimal(10,2) | 필수 | — | 필요 수량 |
+| unit | varchar(20) | 필수 | — | 예: "g", "ml", "개" |
+| isOptional | boolean | 필수 | — | 기본값 false |
+
+> productId가 있으면 InventoryItem과 비교하여 부족 재료 산출 가능
+
+### §20 MealPlan (식단 계획)
+
+| 속성 | 타입 | 필수/선택 | 제약 | 비고 |
+|------|------|----------|------|------|
+| id | uuid | 필수 | PK | — |
+| householdId | uuid | 필수 | FK (Household.id) | — |
+| name | varchar(100) | 필수 | — | 예: "4월 1주차" |
+| startDate | date | 필수 | — | — |
+| endDate | date | 필수 | — | — |
+| memo | text | 선택 | — | — |
+| createdAt | timestamptz | 필수 | — | — |
+| updatedAt | timestamptz | 필수 | — | — |
+
+### §21 MealPlanEntry (식단 항목)
+
+| 속성 | 타입 | 필수/선택 | 제약 | 비고 |
+|------|------|----------|------|------|
+| id | uuid | 필수 | PK | — |
+| mealPlanId | uuid | 필수 | FK (MealPlan.id) | — |
+| recipeId | uuid | 선택 | FK (Recipe.id) | 레시피 연결 |
+| date | date | 필수 | — | — |
+| meal | varchar(20) | 필수 | CHECK(`breakfast`, `lunch`, `dinner`, `snack`) | — |
+| menuName | varchar(100) | 선택 | — | 레시피 없이 직접 입력 |
+| servings | int | 필수 | — | 기본값 1 |
+| memo | text | 선택 | — | — |
+| createdAt | timestamptz | 필수 | — | — |
+
+> UK: `(mealPlanId, date, meal)` — 같은 계획 내 동일 날짜·끼니 중복 방지
+
 ---
 
 ## 설계 결정 사항
@@ -472,3 +665,7 @@ interface RecurrenceRule {
 | 8 | 자산 시세 | 캐시 테이블 + 외부 API | TTL 기반 갱신, API 호출 최소화 |
 | 9 | 실시간 동기화 | 그룹 가계부만 적용, WebSocket 기반 | 포트폴리오는 실시간 불필요 |
 | 10 | 알림 | 기존 Notification 엔티티 재활용 | type 필드로 가계부 알림 구분 |
+| 11 | 반복 규칙 공유 | recurrenceRule JSONB 구조를 Chore에서도 재활용 | 도메인 간 일관성 확보, 스케줄러 로직 공유 가능 |
+| 12 | 레시피 재료 연동 | RecipeIngredient.productId로 재고 Product 선택적 연결 | productId nullable — 연결 없이도 자유 입력 가능, 연결 시 재고 비교 자동화 |
+| 13 | 가사 담당자 | HouseholdMember FK 사용 (User FK가 아님) | Household 맥락 내에서의 역할·구성원 추적 일관성 |
+| 14 | 식단 끼니 중복 | MealPlanEntry에 `(mealPlanId, date, meal)` UK | 같은 끼니에 중복 등록 방지. 간식은 별도 meal 타입으로 허용 |

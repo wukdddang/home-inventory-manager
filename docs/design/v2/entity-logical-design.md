@@ -1,6 +1,10 @@
 # 엔티티 논리적 설계 v2 (ERD·구현용)
 
-**버전**: v2.6 — UserDeviceToken 신규 테이블 추가 (2026-04-02)
+**버전**: v2.7 — Appliance·MaintenanceSchedule·MaintenanceLog 신규 테이블 추가 (2026-04-03)
+
+**v2.7 변경**:
+- Appliance, MaintenanceSchedule, MaintenanceLog 신규 테이블 추가 (가전/설비 관리)
+- 변경 근거: 가전은 장기 자산(보증·유지보수)이므로 소모품(수량 추적)인 InventoryItem과 별도 관리. 재고 시스템 출시 전 선행 필요
 
 **v2.6 변경**:
 - UserDeviceToken 신규 테이블 추가 (FCM 푸시 알림용 기기 토큰 관리)
@@ -99,6 +103,14 @@ erDiagram
     User ||--o{ NotificationPreference : "userId"
     NotificationPreference }o--o| Household : "householdId"
     User ||--o{ ExpirationAlertRule : "userId"
+
+    Household ||--o{ Appliance : "householdId"
+    Room ||--o{ Appliance : "roomId"
+    User ||--o{ Appliance : "userId"
+    Appliance ||--o{ MaintenanceSchedule : "applianceId"
+    Appliance ||--o{ MaintenanceLog : "applianceId"
+    MaintenanceSchedule ||--o{ MaintenanceLog : "maintenanceScheduleId"
+    HouseholdMember ||--o{ MaintenanceLog : "householdMemberId"
 ```
 
 ---
@@ -912,6 +924,92 @@ PUT    /api/household-kind-definitions         — 유형 목록 전체 교체 (
 
 ---
 
+## 20. Appliance (가전/설비) — v2.7 신규
+
+> **v2.7 추가**: 가전/설비를 별도 엔티티로 관리. InventoryItem(소모품, 수량 추적)과 분리하여 보증·유지보수·A/S 이력을 추적한다.
+
+| 구분     | 항목                          | 타입/비고                    | 검토                                             |
+| -------- | ----------------------------- | ---------------------------- | ------------------------------------------------ |
+| **필수** | id                            | UUID (PK)                    | —                                                |
+| **필수** | householdId                   | FK → Household               | 소속 거점                                        |
+| **선택** | roomId                        | FK → Room, nullable          | 설치 위치                                        |
+| **필수** | userId                        | FK → User                    | 등록자                                           |
+| **필수** | name                          | varchar(100)                 | 예: "드럼세탁기", "에어컨(거실)"                 |
+| **선택** | brand                         | varchar(100), nullable       | 제조사                                           |
+| **선택** | modelName                     | varchar(100), nullable       | 모델명                                           |
+| **선택** | serialNumber                  | varchar(100), nullable       | 시리얼넘버                                       |
+| **선택** | purchasedAt                   | date, nullable               | 구매일                                           |
+| **선택** | purchasePrice                 | decimal(15,2), nullable      | 구매 가격                                        |
+| **선택** | warrantyExpiresAt             | date, nullable               | 보증 만료일                                      |
+| **선택** | manualUrl                     | varchar(500), nullable       | 매뉴얼 링크                                      |
+| **필수** | status                        | enum: `'active'` \| `'retired'` | 기본값: `active`                              |
+| **선택** | memo                          | text, nullable               | —                                                |
+| **필수** | createdAt, updatedAt          | timestamp                    | —                                                |
+
+**관계**: Household (N:1), Room (N:1, 선택), User (N:1)
+
+### 식별·제약 (권장)
+
+- 인덱스: `(householdId, status)` — 가구별 활성 가전 조회
+
+---
+
+## 21. MaintenanceSchedule (유지보수 스케줄) — v2.7 신규
+
+> **v2.7 추가**: 가전별 정기 유지보수 스케줄. recurrenceRule JSONB는 upcoming 가계부 RecurringTransaction과 동일 구조 사용 예정.
+
+| 구분     | 항목                          | 타입/비고                    | 검토                                             |
+| -------- | ----------------------------- | ---------------------------- | ------------------------------------------------ |
+| **필수** | id                            | UUID (PK)                    | —                                                |
+| **필수** | applianceId                   | FK → Appliance               | —                                                |
+| **필수** | taskName                      | varchar(100)                 | 예: "에어컨 필터 교체"                           |
+| **선택** | description                   | text, nullable               | —                                                |
+| **필수** | recurrenceRule                | jsonb                        | 반복 규칙 (아래 참조)                            |
+| **필수** | nextOccurrenceAt              | date                         | 다음 예정일                                      |
+| **필수** | isActive                      | boolean, default **true**    | —                                                |
+| **필수** | createdAt, updatedAt          | timestamp                    | —                                                |
+
+**관계**: Appliance (N:1)
+
+**recurrenceRule JSONB 구조** (upcoming RecurringTransaction과 동일):
+```typescript
+interface RecurrenceRule {
+  frequency: 'daily' | 'weekly' | 'monthly' | 'yearly';
+  interval: number;
+  dayOfMonth?: number;   // 1~31 (monthly/yearly)
+  dayOfWeek?: number;    // 0(일)~6(토) (weekly)
+  monthOfYear?: number;  // 1~12 (yearly)
+}
+```
+
+---
+
+## 22. MaintenanceLog (유지보수·A/S 이력) — v2.7 신규
+
+> **v2.7 추가**: 정기 유지보수와 비정기 수리/A/S를 하나의 테이블에서 관리.
+
+| 구분     | 항목                          | 타입/비고                    | 검토                                             |
+| -------- | ----------------------------- | ---------------------------- | ------------------------------------------------ |
+| **필수** | id                            | UUID (PK)                    | —                                                |
+| **필수** | applianceId                   | FK → Appliance               | —                                                |
+| **선택** | maintenanceScheduleId         | FK → MaintenanceSchedule, nullable | 정기 유지보수에서 발생한 경우              |
+| **필수** | type                          | enum: `'scheduled'` \| `'repair'` \| `'inspection'` \| `'other'` | — |
+| **필수** | description                   | varchar(200)                 | 작업 내용                                        |
+| **선택** | householdMemberId             | FK → HouseholdMember, nullable | 직접 수행한 구성원                             |
+| **선택** | servicedBy                    | varchar(100), nullable       | 외부 A/S 업체명                                  |
+| **선택** | cost                          | decimal(15,2), nullable      | 수리·교체 비용                                   |
+| **필수** | performedAt                   | date                         | 수행일                                           |
+| **선택** | memo                          | text, nullable               | —                                                |
+| **필수** | createdAt                     | timestamp                    | —                                                |
+
+**관계**: Appliance (N:1), MaintenanceSchedule (N:1, 선택), HouseholdMember (N:1, 선택)
+
+### 식별·제약 (권장)
+
+- 인덱스: `(applianceId, performedAt)` — 가전별 이력 시간순 조회
+
+---
+
 ## v2 변경 요약
 
 | 변경 유형 | 항목 | 상세 |
@@ -947,6 +1045,9 @@ PUT    /api/household-kind-definitions         — 유형 목록 전체 교체 (
 | **v2.5 제거** | Purchase.quantity | 파생값 — `SUM(PurchaseBatch.quantity)`로 대체 |
 | **v2.5 제거** | Purchase.totalPrice | 파생값 — `unitPrice × 총수량`으로 대체 |
 | **v2.6 추가** | UserDeviceToken (§19) | 신규 테이블. FCM 푸시 알림용 기기 토큰 관리 (User 1:N) |
+| **v2.7 추가** | Appliance (§20) | 신규 테이블. 가전/설비 등록 — InventoryItem과 별도 (장기 자산 vs 소모품) |
+| **v2.7 추가** | MaintenanceSchedule (§21) | 신규 테이블. 가전 유지보수 반복 스케줄 (recurrenceRule JSONB) |
+| **v2.7 추가** | MaintenanceLog (§22) | 신규 테이블. 가전 유지보수·A/S 이력 (정기+비정기 통합) |
 
 ### 정합성 제약 (v2.1 — 카탈로그 Household-scoped)
 

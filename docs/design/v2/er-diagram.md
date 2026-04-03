@@ -1,6 +1,10 @@
 # ER 다이어그램 & 엔티티 명세 v2 (Home Inventory Manager)
 
-**버전**: v2.6 — UserDeviceToken 신규 엔티티 추가 (2026-04-02)
+**버전**: v2.7 — Appliance·MaintenanceSchedule·MaintenanceLog 신규 엔티티 추가 (2026-04-03)
+
+**v2.7 변경**:
+- Appliance, MaintenanceSchedule, MaintenanceLog 신규 엔티티 추가 (가전/설비 관리)
+- 가전은 재고 Item과 별도 테이블 — 재고 시스템 출시 전 선행 필요
 
 **v2.6 변경**:
 - UserDeviceToken 신규 엔티티 추가 (FCM 푸시 알림용 기기 토큰 관리)
@@ -67,6 +71,9 @@
 | 20   | HouseholdInvitation | 거점 초대 (링크·이메일)                                               | Household, User                      | P1       | **신규 (v2.2)** |
 | 21   | HouseholdKindDefinition | 거점 유형 정의 (사용자별 라벨·순서)                               | User                                 | P1       | **신규 (v2.3)** |
 | 22   | UserDeviceToken     | FCM 기기 토큰 (푸시 알림용)                                            | User                                 | P1       | **신규 (v2.6)** |
+| 23   | Appliance           | 가전/설비 등록 (보증·유지보수 추적)                                     | Household, Room, User                | P0       | **신규 (v2.7)** |
+| 24   | MaintenanceSchedule | 가전 유지보수 반복 스케줄                                               | Appliance                            | P0       | **신규 (v2.7)** |
+| 25   | MaintenanceLog      | 가전 유지보수·A/S 이력                                                  | Appliance, MaintenanceSchedule, HouseholdMember | P0 | **신규 (v2.7)** |
 
 ### 사용하지 않음 (P3 — 1차 개발 범위 외)
 
@@ -87,6 +94,7 @@
 
 - 중간 테이블 `HouseholdMember`로 멤버십·역할(admin/editor/viewer) 관리. **(v2.2: 3단계로 확장)**
 - `HouseholdInvitation`으로 초대 링크·이메일 초대 관리. **(v2.2 신규)**
+- `Appliance`로 가전/설비 관리. `MaintenanceSchedule`로 정기 유지보수, `MaintenanceLog`로 이력 관리. **(v2.7 신규)**
 
 ---
 
@@ -105,6 +113,9 @@ Household (거점)
   ├── Product (1:N) — 거점 카탈로그 (v2.1)
   ├── ShoppingListItem (1:N) — 장보기 항목 (v2: Household 직접 연결)
   ├── HouseholdInvitation (1:N) — 초대 (v2.2)
+  ├── Appliance (1:N) — 가전/설비 (v2.7)
+  │     ├── MaintenanceSchedule (1:N) — 유지보수 스케줄
+  │     └── MaintenanceLog (1:N) — 유지보수·A/S 이력
   └── ExpirationAlertRule (1:N, 선택)
 
 User
@@ -188,6 +199,14 @@ erDiagram
     ShoppingListItem }o--o| Product : "hint optional"
     ShoppingListItem }o--o| ProductVariant : "hint optional"
     ShoppingListItem }o--o| InventoryItem : "from alert optional"
+
+    Household ||--o{ Appliance : "appliances"
+    Room ||--o{ Appliance : "optional location"
+    User ||--o{ Appliance : "registeredBy"
+    Appliance ||--o{ MaintenanceSchedule : "schedules"
+    Appliance ||--o{ MaintenanceLog : "logs"
+    MaintenanceSchedule ||--o{ MaintenanceLog : "optional link"
+    HouseholdMember ||--o{ MaintenanceLog : "performedBy"
 ```
 
 ---

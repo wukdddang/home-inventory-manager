@@ -1,7 +1,8 @@
 # 백엔드 API E2E 유즈케이스 시나리오
 
 **최초 작성**: 2026-04-01
-**기준**: feature-checklist.md v2.5, api-connection-checklist.md, entity-logical-design.md
+**갱신**: 2026-04-03 — v2.7 가전/설비 관리 유즈케이스 추가
+**기준**: feature-checklist.md v2.7, api-connection-checklist.md, entity-logical-design.md
 
 백엔드 API 단위 E2E 테스트를 위한 유즈케이스 시나리오입니다.
 각 항목은 HTTP 요청 → 응답 검증 관점에서 작성했으며, 테스트 케이스명으로 바로 사용할 수 있도록 "~한다" 형태입니다.
@@ -399,7 +400,92 @@
 
 ---
 
-## BUC-14. 데이터 무결성 및 에지 케이스
+## BUC-14. 가전/설비 관리 (Appliance) — v2.7 신규
+
+> **목적**: 가전 등록 → 조회 → 수정 → 폐기 처리 흐름 검증
+> **엔드포인트**: `/households/:id/appliances`, `/households/:id/appliances/:appId`
+> **가드**: `JwtAuthGuard`, `HouseholdMemberGuard`
+
+**사전 조건**: BUC-02 완료 (거점 존재), BUC-05 완료 (방 존재, 선택)
+
+
+| #   | 테스트 케이스                                                                                           | 구현  | 검증  |
+| --- | --------------------------------------------------------------------------------------------------- | --- | --- |
+| 1   | `POST /households/:id/appliances` — 이름·브랜드·모델명·구매일·보증 만료일·설치 위치를 입력하여 가전을 등록하면 201을 반환한다            | X   | [ ] |
+| 2   | `POST /households/:id/appliances` — 필수 필드(이름) 누락 시 400을 반환한다                                        | X   | [ ] |
+| 3   | `GET /households/:id/appliances` — 거점의 가전 목록을 조회한다 (기본: 활성 가전만)                                      | X   | [ ] |
+| 4   | `GET /households/:id/appliances?status=retired` — 폐기된 가전 목록을 조회한다                                    | X   | [ ] |
+| 5   | `GET /households/:id/appliances/:appId` — 가전 상세 정보(보증 만료일, 유지보수 스케줄 수 등)를 반환한다                       | X   | [ ] |
+| 6   | `PUT /households/:id/appliances/:appId` — 가전 정보(이름, 브랜드, 모델명, 설치 위치 등)를 수정한다                         | X   | [ ] |
+| 7   | `PATCH /households/:id/appliances/:appId/retire` — 가전을 폐기 처리하면 status가 retired로 변경된다                  | X   | [ ] |
+| 8   | `GET /households/:id/appliances/:appId` — 멤버가 아닌 사용자가 접근하면 403을 반환한다                                  | X   | [ ] |
+
+
+---
+
+## BUC-15. 유지보수 스케줄 관리 (MaintenanceSchedule) — v2.7 신규
+
+> **목적**: 가전별 유지보수 반복 스케줄 등록 → 조회 → 수정 → 비활성화 흐름 검증
+> **엔드포인트**: `/households/:id/appliances/:appId/maintenance-schedules`
+> **가드**: `JwtAuthGuard`, `HouseholdMemberGuard`
+
+**사전 조건**: BUC-14 완료 (가전 존재)
+
+
+| #   | 테스트 케이스                                                                                                          | 구현  | 검증  |
+| --- | ------------------------------------------------------------------------------------------------------------------ | --- | --- |
+| 1   | `POST .../maintenance-schedules` — 작업명·반복 규칙(recurrenceRule)·시작일을 입력하여 스케줄을 생성하면 201을 반환한다                          | X   | [ ] |
+| 2   | `POST .../maintenance-schedules` — 잘못된 recurrenceRule(frequency 누락 등)로 생성하면 400을 반환한다                                | X   | [ ] |
+| 3   | `GET .../maintenance-schedules` — 가전의 유지보수 스케줄 목록을 조회한다                                                            | X   | [ ] |
+| 4   | `PUT .../maintenance-schedules/:schedId` — 스케줄의 작업명·반복 규칙·다음 예정일을 수정한다                                              | X   | [ ] |
+| 5   | `PATCH .../maintenance-schedules/:schedId/deactivate` — 스케줄을 비활성화하면 isActive가 false로 변경된다                             | X   | [ ] |
+| 6   | 비활성화된 스케줄은 알림 대상에서 제외됨을 확인한다                                                                                      | X   | [ ] |
+
+
+---
+
+## BUC-16. 유지보수·A/S 이력 관리 (MaintenanceLog) — v2.7 신규
+
+> **목적**: 유지보수 이력 등록(정기/비정기) → 조회 → 정기 완료 시 nextOccurrenceAt 갱신 검증
+> **엔드포인트**: `/households/:id/appliances/:appId/maintenance-logs`
+> **가드**: `JwtAuthGuard`, `HouseholdMemberGuard`
+
+**사전 조건**: BUC-14 + BUC-15 완료 (가전·스케줄 존재)
+
+
+| #   | 테스트 케이스                                                                                                                     | 구현  | 검증  |
+| --- | ----------------------------------------------------------------------------------------------------------------------------- | --- | --- |
+| 1   | `POST .../maintenance-logs` — 정기 유지보수를 완료 기록하면 201을 반환하고 maintenanceScheduleId가 연결된다                                            | X   | [ ] |
+| 2   | 정기 유지보수 완료 시 해당 스케줄의 nextOccurrenceAt이 recurrenceRule에 따라 갱신됨을 확인한다                                                           | X   | [ ] |
+| 3   | `POST .../maintenance-logs` — 비정기 수리를 기록한다 (type=repair, maintenanceScheduleId=null, 업체명·비용 포함)                                 | X   | [ ] |
+| 4   | `POST .../maintenance-logs` — 점검을 기록한다 (type=inspection)                                                                      | X   | [ ] |
+| 5   | `GET .../maintenance-logs` — 가전의 유지보수 이력을 시간순으로 조회한다                                                                           | X   | [ ] |
+| 6   | `GET .../maintenance-logs` — 유형(type) 필터로 이력을 조회한다                                                                             | X   | [ ] |
+
+
+---
+
+## BUC-17. 보증 만료 알림 — v2.7 신규
+
+> **목적**: 보증 만료 임박·만료 알림 생성 스케줄러 검증
+> **관련**: `@nestjs/schedule` 기반, Notification 엔티티 재활용
+
+**사전 조건**: BUC-14 완료 (보증 만료일이 설정된 가전 존재)
+
+
+| #   | 테스트 케이스                                                                              | 구현  | 검증  |
+| --- | ------------------------------------------------------------------------------------ | --- | --- |
+| 1   | 보증 만료 30일 전인 가전에 대해 warranty_expiring_soon 알림이 생성된다                                    | X   | [ ] |
+| 2   | 보증 만료 7일 전인 가전에 대해 warranty_expiring_soon 알림이 생성된다                                     | X   | [ ] |
+| 3   | 보증 만료일 당일인 가전에 대해 warranty_expired 알림이 생성된다                                             | X   | [ ] |
+| 4   | 유지보수 예정일(nextOccurrenceAt)이 오늘인 스케줄에 대해 maintenance_due 알림이 생성된다                        | X   | [ ] |
+| 5   | 유지보수 예정일이 N일 초과된 미완료 스케줄에 대해 maintenance_overdue 알림이 생성된다                               | X   | [ ] |
+| 6   | status=retired인 가전의 보증·유지보수 알림은 생성되지 않는다                                               | X   | [ ] |
+
+
+---
+
+## BUC-18. 데이터 무결성 및 에지 케이스
 
 > **목적**: cascade 삭제, 참조 무결성, 경계값 등 백엔드 고유 검증
 
@@ -411,10 +497,12 @@
 | 1   | 카테고리 삭제 시 하위 품목의 처리(cascade/orphan)를 확인한다                             | O   | [ ] |
 | 2   | 품목 삭제 시 하위 변형이 cascade 삭제됨을 확인한다                                     | O   | [ ] |
 | 3   | 보관장소 삭제 시 연결된 재고 품목의 처리를 확인한다                                        | O   | [ ] |
-| 4   | 거점 삭제 시 모든 하위 데이터(방, 가구, 보관장소, 재고, 구매, 로트)가 정리됨을 확인한다               | O   | [ ] |
+| 4   | 거점 삭제 시 모든 하위 데이터(방, 가구, 보관장소, 재고, 구매, 로트, 가전, 유지보수)가 정리됨을 확인한다     | O   | [ ] |
 | 5   | 이미 삭제된 품목의 구매 기록에서 스냅샷 필드(itemName, variantCaption, unitSymbol)가 유지된다 | O   | [ ] |
 | 6   | 동일 이메일로 중복 가입 시 409를 반환한다                                            | O   | [ ] |
 | 7   | 재고 수량이 0 미만으로 내려가는 소비 요청의 처리를 확인한다                                    | O   | [ ] |
+| 8   | 가전 삭제(또는 폐기) 시 하위 MaintenanceSchedule·MaintenanceLog의 처리를 확인한다       | X   | [ ] |
+| 9   | 폐기된 가전에 유지보수 스케줄을 추가하면 400을 반환한다                                     | X   | [ ] |
 
 
 ---
@@ -436,10 +524,14 @@ BUC-01 (인증)
           → BUC-10 (로트/유통기한)
       → BUC-11 (장보기)
     → BUC-12 (알림 설정/조회)
+    → BUC-14 (가전/설비) — v2.7
+      → BUC-15 (유지보수 스케줄) — v2.7
+        → BUC-16 (유지보수 이력) — v2.7
+      → BUC-17 (보증/유지보수 알림) — v2.7
   → BUC-13 (인가/역할) — 전체 데이터 기반
-  → BUC-14 (데이터 무결성) — 마지막에 실행
+  → BUC-18 (데이터 무결성) — 마지막에 실행
 ```
 
 ---
 
-*본 문서는 api-connection-checklist.md, feature-checklist.md v2.5, entity-logical-design.md 기준으로 작성되었습니다.*
+*본 문서는 api-connection-checklist.md, feature-checklist.md v2.7, entity-logical-design.md 기준으로 작성되었습니다.*
