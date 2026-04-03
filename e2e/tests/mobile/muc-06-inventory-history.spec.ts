@@ -132,13 +132,14 @@ test.describe("MUC-06. 재고 이력 (모바일)", () => {
     const ctx = await setupFull(page);
     await createHistoryData(page, ctx.hId, ctx.inventoryItemId);
 
-    await page.goto("/inventory-history");
-    await page.waitForLoadState("networkidle");
+    // SPA 네비게이션으로 이동 (DashboardProvider가 이미 로드된 상태 활용)
+    await page.locator('nav >> text="이력"').click();
+    await page.waitForURL("**/inventory-history", { timeout: 10_000 });
 
+    // 품목명이 이력 항목에 표시됨 (API 로드 대기)
+    await expect(page.locator('text=/우유/').first()).toBeVisible({ timeout: 15_000 });
     // 타입 뱃지 (소비)
-    await expect(page.getByText("소비", { exact: true }).first()).toBeVisible({ timeout: 10_000 });
-    // 품목명이 이력 항목에 표시됨
-    await expect(page.locator('text=/우유/').first()).toBeVisible();
+    await expect(page.getByText("소비", { exact: true }).first()).toBeVisible();
   });
 
   test("12. 필터 결과가 없으면 빈 상태 안내 메시지가 표시된다", async ({ page }) => {

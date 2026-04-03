@@ -62,6 +62,18 @@ export function InventoryHistoryMobilePanel() {
     "all",
   );
 
+  // 날짜별 그룹핑 — 훅은 early return 앞에서 모두 호출해야 한다
+  const grouped = useMemo<GroupedByDate[]>(() => {
+    const map = new Map<string, InventoryLedgerRow[]>();
+    for (const row of ctx.paginatedRows) {
+      const dateKey = row.createdAt.slice(0, 10);
+      const group = map.get(dateKey);
+      if (group) group.push(row);
+      else map.set(dateKey, [row]);
+    }
+    return Array.from(map, ([dateKey, rows]) => ({ dateKey, rows }));
+  }, [ctx.paginatedRows]);
+
   if (ctx.loading) {
     return <HistoryMobileSkeleton />;
   }
@@ -88,18 +100,6 @@ export function InventoryHistoryMobilePanel() {
       ctx.컬럼_필터를_바꾼다("type", 이력_유형_라벨을_구한다(type));
     }
   };
-
-  // 날짜별 그룹핑
-  const grouped = useMemo<GroupedByDate[]>(() => {
-    const map = new Map<string, InventoryLedgerRow[]>();
-    for (const row of ctx.paginatedRows) {
-      const dateKey = row.createdAt.slice(0, 10);
-      const group = map.get(dateKey);
-      if (group) group.push(row);
-      else map.set(dateKey, [row]);
-    }
-    return Array.from(map, ([dateKey, rows]) => ({ dateKey, rows }));
-  }, [ctx.paginatedRows]);
 
   return (
     <div className="flex flex-1 flex-col gap-4 px-4 py-4 md:mx-auto md:w-full md:max-w-2xl">

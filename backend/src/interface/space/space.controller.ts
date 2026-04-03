@@ -33,7 +33,19 @@ export class SpaceController {
   async 집_구조를_조회한다(
     @Param('householdId', ParseUUIDPipe) householdId: string,
   ) {
-    return this.spaceBusinessService.집_구조를_조회한다(householdId);
+    const structure =
+      await this.spaceBusinessService.집_구조를_조회한다(householdId);
+    if (!structure) {
+      return {
+        id: null,
+        householdId,
+        name: 'default',
+        structurePayload: { rooms: {} },
+        diagramLayout: null,
+        version: 0,
+      };
+    }
+    return structure;
   }
 
   @Put('house-structure')
