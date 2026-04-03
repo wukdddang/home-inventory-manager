@@ -87,6 +87,7 @@ export type InventoryHistoryDataPort = {
 /* ─────────────────────── Context Type ─────────────────────── */
 
 export type InventoryHistoryContextType = {
+  loading: boolean;
   households: Household[];
   paginatedRows: InventoryLedgerRow[];
   totalBase: number;
@@ -150,6 +151,7 @@ export function InventoryHistoryProvider({
   children,
   port,
 }: InventoryHistoryProviderProps) {
+  const [loading, setLoading] = useState(!!port.loadApiLedger);
   const [households, setHouseholds] = useState<Household[]>(() =>
     port.initialHouseholds(),
   );
@@ -166,7 +168,10 @@ export function InventoryHistoryProvider({
   useEffect(() => {
     if (!port.loadApiLedger) return;
     void port.loadApiLedger().then((apiRows) => {
-      if (apiRows.length === 0) return;
+      if (apiRows.length === 0) {
+        setLoading(false);
+        return;
+      }
       setLedger((prev) => {
         const merged = new Map(prev.map((r) => [r.id, r]));
         apiRows.forEach((r) => merged.set(r.id, r));
@@ -175,7 +180,8 @@ export function InventoryHistoryProvider({
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
         );
       });
-    });
+      setLoading(false);
+    }).catch(() => setLoading(false));
   }, [port]);
 
   const [filterHouseholdId, setFilterHouseholdId] = useState("all");
@@ -419,6 +425,7 @@ export function InventoryHistoryProvider({
 
   const value = useMemo<InventoryHistoryContextType>(
     () => ({
+      loading,
       households,
       paginatedRows,
       totalBase,
@@ -460,6 +467,7 @@ export function InventoryHistoryProvider({
       수량_수동_조정_한다,
     }),
     [
+      loading,
       households,
       paginatedRows,
       totalBase,
@@ -586,9 +594,16 @@ export function CurrentInventoryHistoryProvider({
         Array.from(householdMap.values()).map(async (h) => {
           const localItems = h.items ?? [];
           const apiItems = await apiFetch<
-            Array<{ id: string; name?: string }>
+            Array<{
+              id: string;
+              name?: string;
+              productVariant?: {
+                product?: { name?: string };
+                name?: string | null;
+              };
+            }>
           >(`/api/households/${h.id}/inventory-items`).catch(
-            () => [] as Array<{ id: string; name?: string }>,
+            () => [],
           );
 
           // id 기반 병합 (중복 제거)
@@ -598,7 +613,9 @@ export function CurrentInventoryHistoryProvider({
           }
           for (const item of apiItems) {
             if (!itemMap.has(item.id)) {
-              itemMap.set(item.id, item.name ?? "품목");
+              const label =
+                item.productVariant?.product?.name ?? item.name ?? "품목";
+              itemMap.set(item.id, label);
             }
           }
 

@@ -105,8 +105,7 @@ test.describe("MUC-02. 대시보드 — 재고 카드 목록", () => {
     await expect(page.locator('text=/\\d+.*팩 보유/').first()).toBeVisible({ timeout: 5_000 });
   });
 
-  // TODO: API 모드에서 DB 시드된 minStockLevel이 모바일 카드에 반영되지 않음 — 프론트엔드 데이터 로딩 수정 필요
-  test.skip("8. 재고 부족 품목의 카드 좌측 테두리가 파란색으로 표시되고 부족 아이콘이 보인다", async ({ page }) => {
+  test("8. 재고 부족 품목의 카드 좌측 테두리가 파란색으로 표시되고 부족 아이콘이 보인다", async ({ page }) => {
     // 최소 재고 10, 현재 수량 2 → 부족 상태
     await setupFull(page, 2, 10);
 

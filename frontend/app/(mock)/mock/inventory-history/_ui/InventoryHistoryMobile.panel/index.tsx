@@ -2,6 +2,7 @@
 
 import { useInventoryHistory } from "../../_hooks/useInventoryHistory";
 import { 이력_유형_라벨을_구한다 } from "../../_context/inventory-history-helpers.service";
+import { HistoryMobileSkeleton } from "@/app/_ui/mobile/MobileSkeleton.component";
 import type { InventoryLedgerRow, InventoryLedgerType } from "@/types/domain";
 import { useMemo, useState } from "react";
 
@@ -60,6 +61,10 @@ export function InventoryHistoryMobilePanel() {
   const [typeFilter, setTypeFilter] = useState<InventoryLedgerType | "all">(
     "all",
   );
+
+  if (ctx.loading) {
+    return <HistoryMobileSkeleton />;
+  }
 
   // 기간 프리셋 적용
   const handlePreset = (preset: PeriodPreset) => {

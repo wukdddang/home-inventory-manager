@@ -128,8 +128,7 @@ test.describe("MUC-06. 재고 이력 (모바일)", () => {
     ).toBeVisible({ timeout: 10_000 });
   });
 
-  // TODO: 모바일 이력 페이지에서 거점이 자동 선택되지 않아 API 이력이 로드되지 않음 — 거점 선택 로직 수정 필요
-  test.skip("8. 각 이력 항목에 타입 뱃지, 품목명, 수량 변화, 시간이 표시된다", async ({ page }) => {
+  test("8. 각 이력 항목에 타입 뱃지, 품목명, 수량 변화, 시간이 표시된다", async ({ page }) => {
     const ctx = await setupFull(page);
     await createHistoryData(page, ctx.hId, ctx.inventoryItemId);
 

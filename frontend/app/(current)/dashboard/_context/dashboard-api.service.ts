@@ -336,7 +336,7 @@ async function loadInventoryItemsFromApi(
     const row: InventoryRow = {
       id: item.id,
       name: "",
-      quantity: item.quantity,
+      quantity: Number(item.quantity),
       unit: unit?.symbol ?? "",
       roomId,
       storageLocationId: item.storageLocationId,
@@ -345,7 +345,7 @@ async function loadInventoryItemsFromApi(
       productVariantId: item.productVariantId,
       variantCaption,
       quantityPerUnit: variant?.quantityPerUnit,
-      minStockLevel: item.minStockLevel ?? undefined,
+      minStockLevel: item.minStockLevel != null ? Number(item.minStockLevel) : undefined,
     };
 
     row.name =
