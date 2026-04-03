@@ -15,7 +15,20 @@ import { useAppRoutePrefix } from "@/lib/use-app-route-prefix";
 import { usePathname } from "next/navigation";
 import { useRouter } from "next/navigation";
 import { useSyncExternalStore, useState, useCallback } from "react";
-import { LogOut, Monitor, Home, ChevronRight, Bell } from "lucide-react";
+import { usePwaInstall, usePushToken } from "@/hooks/usePwa";
+import {
+  LogOut,
+  Monitor,
+  Home,
+  ChevronRight,
+  Bell,
+  Download,
+  Smartphone,
+  Key,
+  Copy,
+  Check,
+  Trash2,
+} from "lucide-react";
 
 export function SettingsMobilePanel() {
   const { settings, loading, error, 알림_플래그를_토글_한다 } = useSettings();
@@ -40,40 +53,44 @@ export function SettingsMobilePanel() {
     ? mockUser
     : authUser ?? { email: "", displayName: "", emailVerified: false };
 
-  // 푸시 알림 mock 상태
-  const [pushEnabled, setPushEnabled] = useState(false);
-  const [pushRequesting, setPushRequesting] = useState(false);
+  // PWA 설치
+  const {
+    state: pwaState,
+    설치를_요청한다,
+    나중에_설치한다: _나중에,
+  } = usePwaInstall();
+
+  // 푸시 토큰 관리
+  const {
+    token: pushToken,
+    loading: pushRequesting,
+    granted: pushGranted,
+    토큰을_발급한다,
+    토큰을_삭제한다,
+  } = usePushToken();
+
+  const pushEnabled = !!pushToken;
+
+  const [tokenCopied, setTokenCopied] = useState(false);
 
   const handlePushToggle = useCallback(async () => {
     if (pushEnabled) {
-      console.log("[FCM] 토큰 삭제 요청");
-      setPushEnabled(false);
+      토큰을_삭제한다();
       return;
     }
-    setPushRequesting(true);
-    try {
-      if ("Notification" in window) {
-        const permission = await Notification.requestPermission();
-        if (permission === "granted") {
-          const mockToken = `fcm_mock_${crypto.randomUUID().slice(0, 8)}`;
-          console.log("[FCM] 토큰 발급:", mockToken);
-          console.log("[FCM] 서버 등록 완료 (mock)");
-          setPushEnabled(true);
-        } else {
-          console.log("[FCM] 권한 거부:", permission);
-          alert("브라우저 설정에서 알림을 허용해 주세요.");
-        }
-      } else {
-        console.log("[FCM] Notification API 미지원");
-        // mock 환경에서는 그냥 토글
-        const mockToken = `fcm_mock_${crypto.randomUUID().slice(0, 8)}`;
-        console.log("[FCM] 토큰 발급 (mock fallback):", mockToken);
-        setPushEnabled(true);
-      }
-    } finally {
-      setPushRequesting(false);
+    const token = await 토큰을_발급한다();
+    if (!token && "Notification" in window) {
+      alert("브라우저 설정에서 알림을 허용해 주세요.");
     }
-  }, [pushEnabled]);
+  }, [pushEnabled, 토큰을_발급한다, 토큰을_삭제한다]);
+
+  const handleCopyToken = useCallback(() => {
+    if (!pushToken) return;
+    navigator.clipboard.writeText(pushToken).then(() => {
+      setTokenCopied(true);
+      setTimeout(() => setTokenCopied(false), 2000);
+    });
+  }, [pushToken]);
 
   // 가구 전환
   const [showHouseholdPicker, setShowHouseholdPicker] = useState(false);
@@ -151,6 +168,97 @@ export function SettingsMobilePanel() {
         </div>
       </div>
 
+      {/* 앱 설치 & 토큰 관리 */}
+      <div className="flex flex-col gap-1">
+        <h3 className="px-1 pb-1 text-xs font-medium tracking-wide text-zinc-500">
+          앱 설치 / 푸시 토큰
+        </h3>
+        <div className="rounded-xl border border-zinc-800 bg-zinc-900">
+          {/* PWA 설치 상태 */}
+          <div className="flex items-center gap-3 px-4 py-3.5">
+            <Smartphone className="size-4 text-zinc-400" />
+            <span className="flex-1 text-sm text-zinc-200">앱 설치 상태</span>
+            {pwaState === "installed" ? (
+              <span className="rounded-full bg-teal-500/15 px-2.5 py-0.5 text-xs font-medium text-teal-400">
+                설치됨
+              </span>
+            ) : pwaState === "installable" ? (
+              <button
+                type="button"
+                onClick={설치를_요청한다}
+                className="inline-flex cursor-pointer items-center gap-1 rounded-lg bg-teal-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-teal-500 active:bg-teal-700"
+              >
+                <Download className="size-3" />
+                설치
+              </button>
+            ) : (
+              <span className="text-xs text-zinc-500">
+                {pwaState === "dismissed" ? "나중에" : "대기 중"}
+              </span>
+            )}
+          </div>
+
+          <div className="mx-4 h-px bg-zinc-800" />
+
+          {/* 푸시 토큰 상태 */}
+          <div className="flex flex-col gap-2 px-4 py-3.5">
+            <div className="flex items-center gap-3">
+              <Key className="size-4 text-zinc-400" />
+              <span className="flex-1 text-sm text-zinc-200">푸시 토큰</span>
+              {pushToken ? (
+                <span className="rounded-full bg-teal-500/15 px-2.5 py-0.5 text-xs font-medium text-teal-400">
+                  활성
+                </span>
+              ) : (
+                <span className="rounded-full bg-zinc-700/50 px-2.5 py-0.5 text-xs font-medium text-zinc-500">
+                  미발급
+                </span>
+              )}
+            </div>
+
+            {pushToken && (
+              <div className="flex items-center gap-2 rounded-lg bg-zinc-800/60 px-3 py-2">
+                <code className="flex-1 truncate text-xs text-zinc-400">
+                  {pushToken}
+                </code>
+                <button
+                  type="button"
+                  onClick={handleCopyToken}
+                  className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded text-zinc-500 transition-colors hover:bg-zinc-700 hover:text-zinc-300"
+                  aria-label="토큰 복사"
+                >
+                  {tokenCopied ? (
+                    <Check className="size-3.5 text-teal-400" />
+                  ) : (
+                    <Copy className="size-3.5" />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={토큰을_삭제한다}
+                  className="flex size-6 shrink-0 cursor-pointer items-center justify-center rounded text-zinc-500 transition-colors hover:bg-zinc-700 hover:text-rose-400"
+                  aria-label="토큰 삭제"
+                >
+                  <Trash2 className="size-3.5" />
+                </button>
+              </div>
+            )}
+
+            {!pushToken && (
+              <button
+                type="button"
+                onClick={토큰을_발급한다}
+                disabled={pushRequesting}
+                className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-teal-600/40 bg-teal-600/10 px-3 py-2 text-xs font-semibold text-teal-400 transition-colors hover:bg-teal-600/20 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <Key className="size-3.5" />
+                {pushRequesting ? "발급 중…" : "토큰 발급하기"}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
       {/* 가구 전환 */}
       {households.length > 0 && (
         <div className="flex flex-col gap-1">
@@ -205,13 +313,24 @@ export function SettingsMobilePanel() {
         로그아웃
       </button>
 
-      {/* 데스크탑 유도 안내 */}
-      <div className="flex items-start gap-3 rounded-xl border border-zinc-800/60 bg-zinc-900/50 p-4">
-        <Monitor className="mt-0.5 size-4 shrink-0 text-zinc-500" />
-        <p className="text-xs leading-relaxed text-zinc-500">
-          카탈로그 관리, 멤버 초대/역할 변경, 비밀번호 변경 등 상세 설정은
-          데스크탑에서 이용해 주세요.
-        </p>
+      {/* 안내 */}
+      <div className="flex flex-col gap-2">
+        {pwaState !== "installed" && (
+          <div className="flex items-start gap-3 rounded-xl border border-teal-800/40 bg-teal-950/30 p-4">
+            <Download className="mt-0.5 size-4 shrink-0 text-teal-500" />
+            <p className="text-xs leading-relaxed text-teal-400/80">
+              앱을 설치하면 푸시 알림을 받을 수 있고, 오프라인에서도 기본 기능을
+              이용할 수 있어요.
+            </p>
+          </div>
+        )}
+        <div className="flex items-start gap-3 rounded-xl border border-zinc-800/60 bg-zinc-900/50 p-4">
+          <Monitor className="mt-0.5 size-4 shrink-0 text-zinc-500" />
+          <p className="text-xs leading-relaxed text-zinc-500">
+            카탈로그 관리, 멤버 초대/역할 변경, 비밀번호 변경 등 상세 설정은
+            데스크탑에서 이용해 주세요.
+          </p>
+        </div>
       </div>
     </div>
   );

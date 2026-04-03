@@ -1,0 +1,19 @@
+{
+  "name": "집비치기 — 가정 재고 관리",
+  "short_name": "집비치기",
+  "description": "가정 재고를 손쉽게 관리하세요. 유통기한, 장보기, 재고 부족 알림까지.",
+  "start_url": "/mock/dashboard",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#09090b",
+  "theme_color": "#14b8a6",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

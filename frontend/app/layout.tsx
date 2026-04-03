@@ -19,7 +19,17 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "집비치기 — 가정 재고 관리",
   description:
-    "Household·StorageLocation·InventoryItem 도메인에 맞춘 집 구조·재고 관리 UI",
+    "가정 재고를 손쉽게 관리하세요. 유통기한, 장보기, 재고 부족 알림까지.",
+  manifest: "/manifest.json",
+  themeColor: "#14b8a6",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "집비치기",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
 };
 
 export default function RootLayout({

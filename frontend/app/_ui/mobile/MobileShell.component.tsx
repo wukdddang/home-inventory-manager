@@ -1,5 +1,6 @@
 "use client";
 
+import { PwaInstallBanner } from "@/app/_ui/pwa-install-banner.component";
 import { BottomNav } from "./BottomNav.component";
 import { MobileHeader } from "./MobileHeader.component";
 
@@ -23,6 +24,7 @@ export function MobileShell({
       <main className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain">
         {children}
       </main>
+      <PwaInstallBanner />
       <BottomNav />
     </div>
   );

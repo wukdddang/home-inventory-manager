@@ -1,8 +1,11 @@
 "use client";
 
 import { Toaster } from "@/app/_ui/feedback/sonner";
+import { useServiceWorker } from "@/hooks/usePwa";
 
 export function AppProviders({ children }: { children: React.ReactNode }) {
+  useServiceWorker();
+
   return (
     <>
       <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
