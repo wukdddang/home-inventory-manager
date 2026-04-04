@@ -34,6 +34,7 @@ export class StorageLocationService {
     name: string;
     roomId?: string | null;
     furniturePlacementId?: string | null;
+    applianceId?: string | null;
     sortOrder?: number;
   }): Promise<StorageLocation> {
     const location = this.repository.create(data);
@@ -47,6 +48,7 @@ export class StorageLocationService {
       name?: string;
       roomId?: string | null;
       furniturePlacementId?: string | null;
+      applianceId?: string | null;
       sortOrder?: number;
     },
   ): Promise<StorageLocation | null> {

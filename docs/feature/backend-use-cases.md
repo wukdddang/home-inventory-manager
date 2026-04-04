@@ -163,10 +163,10 @@
 
 | #   | 테스트 케이스                                                                        | 구현  | 검증  |
 | --- | -------------------------------------------------------------------------------- | --- | --- |
-| 5   | `POST /households/:id/rooms/:roomId/furniture-placements` — 방에 가구를 추가한다          | O   | [ ] |
-| 6   | `GET /households/:id/rooms/:roomId/furniture-placements` — 방별 가구 목록을 조회한다        | O   | [ ] |
-| 7   | `PUT /households/:id/furniture-placements/:fpId` — 가구의 앵커(소속 방)를 변경한다            | O   | [ ] |
-| 8   | `DELETE /households/:id/furniture-placements/:fpId` — 가구를 삭제하면 하위 보관장소도 정리된다     | O   | [ ] |
+| 5   | `POST /households/:id/rooms/:roomId/furniture-placements` — 방에 가구를 추가한다 (방 직속 하위)  | O   | [ ] |
+| 6   | `GET /households/:id/rooms/:roomId/furniture-placements` — 방별 가구 목록을 조회한다             | O   | [ ] |
+| 7   | `PUT /households/:id/furniture-placements/:fpId` — 가구 정보를 수정한다                          | O   | [ ] |
+| 8   | `DELETE /households/:id/furniture-placements/:fpId` — 가구를 삭제하면 하위 보관장소도 정리된다    | O   | [ ] |
 
 
 ### 5-C. 보관장소
@@ -174,10 +174,10 @@
 
 | #   | 테스트 케이스                                                                        | 구현  | 검증  |
 | --- | -------------------------------------------------------------------------------- | --- | --- |
-| 9   | `POST /households/:id/storage-locations` — 가구 아래 또는 방 직속 보관장소를 생성한다              | O   | [ ] |
-| 10  | `GET /households/:id/storage-locations` — 전체 보관장소 목록을 조회한다                        | O   | [ ] |
-| 11  | `PUT /households/:id/storage-locations/:slId` — 보관장소 이름을 수정한다                     | O   | [ ] |
-| 12  | `DELETE /households/:id/storage-locations/:slId` — 보관장소를 삭제한다                     | O   | [ ] |
+| 9   | `POST /households/:id/storage-locations` — 가구(FurniturePlacement) 또는 가전(Appliance) 하위 보관장소를 생성한다 | O   | [ ] |
+| 10  | `GET /households/:id/storage-locations` — 전체 보관장소 목록을 조회한다                                           | O   | [ ] |
+| 11  | `PUT /households/:id/storage-locations/:slId` — 보관장소 이름을 수정한다                                          | O   | [ ] |
+| 12  | `DELETE /households/:id/storage-locations/:slId` — 보관장소를 삭제한다                                            | O   | [ ] |
 
 
 ---
@@ -400,7 +400,7 @@
 
 ---
 
-## BUC-14. 가전/설비 관리 (Appliance) — v2.7 신규
+## BUC-14. 가전/설비 관리 (Appliance) — v2.8 갱신
 
 > **목적**: 가전 등록 → 조회 → 수정 → 폐기 처리 흐름 검증
 > **엔드포인트**: `/households/:id/appliances`, `/households/:id/appliances/:appId`
@@ -419,6 +419,9 @@
 | 6   | `PUT /households/:id/appliances/:appId` — 가전 정보(이름, 브랜드, 모델명, 설치 위치 등)를 수정한다                         | X   | [ ] |
 | 7   | `PATCH /households/:id/appliances/:appId/retire` — 가전을 폐기 처리하면 status가 retired로 변경된다                  | X   | [ ] |
 | 8   | `GET /households/:id/appliances/:appId` — 멤버가 아닌 사용자가 접근하면 403을 반환한다                                  | X   | [ ] |
+| 9   | `POST /households/:id/appliances/:appId/storage-locations` — 가전 하위 보관장소를 생성하면 201을 반환한다               | X   | [ ] |
+| 10  | `GET /households/:id/appliances/:appId/storage-locations` — 가전 하위 보관장소 목록을 조회한다                          | X   | [ ] |
+| 11  | `GET /households/:id/appliances/:appId/storage-locations` — 보관장소에 재고(InventoryItem)가 포함되어 반환된다           | X   | [ ] |
 
 
 ---

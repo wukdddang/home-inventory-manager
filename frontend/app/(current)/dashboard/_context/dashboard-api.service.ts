@@ -471,6 +471,7 @@ async function loadStorageLocationsFromApi(
       name: string;
       roomId: string | null;
       furniturePlacementId: string | null;
+      applianceId?: string | null;
       sortOrder: number;
     }>
   >(`/api/households/${householdId}/storage-locations`).catch(() => []);
@@ -479,6 +480,7 @@ async function loadStorageLocationsFromApi(
     name: s.name,
     roomId: s.roomId,
     furniturePlacementId: s.furniturePlacementId,
+    applianceId: s.applianceId ?? null,
     sortOrder: s.sortOrder,
   }));
 }
@@ -595,7 +597,7 @@ interface DashboardViewResponse {
   houseStructure: { id: string; structurePayload: Record<string, unknown>; diagramLayout: Record<string, unknown> | null } | null;
   rooms: { id: string; structureRoomKey: string; displayName: string | null; sortOrder: number }[];
   furniturePlacements: { id: string; roomId: string; label: string; anchorDirectStorageId: string | null; sortOrder: number }[];
-  storageLocations: { id: string; name: string; roomId: string | null; furniturePlacementId: string | null; sortOrder: number }[];
+  storageLocations: { id: string; name: string; roomId: string | null; furniturePlacementId: string | null; applianceId?: string | null; sortOrder: number }[];
   inventoryItems: {
     id: string; productVariantId: string; storageLocationId: string; quantity: number; minStockLevel: number | null;
     productVariant?: { id: string; name: string | null; quantityPerUnit: number; product?: { id: string; name: string; isConsumable: boolean }; unit?: { id: string; symbol: string; name: string } };
@@ -738,6 +740,7 @@ export const dashboardApiHouseholdsClient: DashboardHouseholdsPort = {
             name: s.name,
             roomId: s.roomId,
             furniturePlacementId: s.furniturePlacementId,
+            applianceId: s.applianceId ?? null,
             sortOrder: s.sortOrder,
           }));
 
@@ -1097,6 +1100,7 @@ export const dashboardApiHouseholdsClient: DashboardHouseholdsPort = {
       name: string;
       roomId: string | null;
       furniturePlacementId: string | null;
+      applianceId?: string | null;
       sortOrder: number;
     }>(`/api/households/${householdId}/storage-locations`, {
       method: "POST",
@@ -1108,6 +1112,7 @@ export const dashboardApiHouseholdsClient: DashboardHouseholdsPort = {
       name: raw.name,
       roomId: raw.roomId,
       furniturePlacementId: raw.furniturePlacementId,
+      applianceId: raw.applianceId ?? null,
       sortOrder: raw.sortOrder,
     };
   },

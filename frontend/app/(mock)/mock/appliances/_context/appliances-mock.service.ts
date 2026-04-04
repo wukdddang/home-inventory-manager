@@ -34,7 +34,7 @@ export function mock가전_시드를_생성한다(): Appliance[] {
       warrantyExpiresOn: 날짜를_YMD_문자열로_한다(
         날짜에_일수를_더한다(now, 365),
       ),
-      roomId: "mock-room-bathroom",
+      roomId: "mock-room-storage",
       status: "active",
       createdAt: 날짜를_YMD_문자열로_한다(날짜에_일수를_더한다(now, -365)),
     },
@@ -51,6 +51,7 @@ export function mock가전_시드를_생성한다(): Appliance[] {
         날짜에_일수를_더한다(now, -30),
       ),
       roomId: "mock-room-kitchen",
+      /** v2.8: 냉장고 가구(FP)와 같은 방에 배치 */
       status: "active",
       createdAt: 날짜를_YMD_문자열로_한다(날짜에_일수를_더한다(now, -730)),
     },

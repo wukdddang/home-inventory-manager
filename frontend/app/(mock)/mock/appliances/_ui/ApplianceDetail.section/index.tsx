@@ -3,6 +3,7 @@
 import { useState } from "react";
 import {
   ArrowLeft,
+  Box,
   Plus,
   Pencil,
   Calendar,
@@ -578,6 +579,80 @@ export function ApplianceDetailSection() {
           onClose={() => setShowEdit(false)}
         />
       )}
+
+      {/* v2.8: 하위 보관 장소 및 재고 */}
+      {hh && (() => {
+        const appSlots = (hh.storageLocations ?? []).filter(
+          (s) => s.applianceId === selectedAppliance.id,
+        );
+        const allItems = hh.items ?? [];
+        const appSlotIds = new Set(appSlots.map((s) => s.id));
+        const appItems = allItems.filter(
+          (it) => it.storageLocationId && appSlotIds.has(it.storageLocationId),
+        );
+
+        return (
+          <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4" data-testid="appliance-storage-section">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-zinc-200">
+                <Box className="mr-1.5 inline size-4 text-zinc-400" />
+                보관 장소 · 물품
+              </h3>
+              <span className="text-xs text-zinc-500">
+                {appSlots.length}개 보관 장소 · {appItems.length}개 물품
+              </span>
+            </div>
+
+            {appSlots.length === 0 ? (
+              <p className="text-xs text-zinc-500" data-testid="no-appliance-storage">
+                등록된 보관 장소가 없습니다. 대시보드에서 이 가전에 보관 장소를 추가하세요.
+              </p>
+            ) : (
+              <div className="flex flex-col gap-2" data-testid="appliance-storage-list">
+                {appSlots
+                  .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+                  .map((slot) => {
+                    const slotItems = appItems.filter(
+                      (it) => it.storageLocationId === slot.id,
+                    );
+                    return (
+                      <div
+                        key={slot.id}
+                        className="rounded-lg border border-zinc-800 px-3 py-2"
+                        data-testid={`appliance-slot-${slot.id}`}
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-zinc-200">
+                            {slot.name}
+                          </span>
+                          <span className="text-xs text-zinc-500">
+                            {slotItems.length}개 물품
+                          </span>
+                        </div>
+                        {slotItems.length > 0 && (
+                          <ul className="mt-1.5 space-y-1">
+                            {slotItems.map((item) => (
+                              <li
+                                key={item.id}
+                                className="flex items-center justify-between text-xs"
+                                data-testid={`appliance-item-${item.id}`}
+                              >
+                                <span className="text-zinc-300">{item.name}</span>
+                                <span className="text-zinc-500">
+                                  {item.quantity} {item.unit}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* 유지보수 스케줄 */}
       <div className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-4">

@@ -22,6 +22,10 @@ export class UpdateStorageLocationDto {
   furniturePlacementId?: string | null;
 
   @IsOptional()
+  @IsUUID()
+  applianceId?: string | null;
+
+  @IsOptional()
   @IsInt()
   @Min(0)
   sortOrder?: number;

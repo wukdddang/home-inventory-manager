@@ -123,4 +123,18 @@ test.describe("MUC-12. 모바일 가전/설비 관리 (mock)", () => {
       page.locator('text="냉각 불량 수리"'),
     ).toBeVisible();
   });
+
+  test("9. 모바일에서 가전 하위 보관 장소 섹션을 확인한다", async ({ page }) => {
+    await goToAppliances(page);
+
+    await page.locator('text="드럼세탁기"').click();
+    await expect(page.locator('[data-testid="appliance-detail"]')).toBeVisible({
+      timeout: 5_000,
+    });
+
+    // 보관 장소·물품 섹션
+    await expect(
+      page.locator('[data-testid="appliance-storage-section"]'),
+    ).toBeVisible({ timeout: 5_000 });
+  });
 });

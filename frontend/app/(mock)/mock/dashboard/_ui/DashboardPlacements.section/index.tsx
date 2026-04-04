@@ -4,23 +4,20 @@ import { AlertModal } from "@/app/_ui/alert-modal";
 import { FormModal } from "@/app/_ui/form-modal";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useDashboard } from "../../_hooks/useDashboard";
-import type { Household } from "@/types/domain";
+import {
+  getMockAppliancesSession,
+  updateMockAppliancesSession,
+} from "../../../appliances/_context/appliances-mock.service";
+import type { Appliance, Household } from "@/types/domain";
 
 const inputClass =
   "w-full rounded-lg border border-zinc-700 bg-zinc-950 px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500";
 
-const selectClass =
-  "w-full rounded-lg border border-zinc-700 bg-zinc-950 px-2.5 py-1.5 text-xs text-white outline-none focus:border-teal-500";
-
-/** 주요 추가 동작 — 틸(가구·세부 보관 장소·옮기기) */
+/** 주요 추가 동작 — 틸(가구·보관 장소) */
 const btnAdd =
   "inline-flex cursor-pointer shrink-0 items-center justify-center gap-1 rounded-md border border-teal-600/60 bg-teal-950/40 px-2 py-0.5 text-xs font-medium leading-tight text-teal-100 hover:bg-teal-900/35";
-
-/** 직속 보관 장소 추가 — 직속 탭·패널과 동일 앰버 톤 */
-const btnAddDirectSlot =
-  "inline-flex cursor-pointer shrink-0 items-center justify-center gap-1 rounded-md border border-amber-500/45 bg-amber-950/35 px-2 py-0.5 text-xs font-medium leading-tight text-amber-100/95 hover:border-amber-400/55 hover:bg-amber-500/[0.12]";
 
 const btnDangerIcon =
   "inline-flex cursor-pointer items-center justify-center rounded-md border border-rose-900/50 p-1.5 text-rose-400 hover:bg-rose-950/40";
@@ -81,26 +78,6 @@ function PencilMiniIcon({ className }: { className?: string }) {
   );
 }
 
-function ArrowsRightLeftMiniIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
-      className={cn("size-3 shrink-0", className)}
-      aria-hidden
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M7.5 21 3 16.5m0 0L7.5 12M3 16.5h13.5m0-13.5L21 7.5m0 0L16.5 12M21 7.5H7.5"
-      />
-    </svg>
-  );
-}
-
 function PlacementsFurnitureIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -116,6 +93,26 @@ function PlacementsFurnitureIcon({ className }: { className?: string }) {
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M21 7.5l-9-5.25L3 7.5m18 0l-9 5.25m9-5.25v9l-9 5.25M3 7.5v9l9 5.25m0-9v9"
+      />
+    </svg>
+  );
+}
+
+function ApplianceIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+      className={cn("size-4 shrink-0 text-sky-400/90", className)}
+      aria-hidden
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M8.25 3v1.5M4.5 8.25H3m18 0h-1.5M4.5 12H3m18 0h-1.5m-15 3.75H3m18 0h-1.5M8.25 19.5V21M12 3v1.5m0 15V21m3.75-18v1.5m0 15V21m-9-1.5h10.5a2.25 2.25 0 0 0 2.25-2.25V6.75a2.25 2.25 0 0 0-2.25-2.25H6.75A2.25 2.25 0 0 0 4.5 6.75v10.5a2.25 2.25 0 0 0 2.25 2.25Z"
       />
     </svg>
   );
@@ -140,78 +137,46 @@ export function DashboardPlacementsSection({
 }: DashboardPlacementsSectionProps) {
   const {
     가구를_추가_한다,
-    가구_앵커를_변경_한다,
     가구를_삭제_한다,
     보관장소를_추가_한다,
     보관장소_이름을_수정_한다,
     보관장소를_삭제_한다,
   } = useDashboard();
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(
     null,
   );
-  /** 사용자가 탭으로 고른 직속 보관 장소(없거나 무효하면 아래 파생 id로 폴백) */
-  const [userDirectSlotPick, setUserDirectSlotPick] = useState<string | null>(
-    null,
+
+  // ── 위치 추가 (가구/가전 통합) 모달 ──
+  const [placementModalOpen, setPlacementModalOpen] = useState(false);
+  const [placementModalRoomId, setPlacementModalRoomId] = useState<
+    string | null
+  >(null);
+  const [placementType, setPlacementType] = useState<"furniture" | "appliance">(
+    "furniture",
   );
-  const [directSlotModalOpen, setDirectSlotModalOpen] = useState(false);
-  const [directSlotModalRoomId, setDirectSlotModalRoomId] = useState<
-    string | null
-  >(null);
-  const [directSlotModalDraft, setDirectSlotModalDraft] = useState("");
+  const [placementNameDraft, setPlacementNameDraft] = useState("");
+  const [placementBrandDraft, setPlacementBrandDraft] = useState("");
+  const [placementModelDraft, setPlacementModelDraft] = useState("");
 
-  const [furnitureModalOpen, setFurnitureModalOpen] = useState(false);
-  const [furnitureModalRoomId, setFurnitureModalRoomId] = useState<
-    string | null
-  >(null);
-  const [furnitureModalSlotId, setFurnitureModalSlotId] = useState<
-    string | null
-  >(null);
-  const [furnitureModalDraft, setFurnitureModalDraft] = useState("");
-
+  // ── 보관 장소 추가 모달 (가구 하위) ──
   const [subSlotModalOpen, setSubSlotModalOpen] = useState(false);
-  const [subSlotModalFurnitureId, setSubSlotModalFurnitureId] = useState<
+  const [subSlotModalParentId, setSubSlotModalParentId] = useState<
     string | null
   >(null);
+  const [subSlotModalParentKind, setSubSlotModalParentKind] = useState<
+    "furniture" | "appliance"
+  >("furniture");
   const [subSlotModalDraft, setSubSlotModalDraft] = useState("");
-  /** 직속 보관 장소 하위 가구 중 한 번에 하나만 펼쳐 볼 때 선택한 가구 id */
-  const [focusedFurnitureId, setFocusedFurnitureId] = useState<string | null>(
-    null,
-  );
 
-  const [reanchorModalOpen, setReanchorModalOpen] = useState(false);
-  const [reanchorModalFurnitureId, setReanchorModalFurnitureId] = useState<
-    string | null
-  >(null);
-  const [reanchorModalTargetSlotId, setReanchorModalTargetSlotId] =
-    useState("");
-
+  // ── 보관 장소 이름 수정 모달 ──
   const [renameSlotModalOpen, setRenameSlotModalOpen] = useState(false);
   const [renameSlotId, setRenameSlotId] = useState<string | null>(null);
   const [renameSlotDraft, setRenameSlotDraft] = useState("");
 
-  const directsForSelectedRoom = useMemo(() => {
-    if (!selected || !selectedRoomId) return [];
-    const slotsList = selected.storageLocations ?? [];
-    return slotsList
-      .filter(
-        (s) =>
-          s.roomId === selectedRoomId &&
-          (s.furniturePlacementId == null || s.furniturePlacementId === ""),
-      )
-      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
-  }, [selected, selectedRoomId]);
-
-  const resolvedDirectSlotId = useMemo(() => {
-    if (directsForSelectedRoom.length === 0) return null;
-    if (
-      userDirectSlotPick &&
-      directsForSelectedRoom.some((s) => s.id === userDirectSlotPick)
-    ) {
-      return userDirectSlotPick;
-    }
-    return directsForSelectedRoom[0].id;
-  }, [directsForSelectedRoom, userDirectSlotPick]);
+  // ── 탭 선택 상태 (가구 또는 가전 중 하나) ──
+  const [selectedTabId, setSelectedTabId] = useState<string | null>(null);
 
   if (!selected) return null;
 
@@ -223,6 +188,7 @@ export function DashboardPlacementsSection({
       ? selected.rooms.filter((r) => r.id === selectedRoomId)
       : [];
 
+  // ── 방별 가구 목록 ──
   const furnitureInRoom = (roomId: string) =>
     [...placements]
       .filter((f) => f.roomId === roomId)
@@ -232,212 +198,100 @@ export function DashboardPlacementsSection({
           a.label.localeCompare(b.label, "ko"),
       );
 
-  const roomDirectSlots = (roomId: string) =>
-    slots
-      .filter(
-        (s) =>
-          s.roomId === roomId &&
-          (s.furniturePlacementId == null || s.furniturePlacementId === ""),
-      )
-      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  // ── 방별 가전 목록 ──
+  const allAppliances = getMockAppliancesSession();
+  const appliancesInRoom = (roomId: string) =>
+    allAppliances.filter((a) => a.roomId === roomId && a.status === "active");
 
-  const furnitureOnSlot = (roomId: string, slotId: string) =>
-    furnitureInRoom(roomId).filter((f) => f.anchorDirectStorageId === slotId);
-
+  // ── 가구 하위 보관 장소 ──
   const slotsUnderFurniture = (furnitureId: string) =>
     slots.filter((s) => s.furniturePlacementId === furnitureId);
 
-  const openDirectSlotModal = (roomId: string) => {
-    setDirectSlotModalRoomId(roomId);
-    setDirectSlotModalDraft("");
-    setDirectSlotModalOpen(true);
+  // ── 가전 하위 보관 장소 ──
+  const slotsUnderAppliance = (applianceId: string) =>
+    slots.filter((s) => s.applianceId === applianceId);
+
+  // ── 위치 추가 (가구/가전 통합) ──
+  const openPlacementModal = (roomId: string) => {
+    setPlacementModalRoomId(roomId);
+    setPlacementType("furniture");
+    setPlacementNameDraft("");
+    setPlacementBrandDraft("");
+    setPlacementModelDraft("");
+    setPlacementModalOpen(true);
   };
 
-  const submitDirectSlotModal = async () => {
-    if (!directSlotModalRoomId || !selected) return;
-    const name = directSlotModalDraft.trim();
+  const submitPlacementModal = async () => {
+    if (!placementModalRoomId || !selected) return;
+    const name = placementNameDraft.trim();
     if (!name) {
       toast({
-        title: "이름을 입력하세요",
-        description: "직속 보관 장소 이름을 적어 주세요.",
-        variant: "warning",
-      });
-      return;
-    }
-    const nextSort =
-      Math.max(
-        0,
-        ...roomDirectSlots(directSlotModalRoomId).map((s) => s.sortOrder ?? 0),
-      ) + 1;
-    setIsSubmitting(true);
-    const created = await 보관장소를_추가_한다(selected.id, {
-      name,
-      roomId: directSlotModalRoomId,
-      furniturePlacementId: null,
-      sortOrder: nextSort,
-    });
-    setIsSubmitting(false);
-    if (!created) return;
-    setUserDirectSlotPick(created.id);
-    setDirectSlotModalOpen(false);
-    setDirectSlotModalDraft("");
-    setDirectSlotModalRoomId(null);
-    toast({ title: "직속 보관 장소가 추가되었습니다", description: name });
-  };
-
-  const handleAddFurnitureToSlot = async (
-    roomId: string,
-    slotId: string,
-    labelRaw: string,
-  ): Promise<boolean> => {
-    const label = labelRaw.trim();
-    if (!label) {
-      toast({
-        title: "가구 이름을 입력하세요",
-        description: "모달에서 이름을 적고「추가」를 누르세요.",
-        variant: "warning",
-      });
-      return false;
-    }
-    if (!roomDirectSlots(roomId).some((s) => s.id === slotId)) {
-      toast({
-        title: "직속 보관 장소를 확인하세요",
-        variant: "warning",
-      });
-      return false;
-    }
-    const inRoom = furnitureInRoom(roomId);
-    const nextSort = Math.max(0, ...inRoom.map((f) => f.sortOrder ?? 0)) + 1;
-    const fp = await 가구를_추가_한다(selected.id, roomId, label, slotId, nextSort);
-    if (!fp) return false;
-    setFocusedFurnitureId(fp.id);
-    toast({ title: "가구가 이 직속 보관 장소에 연결되었습니다", description: label });
-    return true;
-  };
-
-  const openFurnitureModal = (roomId: string, slotId: string) => {
-    setFurnitureModalRoomId(roomId);
-    setFurnitureModalSlotId(slotId);
-    setFurnitureModalDraft("");
-    setFurnitureModalOpen(true);
-  };
-
-  const submitFurnitureModal = async () => {
-    if (!furnitureModalRoomId || !furnitureModalSlotId || !selected) return;
-    const label = furnitureModalDraft.trim();
-    if (!label) {
-      toast({
-        title: "가구 이름을 입력하세요",
+        title:
+          placementType === "furniture"
+            ? "가구 이름을 입력하세요"
+            : "가전 이름을 입력하세요",
         description: "이름을 입력해 주세요.",
         variant: "warning",
       });
       return;
     }
+
     setIsSubmitting(true);
-    const ok = await handleAddFurnitureToSlot(
-      furnitureModalRoomId,
-      furnitureModalSlotId,
-      label,
-    );
-    setIsSubmitting(false);
-    if (!ok) return;
-    setFurnitureModalOpen(false);
-    setFurnitureModalDraft("");
-    setFurnitureModalRoomId(null);
-    setFurnitureModalSlotId(null);
-  };
 
-  const handleReanchorFurniture = (
-    furnitureId: string,
-    nextSlotId: string,
-  ): boolean => {
-    const fp = placements.find((f) => f.id === furnitureId);
-    if (!fp || fp.anchorDirectStorageId === nextSlotId) return false;
-    const ok = roomDirectSlots(fp.roomId).some((s) => s.id === nextSlotId);
-    if (!ok) {
-      toast({ title: "직속 보관 장소를 확인하세요", variant: "warning" });
-      return false;
-    }
-    void 가구_앵커를_변경_한다(selected.id, furnitureId, nextSlotId);
-    return true;
-  };
-
-  const openReanchorModal = (furnitureId: string) => {
-    const fp = placements.find((f) => f.id === furnitureId);
-    if (!fp) return;
-    const dirs = roomDirectSlots(fp.roomId);
-    const cur = fp.anchorDirectStorageId ?? "";
-    const defaultTarget =
-      dirs.find((s) => s.id !== cur)?.id ?? dirs[0]?.id ?? "";
-    setReanchorModalFurnitureId(furnitureId);
-    setReanchorModalTargetSlotId(defaultTarget);
-    setReanchorModalOpen(true);
-  };
-
-  const submitReanchorModal = () => {
-    if (!reanchorModalFurnitureId || !reanchorModalTargetSlotId) return;
-    const fp = placements.find((f) => f.id === reanchorModalFurnitureId);
-    if (!fp) return;
-    if (fp.anchorDirectStorageId === reanchorModalTargetSlotId) {
-      toast({
-        title: "다른 직속 보관 장소를 선택하세요",
-        description: "옮기려면 현재와 다른 보관 장소를 고릅니다.",
-        variant: "warning",
-      });
-      return;
-    }
-    const ok = handleReanchorFurniture(
-      reanchorModalFurnitureId,
-      reanchorModalTargetSlotId,
-    );
-    if (ok) {
-      setReanchorModalOpen(false);
-      setReanchorModalFurnitureId(null);
-      setReanchorModalTargetSlotId("");
-      toast({
-        title: "가구를 옮겼습니다",
-        description: `「${fp.label}」연결을 바꿨습니다.`,
-        variant: "success",
-      });
+    if (placementType === "furniture") {
+      const inRoom = furnitureInRoom(placementModalRoomId);
+      const nextSort =
+        Math.max(0, ...inRoom.map((f) => f.sortOrder ?? 0)) + 1;
+      const fp = await 가구를_추가_한다(
+        selected.id,
+        placementModalRoomId,
+        name,
+        null,
+        nextSort,
+      );
+      setIsSubmitting(false);
+      if (!fp) return;
+      setSelectedTabId(fp.id);
+      setPlacementModalOpen(false);
+      setPlacementNameDraft("");
+      setPlacementModalRoomId(null);
+      toast({ title: "가구가 추가되었습니다", description: name });
+    } else {
+      const newAppliance: Appliance = {
+        id: `appl-${crypto.randomUUID()}`,
+        householdId: selected.id,
+        name,
+        brand: placementBrandDraft.trim() || undefined,
+        modelName: placementModelDraft.trim() || undefined,
+        roomId: placementModalRoomId,
+        status: "active",
+        createdAt: new Date().toISOString().slice(0, 10),
+      };
+      updateMockAppliancesSession((prev) => [...prev, newAppliance]);
+      setIsSubmitting(false);
+      setSelectedTabId(newAppliance.id);
+      setPlacementModalOpen(false);
+      setPlacementNameDraft("");
+      setPlacementBrandDraft("");
+      setPlacementModelDraft("");
+      setPlacementModalRoomId(null);
+      toast({ title: "가전이 등록되었습니다", description: name });
     }
   };
 
-  // requestDeleteStorage의 유효성 검사는 context 함수 호출 전에 수행한다
-
-  const handleAddFurnitureSlot = async (
-    furnitureId: string,
-    nameRaw: string,
-  ): Promise<boolean> => {
-    const name = nameRaw.trim();
-    if (!name) {
-      toast({
-        title: "보관 장소 이름을 입력하세요",
-        description: "모달에서 세부 보관 장소 이름을 적고「추가」를 누르세요.",
-        variant: "warning",
-      });
-      return false;
-    }
-    const under = slotsUnderFurniture(furnitureId);
-    const nextSort = Math.max(0, ...under.map((s) => s.sortOrder ?? 0)) + 1;
-    const created = await 보관장소를_추가_한다(selected.id, {
-      name,
-      roomId: null,
-      furniturePlacementId: furnitureId,
-      sortOrder: nextSort,
-    });
-    if (!created) return false;
-    toast({ title: "세부 보관 장소가 추가되었습니다", description: name });
-    return true;
-  };
-
-  const openSubSlotModal = (furnitureId: string) => {
-    setSubSlotModalFurnitureId(furnitureId);
+  // ── 보관 장소 추가 (가구 또는 가전 하위) ──
+  const openSubSlotModal = (
+    parentId: string,
+    kind: "furniture" | "appliance",
+  ) => {
+    setSubSlotModalParentId(parentId);
+    setSubSlotModalParentKind(kind);
     setSubSlotModalDraft("");
     setSubSlotModalOpen(true);
   };
 
   const submitSubSlotModal = async () => {
-    if (!subSlotModalFurnitureId || !selected) return;
+    if (!subSlotModalParentId || !selected) return;
     const name = subSlotModalDraft.trim();
     if (!name) {
       toast({
@@ -447,36 +301,34 @@ export function DashboardPlacementsSection({
       });
       return;
     }
+
+    const existingSlots =
+      subSlotModalParentKind === "furniture"
+        ? slotsUnderFurniture(subSlotModalParentId)
+        : slotsUnderAppliance(subSlotModalParentId);
+    const nextSort =
+      Math.max(0, ...existingSlots.map((s) => s.sortOrder ?? 0)) + 1;
+
     setIsSubmitting(true);
-    const ok = await handleAddFurnitureSlot(subSlotModalFurnitureId, name);
+    const created = await 보관장소를_추가_한다(selected.id, {
+      name,
+      roomId: null,
+      furniturePlacementId:
+        subSlotModalParentKind === "furniture" ? subSlotModalParentId : null,
+      applianceId:
+        subSlotModalParentKind === "appliance" ? subSlotModalParentId : null,
+      sortOrder: nextSort,
+    });
     setIsSubmitting(false);
-    if (!ok) return;
+    if (!created) return;
+    toast({ title: "보관 장소가 추가되었습니다", description: name });
     setSubSlotModalOpen(false);
     setSubSlotModalDraft("");
-    setSubSlotModalFurnitureId(null);
+    setSubSlotModalParentId(null);
   };
 
+  // ── 삭제 ──
   const requestDeleteStorage = (storageId: string) => {
-    const s = slots.find((x) => x.id === storageId);
-    if (!s) return;
-    const isRoomDirect =
-      Boolean(s.roomId) &&
-      (s.furniturePlacementId == null || s.furniturePlacementId === "");
-    if (isRoomDirect && s.roomId) {
-      const others = roomDirectSlots(s.roomId).filter(
-        (x) => x.id !== storageId,
-      );
-      const anchored = furnitureOnSlot(s.roomId, storageId);
-      if (anchored.length > 0 && others.length === 0) {
-        toast({
-          title: "이 보관 장소는 지금 삭제할 수 없습니다",
-          description:
-            "연결된 가구가 있습니다. 다른 직속 보관 장소를 먼저 만든 뒤 가구를 옮기거나 삭제하세요.",
-          variant: "warning",
-        });
-        return;
-      }
-    }
     setPendingDelete({ kind: "storage", id: storageId });
   };
 
@@ -492,12 +344,13 @@ export function DashboardPlacementsSection({
     toast({
       title: "가구가 삭제되었습니다",
       description: label
-        ? `「${label}」의 세부 보관 장소·재고도 함께 정리되었습니다.`
-        : "연결된 세부 보관 장소·재고도 함께 정리되었습니다.",
+        ? `「${label}」의 보관 장소·재고도 함께 정리되었습니다.`
+        : "연결된 보관 장소·재고도 함께 정리되었습니다.",
       variant: "success",
     });
   };
 
+  // ── 보관 장소 이름 수정 ──
   const submitRenameSlotModal = async () => {
     if (!renameSlotId || !selected) return;
     const name = renameSlotDraft.trim();
@@ -508,19 +361,17 @@ export function DashboardPlacementsSection({
     setIsSubmitting(true);
     await 보관장소_이름을_수정_한다(selected.id, renameSlotId, name);
     setIsSubmitting(false);
-    toast({ title: "보관 장소 이름을 수정했습니다", description: name, variant: "success" });
+    toast({
+      title: "보관 장소 이름을 수정했습니다",
+      description: name,
+      variant: "success",
+    });
     setRenameSlotModalOpen(false);
     setRenameSlotId(null);
     setRenameSlotDraft("");
   };
 
-  const reanchorModalFurniture = reanchorModalFurnitureId
-    ? placements.find((f) => f.id === reanchorModalFurnitureId)
-    : null;
-  const reanchorModalDirects = reanchorModalFurniture
-    ? roomDirectSlots(reanchorModalFurniture.roomId)
-    : [];
-
+  // ── 삭제 확인 설명 ──
   const pendingDescription = () => {
     if (!pendingDelete) return "";
     if (pendingDelete.kind === "storage") {
@@ -531,27 +382,49 @@ export function DashboardPlacementsSection({
     }
     const f = placements.find((x) => x.id === pendingDelete.id);
     return f
-      ? `「${f.label}」 가구를 삭제합니다. 그 아래 세부 보관 장소와 재고도 함께 제거됩니다.`
+      ? `「${f.label}」 가구를 삭제합니다. 그 아래 보관 장소와 재고도 함께 제거됩니다.`
       : "삭제하시겠습니까?";
   };
 
-  const directModalRoomName =
-    directSlotModalRoomId != null
-      ? (selected.rooms.find((r) => r.id === directSlotModalRoomId)?.name ?? "")
+  const placementModalRoomName =
+    placementModalRoomId != null
+      ? (selected.rooms.find((r) => r.id === placementModalRoomId)?.name ?? "")
       : "";
 
-  const furnitureModalRoomName =
-    furnitureModalRoomId != null
-      ? (selected.rooms.find((r) => r.id === furnitureModalRoomId)?.name ?? "")
-      : "";
-  const furnitureModalSlotName =
-    furnitureModalSlotId != null
-      ? (slots.find((s) => s.id === furnitureModalSlotId)?.name ?? "")
-      : "";
-  const subSlotModalFurnitureLabel =
-    subSlotModalFurnitureId != null
-      ? (placements.find((f) => f.id === subSlotModalFurnitureId)?.label ?? "")
-      : "";
+  const subSlotModalParentLabel = (() => {
+    if (!subSlotModalParentId) return "";
+    if (subSlotModalParentKind === "furniture") {
+      return placements.find((f) => f.id === subSlotModalParentId)?.label ?? "";
+    }
+    return (
+      allAppliances.find((a) => a.id === subSlotModalParentId)?.name ?? ""
+    );
+  })();
+
+  // ── 보증 상태 뱃지 ──
+  const warrantyBadge = (expiresOn?: string) => {
+    if (!expiresOn) {
+      return (
+        <span className="rounded-full bg-zinc-800 px-1.5 py-0.5 text-[10px] font-medium text-zinc-400">
+          보증 정보 없음
+        </span>
+      );
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    const isExpired = expiresOn < today;
+    return (
+      <span
+        className={cn(
+          "rounded-full px-1.5 py-0.5 text-[10px] font-medium",
+          isExpired
+            ? "bg-rose-950/50 text-rose-300"
+            : "bg-emerald-950/50 text-emerald-300",
+        )}
+      >
+        {isExpired ? "보증 만료" : `보증 ~${expiresOn}`}
+      </span>
+    );
+  };
 
   return (
     <div className="cursor-default rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
@@ -563,12 +436,11 @@ export function DashboardPlacementsSection({
       >
         <h2 className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-semibold text-white">
           <PlacementsFurnitureIcon />
-          가구 · 보관 장소
+          가구 · 가전 · 보관 장소
         </h2>
         <p className="mt-1 text-xs leading-relaxed text-zinc-300">
-          <span className="text-zinc-300">직속 보관 장소</span>마다 탭으로 나뉩니다.
-          탭을 고른 뒤 그 보관 장소에만 가구·세부 보관 장소를 추가하세요. 새 직속 보관 장소는「직속
-          보관 장소 추가하기」로 만듭니다.
+          방을 선택하면 가구와 가전을 등록하고, 각각의 하위 보관 장소를 관리할 수
+          있습니다.
         </p>
         <p className="mt-1.5 text-xs text-teal-500/75">
           이 제목 영역을 누르면 오른쪽「재고 추가」패널이 펼쳐집니다.
@@ -592,22 +464,8 @@ export function DashboardPlacementsSection({
       ) : (
         <ul className="mt-3 space-y-4">
           {visibleRooms.map((room) => {
-            const directs = roomDirectSlots(room.id);
-            const multiSlot = directs.length > 1;
-            const activeSlot =
-              resolvedDirectSlotId != null
-                ? directs.find((s) => s.id === resolvedDirectSlotId)
-                : undefined;
-            const fpsForSlot = activeSlot
-              ? furnitureOnSlot(room.id, activeSlot.id)
-              : [];
-            const focusedFurniture =
-              fpsForSlot.length === 0
-                ? null
-                : focusedFurnitureId != null &&
-                    fpsForSlot.some((f) => f.id === focusedFurnitureId)
-                  ? fpsForSlot.find((f) => f.id === focusedFurnitureId)!
-                  : fpsForSlot[0];
+            const fps = furnitureInRoom(room.id);
+            const appls = appliancesInRoom(room.id);
 
             return (
               <li key={room.id} className="rounded-xl">
@@ -615,454 +473,421 @@ export function DashboardPlacementsSection({
                   {room.name}
                 </h3>
 
-                {directs.length === 0 ? (
-                  <div className="mt-4 space-y-3">
-                    <p className="rounded-lg border border-dashed border-zinc-700/80 bg-zinc-900/30 px-3 py-4 text-center text-xs text-zinc-300">
-                      직속 보관 장소가 없습니다. 아래 버튼으로 첫 보관 장소를 만드세요.
-                    </p>
-                    <button
-                      type="button"
-                      className={`${btnAddDirectSlot} w-full sm:w-auto`}
-                      onClick={() => openDirectSlotModal(room.id)}
-                    >
-                      <PlusMiniIcon />
-                      직속 보관 장소 추가하기
-                    </button>
-                  </div>
+                {fps.length === 0 && appls.length === 0 ? (
+                  <p className="mt-3 rounded-lg border border-dashed border-zinc-700/80 bg-zinc-900/30 px-3 py-4 text-center text-xs text-zinc-300">
+                    이 방에 등록된 가구나 가전이 없습니다. 아래 버튼으로 추가하세요.
+                  </p>
                 ) : (
                   <>
-                    <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
-                      <div
-                        className="min-w-0 flex-1"
-                        role="tablist"
-                        aria-label="직속 보관 장소"
-                      >
-                        <div className="flex flex-wrap gap-1 border-b border-zinc-800 pb-px">
-                          {directs.map((s) => {
-                            const selectedTab = s.id === activeSlot?.id;
+                    {/* ── 탭바: 가구/가전 목록 ── */}
+                    <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+                      <div className="min-w-0 flex-1">
+                        <p className="mb-1.5 text-xs font-medium text-zinc-400">
+                          가구·가전 목록
+                        </p>
+                        <div
+                          className="flex flex-wrap gap-1.5"
+                          role="tablist"
+                          aria-label="가구·가전"
+                        >
+                          {fps.map((fp) => {
+                            const sel = selectedTabId === fp.id;
                             return (
-                              <div
-                                key={s.id}
+                              <button
+                                key={fp.id}
+                                type="button"
+                                role="tab"
+                                aria-selected={sel}
+                                data-testid={`furniture-tab-${fp.id}`}
+                                onClick={() => setSelectedTabId(sel ? null : fp.id)}
                                 className={cn(
-                                  "flex shrink-0 items-stretch overflow-hidden rounded-t-md border border-b-0",
-                                  selectedTab
-                                    ? "border-amber-500/40 bg-amber-950/30"
-                                    : "border-transparent hover:border-zinc-700/60",
+                                  "inline-flex max-w-full cursor-pointer items-center gap-1.5 truncate rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
+                                  sel
+                                    ? "border-teal-500/50 bg-teal-950/40 text-teal-100"
+                                    : "border-zinc-700 bg-zinc-950/80 text-zinc-300 hover:border-zinc-600 hover:text-zinc-200",
                                 )}
                               >
-                                <button
-                                  type="button"
-                                  role="tab"
-                                  aria-selected={selectedTab}
-                                  className={cn(
-                                    "cursor-pointer px-2 py-1.5 text-left text-xs font-medium transition-colors",
-                                    selectedTab
-                                      ? "text-amber-100"
-                                      : "text-zinc-300 hover:bg-zinc-800/40 hover:text-zinc-300",
-                                  )}
-                                  onClick={() => setUserDirectSlotPick(s.id)}
-                                >
-                                  <span className="whitespace-nowrap">
-                                    {s.name}
-                                  </span>
-                                </button>
-                                <button
-                                  type="button"
-                                  className={cn(
-                                    "relative z-10 flex cursor-pointer items-center justify-center p-1.5 transition-colors",
-                                    selectedTab
-                                      ? "text-amber-200/60 hover:bg-amber-500/15 hover:text-amber-100"
-                                      : "text-zinc-500 hover:bg-zinc-800/70 hover:text-zinc-200",
-                                  )}
-                                  title="이름 수정"
-                                  aria-label={`「${s.name}」 직속 보관 장소 이름 수정`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setRenameSlotId(s.id);
-                                    setRenameSlotDraft(s.name);
-                                    setRenameSlotModalOpen(true);
-                                  }}
-                                >
-                                  <PencilMiniIcon />
-                                </button>
-                                <button
-                                  type="button"
-                                  className={cn(
-                                    "relative z-10 flex cursor-pointer items-center justify-center p-1.5 transition-colors",
-                                    selectedTab
-                                      ? "text-amber-200/75 hover:bg-rose-500/20 hover:text-rose-300"
-                                      : "text-zinc-300 hover:bg-zinc-800/70 hover:text-rose-300",
-                                  )}
-                                  title="이 직속 보관 장소와 여기에만 묶인 설정을 삭제합니다"
-                                  aria-label={`「${s.name}」 직속 보관 장소 삭제`}
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    requestDeleteStorage(s.id);
-                                  }}
-                                >
-                                  <TrashIcon />
-                                </button>
-                              </div>
+                                <PlacementsFurnitureIcon className="size-3" />
+                                {fp.label}
+                              </button>
+                            );
+                          })}
+                          {appls.map((appl) => {
+                            const sel = selectedTabId === appl.id;
+                            return (
+                              <button
+                                key={appl.id}
+                                type="button"
+                                role="tab"
+                                aria-selected={sel}
+                                data-testid={`appliance-tab-${appl.id}`}
+                                onClick={() => setSelectedTabId(sel ? null : appl.id)}
+                                className={cn(
+                                  "inline-flex max-w-full cursor-pointer items-center gap-1.5 truncate rounded-full border px-2.5 py-1 text-xs font-medium transition-colors",
+                                  sel
+                                    ? "border-sky-500/50 bg-sky-950/40 text-sky-100"
+                                    : "border-zinc-700 bg-zinc-950/80 text-zinc-300 hover:border-zinc-600 hover:text-zinc-200",
+                                )}
+                              >
+                                <ApplianceIcon className="size-3" />
+                                {appl.name}
+                              </button>
                             );
                           })}
                         </div>
                       </div>
-                      <button
-                        type="button"
-                        className={`${btnAddDirectSlot} shrink-0 self-stretch sm:self-auto`}
-                        onClick={() => openDirectSlotModal(room.id)}
-                      >
-                        <PlusMiniIcon />
-                        직속 보관 장소 추가하기
-                      </button>
                     </div>
 
-                    {activeSlot ? (
-                      <div
-                        className="mt-3 rounded-lg border border-amber-500/30 bg-zinc-900/40 p-3"
-                        role="tabpanel"
-                        aria-labelledby={`tab-${activeSlot.id}`}
-                      >
-                        <div className="border-b border-amber-500/20 pb-2">
-                          <p className="text-xs font-medium text-amber-200/85">
-                            현재 직속 보관 장소
-                          </p>
-                          <p
-                            id={`tab-${activeSlot.id}`}
-                            className="text-sm font-semibold text-zinc-100"
+                    {/* ── 선택된 탭 상세 패널 ── */}
+                    {(() => {
+                      const selFp = fps.find((f) => f.id === selectedTabId);
+                      const selAppl = appls.find((a) => a.id === selectedTabId);
+
+                      if (selFp) {
+                        const subSlots = slotsUnderFurniture(selFp.id);
+                        return (
+                          <div
+                            className="mt-3 rounded-lg border border-teal-500/30 bg-zinc-900/40 p-3"
+                            role="tabpanel"
+                            data-testid={`furniture-panel-${selFp.id}`}
                           >
-                            {activeSlot.name}
-                          </p>
-                        </div>
-
-                        <div className="mt-3">
-                          <p className="text-xs text-zinc-300">
-                            이 직속 보관 장소에 붙은 가구는 아래 뱃지로 고르면 한 번에
-                            하나의 상세만 펼쳐집니다.
-                          </p>
-
-                          <div className="mt-2 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between sm:gap-3">
-                            <div className="min-w-0 flex-1 space-y-2">
-                              <p className="text-xs font-medium text-zinc-300">
-                                「{activeSlot.name}」에 가구 연결
-                              </p>
-                              {fpsForSlot.length === 0 ? (
-                                <p className="rounded-md bg-zinc-950/40 px-2 py-1.5 text-xs text-zinc-300">
-                                  아직 가구가 없습니다.
-                                </p>
-                              ) : (
-                                <div
-                                  className="flex flex-wrap gap-1.5"
-                                  role="tablist"
-                                  aria-label="이 직속 보관 장소의 가구"
-                                >
-                                  {fpsForSlot.map((fp) => {
-                                    const sel = focusedFurniture?.id === fp.id;
-                                    return (
-                                      <button
-                                        key={fp.id}
-                                        type="button"
-                                        role="tab"
-                                        aria-selected={sel}
-                                        onClick={() =>
-                                          setFocusedFurnitureId(fp.id)
-                                        }
-                                        className={cn(
-                                          "max-w-full cursor-pointer truncate rounded-full border px-2 py-0.5 text-xs font-medium transition-colors",
-                                          sel
-                                            ? "border-teal-500/50 bg-teal-950/40 text-teal-100"
-                                            : "border-zinc-700 bg-zinc-950/80 text-zinc-300 hover:border-zinc-600 hover:text-zinc-200",
-                                        )}
-                                      >
-                                        {fp.label}
-                                      </button>
-                                    );
-                                  })}
+                            <div className="flex items-start justify-between gap-2 border-b border-teal-500/20 pb-2">
+                              <div>
+                                <div className="flex items-center gap-1.5">
+                                  <PlacementsFurnitureIcon className="size-3.5" />
+                                  <p className="text-sm font-semibold text-zinc-100">
+                                    {selFp.label}
+                                  </p>
                                 </div>
-                              )}
+                                <p className="mt-0.5 text-[10px] text-zinc-500">
+                                  {subSlots.length}개 보관 장소
+                                </p>
+                              </div>
+                              <button
+                                type="button"
+                                className={`${btnDangerIcon} shrink-0`}
+                                title="이 가구와 그 아래 보관 장소·재고를 삭제합니다"
+                                aria-label={`「${selFp.label}」 가구 삭제`}
+                                onClick={() =>
+                                  setPendingDelete({ kind: "furniture", id: selFp.id })
+                                }
+                              >
+                                <TrashIcon />
+                              </button>
                             </div>
-                            <button
-                              type="button"
-                              className={`${btnAdd} shrink-0 self-start sm:self-end`}
-                              onClick={() =>
-                                openFurnitureModal(room.id, activeSlot.id)
-                              }
-                            >
-                              <PlusMiniIcon />
-                              가구 추가
-                            </button>
-                          </div>
-
-                          {fpsForSlot.length > 0 && focusedFurniture ? (
-                            <ul className="mt-3 space-y-3">
-                                  <li
-                                    key={focusedFurniture.id}
-                                    className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-2.5"
-                                  >
-                                    <div className="flex flex-wrap items-start justify-between gap-2">
-                                      <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
-                                        <p className="text-xs font-semibold text-zinc-100">
-                                          {focusedFurniture.label}
-                                        </p>
-                                        {multiSlot ? (
-                                          <button
-                                            type="button"
-                                            className={`${btnAdd} shrink-0`}
-                                            onClick={() =>
-                                              openReanchorModal(
-                                                focusedFurniture.id,
-                                              )
-                                            }
-                                          >
-                                            <ArrowsRightLeftMiniIcon />
-                                            다른 직속 보관 장소로 옮기기
-                                          </button>
-                                        ) : null}
-                                      </div>
-                                      <button
-                                        type="button"
-                                        className={`${btnDangerIcon} shrink-0`}
-                                        title="이 가구와 그 아래 세부 보관 장소·재고를 삭제합니다"
-                                        aria-label={`「${focusedFurniture.label}」 가구 삭제`}
-                                        onClick={() =>
-                                          setPendingDelete({
-                                            kind: "furniture",
-                                            id: focusedFurniture.id,
-                                          })
-                                        }
-                                      >
-                                        <TrashIcon />
-                                      </button>
-                                    </div>
-
-                                    <div className="mt-2 border-t border-zinc-800/70 pt-2">
-                                      <p className="text-xs text-zinc-300">
-                                        <span className="text-zinc-300">
-                                          재고 등록
-                                        </span>
-                                        시{" "}
-                                        <span className="text-zinc-300">
-                                          여기서 만든 보관 장소
-                                        </span>
-                                        까지 고를 수 있습니다.
-                                      </p>
-                                      <ul className="mt-2 space-y-1">
-                                        {slotsUnderFurniture(
-                                          focusedFurniture.id,
-                                        ).length === 0 ? (
-                                          <li className="text-xs text-zinc-300">
-                                            세부 보관 장소가 없습니다.
-                                          </li>
-                                        ) : (
-                                          slotsUnderFurniture(
-                                            focusedFurniture.id,
-                                          ).map((s) => (
-                                            <li
-                                              key={s.id}
-                                              className="flex items-center justify-between gap-2 rounded-md bg-zinc-900/80 px-2 py-1 text-xs text-zinc-300"
-                                            >
-                                              <span>{s.name}</span>
-                                              <div className="flex shrink-0 items-center gap-1">
-                                                <button
-                                                  type="button"
-                                                  className="inline-flex cursor-pointer items-center justify-center rounded-md border border-zinc-700/50 p-1.5 text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200"
-                                                  title="이름 수정"
-                                                  aria-label={`「${s.name}」 세부 보관 장소 이름 수정`}
-                                                  onClick={() => {
-                                                    setRenameSlotId(s.id);
-                                                    setRenameSlotDraft(s.name);
-                                                    setRenameSlotModalOpen(true);
-                                                  }}
-                                                >
-                                                  <PencilMiniIcon />
-                                                </button>
-                                                <button
-                                                  type="button"
-                                                  className={`${btnDangerIcon} shrink-0`}
-                                                  title="이 세부 보관 장소와 여기에만 묶인 재고를 삭제합니다"
-                                                  aria-label={`「${s.name}」 세부 보관 장소 삭제`}
-                                                  onClick={() =>
-                                                    requestDeleteStorage(s.id)
-                                                  }
-                                                >
-                                                  <TrashIcon />
-                                                </button>
-                                              </div>
-                                            </li>
-                                          ))
-                                        )}
-                                      </ul>
-                                      <div className="mt-1.5">
+                            <div className="mt-2">
+                              <ul className="space-y-1">
+                                {subSlots.length === 0 ? (
+                                  <li className="text-xs text-zinc-300">
+                                    보관 장소가 없습니다.
+                                  </li>
+                                ) : (
+                                  subSlots.map((s) => (
+                                    <li
+                                      key={s.id}
+                                      className="flex items-center justify-between gap-2 rounded-md bg-zinc-900/80 px-2 py-1 text-xs text-zinc-300"
+                                    >
+                                      <span>{s.name}</span>
+                                      <div className="flex shrink-0 items-center gap-1">
                                         <button
                                           type="button"
-                                          className={`${btnAdd} w-full sm:w-auto`}
-                                          onClick={() =>
-                                            openSubSlotModal(
-                                              focusedFurniture.id,
-                                            )
-                                          }
+                                          className="inline-flex cursor-pointer items-center justify-center rounded-md border border-zinc-700/50 p-1.5 text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200"
+                                          title="이름 수정"
+                                          onClick={() => {
+                                            setRenameSlotId(s.id);
+                                            setRenameSlotDraft(s.name);
+                                            setRenameSlotModalOpen(true);
+                                          }}
                                         >
-                                          <PlusMiniIcon />
-                                          세부 보관 장소 추가
+                                          <PencilMiniIcon />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className={`${btnDangerIcon} shrink-0`}
+                                          title="삭제"
+                                          onClick={() => requestDeleteStorage(s.id)}
+                                        >
+                                          <TrashIcon />
                                         </button>
                                       </div>
-                                    </div>
+                                    </li>
+                                  ))
+                                )}
+                              </ul>
+                              <div className="mt-1.5">
+                                <button
+                                  type="button"
+                                  className={`${btnAdd} w-full sm:w-auto`}
+                                  onClick={() => openSubSlotModal(selFp.id, "furniture")}
+                                >
+                                  <PlusMiniIcon />
+                                  보관 장소 추가
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      if (selAppl) {
+                        const subSlots = slotsUnderAppliance(selAppl.id);
+                        return (
+                          <div
+                            className="mt-3 rounded-lg border border-sky-500/30 bg-zinc-900/40 p-3"
+                            role="tabpanel"
+                            data-testid={`appliance-panel-${selAppl.id}`}
+                          >
+                            <div className="flex items-start justify-between gap-2 border-b border-sky-500/20 pb-2">
+                              <div>
+                                <div className="flex items-center gap-1.5">
+                                  <ApplianceIcon className="size-3.5" />
+                                  <p className="text-sm font-semibold text-zinc-100">
+                                    {selAppl.name}
+                                  </p>
+                                </div>
+                                <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                                  {selAppl.brand && (
+                                    <span className="text-[10px] text-zinc-500">
+                                      {selAppl.brand}
+                                      {selAppl.modelName ? ` · ${selAppl.modelName}` : ""}
+                                    </span>
+                                  )}
+                                  {warrantyBadge(selAppl.warrantyExpiresOn)}
+                                  <span className="text-[10px] text-zinc-500">
+                                    {subSlots.length}개 보관 장소
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="mt-2">
+                              <ul className="space-y-1">
+                                {subSlots.length === 0 ? (
+                                  <li className="text-xs text-zinc-300">
+                                    보관 장소가 없습니다.
                                   </li>
-                                </ul>
-                          ) : null}
-                        </div>
-                      </div>
-                    ) : null}
+                                ) : (
+                                  subSlots.map((s) => (
+                                    <li
+                                      key={s.id}
+                                      className="flex items-center justify-between gap-2 rounded-md bg-zinc-900/80 px-2 py-1 text-xs text-zinc-300"
+                                    >
+                                      <span>{s.name}</span>
+                                      <div className="flex shrink-0 items-center gap-1">
+                                        <button
+                                          type="button"
+                                          className="inline-flex cursor-pointer items-center justify-center rounded-md border border-zinc-700/50 p-1.5 text-zinc-400 hover:bg-zinc-800/60 hover:text-zinc-200"
+                                          title="이름 수정"
+                                          onClick={() => {
+                                            setRenameSlotId(s.id);
+                                            setRenameSlotDraft(s.name);
+                                            setRenameSlotModalOpen(true);
+                                          }}
+                                        >
+                                          <PencilMiniIcon />
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className={`${btnDangerIcon} shrink-0`}
+                                          title="삭제"
+                                          onClick={() => requestDeleteStorage(s.id)}
+                                        >
+                                          <TrashIcon />
+                                        </button>
+                                      </div>
+                                    </li>
+                                  ))
+                                )}
+                              </ul>
+                              <div className="mt-1.5">
+                                <button
+                                  type="button"
+                                  className={`${btnAdd} w-full sm:w-auto`}
+                                  onClick={() => openSubSlotModal(selAppl.id, "appliance")}
+                                >
+                                  <PlusMiniIcon />
+                                  보관 장소 추가
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      return null;
+                    })()}
                   </>
                 )}
+
+                {/* ── 위치 추가 (가구/가전 통합) 버튼 ── */}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    className={`${btnAdd}`}
+                    data-testid="add-placement-btn"
+                    onClick={() => openPlacementModal(room.id)}
+                  >
+                    <PlusMiniIcon />
+                    위치 추가
+                  </button>
+                </div>
               </li>
             );
           })}
         </ul>
       )}
 
+      {/* ── 위치 추가 (가구/가전 통합) 모달 ── */}
       <FormModal
-        open={directSlotModalOpen}
+        open={placementModalOpen}
         onOpenChange={(open) => {
-          setDirectSlotModalOpen(open);
+          setPlacementModalOpen(open);
           if (!open) {
-            setDirectSlotModalDraft("");
-            setDirectSlotModalRoomId(null);
+            setPlacementNameDraft("");
+            setPlacementBrandDraft("");
+            setPlacementModelDraft("");
+            setPlacementModalRoomId(null);
           }
         }}
-        title="직속 보관 장소 추가"
+        title="위치 추가"
         description={
-          directModalRoomName
-            ? `「${directModalRoomName}」에 붙는 보관 블록 이름을 정합니다. (예: 냉장고, 벽면장)`
-            : "보관 블록 이름을 정합니다."
+          placementModalRoomName
+            ? `「${placementModalRoomName}」에 추가할 항목 유형과 이름을 입력합니다.`
+            : "항목 유형과 이름을 입력합니다."
         }
         submitLabel="추가"
         cancelLabel="취소"
-        submitDisabled={!directSlotModalDraft.trim() || isSubmitting}
-        onSubmit={() => { void submitDirectSlotModal(); }}
-      >
-        <label className="block text-xs font-medium text-zinc-300">
-          보관 장소 이름
-        </label>
-        <input
-          value={directSlotModalDraft}
-          onChange={(e) => setDirectSlotModalDraft(e.target.value)}
-          placeholder="예: 냉장고, 벽면장"
-          className={`${inputClass} mt-1`}
-          autoFocus
-        />
-      </FormModal>
-
-      <FormModal
-        open={furnitureModalOpen}
-        onOpenChange={(open) => {
-          setFurnitureModalOpen(open);
-          if (!open) {
-            setFurnitureModalDraft("");
-            setFurnitureModalRoomId(null);
-            setFurnitureModalSlotId(null);
-          }
+        submitDisabled={!placementNameDraft.trim() || isSubmitting}
+        onSubmit={() => {
+          void submitPlacementModal();
         }}
-        title="가구 연결"
-        description={
-          furnitureModalRoomName && furnitureModalSlotName
-            ? `「${furnitureModalRoomName}」의 직속 보관 장소「${furnitureModalSlotName}」에 붙일 가구 이름을 정합니다.`
-            : "직속 보관 장소에 붙일 가구 이름을 입력합니다."
-        }
-        submitLabel="추가"
-        cancelLabel="취소"
-        submitDisabled={!furnitureModalDraft.trim() || isSubmitting}
-        onSubmit={() => { void submitFurnitureModal(); }}
       >
+        <div data-testid="add-placement-modal" />
+        {/* ── 유형 선택 ── */}
+        <fieldset className="mb-3">
+          <legend className="mb-1.5 block text-xs font-medium text-zinc-300">
+            유형
+          </legend>
+          <div className="flex gap-3">
+            <label
+              className={cn(
+                "inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors",
+                placementType === "furniture"
+                  ? "border-teal-500 bg-teal-950/50 text-teal-100"
+                  : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600",
+              )}
+            >
+              <input
+                type="radio"
+                name="placement-type"
+                value="furniture"
+                checked={placementType === "furniture"}
+                onChange={() => setPlacementType("furniture")}
+                className="sr-only"
+                data-testid="placement-type-furniture"
+              />
+              <PlacementsFurnitureIcon className="size-3.5" />
+              가구
+            </label>
+            <label
+              className={cn(
+                "inline-flex cursor-pointer items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors",
+                placementType === "appliance"
+                  ? "border-cyan-500 bg-cyan-950/50 text-cyan-100"
+                  : "border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600",
+              )}
+            >
+              <input
+                type="radio"
+                name="placement-type"
+                value="appliance"
+                checked={placementType === "appliance"}
+                onChange={() => setPlacementType("appliance")}
+                className="sr-only"
+                data-testid="placement-type-appliance"
+              />
+              <ApplianceIcon className="size-3.5" />
+              가전
+            </label>
+          </div>
+        </fieldset>
+
+        {/* ── 이름 ── */}
         <label className="block text-xs font-medium text-zinc-300">
-          가구 이름
+          {placementType === "furniture" ? "가구 이름" : "가전 이름"}
         </label>
         <input
-          value={furnitureModalDraft}
-          onChange={(e) => setFurnitureModalDraft(e.target.value)}
-          placeholder="예: 주방 선반"
+          value={placementNameDraft}
+          onChange={(e) => setPlacementNameDraft(e.target.value)}
+          placeholder={
+            placementType === "furniture"
+              ? "예: 주방 선반, 옷장"
+              : "예: 드럼세탁기, 냉장고"
+          }
           className={`${inputClass} mt-1`}
           autoFocus
         />
+
+        {/* ── 가전 전용 필드 ── */}
+        {placementType === "appliance" && (
+          <>
+            <label className="mt-3 block text-xs font-medium text-zinc-300">
+              브랜드 <span className="text-zinc-500">(선택)</span>
+            </label>
+            <input
+              value={placementBrandDraft}
+              onChange={(e) => setPlacementBrandDraft(e.target.value)}
+              placeholder="예: LG, Samsung"
+              className={`${inputClass} mt-1`}
+            />
+            <label className="mt-3 block text-xs font-medium text-zinc-300">
+              모델명 <span className="text-zinc-500">(선택)</span>
+            </label>
+            <input
+              value={placementModelDraft}
+              onChange={(e) => setPlacementModelDraft(e.target.value)}
+              placeholder="예: FX24KN"
+              className={`${inputClass} mt-1`}
+            />
+          </>
+        )}
       </FormModal>
 
+      {/* ── 보관 장소 추가 모달 ── */}
       <FormModal
         open={subSlotModalOpen}
         onOpenChange={(open) => {
           setSubSlotModalOpen(open);
           if (!open) {
             setSubSlotModalDraft("");
-            setSubSlotModalFurnitureId(null);
+            setSubSlotModalParentId(null);
           }
         }}
-        title="세부 보관 장소 추가"
+        title="보관 장소 추가"
         description={
-          subSlotModalFurnitureLabel
-            ? `「${subSlotModalFurnitureLabel}」 아래에 나눌 보관 장소 이름을 정합니다.`
-            : "가구 아래 세부 보관 장소 이름을 입력합니다."
+          subSlotModalParentLabel
+            ? `「${subSlotModalParentLabel}」 아래에 보관 장소 이름을 정합니다.`
+            : "보관 장소 이름을 입력합니다."
         }
         submitLabel="추가"
         cancelLabel="취소"
         submitDisabled={!subSlotModalDraft.trim() || isSubmitting}
-        onSubmit={() => { void submitSubSlotModal(); }}
+        onSubmit={() => {
+          void submitSubSlotModal();
+        }}
       >
         <label className="block text-xs font-medium text-zinc-300">
-          세부 보관 장소 이름
+          보관 장소 이름
         </label>
         <input
           value={subSlotModalDraft}
           onChange={(e) => setSubSlotModalDraft(e.target.value)}
-          placeholder="예: 서랍 왼쪽"
+          placeholder="예: 서랍 왼쪽, 냉동실 1칸"
           className={`${inputClass} mt-1`}
           autoFocus
         />
       </FormModal>
 
-      <FormModal
-        open={reanchorModalOpen}
-        onOpenChange={(open) => {
-          setReanchorModalOpen(open);
-          if (!open) {
-            setReanchorModalFurnitureId(null);
-            setReanchorModalTargetSlotId("");
-          }
-        }}
-        title="다른 직속 보관 장소로 옮기기"
-        description={
-          reanchorModalFurniture
-            ? `「${reanchorModalFurniture.label}」가 붙어 있는 직속 보관 장소를 바꿉니다.`
-            : "가구가 연결될 직속 보관 장소를 고릅니다."
-        }
-        submitLabel="옮기기"
-        cancelLabel="취소"
-        submitDisabled={
-          !reanchorModalTargetSlotId ||
-          (reanchorModalFurniture != null &&
-            reanchorModalTargetSlotId ===
-              (reanchorModalFurniture.anchorDirectStorageId ?? ""))
-        }
-        onSubmit={submitReanchorModal}
-      >
-        <label
-          className="block text-xs font-medium text-zinc-300"
-          htmlFor="reanchor-modal-slot"
-        >
-          옮길 직속 보관 장소
-        </label>
-        <select
-          id="reanchor-modal-slot"
-          className={`${selectClass} mt-1`}
-          value={reanchorModalTargetSlotId}
-          onChange={(e) => setReanchorModalTargetSlotId(e.target.value)}
-        >
-          {reanchorModalDirects.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
-          ))}
-        </select>
-      </FormModal>
-
+      {/* ── 보관 장소 이름 수정 모달 ── */}
       <FormModal
         open={renameSlotModalOpen}
         onOpenChange={(open) => {
@@ -1081,7 +906,9 @@ export function DashboardPlacementsSection({
         submitLabel="수정"
         cancelLabel="취소"
         submitDisabled={!renameSlotDraft.trim() || isSubmitting}
-        onSubmit={() => { void submitRenameSlotModal(); }}
+        onSubmit={() => {
+          void submitRenameSlotModal();
+        }}
       >
         <label className="block text-xs font-medium text-zinc-300">
           새 이름
@@ -1094,6 +921,7 @@ export function DashboardPlacementsSection({
         />
       </FormModal>
 
+      {/* ── 삭제 확인 모달 ── */}
       <AlertModal
         open={pendingDelete !== null}
         onOpenChange={(open) => {

@@ -1,6 +1,11 @@
 # 엔티티 논리적 설계 v2 (ERD·구현용)
 
-**버전**: v2.7 — Appliance·MaintenanceSchedule·MaintenanceLog 신규 테이블 추가 (2026-04-03)
+**버전**: v2.8 — 직속 보관 장소 계층 제거, FurniturePlacement/Appliance가 Room 직속 하위, StorageLocation.applianceId 추가 (2026-04-04)
+
+**v2.8 변경**:
+- 직속 보관 장소 계층 제거, FurniturePlacement/Appliance가 Room 직속 하위로 변경
+- StorageLocation.applianceId (nullable FK) 추가 — 가전 하위 보관 장소 (필터·소모품 등)
+- FurniturePlacement.anchorDirectStorageId deprecated (직속 보관 장소 계층 제거로 미사용)
 
 **v2.7 변경**:
 - Appliance, MaintenanceSchedule, MaintenanceLog 신규 테이블 추가 (가전/설비 관리)
@@ -109,6 +114,7 @@ erDiagram
     User ||--o{ Appliance : "userId"
     Appliance ||--o{ MaintenanceSchedule : "applianceId"
     Appliance ||--o{ MaintenanceLog : "applianceId"
+    Appliance ||--o{ StorageLocation : "applianceId"
     MaintenanceSchedule ||--o{ MaintenanceLog : "maintenanceScheduleId"
     HouseholdMember ||--o{ MaintenanceLog : "householdMemberId"
 ```
@@ -617,7 +623,7 @@ PUT    /api/household-kind-definitions         — 유형 목록 전체 교체 (
 | **필수** | label                      | string                               | "책상", "침대 옆 협탁" 등                                          |
 | **선택** | productId                  | FK → Product, nullable               | 가구 **종류**를 마스터와 연결할 때                                  |
 | **선택** | productVariantId           | FK → ProductVariant, nullable        | 모델·규격까지 연결할 때                                            |
-| **v2**   | **anchorDirectStorageId**  | FK → StorageLocation, nullable       | **대표 보관 슬롯** (UI 앵커링용)                                   |
+| **v2**   | **anchorDirectStorageId**  | FK → StorageLocation, nullable       | **대표 보관 슬롯** (UI 앵커링용) **(v2.8: deprecated, 직속 보관 장소 계층 제거로 미사용)** |
 | **선택** | sortOrder                  | int                                  | 방 안에서 가구 나열 순서                                           |
 | **선택** | placementPayload           | jsonb, nullable                      | 3D 위치·회전 등                                                    |
 | **선택** | createdAt, updatedAt       | timestamp                            | —                                                                    |
@@ -635,12 +641,13 @@ PUT    /api/household-kind-definitions         — 유형 목록 전체 교체 (
 | **필수** | name                    | string                        | "책상 서랍 왼쪽", "냉장고 문쪽", "선반 2단"                                                  |
 | **선택** | roomId                  | FK → Room, nullable           | **방 직속** 보관                                                                             |
 | **선택** | furniturePlacementId    | FK → FurniturePlacement, nullable | **특정 가구** 위·안의 칸                                                                  |
+| **v2.8** | **applianceId**         | FK → Appliance, nullable      | 가전 하위 보관 장소 (필터·소모품 등)                                                      |
 | **선택** | houseStructureId        | FK → HouseStructure, nullable | **레거시** 마이그레이션용                                                                    |
 | **선택** | legacyRoomKey           | string, nullable              | **레거시**: Room 도입 후 roomId FK로 이전 권장                                               |
 | **선택** | sortOrder               | int                           | —                                                                                            |
 | **선택** | createdAt, updatedAt    | timestamp                     | —                                                                                            |
 
-**관계**: Household (N:1), Room (선택 N:1), FurniturePlacement (선택 N:1), InventoryItem (1:N)
+**관계**: Household (N:1), Room (선택 N:1), FurniturePlacement (선택 N:1), Appliance (선택 N:1, v2.8), InventoryItem (1:N)
 
 ---
 
@@ -946,7 +953,7 @@ PUT    /api/household-kind-definitions         — 유형 목록 전체 교체 (
 | **선택** | memo                          | text, nullable               | —                                                |
 | **필수** | createdAt, updatedAt          | timestamp                    | —                                                |
 
-**관계**: Household (N:1), Room (N:1, 선택), User (N:1)
+**관계**: Household (N:1), Room (N:1, 선택), User (N:1), StorageLocation (1:N, 가전 하위 보관 장소, v2.8)
 
 ### 식별·제약 (권장)
 
@@ -1048,6 +1055,9 @@ interface RecurrenceRule {
 | **v2.7 추가** | Appliance (§20) | 신규 테이블. 가전/설비 등록 — InventoryItem과 별도 (장기 자산 vs 소모품) |
 | **v2.7 추가** | MaintenanceSchedule (§21) | 신규 테이블. 가전 유지보수 반복 스케줄 (recurrenceRule JSONB) |
 | **v2.7 추가** | MaintenanceLog (§22) | 신규 테이블. 가전 유지보수·A/S 이력 (정기+비정기 통합) |
+| **v2.8 추가** | StorageLocation.applianceId | FK → Appliance, nullable. 가전 하위 보관 장소 (필터·소모품 등) |
+| **v2.8 deprecated** | FurniturePlacement.anchorDirectStorageId | 직속 보관 장소 계층 제거로 미사용 |
+| **v2.8 변경** | 계층 구조 | 직속 보관 장소 계층 제거, FurniturePlacement/Appliance가 Room 직속 하위로 변경 |
 
 ### 정합성 제약 (v2.1 — 카탈로그 Household-scoped)
 

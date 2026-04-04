@@ -3,6 +3,7 @@ import { BaseEntity } from '../common/base.entity';
 import { Household } from '../household/household.entity';
 import { Room } from '../room/room.entity';
 import { FurniturePlacement } from '../furniture-placement/furniture-placement.entity';
+import { Appliance } from '../appliance/appliance.entity';
 
 @Entity('storage_locations')
 export class StorageLocation extends BaseEntity {
@@ -32,6 +33,13 @@ export class StorageLocation extends BaseEntity {
   })
   @JoinColumn({ name: 'furniturePlacementId' })
   furniturePlacement: FurniturePlacement | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  applianceId: string | null;
+
+  @ManyToOne(() => Appliance, { onDelete: 'SET NULL', nullable: true })
+  @JoinColumn({ name: 'applianceId' })
+  appliance: Appliance | null;
 
   @Column({ type: 'int', default: 0 })
   sortOrder: number;

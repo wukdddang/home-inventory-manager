@@ -2,6 +2,7 @@
 
 import { PromptModal } from "@/app/_ui/prompt-modal";
 import type { Household, HouseholdStructureDiagramLayout } from "@/types/domain";
+import { getMockAppliancesSession } from "../../../appliances/_context/appliances-mock.service";
 import {
   Background,
   BackgroundVariant,
@@ -42,12 +43,13 @@ type StructureRoomData = {
   lowStockCount: number;
 };
 
-/** 방 직속 보관 장소 1개 = 노드 1개 */
-type DirectSlotData = {
-  kind: "directSlot";
+type ApplianceNodeData = {
+  kind: "appliance";
   roomId: string;
-  storageSlotId: string;
+  applianceId: string;
   label: string;
+  brand?: string;
+  modelName?: string;
 };
 
 type FurniturePlacementData = {
@@ -60,7 +62,7 @@ type FurniturePlacementData = {
 
 type StructureNodeData =
   | StructureRoomData
-  | DirectSlotData
+  | ApplianceNodeData
   | FurniturePlacementData;
 
 const edgeDefaults = {
@@ -101,31 +103,32 @@ const StructureRoomNode = memo(function StructureRoomNode({
   );
 });
 
-const DirectSlotNode = memo(function DirectSlotNode({
+const ApplianceNode = memo(function ApplianceNode({
   data,
-}: NodeProps<Node<DirectSlotData>>) {
+}: NodeProps<Node<ApplianceNodeData>>) {
   return (
     <div
       title="드래그해 배치 · 클릭하면 이 방이 선택됩니다"
-      className="relative flex h-full w-full cursor-grab flex-col justify-center overflow-hidden rounded-lg border border-amber-500/40 bg-zinc-900/95 px-2 py-1.5 text-left active:cursor-grabbing"
+      className="relative flex h-full w-full cursor-grab flex-col justify-center overflow-hidden rounded-lg border border-cyan-500/40 bg-zinc-900/95 px-2 py-1.5 text-left active:cursor-grabbing"
     >
       <Handle
         type="target"
         position={Position.Left}
-        className="size-2! border-none! bg-amber-500/70!"
+        className="size-2! border-none! bg-cyan-500/70!"
       />
-      <Handle
-        type="source"
-        position={Position.Right}
-        className="size-2! border-none! bg-amber-500/70!"
-      />
-      <p className="text-xs font-normal text-amber-200/60">직속 보관</p>
+      <p className="text-xs font-normal text-cyan-200/60">가전</p>
       <p
-        className="mt-0.5 truncate text-xs font-medium text-amber-100/95"
+        className="mt-0.5 truncate text-xs font-medium text-cyan-100/95"
         title={data.label}
       >
         {data.label}
       </p>
+      {data.brand && (
+        <p className="truncate text-[10px] text-cyan-300/50" title={data.brand}>
+          {data.brand}
+          {data.modelName ? ` · ${data.modelName}` : ""}
+        </p>
+      )}
     </div>
   );
 });
@@ -174,28 +177,27 @@ const FurniturePlacementNode = memo(function FurniturePlacementNode({
 
 const nodeTypes = {
   structureRoom: StructureRoomNode,
-  directSlot: DirectSlotNode,
+  appliance: ApplianceNode,
   furniturePlacement: FurniturePlacementNode,
 } satisfies NodeTypes;
 
 const ROOM_NODE_H = 56;
 const GAP_X = 28;
-const SLOT_W = 148;
-const SLOT_H = 56;
+const APPLIANCE_W = 160;
+const APPLIANCE_H = 56;
 const FURNITURE_W = 172;
 const FURN_HEADER = 28;
 const FURN_ROW = 16;
 const FURN_PAD = 12;
 const FURN_GAP_Y = 14;
-const GROUP_GAP_Y = 18;
 
 function estimateFurnitureHeight(slotCount: number): number {
   const body = slotCount === 0 ? 28 : slotCount * FURN_ROW + FURN_PAD;
   return FURN_HEADER + body;
 }
 
-function slotLayoutKey(slotId: string) {
-  return `slot:${slotId}`;
+function applianceLayoutKey(applianceId: string) {
+  return `appl:${applianceId}`;
 }
 
 function fpLayoutKey(furnitureId: string) {
@@ -214,7 +216,6 @@ function readLayoutPos(
 type FurnPrepared = {
   id: string;
   label: string;
-  anchorDirectStorageId?: string | null;
   slots: SlotMini[];
 };
 
@@ -225,6 +226,7 @@ function buildStructureGraph(
   const placements = household.furniturePlacements ?? [];
   const storage = household.storageLocations ?? [];
   const layout = household.structureDiagramLayout;
+  const allAppliances = getMockAppliancesSession();
   const nodes: Node<StructureNodeData>[] = [];
   const edges: Edge[] = [];
 
@@ -241,16 +243,6 @@ function buildStructureGraph(
   }
 
   for (const r of household.rooms) {
-    const directSlots = storage
-      .filter(
-        (s) =>
-          s.roomId === r.id &&
-          (s.furniturePlacementId == null || s.furniturePlacementId === ""),
-      )
-      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
-
-    const directIdSet = new Set(directSlots.map((s) => s.id));
-
     const furnPrepared: FurnPrepared[] = placements
       .filter((f) => f.roomId === r.id)
       .sort(
@@ -261,25 +253,15 @@ function buildStructureGraph(
       .map((fp) => ({
         id: fp.id,
         label: fp.label,
-        anchorDirectStorageId: fp.anchorDirectStorageId,
         slots: storage
           .filter((s) => s.furniturePlacementId === fp.id)
           .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
           .map((s) => ({ id: s.id, name: s.name })),
       }));
 
-    const anchoredBySlot = new Map<string, FurnPrepared[]>();
-    const unlinked: FurnPrepared[] = [];
-    for (const fp of furnPrepared) {
-      const a = fp.anchorDirectStorageId;
-      if (a && directIdSet.has(a)) {
-        const list = anchoredBySlot.get(a) ?? [];
-        list.push(fp);
-        anchoredBySlot.set(a, list);
-      } else {
-        unlinked.push(fp);
-      }
-    }
+    const roomAppliances = allAppliances.filter(
+      (a) => a.roomId === r.id && a.status === "active",
+    );
 
     const roomW = Math.max(r.width, 120);
     const roomNode: Node<StructureNodeData> = {
@@ -299,87 +281,15 @@ function buildStructureGraph(
     };
     nodes.push(roomNode);
 
-    const xSlotCol = r.x + roomW + GAP_X;
-    const xFurnCol = xSlotCol + SLOT_W + GAP_X;
+    const xChildCol = r.x + roomW + GAP_X;
     let yCursor = r.y;
 
-    for (const slot of directSlots) {
-      const slotNodeId = `struct-slot-${slot.id}`;
-      const group = anchoredBySlot.get(slot.id) ?? [];
-      const sk = slotLayoutKey(slot.id);
-      const slotPos = readLayoutPos(layout, sk, {
-        x: xSlotCol,
-        y: yCursor,
-      });
-
-      nodes.push({
-        id: slotNodeId,
-        type: "directSlot",
-        position: slotPos,
-        data: {
-          kind: "directSlot",
-          roomId: r.id,
-          storageSlotId: slot.id,
-          label: slot.name,
-        },
-        style: { width: SLOT_W, height: SLOT_H },
-        draggable: true,
-        selectable: true,
-      });
-      edges.push({
-        id: `e-${r.id}-${slotNodeId}`,
-        source: r.id,
-        target: slotNodeId,
-        ...edgeDefaults,
-      });
-
-      let yF = slotPos.y;
-      let maxFurnBottom = slotPos.y;
-      for (const fp of group) {
-        const fh = estimateFurnitureHeight(fp.slots.length);
-        const fpNodeId = `struct-fp-${fp.id}`;
-        const fk = fpLayoutKey(fp.id);
-        const fpPos = readLayoutPos(layout, fk, { x: xFurnCol, y: yF });
-        nodes.push({
-          id: fpNodeId,
-          type: "furniturePlacement",
-          position: fpPos,
-          data: {
-            kind: "furniturePlacement",
-            roomId: r.id,
-            furnitureId: fp.id,
-            label: fp.label,
-            slots: fp.slots,
-          },
-          style: { width: FURNITURE_W, height: fh },
-          draggable: true,
-          selectable: true,
-        });
-        edges.push({
-          id: `e-${slotNodeId}-${fpNodeId}`,
-          source: slotNodeId,
-          target: fpNodeId,
-          ...edgeDefaults,
-        });
-        maxFurnBottom = Math.max(maxFurnBottom, fpPos.y + fh);
-        yF = fpPos.y + fh + FURN_GAP_Y;
-      }
-
-      const blockBottom = Math.max(slotPos.y + SLOT_H, maxFurnBottom);
-      yCursor = blockBottom + GROUP_GAP_Y;
-    }
-
-    const xUnlinkedFurn =
-      directSlots.length > 0 ? xFurnCol : xSlotCol;
-    let yUnlinked = yCursor;
-    for (const fp of unlinked) {
+    // ── 가구 노드: Room → FurniturePlacement ──
+    for (const fp of furnPrepared) {
       const fh = estimateFurnitureHeight(fp.slots.length);
       const fpNodeId = `struct-fp-${fp.id}`;
       const fk = fpLayoutKey(fp.id);
-      const fpPos = readLayoutPos(layout, fk, {
-        x: xUnlinkedFurn,
-        y: yUnlinked,
-      });
+      const fpPos = readLayoutPos(layout, fk, { x: xChildCol, y: yCursor });
       nodes.push({
         id: fpNodeId,
         type: "furniturePlacement",
@@ -396,12 +306,42 @@ function buildStructureGraph(
         selectable: true,
       });
       edges.push({
-        id: `e-${r.id}-${fpNodeId}-unlinked`,
+        id: `e-${r.id}-${fpNodeId}`,
         source: r.id,
         target: fpNodeId,
         ...edgeDefaults,
       });
-      yUnlinked = fpPos.y + fh + FURN_GAP_Y;
+      yCursor = fpPos.y + fh + FURN_GAP_Y;
+    }
+
+    // ── 가전 노드: Room → Appliance ──
+    for (const appl of roomAppliances) {
+      const applNodeId = `struct-appl-${appl.id}`;
+      const ak = applianceLayoutKey(appl.id);
+      const applPos = readLayoutPos(layout, ak, { x: xChildCol, y: yCursor });
+      nodes.push({
+        id: applNodeId,
+        type: "appliance",
+        position: applPos,
+        data: {
+          kind: "appliance",
+          roomId: r.id,
+          applianceId: appl.id,
+          label: appl.name,
+          brand: appl.brand,
+          modelName: appl.modelName,
+        },
+        style: { width: APPLIANCE_W, height: APPLIANCE_H },
+        draggable: true,
+        selectable: true,
+      });
+      edges.push({
+        id: `e-${r.id}-${applNodeId}`,
+        source: r.id,
+        target: applNodeId,
+        ...edgeDefaults,
+      });
+      yCursor = applPos.y + APPLIANCE_H + FURN_GAP_Y;
     }
   }
 
@@ -538,13 +478,13 @@ function HouseStructureFlowInner({
         for (const n of all) {
           const nd = n.data;
           if (nd.roomId !== d.roomId) continue;
-          if (nd.kind === "directSlot") {
-            layoutPatch[slotLayoutKey(nd.storageSlotId)] = {
+          if (nd.kind === "furniturePlacement") {
+            layoutPatch[fpLayoutKey(nd.furnitureId)] = {
               x: Math.round(n.position.x),
               y: Math.round(n.position.y),
             };
-          } else if (nd.kind === "furniturePlacement") {
-            layoutPatch[fpLayoutKey(nd.furnitureId)] = {
+          } else if (nd.kind === "appliance") {
+            layoutPatch[applianceLayoutKey(nd.applianceId)] = {
               x: Math.round(n.position.x),
               y: Math.round(n.position.y),
             };
@@ -561,10 +501,10 @@ function HouseStructureFlowInner({
         return;
       }
 
-      if (d.kind === "directSlot") {
+      if (d.kind === "appliance") {
         onStructureDiagramCommit({
           layoutPatch: {
-            [slotLayoutKey(d.storageSlotId)]: {
+            [applianceLayoutKey(d.applianceId)]: {
               x: Math.round(node.position.x),
               y: Math.round(node.position.y),
             },
@@ -651,7 +591,7 @@ function HouseStructureFlowInner({
               if (d.kind === "structureRoom" && d.active) {
                 return "rgb(45,212,191)";
               }
-              if (d.kind === "directSlot") return "rgb(251,191,36)";
+              if (d.kind === "appliance") return "rgb(34,211,238)";
               if (d.kind === "furniturePlacement") return "rgb(20,184,166)";
               return "rgb(82,82,91)";
             }}
@@ -675,10 +615,10 @@ function HouseStructureFlowInner({
       <p className="border-t border-zinc-800 px-1 py-2 text-xs text-zinc-300">
         팁:{" "}
         <span className="text-zinc-300">
-          방 → 직속 보관 장소(각각) → 그 보관 장소에 연결된 가구 → 가구 아래 보관 장소
+          방 → 가구(하위 보관 장소 포함) · 가전
         </span>
-        . 방·직속·가구 블록을 각각 드래그해 배치할 수 있으며 위치는 저장됩니다.
-        방을 드래그하면 같은 방의 직속·가구가 함께 움직입니다.
+        . 방·가구·가전 블록을 각각 드래그해 배치할 수 있으며 위치는 저장됩니다.
+        방을 드래그하면 같은 방의 가구·가전이 함께 움직입니다.
       </p>
     </>
   );

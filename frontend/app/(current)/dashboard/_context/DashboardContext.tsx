@@ -152,6 +152,7 @@ export type DashboardContextType = {
       name: string;
       roomId?: string | null;
       furniturePlacementId?: string | null;
+      applianceId?: string | null;
       sortOrder?: number;
     },
   ) => Promise<StorageLocationRow | null>;
@@ -667,6 +668,7 @@ export function DashboardProvider({
         name: string;
         roomId?: string | null;
         furniturePlacementId?: string | null;
+        applianceId?: string | null;
         sortOrder?: number;
       },
     ): Promise<StorageLocationRow | null> => {

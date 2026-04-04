@@ -88,6 +88,7 @@ export type DashboardHouseholdsPort = {
       name: string;
       roomId?: string | null;
       furniturePlacementId?: string | null;
+      applianceId?: string | null;
       sortOrder?: number;
     },
   ): Promise<StorageLocationRow>;

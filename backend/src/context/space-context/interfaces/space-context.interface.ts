@@ -40,6 +40,7 @@ export class CreateStorageLocationData {
   name: string;
   roomId?: string | null;
   furniturePlacementId?: string | null;
+  applianceId?: string | null;
   sortOrder?: number;
 }
 
@@ -47,6 +48,7 @@ export class UpdateStorageLocationData {
   name?: string;
   roomId?: string | null;
   furniturePlacementId?: string | null;
+  applianceId?: string | null;
   sortOrder?: number;
 }
 
@@ -92,6 +94,7 @@ export class StorageLocationResult {
   name: string;
   roomId: string | null;
   furniturePlacementId: string | null;
+  applianceId: string | null;
   sortOrder: number;
   createdAt: Date;
   updatedAt: Date;

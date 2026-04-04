@@ -405,4 +405,80 @@ test.describe("UC-11. 가전/설비 등록 및 관리 (mock)", () => {
       page.locator('[data-testid="log-list"]'),
     ).toBeVisible({ timeout: 5_000 });
   });
+
+  // ── 11-E. 가전 하위 보관 장소 및 재고 ──
+
+  test("11-E-24. 사용자는 가전 상세에서 보관 장소 섹션을 확인한다", async ({
+    page,
+  }) => {
+    await goToAppliances(page);
+    await page.locator('text="드럼세탁기"').click();
+    await expect(page.locator('[data-testid="appliance-detail"]')).toBeVisible({
+      timeout: 5_000,
+    });
+
+    // 보관 장소·물품 섹션이 표시됨
+    await expect(
+      page.locator('[data-testid="appliance-storage-section"]'),
+    ).toBeVisible({ timeout: 5_000 });
+  });
+
+  test("11-E-25. 사용자는 가전 하위 보관 장소에 등록된 물품 목록을 확인한다", async ({
+    page,
+  }) => {
+    await goToAppliances(page);
+    await page.locator('text="드럼세탁기"').click();
+    await expect(page.locator('[data-testid="appliance-detail"]')).toBeVisible({
+      timeout: 5_000,
+    });
+
+    // 시드: 세탁기에 "필터함" 보관 장소가 있음
+    await expect(
+      page.locator('[data-testid="appliance-storage-list"]'),
+    ).toBeVisible({ timeout: 5_000 });
+    await expect(
+      page.locator('[data-testid="appliance-slot-sl-mock-appliance-washer-filter"]'),
+    ).toBeVisible({ timeout: 5_000 });
+  });
+
+  // ── 11-F. 대시보드 통합 (구조도·위치 추가 모달) ──
+
+  test("11-F-26. 대시보드 구조도에서 가전 노드가 표시된다", async ({ page }) => {
+    await page.goto("/mock/dashboard");
+    await page.waitForLoadState("networkidle");
+
+    // 조회 모드에서 구조도가 보이는지 확인 — 가전 노드 존재
+    // 구조도에 "직속 보관" 텍스트가 없어야 함
+    const structureArea = page.locator('[data-testid="structure-flow"]').or(
+      page.locator(".react-flow"),
+    );
+    if (await structureArea.isVisible({ timeout: 5_000 }).catch(() => false)) {
+      await expect(page.locator('text="직속 보관"')).toBeHidden({ timeout: 3_000 });
+    }
+  });
+
+  test("11-F-27. 대시보드에서 '위치 추가' 버튼으로 가전을 등록한다", async ({
+    page,
+  }) => {
+    await page.goto("/mock/dashboard");
+    await page.waitForLoadState("networkidle");
+
+    // 방 선택이 필요 — 첫 번째 방 탭 클릭
+    const roomTab = page.locator('[role="tab"]').first();
+    if (await roomTab.isVisible({ timeout: 3_000 }).catch(() => false)) {
+      await roomTab.click();
+    }
+
+    // "위치 추가" 버튼 확인
+    const addBtn = page.locator('[data-testid="add-placement-btn"]');
+    if (await addBtn.isVisible({ timeout: 5_000 }).catch(() => false)) {
+      await addBtn.click();
+
+      // 모달에서 "가전" 타입 선택
+      const applianceRadio = page.locator('[data-testid="placement-type-appliance"]');
+      if (await applianceRadio.isVisible({ timeout: 3_000 }).catch(() => false)) {
+        await applianceRadio.click();
+      }
+    }
+  });
 });

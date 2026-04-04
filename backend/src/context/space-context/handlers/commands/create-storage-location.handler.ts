@@ -8,6 +8,7 @@ export class CreateStorageLocationCommand {
     public readonly name: string,
     public readonly roomId?: string | null,
     public readonly furniturePlacementId?: string | null,
+    public readonly applianceId?: string | null,
     public readonly sortOrder?: number,
   ) {}
 }
@@ -28,6 +29,7 @@ export class CreateStorageLocationHandler
       name: command.name,
       roomId: command.roomId,
       furniturePlacementId: command.furniturePlacementId,
+      applianceId: command.applianceId,
       sortOrder: command.sortOrder,
     });
 
@@ -37,6 +39,7 @@ export class CreateStorageLocationHandler
       name: location.name,
       roomId: location.roomId,
       furniturePlacementId: location.furniturePlacementId,
+      applianceId: location.applianceId,
       sortOrder: location.sortOrder,
       createdAt: location.createdAt,
       updatedAt: location.updatedAt,

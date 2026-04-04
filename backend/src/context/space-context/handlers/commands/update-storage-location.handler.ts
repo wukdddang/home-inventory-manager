@@ -40,6 +40,7 @@ export class UpdateStorageLocationHandler
       name: location.name,
       roomId: location.roomId,
       furniturePlacementId: location.furniturePlacementId,
+      applianceId: location.applianceId,
       sortOrder: location.sortOrder,
       createdAt: location.createdAt,
       updatedAt: location.updatedAt,

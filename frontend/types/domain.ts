@@ -36,14 +36,17 @@ export type FurniturePlacement = {
 };
 
 /**
- * 논리 설계 §7 StorageLocation — 방 직속 또는 가구 아래 보관 슬롯
- * `furniturePlacementId`가 있으면 방 직속이 아님(roomId는 비워 두는 것을 권장, 해석은 가구→방).
+ * 논리 설계 §7 StorageLocation — 가구 또는 가전 아래 보관 슬롯
+ * `furniturePlacementId`가 있으면 가구 하위, `applianceId`가 있으면 가전 하위.
+ * v2.8: 직속 보관 장소 계층 제거 — 보관 장소는 가구 또는 가전 하위에만 존재.
  */
 export type StorageLocationRow = {
   id: string;
   name: string;
   roomId: string | null;
   furniturePlacementId: string | null;
+  /** v2.8: 가전 하위 보관 장소 (필터·소모품 등) */
+  applianceId?: string | null;
   sortOrder?: number;
 };
 

@@ -30,7 +30,10 @@ export function resolveItemRoomId(h: Household, item: InventoryRow): string {
 
 export type StorageOption = { id: string; label: string };
 
-/** 재고 등록 드롭다운용 — 방 직속 보관 장소 다음, 가구별 보관 장소 순 */
+/**
+ * 재고 등록 드롭다운용 — 가구별 보관 장소 순.
+ * v2.8: 직속 보관 장소(roomId 직접, furniturePlacementId 없음)는 레거시 호환용으로 유지.
+ */
 export function listStorageOptionsForRoom(
   h: Household,
   roomId: string,
@@ -71,6 +74,15 @@ export function listStorageOptionsForRoom(
       });
     }
   }
+
+  // v2.8: 가전 하위 보관 장소
+  const appSlots = slots
+    .filter((s) => s.applianceId != null && s.applianceId !== "")
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  for (const s of appSlots) {
+    out.push({ id: s.id, label: `[가전] ${s.name}` });
+  }
+
   return out;
 }
 
@@ -94,6 +106,9 @@ export function formatStorageBlockHeading(
     );
     const furnitureLabel = fp?.label ?? "가구";
     return `${furnitureLabel} › ${slot.name}`;
+  }
+  if (slot.applianceId != null && slot.applianceId !== "") {
+    return `[가전] ${slot.name}`;
   }
   return slot.name;
 }
@@ -180,6 +195,9 @@ export function formatLocationBreadcrumb(
     const furnitureLabel = fp?.label ?? "가구";
     return `${roomName} › ${furnitureLabel} › ${slot.name}`;
   }
+  if (slot.applianceId != null && slot.applianceId !== "") {
+    return `${roomName} › [가전] ${slot.name}`;
+  }
   return `${roomName} › ${slot.name}`;
 }
 
@@ -243,6 +261,14 @@ export function resolveLedgerLocationColumns(
       detailLabel: slot.name,
     };
   }
+  if (slot.applianceId != null && slot.applianceId !== "") {
+    return {
+      householdName: h.name,
+      roomName,
+      placeLabel: "[가전]",
+      detailLabel: slot.name,
+    };
+  }
   return {
     householdName: h.name,
     roomName,
@@ -293,6 +319,54 @@ export function ensureDefaultRoomStorageSlots(h: Household): Household {
     }
   }
   return changed ? { ...h, storageLocations: slots } : h;
+}
+
+/**
+ * v2.8: 가전 하위 보관 장소 목록 — applianceId로 필터.
+ * Household.storageLocations에서 해당 가전에 연결된 보관 장소를 반환한다.
+ */
+export function listStorageLocationsForAppliance(
+  h: Household,
+  applianceId: string,
+): StorageOption[] {
+  const slots = h.storageLocations ?? [];
+  return slots
+    .filter((s) => s.applianceId === applianceId)
+    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
+    .map((s) => ({ id: s.id, label: s.name }));
+}
+
+/**
+ * v2.8: 가전 하위 재고를 보관 장소별로 묶는다.
+ */
+export function groupInventoryByStorageForAppliance(
+  h: Household,
+  applianceId: string,
+  items: import("@/types/domain").InventoryRow[],
+): StorageItemGroup[] {
+  const appSlotIds = new Set(
+    (h.storageLocations ?? [])
+      .filter((s) => s.applianceId === applianceId)
+      .map((s) => s.id),
+  );
+  const appItems = items.filter(
+    (it) => it.storageLocationId && appSlotIds.has(it.storageLocationId),
+  );
+  const bucket = new Map<string | null, import("@/types/domain").InventoryRow[]>();
+  for (const it of appItems) {
+    const key = it.storageLocationId ?? null;
+    const arr = bucket.get(key) ?? [];
+    arr.push(it);
+    bucket.set(key, arr);
+  }
+  return [...bucket.entries()].map(([storageLocationId, groupItems]) => ({
+    storageLocationId,
+    heading: (h.storageLocations ?? []).find((s) => s.id === storageLocationId)
+      ?.name ?? "알 수 없는 보관 장소",
+    items: [...groupItems].sort((x, y) =>
+      x.name.localeCompare(y.name, "ko", { sensitivity: "base" }),
+    ),
+  }));
 }
 
 /** 배열 기본값·방(기본) 슬롯까지 한 번에 맞춘다 (상품 카탈로그는 공통 저장소) */

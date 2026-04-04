@@ -23,6 +23,10 @@ export class CreateStorageLocationDto {
   furniturePlacementId?: string | null;
 
   @IsOptional()
+  @IsUUID()
+  applianceId?: string | null;
+
+  @IsOptional()
   @IsInt()
   @Min(0)
   sortOrder?: number;

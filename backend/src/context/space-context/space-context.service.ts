@@ -105,6 +105,7 @@ export class SpaceContextService {
         data.name,
         data.roomId,
         data.furniturePlacementId,
+        data.applianceId,
         data.sortOrder,
       ),
     );

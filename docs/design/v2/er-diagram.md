@@ -1,6 +1,11 @@
 # ER 다이어그램 & 엔티티 명세 v2 (Home Inventory Manager)
 
-**버전**: v2.7 — Appliance·MaintenanceSchedule·MaintenanceLog 신규 엔티티 추가 (2026-04-03)
+**버전**: v2.8 — 직속 보관 장소 계층 제거, FurniturePlacement/Appliance가 Room 직속 하위로 변경, StorageLocation.applianceId 추가 (2026-04-04)
+
+**v2.8 변경**:
+- 직속 보관 장소 계층 제거, FurniturePlacement/Appliance가 Room 직속 하위로 변경, StorageLocation.applianceId 추가
+- Appliance 하위에 StorageLocation을 둘 수 있도록 StorageLocation.applianceId (nullable FK) 추가
+- FurniturePlacement.anchorDirectStorageId deprecated
 
 **v2.7 변경**:
 - Appliance, MaintenanceSchedule, MaintenanceLog 신규 엔티티 추가 (가전/설비 관리)
@@ -53,7 +58,7 @@
 | 1    | User                | 사용자 계정                                                                | — (Household과 N:N)                  | P0       | — |
 | 2    | Household           | 거점                                                             | User ↔ ManyToMany                    | P0       | `kind` 추가 |
 | 3    | Category            | 대분류 (식료품, 생활용품, 의약품 등) — 플랫(1단계)                         | **Household**, Product               | P0       | `householdId` 추가 **(v2.1)** |
-| 4    | StorageLocation     | 보관 슬롯(방·가구 아래 최종 칸)                                            | Household, Room·FurniturePlacement   | P0       | — |
+| 4    | StorageLocation     | 보관 슬롯(방·가구 아래 최종 칸)                                            | Household, Room·FurniturePlacement·Appliance | P0 | `applianceId` 추가 **(v2.8)** |
 | 5    | Unit                | 단위 마스터 (ml, g, 개…)                                                   | **Household**                        | P1       | `householdId` 추가 **(v2.1)** |
 | 6    | Product             | 상품 마스터 (소모품·비소모품)                                              | **Household**, Category              | P0       | `householdId` 추가 **(v2.1)** |
 | 7    | ProductVariant      | 용량/포장 단위별 정보                                                      | Product                              | P0       | — |
@@ -67,7 +72,7 @@
 | 19   | NotificationPreference | 알림 상세 설정(사용자별·거점별)                                         | User, Household (nullable)           | P1       | **신규 (v2.1)** |
 | 16   | HouseStructure      | 집 구조 — 방·슬롯 정의(JSONB)                                              | Household 1:1                        | P1       | `diagramLayout` 추가 |
 | 17   | Room                | 집 구조 내 방                                                              | HouseStructure                       | P1       | — |
-| 18   | FurniturePlacement  | 방 안 가구(인스턴스)                                                  | Room                                 | P1       | `anchorDirectStorageId` 추가 |
+| 18   | FurniturePlacement  | 방 안 가구(인스턴스)                                                  | Room                                 | P1       | `anchorDirectStorageId` 추가 (v2.8: deprecated) |
 | 20   | HouseholdInvitation | 거점 초대 (링크·이메일)                                               | Household, User                      | P1       | **신규 (v2.2)** |
 | 21   | HouseholdKindDefinition | 거점 유형 정의 (사용자별 라벨·순서)                               | User                                 | P1       | **신규 (v2.3)** |
 | 22   | UserDeviceToken     | FCM 기기 토큰 (푸시 알림용)                                            | User                                 | P1       | **신규 (v2.6)** |
@@ -104,9 +109,13 @@
 Household (거점)
   ├── HouseStructure (1:1, 선택) — 집 구조(방·슬롯 JSON + diagramLayout)
   │     └── Room (1:N) — 방 엔티티(structureRoomKey ↔ JSON)
-  │           ├── FurniturePlacement (1:N) — 가구(인스턴스, anchorDirectStorageId)
+  │           ├── FurniturePlacement (1:N) — 가구(인스턴스)
   │           │     └── StorageLocation (1:N) — 그 가구 위·안 보관 슬롯
-  │           └── StorageLocation (1:N) — 방 직속 슬롯(냉장고 등)
+  │           ├── Appliance (1:N) — 가전/설비 (v2.8: Room 직속 하위)
+  │           │     ├── MaintenanceSchedule (1:N) — 유지보수 스케줄
+  │           │     ├── MaintenanceLog (1:N) — 유지보수·A/S 이력
+  │           │     └── StorageLocation (1:N) — 가전 하위 보관 슬롯 (필터·소모품 등, v2.8 신규)
+  │           └── StorageLocation (1:N) — 방 직속 슬롯
   ├── StorageLocation (1:N) — 구조 미연동·레거시 장소도 가능
   ├── Category (1:N) — 거점 카탈로그 (v2.1)
   ├── Unit (1:N) — 거점 카탈로그 (v2.1)
@@ -205,6 +214,7 @@ erDiagram
     User ||--o{ Appliance : "registeredBy"
     Appliance ||--o{ MaintenanceSchedule : "schedules"
     Appliance ||--o{ MaintenanceLog : "logs"
+    Appliance ||--o{ StorageLocation : appliance_stores
     MaintenanceSchedule ||--o{ MaintenanceLog : "optional link"
     HouseholdMember ||--o{ MaintenanceLog : "performedBy"
 ```

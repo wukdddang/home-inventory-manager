@@ -186,10 +186,11 @@ erDiagram
 
 ## FurniturePlacement (가구)
 
+> 방 직속 하위 (v2.8: 직속 보관 장소 계층 제거)
+
 - 소속 방 (Room)
 - 배치 이름 또는 별칭
 - (선택) 가구 상품·변형 — Product / ProductVariant
-- **대표 보관 슬롯** (UI 앵커링용) **(v2 추가)**
 - 정렬 순서
 - (선택) 배치 메타 — 3D 좌표·회전 등
 
@@ -380,6 +381,7 @@ erDiagram
 - 매뉴얼 URL (선택)
 - 상태 — `active`(사용 중) / `retired`(폐기/교체)
 - 메모 (선택)
+- 하위 보관 장소 (StorageLocation, 선택) — 필터·소모품 등 재고 관리
 
 > 재고 관리의 InventoryItem과는 별도 테이블. InventoryItem은 소모성 물품(수량 추적), Appliance는 장기 자산(보증·유지보수 추적). 재고 시스템 출시 전에 이 기능이 먼저 나와야 사용자가 가전을 Item으로 잘못 등록하는 것을 방지할 수 있다.
 
