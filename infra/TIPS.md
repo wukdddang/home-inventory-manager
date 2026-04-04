@@ -173,3 +173,114 @@ infra/
 └── workflows/
     └── ci.yml           # GitHub Actions CI (ESLint)
 ```
+
+---
+
+## 7. 모니터링 + 로그 수집 스택 비교
+
+### 후보 스택
+
+#### A. ELK (Elasticsearch + Logstash + Kibana)
+
+```
+Docker logs → Logstash (파싱/변환) → Elasticsearch (저장/검색) → Kibana (시각화)
+```
+
+| 장점 | 단점 |
+|------|------|
+| 풀텍스트 검색 최강 | **최소 RAM 4-8GB** (Elasticsearch만 2GB+) |
+| 거대한 생태계, 레퍼런스 풍부 | 설정 복잡도 높음 (3개 서비스 각각 튜닝) |
+| 다양한 데이터 소스 지원 | 디스크 사용량이 큼 (인덱스) |
+| Elastic APM으로 추적까지 확장 가능 | 미니 PC에서 리소스 부담이 심함 |
+
+**적합한 경우**: 대규모 트래픽, 다수의 마이크로서비스, 로그 기반 분석이 핵심인 경우.
+
+#### B. PLG (Promtail + Loki + Grafana)
+
+```
+Docker logs → Promtail (수집) → Loki (저장) → Grafana (시각화)
+```
+
+| 장점 | 단점 |
+|------|------|
+| **매우 가벼움** (Loki RAM ~256MB, 전체 ~512MB) | 풀텍스트 검색은 Elasticsearch보다 약함 |
+| Grafana 하나로 로그 + 메트릭 + 대시보드 통합 | Loki는 라벨 기반 검색 (구조화 필요) |
+| 설정이 간단하고 Docker Compose로 바로 실행 | ELK만큼 생태계가 크진 않음 |
+| Prometheus와 자연스러운 연동 | |
+| 디스크 효율적 (인덱스 대신 라벨 기반) | |
+
+**적합한 경우**: 소규모 서비스, 리소스가 제한된 환경, 메트릭과 로그를 한 곳에서 보고 싶은 경우.
+
+#### C. Dozzle + Uptime Kuma (초경량)
+
+```
+Docker logs → Dozzle (실시간 로그 뷰어)
+HTTP 요청 → Uptime Kuma (업타임 모니터링 + 알림)
+```
+
+| 장점 | 단점 |
+|------|------|
+| **극도로 가벼움** (합쳐서 ~100MB RAM) | 로그 저장/검색 불가 (Dozzle은 실시간 뷰어) |
+| 설정 제로 — docker-compose에 추가하면 끝 | 과거 로그 분석은 `docker logs`에 의존 |
+| Uptime Kuma: 예쁜 UI, 다양한 알림 (Slack, Discord, Telegram 등) | 메트릭 수집 없음 (CPU, 메모리 추세) |
+| 별도 에이전트 불필요 | 확장성 한계 |
+
+**적합한 경우**: 개인 프로젝트 초기, "일단 돌아가는지 확인"이 목적인 경우.
+
+#### D. PLG + Prometheus + node-exporter (풀 옵저버빌리티)
+
+```
+Docker logs  → Promtail → Loki ──┐
+시스템 메트릭 → node-exporter ────┤── Grafana (통합 대시보드)
+앱 메트릭    → Prometheus ────────┘
+업타임 체크  → Uptime Kuma (독립)
+```
+
+| 장점 | 단점 |
+|------|------|
+| 로그 + 메트릭 + 업타임 완벽 커버 | 컨테이너 5-6개 추가 (~1GB RAM) |
+| Grafana에서 모든 데이터를 한 눈에 | 초기 설정에 시간 소요 |
+| 커뮤니티 대시보드 풍부 | |
+| 알림 규칙 설정 가능 (Grafana Alerting) | |
+
+**적합한 경우**: 체계적인 운영을 원하면서 ELK만큼의 리소스는 쓰기 싫은 경우.
+
+---
+
+### 비교 요약
+
+| 항목 | ELK | PLG | Dozzle + Uptime Kuma | PLG + Prometheus |
+|------|-----|-----|---------------------|-----------------|
+| **최소 RAM** | 4-8GB | ~512MB | ~100MB | ~1GB |
+| **디스크** | 많음 | 적음 | 거의 없음 | 적음 |
+| **로그 검색** | ★★★★★ | ★★★☆☆ | ★☆☆☆☆ | ★★★☆☆ |
+| **메트릭** | APM 별도 | Prometheus 연동 | 없음 | ★★★★★ |
+| **시각화** | Kibana | Grafana | Dozzle (실시간) | Grafana |
+| **설정 난이도** | 높음 | 낮음 | 매우 낮음 | 중간 |
+| **알림** | Watcher (유료) | Grafana Alerting | Uptime Kuma | Grafana + Uptime Kuma |
+| **컨테이너 수** | 3개 | 3개 | 2개 | 5-6개 |
+
+---
+
+### 추천: PLG 스택 (Promtail + Loki + Grafana)
+
+이 프로젝트에는 **PLG 스택**이 가장 적합하다.
+
+**이유:**
+
+1. **리소스 효율**: 미니 PC에서 운영하므로 ELK의 4-8GB RAM 요구는 과도함. PLG는 ~512MB로 충분
+2. **서비스 규모에 적합**: 컨테이너 2개(backend, postgres)의 로그를 수집하는 데 ELK는 오버 스펙
+3. **확장 가능**: 나중에 Prometheus + node-exporter를 추가하면 메트릭까지 커버 (점진적 도입)
+4. **Grafana 통합**: 로그, 메트릭, 알림을 하나의 대시보드에서 관리
+5. **Docker 친화적**: Docker Compose에 3개 서비스 추가만으로 구성 완료
+
+**단계적 도입 전략:**
+
+```
+1단계: PLG (Promtail + Loki + Grafana)        — 로그 수집 + 시각화
+2단계: + Prometheus + node-exporter            — 시스템/앱 메트릭
+3단계: + Uptime Kuma                           — 외부 업타임 모니터링 + 알림
+4단계: + Grafana Alerting                      — 이상 징후 자동 알림
+```
+
+Dozzle + Uptime Kuma는 "지금 당장 빠르게"가 목적이면 좋지만, 로그를 저장하고 검색할 수 없어서 장기 운영에는 부족하다. PLG를 처음부터 세팅해두면 이후 확장도 자연스럽다.

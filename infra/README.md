@@ -575,7 +575,35 @@ gunzip -c <백업파일> | \
 
 ---
 
-## 12. 방화벽 설정 (UFW)
+## 12. 정기 재부팅 스케줄
+
+장기 운영 시 메모리 릭, 좀비 프로세스 등을 예방하기 위해 주 1회 새벽에 자동 재부팅한다.
+`restart: unless-stopped` + `systemctl enable docker/cloudflared` 덕분에 재부팅 후 모든 서비스가 자동으로 복구된다.
+
+```bash
+# crontab 편집
+sudo crontab -e
+```
+
+```cron
+# ── 주간 정기 재부팅 (매주 월요일 새벽 4:30) ──
+30 4 * * 1  /sbin/shutdown -r now
+```
+
+> **주의**: 백업 스케줄(`0 4 1 1 *` 연간 백업 등)과 겹치지 않는 시간대로 설정한다.
+> 일반 사용자 crontab이 아닌 **root crontab** (`sudo crontab -e`)에 등록해야 한다.
+
+### 재부팅 후 서비스 복구 확인
+
+```bash
+# 재부팅 후 자동 복구 확인
+docker compose -f docker-compose.prod.yml ps
+sudo systemctl status cloudflared
+```
+
+---
+
+## 13. 방화벽 설정 (UFW)
 
 ```bash
 # UFW 설치 및 활성화
@@ -599,7 +627,7 @@ sudo ufw status verbose
 
 ---
 
-## 13. CI/CD
+## 14. CI/CD
 
 GitHub Actions로 자동화. 상세 내용은 `.github/workflows/` 참조.
 
@@ -626,7 +654,7 @@ sudo ./svc.sh install && sudo ./svc.sh start
 
 ---
 
-## 14. 모니터링
+## 15. 모니터링
 
 ```bash
 # 실시간 로그
@@ -656,7 +684,7 @@ htop
 
 ---
 
-## 15. 트러블슈팅
+## 16. 트러블슈팅
 
 | 증상 | 확인 |
 |------|------|
@@ -671,7 +699,7 @@ htop
 
 ---
 
-## 16. 체크리스트
+## 17. 체크리스트
 
 ### 최초 세팅
 
@@ -694,6 +722,7 @@ htop
 □ Vercel 프로젝트 연결 + 환경변수 설정
 □ 커스텀 도메인 연결 (Vercel + Cloudflare)
 □ GFS 백업 cron 설정
+□ 정기 재부팅 cron 설정 (sudo crontab -e)
 □ GitHub Actions secrets 설정
 ```
 
