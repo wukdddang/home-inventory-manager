@@ -315,6 +315,69 @@ export type NotificationItem = {
   createdAt: string;
 };
 
+/* ─────────────────────── 가전/설비 (Appliance) ─────────────────────── */
+
+/** 가전 상태 */
+export type ApplianceStatus = "active" | "disposed";
+
+/** 유지보수 반복 규칙 */
+export type MaintenanceRepeatRule =
+  | "monthly"
+  | "quarterly"
+  | "semiannual"
+  | "annual";
+
+/** 유지보수 이력 유형 */
+export type MaintenanceLogType = "scheduled" | "repair" | "inspection";
+
+/** 가전/설비 등록 정보 */
+export type Appliance = {
+  id: string;
+  householdId: string;
+  name: string;
+  brand?: string;
+  modelName?: string;
+  /** 구매일 YYYY-MM-DD */
+  purchasedOn?: string;
+  /** 보증 만료일 YYYY-MM-DD */
+  warrantyExpiresOn?: string;
+  /** 설치 위치 — StructureRoom.id */
+  roomId?: string;
+  status: ApplianceStatus;
+  /** 폐기일 YYYY-MM-DD */
+  disposedOn?: string;
+  createdAt: string;
+};
+
+/** 유지보수 스케줄 */
+export type MaintenanceSchedule = {
+  id: string;
+  applianceId: string;
+  taskName: string;
+  repeatRule: MaintenanceRepeatRule;
+  /** 시작일 YYYY-MM-DD */
+  startDate: string;
+  /** 다음 예정일 YYYY-MM-DD (자동 갱신) */
+  nextDueDate: string;
+  isActive: boolean;
+};
+
+/** 유지보수·A/S 이력 */
+export type MaintenanceLog = {
+  id: string;
+  applianceId: string;
+  /** 연결된 스케줄 (정기 유지보수 완료 시) */
+  scheduleId?: string;
+  type: MaintenanceLogType;
+  description: string;
+  /** 업체명 (수리 시) */
+  providerName?: string;
+  /** 비용 (수리 시) */
+  cost?: number;
+  completedOn: string;
+  createdAt: string;
+};
+
 /** 모의 초대 링크 — 백엔드 연동 전 로컬 전용 */
 export type MockInvitation = {
   id: string;

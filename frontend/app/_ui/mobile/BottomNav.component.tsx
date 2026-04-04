@@ -1,13 +1,14 @@
 "use client";
 
 import { useAppRoutePrefix } from "@/lib/use-app-route-prefix";
-import { Home, History, Settings } from "lucide-react";
+import { Home, History, Monitor, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const tabs = [
   { path: "/dashboard", label: "홈", Icon: Home },
   { path: "/inventory-history", label: "이력", Icon: History },
+  { path: "/appliances", label: "가전", Icon: Monitor },
   { path: "/settings", label: "설정", Icon: Settings },
 ] as const;
 

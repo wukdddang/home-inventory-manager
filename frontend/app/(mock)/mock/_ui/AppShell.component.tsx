@@ -19,6 +19,7 @@ import {
   Bell,
   History,
   LayoutDashboard,
+  Monitor,
   Receipt,
   Settings,
 } from "lucide-react";
@@ -34,6 +35,7 @@ const navPaths = [
   { path: "/dashboard", label: "메인", Icon: LayoutDashboard },
   { path: "/purchases", label: "구매·로트", Icon: Receipt },
   { path: "/inventory-history", label: "재고 이력", Icon: History },
+  { path: "/appliances", label: "가전·설비", Icon: Monitor },
   { path: "/settings", label: "설정", Icon: Settings },
 ] as const;
 
