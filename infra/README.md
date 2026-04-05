@@ -278,53 +278,88 @@ sudo chmod 600 /etc/him/firebase-service-account.json
 
 ---
 
-## 6. docker-compose.prod.yml 생성
+## 6. docker-compose.prod.yml
 
-프로젝트 루트(`~/him/`)에 생성:
-
-```bash
-cat > ~/him/docker-compose.prod.yml << 'YAML'
-services:
-  postgres:
-    image: postgres:17-alpine
-    container_name: him-postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-    ports:
-      - "127.0.0.1:5432:5432"
-    volumes:
-      - him-pgdata:/var/lib/postgresql/data
-      - ./backups:/backups
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  backend:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
-    container_name: him-backend
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:4200:4200"
-    env_file:
-      - .env
-    depends_on:
-      postgres:
-        condition: service_healthy
-
-volumes:
-  him-pgdata:
-YAML
-```
+프로젝트 루트에 `docker-compose.prod.yml`이 이미 포함되어 있다. 별도 생성 불필요.
 
 > 프론트엔드는 Vercel에서 배포하므로 Docker Compose에 포함하지 않는다.
 > 모든 포트 `127.0.0.1` 바인딩 → 외부 접근은 Cloudflare Tunnel로만.
+
+---
+
+## 6.1 Nginx 리버스 프록시
+
+`docker-compose.prod.yml`에 Nginx가 포함되어 있다. 백엔드 앞에서 다음을 처리한다:
+
+| 역할 | 설명 |
+|------|------|
+| **gzip 압축** | JSON 응답을 30~70% 압축하여 모바일 체감 속도 향상 |
+| **요청 로깅** | 접속 IP, 요청 경로, 응답 시간을 access.log에 기록 |
+| **Rate Limiting** | 인증 API: 분당 10회, 일반 API: 초당 30회 제한 |
+| **보안 헤더** | X-Frame-Options, X-Content-Type-Options 등 자동 추가 |
+| **프록시** | 외부 → Nginx:80 → Backend:4200 (백엔드 직접 노출 차단) |
+
+### 아키텍처 변경
+
+```
+변경 전: Cloudflare Tunnel → Backend:4200
+변경 후: Cloudflare Tunnel → Nginx:80 → Backend:4200
+```
+
+### 설정 파일
+
+`infra/nginx/nginx.conf` — 주요 설정:
+
+```nginx
+# 인증 API 브루트포스 방지 (분당 10회)
+limit_req_zone $binary_remote_addr zone=auth:10m rate=10r/m;
+
+# 일반 API (초당 30회)
+limit_req_zone $binary_remote_addr zone=api:10m rate=30r/s;
+```
+
+### Cloudflare Tunnel 설정 변경
+
+기존에 `localhost:4200`으로 터널링했다면, Nginx 도입 후 `localhost:80`으로 변경:
+
+```yaml
+# ~/.cloudflared/config.yml
+tunnel: <터널-ID>
+credentials-file: /root/.cloudflared/<터널-ID>.json
+
+ingress:
+  - hostname: api.your-domain.com
+    service: http://localhost:80    # ← 4200에서 80으로 변경
+  - service: http_status:404
+```
+
+변경 후 터널 재시작:
+
+```bash
+sudo systemctl restart cloudflared
+```
+
+### 로그 확인
+
+```bash
+# 실시간 접속 로그
+docker logs -f him-nginx
+
+# 로그 파일 직접 확인
+docker exec him-nginx cat /var/log/nginx/access.log | tail -20
+
+# 에러 로그
+docker exec him-nginx cat /var/log/nginx/error.log | tail -20
+```
+
+### Rate Limit 테스트
+
+```bash
+# 인증 API 11회 연속 호출 → 마지막은 429 반환
+for i in $(seq 1 11); do
+  curl -s -o /dev/null -w "%{http_code}\n" http://localhost/api/auth/login
+done
+```
 
 ---
 
@@ -444,27 +479,9 @@ sudo journalctl -u cloudflared -f
 
 ---
 
-## 9. 프론트엔드 배포 (Vercel)
+## 9. 프론트엔드 배포
 
-### 9.1 Vercel 프로젝트 연결
-
-1. [vercel.com](https://vercel.com)에서 GitHub 레포 import
-2. **Framework Preset**: Next.js
-3. **Root Directory**: `frontend`
-4. **Build Command**: `pnpm build` (Vercel이 자동 감지)
-5. **환경 변수** 설정:
-   - `NEXT_PUBLIC_API_URL` = `https://api.yourdomain.com`
-   - Firebase 관련 환경변수 (`NEXT_PUBLIC_FIREBASE_*`) — FCM 사용 시
-
-### 9.2 배포 흐름
-
-- `main` 브랜치 push → 자동 프로덕션 배포
-- PR 생성 → 자동 프리뷰 배포 (고유 URL 생성)
-
-### 9.3 커스텀 도메인
-
-1. Vercel 프로젝트 Settings → Domains에서 `yourdomain.com` 추가
-2. Cloudflare DNS에서 Vercel이 안내하는 CNAME 레코드 추가
+Vercel로 배포한다. `main` push 시 자동 프로덕션 배포, PR 생성 시 프리뷰 배포.
 
 ---
 
@@ -494,75 +511,23 @@ docker compose -f docker-compose.prod.yml up -d --no-deps backend
 
 ## 11. DB 백업 (GFS 전략)
 
-GFS (Grandfather-Father-Son) 백업 전략으로 다계층 백업을 운영한다.
+백엔드 애플리케이션(`backend/src/context/backup-context/`)에서 GFS 백업을 자동 수행한다. 별도 cron 설정 불필요.
 
-### 11.1 디렉토리 구조
+| 타입 | 실행 주기 | 보관 기간 |
+|------|----------|-----------|
+| 4시간 | 00:00, 04:00, 08:00, 12:00, 16:00, 20:00 | 7일 |
+| 일간 | 매일 01:00 | 30일 |
+| 주간 | 매주 일요일 01:30 | 90일 |
+| 월간 | 매월 1일 02:00 | 1년 |
+| 분기 | 1/1, 4/1, 7/1, 10/1 03:00 | 2년 |
+| 연간 | 1월 1일 04:00 | 5년 |
+| 정리 | 매일 05:00 | - |
 
-```
-~/him/backups/
-└── database/
-    ├── four_hourly/     # 4시간마다 (7일 보관)
-    ├── daily/           # 매일 01:00 (30일 보관)
-    ├── weekly/          # 매주 일요일 01:30 (90일 보관)
-    ├── monthly/         # 매월 1일 02:00 (1년 보관)
-    ├── quarterly/       # 분기 첫날 03:00 (2년 보관)
-    └── yearly/          # 1월 1일 04:00 (5년 보관)
-```
+백업 경로: `.env`의 `BACKUP_PATH` (기본값 `./backups/database`)
 
-### 11.2 백업 스케줄
-
-| 타입 | 실행 주기 | 보관 기간 | Cron 표현식 |
-|------|----------|-----------|-------------|
-| 4시간 | 00:00, 04:00, 08:00, 12:00, 16:00, 20:00 | 7일 | `0 */4 * * *` |
-| 일간 | 매일 01:00 | 30일 | `0 1 * * *` |
-| 주간 | 매주 일요일 01:30 | 90일 | `30 1 * * 0` |
-| 월간 | 매월 1일 02:00 | 1년 | `0 2 1 * *` |
-| 분기 | 1/1, 4/1, 7/1, 10/1 03:00 | 2년 | `0 3 1 1,4,7,10 *` |
-| 연간 | 1월 1일 04:00 | 5년 | `0 4 1 1 *` |
-| 정리 | 매일 05:00 | - | `0 5 * * *` |
-
-### 11.3 백업 설정
+### 수동 복원
 
 ```bash
-# 스크립트 실행 권한 부여
-chmod +x ~/him/infra/scripts/backup.sh
-
-# 백업 디렉토리 초기화
-~/him/infra/scripts/backup.sh init
-
-# crontab 편집
-crontab -e
-```
-
-crontab에 아래 내용 추가:
-
-```cron
-# ── GFS 백업 ──
-0 */4 * * *       ~/him/infra/scripts/backup.sh four_hourly
-0 1 * * *         ~/him/infra/scripts/backup.sh daily
-30 1 * * 0        ~/him/infra/scripts/backup.sh weekly
-0 2 1 * *         ~/him/infra/scripts/backup.sh monthly
-0 3 1 1,4,7,10 *  ~/him/infra/scripts/backup.sh quarterly
-0 4 1 1 *         ~/him/infra/scripts/backup.sh yearly
-# ── 만료 백업 정리 ──
-0 5 * * *         ~/him/infra/scripts/backup.sh cleanup
-```
-
-### 11.4 파일 형식
-
-- 형식: gzip 압축 SQL (`*.sql.gz`)
-- 파일명: `backup_{type}_{YYYYMMDD}_{HHMMSS}.sql.gz`
-- 압축 효율: 평균 70-90% (10MB → 1-3MB)
-
-### 11.5 수동 백업 & 복원
-
-```bash
-# 수동 백업
-~/him/infra/scripts/backup.sh daily
-
-# 백업 현황 확인
-~/him/infra/scripts/backup.sh status
-
 # 복원
 gunzip -c ~/him/backups/database/daily/backup_daily_20260402_010000.sql.gz | \
   docker exec -i him-postgres psql -U him_user home_inventory
@@ -593,10 +558,27 @@ sudo crontab -e
 > **주의**: 백업 스케줄(`0 4 1 1 *` 연간 백업 등)과 겹치지 않는 시간대로 설정한다.
 > 일반 사용자 crontab이 아닌 **root crontab** (`sudo crontab -e`)에 등록해야 한다.
 
+### 설정 확인
+
+```bash
+# 재부팅 cron 등록 여부 확인 (root crontab이 유일한 확인 지점)
+sudo crontab -l
+```
+
+### 재부팅 이력 확인
+
+```bash
+# 마지막 재부팅 시각
+who -b
+uptime -s
+
+# 재부팅 이력 (최근 10건)
+last reboot | head -10
+```
+
 ### 재부팅 후 서비스 복구 확인
 
 ```bash
-# 재부팅 후 자동 복구 확인
 docker compose -f docker-compose.prod.yml ps
 sudo systemctl status cloudflared
 ```
@@ -654,31 +636,160 @@ sudo ./svc.sh install && sudo ./svc.sh start
 
 ---
 
-## 15. 모니터링
+## 15. 모니터링 (PLG 스택)
+
+PLG (Promtail + Loki + Grafana) 스택으로 로그 수집 및 시각화를 구성한다.
+스택 선택 근거는 `infra/TIPS.md` 섹션 7 참조.
+
+### 15.1 리소스 예상 (ASUS NUC 14 — N355 8코어, 16GB RAM, 2TB SSD)
+
+```
+기존 서비스:
+  him-postgres     ~256MB
+  him-backend      ~128MB
+  cloudflared       ~64MB
+                   ────────
+  소계              ~448MB
+
+PLG 스택:
+  him-loki         ~256MB  (max 512MB)
+  him-promtail      ~64MB  (max 128MB)
+  him-grafana      ~128MB  (max 256MB)
+                   ────────
+  소계              ~448MB
+
+합계              ~896MB / 16GB (약 5.6%)  ← 충분한 여유
+```
+
+### 15.2 디렉토리 구조
+
+```
+infra/monitoring/
+├── docker-compose.monitoring.yml   # PLG Docker Compose
+├── loki-config.yml                 # Loki 설정
+├── promtail-config.yml             # Promtail 설정 (Docker 로그 수집)
+└── grafana/
+    └── provisioning/
+        └── datasources/
+            └── datasources.yml     # Grafana ↔ Loki 자동 연결
+```
+
+### 15.3 환경 변수 추가
+
+`.env` 파일에 Grafana 관리자 비밀번호를 추가한다:
+
+```bash
+# .env 에 추가
+echo 'GRAFANA_ADMIN_PASSWORD=<강력한_비밀번호>' >> ~/him/.env
+```
+
+### 15.4 PLG 스택 실행
+
+```bash
+cd ~/him
+
+# PLG 스택 시작
+docker compose -f infra/monitoring/docker-compose.monitoring.yml --env-file .env up -d
+
+# 상태 확인
+docker compose -f infra/monitoring/docker-compose.monitoring.yml ps
+
+# Grafana 접속 확인
+curl http://localhost:3000/api/health
+# {"commit":"...","database":"ok","version":"..."}
+
+# Loki 상태 확인
+curl http://localhost:3100/ready
+# ready
+```
+
+### 15.5 Grafana 접속 및 초기 설정
+
+1. 브라우저에서 `http://<미니PC_IP>:3000` 접속 (또는 Cloudflare Tunnel 경유)
+2. 로그인: `admin` / `.env`에 설정한 `GRAFANA_ADMIN_PASSWORD`
+3. Loki 데이터소스는 provisioning으로 자동 등록되어 있음
+
+#### 로그 확인
+
+1. 좌측 메뉴 → **Explore** 클릭
+2. 상단 데이터소스에서 **Loki** 선택
+3. Label browser에서 `container` = `him-backend` 선택
+4. **Run query** → 백엔드 로그가 표시됨
+
+#### 유용한 LogQL 쿼리 예시
+
+```logql
+# 백엔드 에러 로그만 보기
+{container="him-backend"} |= "error" | json | level="error"
+
+# PostgreSQL 느린 쿼리
+{container="him-postgres"} |= "duration"
+
+# 최근 1시간 백엔드 로그
+{container="him-backend"} | json
+
+# 특정 API 경로 로그
+{container="him-backend"} |= "/api/inventory"
+```
+
+### 15.6 Grafana를 Cloudflare Tunnel로 노출 (선택사항)
+
+외부에서 Grafana 대시보드에 접근하려면 Cloudflare Tunnel ingress에 추가한다:
+
+```yaml
+# ~/.cloudflared/config.yml 에 ingress 추가
+ingress:
+  - hostname: api.yourdomain.com
+    service: http://localhost:4200
+  - hostname: grafana.yourdomain.com      # 추가
+    service: http://localhost:3000         # 추가
+  - service: http_status:404
+```
+
+```bash
+# DNS 등록
+cloudflared tunnel route dns him grafana.yourdomain.com
+
+# cloudflared 재시작
+sudo systemctl restart cloudflared
+```
+
+> **보안**: Grafana 자체 로그인이 있으므로 추가 인증은 선택사항이나, `docker-compose.monitoring.yml`의 `GF_SERVER_ROOT_URL`을 실제 도메인으로 수정할 것.
+
+### 15.7 PLG 업데이트 & 관리
+
+```bash
+# 이미지 업데이트
+docker compose -f infra/monitoring/docker-compose.monitoring.yml pull
+docker compose -f infra/monitoring/docker-compose.monitoring.yml up -d
+
+# 로그 확인
+docker compose -f infra/monitoring/docker-compose.monitoring.yml logs -f
+
+# 중지 (데이터 보존)
+docker compose -f infra/monitoring/docker-compose.monitoring.yml down
+
+# 중지 + 데이터 삭제 (⚠️ 로그/대시보드 전부 삭제)
+docker compose -f infra/monitoring/docker-compose.monitoring.yml down -v
+```
+
+### 15.8 CLI 모니터링 (PLG 없이도 사용 가능)
 
 ```bash
 # 실시간 로그
 docker compose -f docker-compose.prod.yml logs -f
 
-# 특정 서비스 로그
-docker compose -f docker-compose.prod.yml logs -f backend
-
 # 리소스 사용량 (CPU, 메모리, 네트워크)
-docker stats him-backend him-postgres
+docker stats him-backend him-postgres him-loki him-grafana him-promtail
 
 # Docker 디스크 사용량
 docker system df
 
-# 백업 용량 확인
-du -sh ~/him/backups/database/*
-
 # 백업 현황
 ~/him/infra/scripts/backup.sh status
 
-# 시스템 전체 디스크 확인
+# 시스템 디스크/리소스
 df -h
-
-# 시스템 리소스 모니터링
 htop
 ```
 
@@ -696,6 +807,11 @@ htop
 | Docker 권한 오류 | `sudo usermod -aG docker $USER && newgrp docker` |
 | 디스크 부족 | `docker system prune -a` (사용하지 않는 이미지/컨테이너 전체 정리) |
 | SSH 접속 불가 | `sudo systemctl status ssh`, `sudo ufw status` |
+| Nginx 502 Bad Gateway | `docker logs him-nginx`, 백엔드 컨테이너 상태 확인 (`docker ps`) |
+| Rate limit 429 | 정상 동작. 인증 API 분당 10회 초과 시 발생. 해제: nginx.conf의 `limit_req` 주석 처리 |
+| Grafana 접속 불가 | `docker logs him-grafana`, 포트 3000 확인 |
+| Loki 로그 수집 안 됨 | `docker logs him-promtail`, Docker 소켓 마운트 확인 |
+| Loki 디스크 사용량 증가 | `retention_period` 설정 확인, `docker exec him-loki ls -lh /loki/chunks` |
 
 ---
 
@@ -716,13 +832,16 @@ htop
 □ .env 생성 (DB, JWT, SMTP, Firebase, Backup)
 □ docker-compose.prod.yml 생성
 □ docker compose -f docker-compose.prod.yml up -d --build
-□ curl localhost:4200 확인
+□ curl localhost:80 확인 (Nginx 경유)
 □ UFW 방화벽 설정
-□ cloudflared 설치 → 터널 생성 → DNS → systemd
+□ cloudflared 설치 → 터널 생성 → DNS(localhost:80) → systemd
 □ Vercel 프로젝트 연결 + 환경변수 설정
 □ 커스텀 도메인 연결 (Vercel + Cloudflare)
 □ GFS 백업 cron 설정
 □ 정기 재부팅 cron 설정 (sudo crontab -e)
+□ PLG 모니터링 스택 실행 (docker-compose.monitoring.yml)
+□ Grafana 초기 로그인 + 비밀번호 변경
+□ Grafana Cloudflare Tunnel ingress 추가 (선택)
 □ GitHub Actions secrets 설정
 ```
 

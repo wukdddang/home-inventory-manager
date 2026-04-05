@@ -266,9 +266,11 @@ Docker logs  → Promtail → Loki ──┐
 
 이 프로젝트에는 **PLG 스택**이 가장 적합하다.
 
+**서버 사양:** ASUS NUC 14 Essential (NUC14MNK35) — Intel N355 8코어 8스레드 (최대 3.9GHz, TDP 15W), **16GB RAM**, 2TB M.2 SSD
+
 **이유:**
 
-1. **리소스 효율**: 미니 PC에서 운영하므로 ELK의 4-8GB RAM 요구는 과도함. PLG는 ~512MB로 충분
+1. **리소스 효율**: 미니 PC(16GB)에서 운영하므로 ELK의 4-8GB RAM 요구는 과도함. PLG는 ~512MB로 충분 (전체 서비스 합산 ~900MB, 16GB의 약 6%)
 2. **서비스 규모에 적합**: 컨테이너 2개(backend, postgres)의 로그를 수집하는 데 ELK는 오버 스펙
 3. **확장 가능**: 나중에 Prometheus + node-exporter를 추가하면 메트릭까지 커버 (점진적 도입)
 4. **Grafana 통합**: 로그, 메트릭, 알림을 하나의 대시보드에서 관리
