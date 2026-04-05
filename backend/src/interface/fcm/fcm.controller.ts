@@ -42,6 +42,14 @@ export class FcmController {
     return this.fcmBusinessService.내_토큰_목록을_조회한다(user.userId);
   }
 
+  @Delete()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async 내_토큰을_일괄_삭제한다(
+    @CurrentUser() user: { userId: string },
+  ) {
+    await this.fcmBusinessService.내_토큰을_일괄_삭제한다(user.userId);
+  }
+
   @Delete(':token')
   @HttpCode(HttpStatus.NO_CONTENT)
   async 토큰을_삭제한다(

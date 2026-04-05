@@ -21,7 +21,6 @@ import {
   type ReactNode,
 } from "react";
 import { getHouseholds } from "@/lib/local-store";
-import { MOCK_SEED_HOUSEHOLDS } from "@/app/(mock)/mock/dashboard/_context/dashboard-mock.service";
 import { APP_PAGE_MIN_LOADING_MS } from "@/app/_ui/app-loading-state";
 import type {
   Appliance,
@@ -358,19 +357,282 @@ export function AppliancesProvider({
   );
 }
 
-/* ─────────────────────── API Service (placeholder) ─────────────────────── */
+/* ─────────────────────── API helpers ─────────────────────── */
+
+async function apiFetch<T>(input: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(input, init);
+  const json = await res.json();
+  if (!json.success) throw new Error(json.message ?? "API 오류");
+  return json.data as T;
+}
+
+/* ── Backend ↔ Frontend 타입 변환 ── */
+
+type BackendAppliance = {
+  id: string;
+  householdId: string;
+  name: string;
+  brand?: string;
+  modelName?: string;
+  purchasedAt?: string;
+  warrantyExpiresAt?: string;
+  roomId?: string;
+  status: "active" | "retired";
+  disposedOn?: string;
+  createdAt: string;
+};
+
+type BackendSchedule = {
+  maintenanceScheduleId: string;
+  applianceId: string;
+  taskName: string;
+  recurrenceRule: { frequency: string; interval: number };
+  startDate: string;
+  nextOccurrenceAt: string;
+  isActive: boolean;
+};
+
+type BackendLog = {
+  id: string;
+  applianceId: string;
+  maintenanceScheduleId?: string;
+  type: MaintenanceLogType;
+  description: string;
+  servicedBy?: string;
+  cost?: number;
+  performedAt: string;
+  createdAt: string;
+};
+
+function recurrenceRuleToRepeatRule(rule: {
+  frequency: string;
+  interval: number;
+}): MaintenanceSchedule["repeatRule"] {
+  const { frequency, interval } = rule;
+  if (frequency === "month" && interval === 1) return "monthly";
+  if (frequency === "month" && interval === 3) return "quarterly";
+  if (frequency === "month" && interval === 6) return "semiannual";
+  if (frequency === "year" && interval === 1) return "annual";
+  // fallback
+  return "monthly";
+}
+
+function repeatRuleToRecurrenceRule(rule: MaintenanceSchedule["repeatRule"]): {
+  frequency: string;
+  interval: number;
+} {
+  switch (rule) {
+    case "monthly":
+      return { frequency: "month", interval: 1 };
+    case "quarterly":
+      return { frequency: "month", interval: 3 };
+    case "semiannual":
+      return { frequency: "month", interval: 6 };
+    case "annual":
+      return { frequency: "year", interval: 1 };
+  }
+}
+
+function toFrontendAppliance(raw: BackendAppliance): Appliance {
+  return {
+    id: raw.id,
+    householdId: raw.householdId,
+    name: raw.name,
+    brand: raw.brand,
+    modelName: raw.modelName,
+    purchasedOn: raw.purchasedAt,
+    warrantyExpiresOn: raw.warrantyExpiresAt,
+    roomId: raw.roomId,
+    status: raw.status === "retired" ? "disposed" : raw.status,
+    disposedOn: raw.disposedOn,
+    createdAt: raw.createdAt,
+  };
+}
+
+function toFrontendSchedule(raw: BackendSchedule): MaintenanceSchedule {
+  return {
+    id: raw.maintenanceScheduleId,
+    applianceId: raw.applianceId,
+    taskName: raw.taskName,
+    repeatRule: recurrenceRuleToRepeatRule(raw.recurrenceRule),
+    startDate: raw.startDate,
+    nextDueDate: raw.nextOccurrenceAt,
+    isActive: raw.isActive,
+  };
+}
+
+function toFrontendLog(raw: BackendLog): MaintenanceLog {
+  return {
+    id: raw.id,
+    applianceId: raw.applianceId,
+    scheduleId: raw.maintenanceScheduleId,
+    type: raw.type,
+    description: raw.description,
+    providerName: raw.servicedBy,
+    cost: raw.cost,
+    completedOn: raw.performedAt,
+    createdAt: raw.createdAt,
+  };
+}
+
+/* ─────────────────────── API Service ─────────────────────── */
+
+/**
+ * 가전의 householdId를 캐시하여, 스케줄/이력/폐기 등
+ * applianceId만 가진 연산에서 householdId를 조회할 수 있게 한다.
+ */
+const applianceHouseholdMap = new Map<string, string>();
+
+function hhOf(applianceId: string): string {
+  const hh = applianceHouseholdMap.get(applianceId);
+  if (!hh) throw new Error(`householdId not found for appliance ${applianceId}`);
+  return hh;
+}
 
 const apiAppliancesService: AppliancesDataPort = {
   getInitialHouseholds: (fromStore) => fromStore,
-  loadAppliances: async () => [],
-  loadSchedules: async () => [],
-  loadLogs: async () => [],
-  addAppliance: async (_, onSuccess) => onSuccess(),
-  updateAppliance: async (_, onSuccess) => onSuccess(),
-  disposeAppliance: async (_, __, onSuccess) => onSuccess(),
-  addSchedule: async (_, onSuccess) => onSuccess(),
-  updateSchedule: async (_, onSuccess) => onSuccess(),
-  addLog: async (_, onSuccess) => onSuccess(),
+
+  loadAppliances: async (households) => {
+    const all: Appliance[] = [];
+    for (const hh of households) {
+      const raw = await apiFetch<BackendAppliance[]>(
+        `/api/households/${hh.id}/appliances`,
+      );
+      const mapped = raw.map(toFrontendAppliance);
+      for (const a of mapped) applianceHouseholdMap.set(a.id, a.householdId);
+      all.push(...mapped);
+    }
+    return all;
+  },
+
+  loadSchedules: async (applianceIds) => {
+    if (applianceIds.length === 0) return [];
+    const all: MaintenanceSchedule[] = [];
+    for (const appId of applianceIds) {
+      try {
+        const raw = await apiFetch<BackendSchedule[]>(
+          `/api/households/${hhOf(appId)}/appliances/${appId}/maintenance-schedules`,
+        );
+        all.push(...raw.map(toFrontendSchedule));
+      } catch {
+        // 개별 가전에 스케줄이 없을 수 있음
+      }
+    }
+    return all;
+  },
+
+  loadLogs: async (applianceIds) => {
+    if (applianceIds.length === 0) return [];
+    const all: MaintenanceLog[] = [];
+    for (const appId of applianceIds) {
+      try {
+        const raw = await apiFetch<BackendLog[]>(
+          `/api/households/${hhOf(appId)}/appliances/${appId}/maintenance-logs`,
+        );
+        all.push(...raw.map(toFrontendLog));
+      } catch {
+        // 개별 가전에 이력이 없을 수 있음
+      }
+    }
+    return all;
+  },
+
+  addAppliance: async (draft, onSuccess) => {
+    await apiFetch(`/api/households/${draft.householdId}/appliances`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: draft.name,
+        brand: draft.brand ?? null,
+        modelName: draft.modelName ?? null,
+        purchasedAt: draft.purchasedOn ?? null,
+        warrantyExpiresAt: draft.warrantyExpiresOn ?? null,
+        roomId: draft.roomId ?? null,
+      }),
+    });
+    onSuccess();
+  },
+
+  updateAppliance: async (appliance, onSuccess) => {
+    await apiFetch(
+      `/api/households/${appliance.householdId}/appliances/${appliance.id}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: appliance.name,
+          brand: appliance.brand ?? null,
+          modelName: appliance.modelName ?? null,
+          purchasedAt: appliance.purchasedOn ?? null,
+          warrantyExpiresAt: appliance.warrantyExpiresOn ?? null,
+          roomId: appliance.roomId ?? null,
+        }),
+      },
+    );
+    onSuccess();
+  },
+
+  disposeAppliance: async (applianceId, _disposedOn, onSuccess) => {
+    // 폐기는 appliances 목록에서 householdId를 조회
+    await apiFetch(
+      `/api/households/${hhOf(applianceId)}/appliances/${applianceId}/retire`,
+      { method: "PATCH" },
+    );
+    onSuccess();
+  },
+
+  addSchedule: async (draft, onSuccess) => {
+    await apiFetch(
+      `/api/households/${hhOf(draft.applianceId)}/appliances/${draft.applianceId}/maintenance-schedules`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskName: draft.taskName,
+          recurrenceRule: repeatRuleToRecurrenceRule(draft.repeatRule),
+          nextOccurrenceAt: draft.nextDueDate,
+        }),
+      },
+    );
+    onSuccess();
+  },
+
+  updateSchedule: async (schedule, onSuccess) => {
+    await apiFetch(
+      `/api/households/${hhOf(schedule.applianceId)}/appliances/${schedule.applianceId}/maintenance-schedules/${schedule.id}`,
+      {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          taskName: schedule.taskName,
+          recurrenceRule: repeatRuleToRecurrenceRule(schedule.repeatRule),
+          nextOccurrenceAt: schedule.nextDueDate,
+        }),
+      },
+    );
+    onSuccess();
+  },
+
+  addLog: async (draft, onSuccess) => {
+    await apiFetch(
+      `/api/households/${hhOf(draft.applianceId)}/appliances/${draft.applianceId}/maintenance-logs`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          maintenanceScheduleId: draft.scheduleId ?? null,
+          type: draft.type,
+          description: draft.description,
+          servicedBy: draft.providerName ?? null,
+          cost: draft.cost ?? null,
+          performedAt: draft.completedOn,
+        }),
+      },
+    );
+    onSuccess();
+  },
+
+  // API는 실시간 구독을 지원하지 않으므로 no-op 반환
   subscribeAppliances: () => () => {},
   subscribeSchedules: () => () => {},
   subscribeLogs: () => () => {},

@@ -36,6 +36,7 @@ services:
     ports:
       - "4200:4200"
     environment:
+      NODE_ENV: development
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USERNAME: e2e
@@ -52,6 +53,10 @@ services:
       MAIL_FROM: '"집비치기 E2E" <noreply@e2e.test>'
       APP_URL: http://localhost:4100
       PORT: 4200
+      FIREBASE_SERVICE_ACCOUNT_PATH: /app/firebase-service-account.json
+      FIREBASE_SERVICE_ACCOUNT_JSON: ""
+    volumes:
+      - ../backend/home-inventory-manager-a7cd5-firebase-adminsdk-fbsvc-45a2804802.json:/app/firebase-service-account.json:ro
     depends_on:
       postgres:
         condition: service_healthy

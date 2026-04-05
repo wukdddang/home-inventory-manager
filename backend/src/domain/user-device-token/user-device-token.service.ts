@@ -56,6 +56,10 @@ export class UserDeviceTokenService {
     return (result.affected ?? 0) > 0;
   }
 
+  async 사용자의_토큰을_일괄_삭제한다(userId: string): Promise<void> {
+    await this.repo.delete({ userId });
+  }
+
   async 토큰을_비활성화한다(token: string): Promise<void> {
     await this.repo.update({ token }, { isActive: false });
   }

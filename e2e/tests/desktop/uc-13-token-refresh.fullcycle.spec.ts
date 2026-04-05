@@ -8,7 +8,7 @@ const TEST_USER = {
   password: "Test1234!@",
 };
 
-test.describe("UC-12. 토큰 자동 갱신 및 세션 유지", () => {
+test.describe("UC-13. 토큰 자동 갱신 및 세션 유지", () => {
   test.beforeEach(async () => {
     await resetDatabase();
     await clearAllMails();

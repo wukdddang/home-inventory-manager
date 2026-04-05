@@ -29,4 +29,8 @@ export class FcmContextService {
   ): Promise<boolean> {
     return this.userDeviceTokenService.토큰을_삭제한다(token, userId);
   }
+
+  async 내_토큰을_일괄_삭제한다(userId: string): Promise<void> {
+    return this.userDeviceTokenService.사용자의_토큰을_일괄_삭제한다(userId);
+  }
 }

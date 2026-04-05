@@ -191,3 +191,21 @@ export const EXPIRATION_ALERT_RULE_ENDPOINTS = {
   단건: (householdId: string, id: string) =>
     api(`/households/${householdId}/expiration-alert-rules/${id}`),
 } as const;
+
+// ── Appliance ──
+export const APPLIANCE_ENDPOINTS = {
+  목록_및_생성: (householdId: string) =>
+    api(`/households/${householdId}/appliances`),
+  단건: (householdId: string, appId: string) =>
+    api(`/households/${householdId}/appliances/${appId}`),
+  폐기: (householdId: string, appId: string) =>
+    api(`/households/${householdId}/appliances/${appId}/retire`),
+  스케줄_목록_및_생성: (householdId: string, appId: string) =>
+    api(`/households/${householdId}/appliances/${appId}/maintenance-schedules`),
+  스케줄_단건: (householdId: string, appId: string, schedId: string) =>
+    api(`/households/${householdId}/appliances/${appId}/maintenance-schedules/${schedId}`),
+  스케줄_비활성화: (householdId: string, appId: string, schedId: string) =>
+    api(`/households/${householdId}/appliances/${appId}/maintenance-schedules/${schedId}/deactivate`),
+  이력_목록_및_생성: (householdId: string, appId: string) =>
+    api(`/households/${householdId}/appliances/${appId}/maintenance-logs`),
+} as const;

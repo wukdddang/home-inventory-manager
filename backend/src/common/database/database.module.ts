@@ -14,7 +14,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
         password: config.get('DB_PASSWORD'),
         database: config.get('DB_DATABASE'),
         autoLoadEntities: true,
-        synchronize: true, // 개발 단계만 사용, 프로덕션에서는 migration 사용
+        synchronize: config.get('NODE_ENV') !== 'production',
       }),
     }),
   ],

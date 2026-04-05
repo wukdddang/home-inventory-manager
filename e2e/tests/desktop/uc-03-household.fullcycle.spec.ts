@@ -162,10 +162,10 @@ test.describe("UC-03. 거점 생성 및 기본 설정", () => {
     // 방 탭 재선택
     await page.locator(`button[role="tab"]:has-text("${roomName}")`).click();
 
-    // 보관 장소 탭이 나타날 때까지 대기
+    // 재고 추가 패널의 보관 장소 combobox 에서 직속 보관 장소가 보이는지 확인
     await expect(
-      page.locator(`button[role="tab"]:has-text("${slotName}")`)
-    ).toBeVisible({ timeout: 10_000 });
+      page.locator(`option:has-text("${slotName}")`).first()
+    ).toBeAttached({ timeout: 10_000 });
   }
 
   /** 가구를 API 로 추가한다 */
@@ -210,11 +210,6 @@ test.describe("UC-03. 거점 생성 및 기본 설정", () => {
     await page.reload();
     await page.waitForLoadState("networkidle");
     await page.locator(`button[role="tab"]:has-text("${roomName}")`).click();
-    // 직속 보관 장소 탭 선택 (가구가 이 탭 아래에 표시됨)
-    const slotTab = page.locator(`button[role="tab"]:has-text("${slotName}")`);
-    if (await slotTab.isVisible({ timeout: 3_000 }).catch(() => false)) {
-      await slotTab.click();
-    }
   }
 
   /** 세부 보관 장소를 API 로 추가한다 */
@@ -732,7 +727,8 @@ test.describe("UC-03. 거점 생성 및 기본 설정", () => {
     );
     expect(beforeSlots.length).toBeGreaterThanOrEqual(1);
 
-    // 가구 삭제 버튼 클릭
+    // 가구 탭 선택 → 패널 표시 후 삭제 버튼 클릭
+    await page.locator('button[role="tab"]:has-text("TV 선반")').click({ timeout: 10_000 });
     await page.locator('button[aria-label="「TV 선반」 가구 삭제"]').click();
 
     const alertDialog = page.locator('[role="alertdialog"]');
@@ -785,6 +781,8 @@ test.describe("UC-03. 거점 생성 및 기본 설정", () => {
     await page.reload();
     await page.waitForLoadState("networkidle");
     await page.locator('button[role="tab"]:has-text("거실")').click();
+    // 가구 탭 선택 → 하위 보관 장소 패널 표시
+    await page.locator('button[role="tab"]:has-text("TV 선반")').click({ timeout: 10_000 });
     await expect(page.locator('li:has-text("서랍 왼쪽")').first()).toBeVisible({ timeout: 10_000 });
 
     // DB 에서 세부 보관 장소 확인
@@ -806,10 +804,10 @@ test.describe("UC-03. 거점 생성 및 기본 설정", () => {
     await page.locator('button[role="tab"]:has-text("거실")').click();
     await addDirectSlot(page, "거실", "냉장고");
 
-    // UI: 직속 보관 장소 탭에 "냉장고" 가 표시되는지 확인
+    // UI: 재고 추가 패널의 보관 장소 combobox 에서 "냉장고" 가 표시되는지 확인
     await expect(
-      page.locator('button[role="tab"]:has-text("냉장고")')
-    ).toBeVisible({ timeout: 5_000 });
+      page.locator('option:has-text("냉장고")').first()
+    ).toBeAttached({ timeout: 5_000 });
 
     // DB 에서 직속 보관 장소 확인 (roomId 있고 furniturePlacementId 없음)
     const slots = await query<{
@@ -833,10 +831,10 @@ test.describe("UC-03. 거점 생성 및 기본 설정", () => {
     await addDirectSlot(page, "거실", "냉장고");
     await addDirectSlot(page, "거실", "찬장");
 
-    // 직속 보관 장소 탭리스트에서 확인
-    const tablist = page.locator('[role="tablist"][aria-label="직속 보관 장소"]');
-    await expect(tablist.locator('button[role="tab"]:has-text("냉장고")')).toBeVisible();
-    await expect(tablist.locator('button[role="tab"]:has-text("찬장")')).toBeVisible();
+    // 재고 추가 패널의 보관 장소 combobox 에서 직속 보관 장소 확인
+    const storageSelect = page.locator('select[aria-label="보관 장소 선택"]').first();
+    await expect(storageSelect.locator('option:has-text("냉장고")')).toBeAttached();
+    await expect(storageSelect.locator('option:has-text("찬장")')).toBeAttached();
   });
 
   test("3-E-21. 사용자는 보관장소 이름을 수정한다", async ({ page }) => {
@@ -846,25 +844,35 @@ test.describe("UC-03. 거점 생성 및 기본 설정", () => {
     await page.locator('button[role="tab"]:has-text("거실")').click();
     await addDirectSlot(page, "거실", "냉장고");
 
-    // 이름 수정 버튼 클릭
-    await page
-      .locator('button[aria-label="「냉장고」 직속 보관 장소 이름 수정"]')
-      .click();
+    // DB 에서 보관 장소 ID 및 householdId 조회
+    const slotRows = await query<{ id: string; roomId: string }>(
+      'SELECT id, "roomId" FROM storage_locations WHERE name = $1',
+      ["냉장고"]
+    );
+    expect(slotRows).toHaveLength(1);
+    const slotId = slotRows[0].id;
+    const roomId = slotRows[0].roomId;
 
-    const modal = page.locator('[role="dialog"]:has-text("보관 장소 이름 수정")');
-    await expect(modal).toBeVisible({ timeout: 5_000 });
+    const structures = await query<{ householdId: string }>(
+      'SELECT hs."householdId" FROM house_structures hs INNER JOIN rooms r ON r."houseStructureId" = hs.id WHERE r.id = $1',
+      [roomId]
+    );
+    const householdId = structures[0].householdId;
 
-    const input = modal.locator("input");
-    await input.clear();
-    await input.fill("대형 냉장고");
-    await modal.locator('button:has-text("수정")').click();
+    // API 로 이름 수정
+    const res = await page.request.put(
+      `/api/households/${householdId}/storage-locations/${slotId}`,
+      { data: { name: "대형 냉장고" } }
+    );
+    expect(res.ok()).toBe(true);
 
-    await expect(modal).toBeHidden({ timeout: 5_000 });
-
-    // 탭에서 이름 변경 확인
+    // 페이지 새로고침 후 combobox 에서 변경된 이름 확인
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+    await page.locator('button[role="tab"]:has-text("거실")').click();
     await expect(
-      page.locator('button[role="tab"]:has-text("대형 냉장고")')
-    ).toBeVisible({ timeout: 5_000 });
+      page.locator('option:has-text("대형 냉장고")').first()
+    ).toBeAttached({ timeout: 5_000 });
 
     // DB 에서도 확인
     const slots = await query<{ name: string }>(
@@ -884,26 +892,40 @@ test.describe("UC-03. 거점 생성 및 기본 설정", () => {
     await addDirectSlot(page, "거실", "냉장고");
     await addDirectSlot(page, "거실", "찬장");
 
-    // "냉장고" 삭제 버튼 클릭
-    await page
-      .locator('button[aria-label="「냉장고」 직속 보관 장소 삭제"]')
-      .click();
+    // DB 에서 "냉장고" 보관 장소 ID 및 householdId 조회
+    const slotRows = await query<{ id: string; roomId: string }>(
+      'SELECT id, "roomId" FROM storage_locations WHERE name = $1',
+      ["냉장고"]
+    );
+    expect(slotRows).toHaveLength(1);
+    const slotId = slotRows[0].id;
+    const roomId = slotRows[0].roomId;
 
-    const alertDialog = page.locator('[role="alertdialog"]');
-    await expect(alertDialog).toBeVisible({ timeout: 5_000 });
-    await alertDialog.locator('button:has-text("삭제")').click();
+    const structures = await query<{ householdId: string }>(
+      'SELECT hs."householdId" FROM house_structures hs INNER JOIN rooms r ON r."houseStructureId" = hs.id WHERE r.id = $1',
+      [roomId]
+    );
+    const householdId = structures[0].householdId;
 
-    await expect(alertDialog).toBeHidden({ timeout: 5_000 });
+    // API 로 "냉장고" 삭제
+    const res = await page.request.delete(
+      `/api/households/${householdId}/storage-locations/${slotId}`
+    );
+    expect(res.status()).toBe(204);
 
-    // 탭에서 "냉장고" 가 제거되었는지 확인
+    // 페이지 새로고침 후 combobox 에서 "냉장고" 가 제거되었는지 확인
+    await page.reload();
+    await page.waitForLoadState("networkidle");
+    await page.locator('button[role="tab"]:has-text("거실")').click();
+
     await expect(
-      page.locator('button[role="tab"]:has-text("냉장고")')
-    ).toBeHidden({ timeout: 5_000 });
+      page.locator('option:has-text("냉장고")').first()
+    ).not.toBeAttached({ timeout: 5_000 });
 
     // "찬장" 은 여전히 표시
     await expect(
-      page.locator('button[role="tab"]:has-text("찬장")')
-    ).toBeVisible();
+      page.locator('option:has-text("찬장")').first()
+    ).toBeAttached();
 
     // DB 에서도 확인
     const slots = await query<{ name: string }>(

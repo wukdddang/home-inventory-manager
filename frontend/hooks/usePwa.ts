@@ -111,7 +111,7 @@ export function usePwaInstall() {
 }
 
 /* ------------------------------------------------------------------ */
-/*  푸시 토큰 관리 (mock)                                              */
+/*  푸시 토큰 관리 (Firebase Cloud Messaging)                          */
 /* ------------------------------------------------------------------ */
 
 const TOKEN_KEY = "him-push-token";
@@ -143,12 +143,8 @@ export function usePushToken() {
     setLoading(true);
     try {
       if (!("Notification" in window)) {
-        // Notification API 미지원 → mock 토큰
-        const mockToken = `him_push_${crypto.randomUUID().slice(0, 12)}`;
-        localStorage.setItem(TOKEN_KEY, mockToken);
-        setToken(mockToken);
-        setGranted(true);
-        return mockToken;
+        console.warn("[Push] 이 환경은 Notification API를 지원하지 않습니다.");
+        return null;
       }
 
       const permission = await Notification.requestPermission();
@@ -157,13 +153,31 @@ export function usePushToken() {
         return null;
       }
 
-      // mock 토큰 생성 (실제로는 FCM getToken 호출)
-      const mockToken = `him_push_${crypto.randomUUID().slice(0, 12)}`;
-      localStorage.setItem(TOKEN_KEY, mockToken);
-      setToken(mockToken);
+      // Firebase SDK가 설정되어 있으면 실제 FCM 토큰 발급
+      const firebaseApiKey = process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+      let fcmToken: string | null = null;
+
+      if (firebaseApiKey) {
+        try {
+          const { requestFcmToken } = await import("@/lib/firebase");
+          fcmToken = await requestFcmToken();
+        } catch (err) {
+          console.warn("[Push] Firebase 토큰 발급 실패, 폴백 토큰 사용:", err);
+        }
+      }
+
+      // Firebase 설정이 없거나 발급 실패 시 폴백 토큰
+      if (!fcmToken) {
+        fcmToken = `him_push_${crypto.randomUUID().slice(0, 12)}`;
+        console.log("[Push] 폴백 토큰 생성:", fcmToken);
+      } else {
+        console.log("[Push] FCM 토큰 발급 완료");
+      }
+
+      localStorage.setItem(TOKEN_KEY, fcmToken);
+      setToken(fcmToken);
       setGranted(true);
-      console.log("[Push] 토큰 발급:", mockToken);
-      return mockToken;
+      return fcmToken;
     } finally {
       setLoading(false);
     }

@@ -258,6 +258,97 @@ export async function seedInvitation(
   return { id: rows[0].id, token };
 }
 
+// ── appliance ──
+
+export async function seedAppliance(
+  householdId: string,
+  userId: string,
+  opts: {
+    name: string;
+    brand?: string | null;
+    modelName?: string | null;
+    roomId?: string | null;
+    purchasedAt?: string | null;
+    warrantyExpiresAt?: string | null;
+    status?: "active" | "retired";
+  },
+): Promise<string> {
+  const rows = await query<{ id: string }>(
+    `INSERT INTO appliances ("id", "householdId", "userId", "roomId", "name", "brand", "modelName", "purchasedAt", "warrantyExpiresAt", "status", "createdAt", "updatedAt")
+     VALUES (uuid_generate_v4(), $1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+     RETURNING id`,
+    [
+      householdId,
+      userId,
+      opts.roomId ?? null,
+      opts.name,
+      opts.brand ?? null,
+      opts.modelName ?? null,
+      opts.purchasedAt ?? null,
+      opts.warrantyExpiresAt ?? null,
+      opts.status ?? "active",
+    ],
+  );
+  return rows[0].id;
+}
+
+// ── maintenance_schedule ──
+
+export async function seedMaintenanceSchedule(
+  applianceId: string,
+  opts: {
+    taskName: string;
+    recurrenceRule?: object;
+    nextOccurrenceAt: string;
+    isActive?: boolean;
+  },
+): Promise<string> {
+  const rule = opts.recurrenceRule ?? { frequency: "monthly", interval: 1 };
+  const rows = await query<{ id: string }>(
+    `INSERT INTO maintenance_schedules ("id", "applianceId", "taskName", "recurrenceRule", "nextOccurrenceAt", "isActive", "createdAt", "updatedAt")
+     VALUES (uuid_generate_v4(), $1, $2, $3::jsonb, $4, $5, NOW(), NOW())
+     RETURNING id`,
+    [
+      applianceId,
+      opts.taskName,
+      JSON.stringify(rule),
+      opts.nextOccurrenceAt,
+      opts.isActive ?? true,
+    ],
+  );
+  return rows[0].id;
+}
+
+// ── maintenance_log ──
+
+export async function seedMaintenanceLog(
+  applianceId: string,
+  opts: {
+    type: "scheduled" | "repair" | "inspection" | "other";
+    description: string;
+    maintenanceScheduleId?: string | null;
+    servicedBy?: string | null;
+    cost?: number | null;
+    performedAt: string;
+  },
+): Promise<string> {
+  const rows = await query<{ id: string }>(
+    `INSERT INTO maintenance_logs ("id", "applianceId", "maintenanceScheduleId", "type", "description", "servicedBy", "cost", "performedAt", "createdAt")
+     VALUES (uuid_generate_v4(), $1, $2, $3, $4, $5, $6, $7, NOW())
+     RETURNING id`,
+    [
+      applianceId,
+      opts.maintenanceScheduleId ?? null,
+      opts.type,
+      opts.description,
+      opts.servicedBy ?? null,
+      opts.cost ?? null,
+      opts.performedAt,
+    ],
+  );
+  return rows[0].id;
+}
+
 // ── 복합 시드: 카탈로그 + 재고 일괄 생성 ──
 
 export interface FullSeedResult {

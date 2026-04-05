@@ -13,6 +13,7 @@ import {
   listStorageOptionsForRoom,
   resolveRoomIdForStorageLocation,
 } from "@/lib/household-location";
+import { getMockAppliancesSession } from "../../../appliances/_context/appliances-mock.service";
 import {
   getPurchases,
   setPurchases,
@@ -316,7 +317,7 @@ export function RoomItemAddWidget({
   const room = selected.rooms.find((r) => r.id === roomId);
 
   const storageOptions = useMemo(
-    () => listStorageOptionsForRoom(selected, roomId),
+    () => listStorageOptionsForRoom(selected, roomId, getMockAppliancesSession()),
     [selected, roomId],
   );
 

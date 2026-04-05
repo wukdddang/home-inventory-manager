@@ -1,6 +1,11 @@
 import * as Joi from 'joi';
 
 export const envValidationSchema = Joi.object({
+  // ── Runtime ──
+  NODE_ENV: Joi.string()
+    .valid('development', 'production', 'test')
+    .default('development'),
+
   // ── Database ──
   DB_HOST: Joi.string().default('localhost'),
   DB_PORT: Joi.number().default(5432),
@@ -22,8 +27,8 @@ export const envValidationSchema = Joi.object({
   MAIL_FROM: Joi.string().default('"집비치기" <noreply@example.com>'),
 
   // ── Firebase (FCM) ──
-  FIREBASE_SERVICE_ACCOUNT_PATH: Joi.string().optional(),
-  FIREBASE_SERVICE_ACCOUNT_JSON: Joi.string().optional(),
+  FIREBASE_SERVICE_ACCOUNT_PATH: Joi.string().allow('').optional(),
+  FIREBASE_SERVICE_ACCOUNT_JSON: Joi.string().allow('').optional(),
 
   // ── Backup ──
   BACKUP_ENABLED: Joi.string().default('false'),

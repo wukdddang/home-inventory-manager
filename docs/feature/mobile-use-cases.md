@@ -262,6 +262,31 @@ MobileShell
 
 ---
 
+## MUC-11. PWA 및 서비스 워커
+
+> **목적**: PWA 설치, 서비스 워커, 푸시 토큰 관리 등 모바일 웹앱 기능 검증
+
+**사전 조건**: 로그인 완료, 거점 1개 이상
+
+| #   | 테스트 케이스                                                                          | UI  | 검증 |
+| --- | -------------------------------------------------------------------------------------- | --- | ---- |
+| 1   | `manifest.json`이 올바른 메타데이터(display, orientation, theme_color)를 반환한다       | O (`manifest.json`) | [ ]  |
+| 2   | HTML에 PWA 메타 태그(manifest, apple-mobile-web-app-capable 등)가 포함된다             | O (`layout.tsx`) | [ ]  |
+| 3   | 서비스 워커가 정상 등록된다                                                             | O (`sw.js`) | [ ]  |
+| 4   | 서비스 워커 스크립트(`/sw.js`)에 install/fetch/push 핸들러가 포함된다                  | O (`sw.js`) | [ ]  |
+| 5   | `beforeinstallprompt` 이벤트 시 설치 배너가 표시된다                                   | O (`PwaInstallBanner`) | [ ]  |
+| 6   | "나중에" 버튼 클릭 시 localStorage에 닫은 시점이 저장되고 배너가 닫힌다                | O (`PwaInstallBanner`) | [ ]  |
+| 7   | X 닫기 버튼으로 배너를 닫을 수 있다                                                    | O (`PwaInstallBanner`) | [ ]  |
+| 8   | 닫은 후 7일 이내에는 배너가 다시 표시되지 않는다                                       | O (`PwaInstallBanner`) | [ ]  |
+| 9   | 설정 페이지에 "앱 설치 / 푸시 토큰" 섹션이 표시된다                                   | O (`SettingsMobilePanel`) | [ ]  |
+| 10  | 설정 페이지에 푸시 토큰 발급 상태와 "토큰 발급하기" 버튼이 표시된다                    | O (`SettingsMobilePanel`) | [ ]  |
+| 11  | 토큰 발급 시 localStorage에 저장되고 "활성" 뱃지가 표시된다                            | O (`SettingsMobilePanel`) | [ ]  |
+| 12  | 토큰 삭제 시 localStorage에서 제거되고 "미발급" 상태로 전환된다                         | O (`SettingsMobilePanel`) | [ ]  |
+| 13  | 앱 미설치 상태에서 설치 안내 문구가 표시된다                                           | O (`SettingsMobilePanel`) | [ ]  |
+| 14  | 푸시 토큰은 페이지 새로고침 후에도 localStorage에 유지된다                              | O (`SettingsMobilePanel`) | [ ]  |
+
+---
+
 ## MUC-12. 모바일 가전/설비 관리
 
 > **목적**: 모바일에서 가전 목록 조회 및 가전 하위 보관 장소·재고 확인 검증
@@ -311,6 +336,7 @@ MUC-08 (로그인/회원가입 반응형)
     → MUC-07 (설정)
   → MUC-09 (바텀시트 공통) — 독립 실행 가능
   → MUC-10 (스켈레톤 로딩) — 독립 실행 가능
+  → MUC-11 (PWA/서비스워커) — 독립 실행 가능
   → MUC-12 (가전/설비 관리) — 가전 등록 후 실행
 ```
 

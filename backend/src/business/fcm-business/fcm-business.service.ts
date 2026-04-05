@@ -23,4 +23,8 @@ export class FcmBusinessService {
   async 토큰을_삭제한다(token: string, userId: string) {
     return this.fcmContextService.토큰을_삭제한다(token, userId);
   }
+
+  async 내_토큰을_일괄_삭제한다(userId: string) {
+    return this.fcmContextService.내_토큰을_일괄_삭제한다(userId);
+  }
 }

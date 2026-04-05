@@ -37,6 +37,7 @@ export type StorageOption = { id: string; label: string };
 export function listStorageOptionsForRoom(
   h: Household,
   roomId: string,
+  appliances?: { id: string; name: string; roomId?: string }[],
 ): StorageOption[] {
   const out: StorageOption[] = [];
   const slots = h.storageLocations ?? [];
@@ -75,12 +76,18 @@ export function listStorageOptionsForRoom(
     }
   }
 
-  // v2.8: 가전 하위 보관 장소
-  const appSlots = slots
-    .filter((s) => s.applianceId != null && s.applianceId !== "")
-    .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
-  for (const s of appSlots) {
-    out.push({ id: s.id, label: `[가전] ${s.name}` });
+  // v2.8: 가전 하위 보관 장소 — 이 방에 설치된 가전만 표시
+  const roomAppliances = (appliances ?? []).filter((a) => a.roomId === roomId);
+  for (const appl of roomAppliances) {
+    const appSlots = slots
+      .filter((s) => s.applianceId === appl.id)
+      .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+    for (const s of appSlots) {
+      out.push({
+        id: s.id,
+        label: `${roomName} › ${appl.name} › ${s.name}`,
+      });
+    }
   }
 
   return out;
@@ -92,6 +99,7 @@ export function listStorageOptionsForRoom(
 export function formatStorageBlockHeading(
   h: Household,
   storageLocationId: string | undefined,
+  appliances?: { id: string; name: string }[],
 ): string {
   if (!storageLocationId) {
     return "보관 장소 미지정";
@@ -108,7 +116,9 @@ export function formatStorageBlockHeading(
     return `${furnitureLabel} › ${slot.name}`;
   }
   if (slot.applianceId != null && slot.applianceId !== "") {
-    return `[가전] ${slot.name}`;
+    const appl = (appliances ?? []).find((a) => a.id === slot.applianceId);
+    const applLabel = appl?.name ?? "가전";
+    return `${applLabel} › ${slot.name}`;
   }
   return slot.name;
 }
@@ -176,6 +186,7 @@ export function formatShoppingListTargetStorage(
 export function formatLocationBreadcrumb(
   h: Household,
   item: InventoryRow,
+  appliances?: { id: string; name: string }[],
 ): string {
   const room = h.rooms.find((r) => r.id === item.roomId);
   const roomName = room?.name ?? "방";
@@ -196,7 +207,9 @@ export function formatLocationBreadcrumb(
     return `${roomName} › ${furnitureLabel} › ${slot.name}`;
   }
   if (slot.applianceId != null && slot.applianceId !== "") {
-    return `${roomName} › [가전] ${slot.name}`;
+    const appl = (appliances ?? []).find((a) => a.id === slot.applianceId);
+    const applLabel = appl?.name ?? "가전";
+    return `${roomName} › ${applLabel} › ${slot.name}`;
   }
   return `${roomName} › ${slot.name}`;
 }
@@ -218,6 +231,7 @@ export type LedgerLocationColumns = {
 export function resolveLedgerLocationColumns(
   h: Household,
   inventoryItemId: string,
+  appliances?: { id: string; name: string }[],
 ): LedgerLocationColumns {
   const item = h.items.find((it) => it.id === inventoryItemId);
   if (!item) {
@@ -262,10 +276,11 @@ export function resolveLedgerLocationColumns(
     };
   }
   if (slot.applianceId != null && slot.applianceId !== "") {
+    const appl = (appliances ?? []).find((a) => a.id === slot.applianceId);
     return {
       householdName: h.name,
       roomName,
-      placeLabel: "[가전]",
+      placeLabel: appl?.name ?? "가전",
       detailLabel: slot.name,
     };
   }

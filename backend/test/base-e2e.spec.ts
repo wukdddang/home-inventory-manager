@@ -97,6 +97,23 @@ export class BaseE2ETest {
     process.env.MAIL_FROM = '"Test" <test@example.com>';
     process.env.APP_URL = 'http://localhost:4100';
 
+    // Firebase 서비스 계정: 로컬 파일 경로 우선, 없으면 더미 JSON
+    const path = require('path');
+    const fs = require('fs');
+    const serviceAccountPath = path.resolve(
+      __dirname,
+      '..',
+      'home-inventory-manager-a7cd5-firebase-adminsdk-fbsvc-45a2804802.json',
+    );
+    if (fs.existsSync(serviceAccountPath)) {
+      process.env.FIREBASE_SERVICE_ACCOUNT_PATH = serviceAccountPath;
+      process.env.FIREBASE_SERVICE_ACCOUNT_JSON = '';
+    } else {
+      // CI 등 서비스 계정 파일이 없는 환경에서는 더미 JSON (FCM 비활성화)
+      process.env.FIREBASE_SERVICE_ACCOUNT_JSON = '';
+      process.env.FIREBASE_SERVICE_ACCOUNT_PATH = '';
+    }
+
     // 3. 동적 import (환경변수 설정 후 AppModule 로드)
     const { AppModule } = await import('../src/app.module');
     const { MailService } = await import(

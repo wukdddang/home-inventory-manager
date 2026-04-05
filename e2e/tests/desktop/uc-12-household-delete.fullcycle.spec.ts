@@ -9,7 +9,7 @@ const TEST_USER = {
   password: "Test1234!@",
 };
 
-test.describe("UC-11. 거점 삭제", () => {
+test.describe("UC-12. 거점 삭제", () => {
   test.beforeEach(async () => {
     await resetDatabase();
     await clearAllMails();
@@ -51,7 +51,7 @@ test.describe("UC-11. 거점 삭제", () => {
 
   // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  test("11-1. 사용자는 거점 삭제를 시도하고 삭제 확인 다이얼로그를 확인한다", async ({ page }) => {
+  test("12-1. 사용자는 거점 삭제를 시도하고 삭제 확인 다이얼로그를 확인한다", async ({ page }) => {
     await signupAndWait(page);
     await setupFullHousehold(page, "우리 집");
 
@@ -80,7 +80,7 @@ test.describe("UC-11. 거점 삭제", () => {
     await expect(householdTab).toBeVisible();
   });
 
-  test("11-2. 사용자는 거점을 삭제하고 거점 목록에서 제거됨을 확인한다", async ({ page }) => {
+  test("12-2. 사용자는 거점을 삭제하고 거점 목록에서 제거됨을 확인한다", async ({ page }) => {
     await signupAndWait(page);
     await setupFullHousehold(page, "우리 집");
     // 두 번째 거점 생성 (삭제 후 하나는 남아야 하므로)
@@ -118,7 +118,7 @@ test.describe("UC-11. 거점 삭제", () => {
     expect(households[0].name).toBe("사무실");
   });
 
-  test("11-3. 시스템은 삭제된 거점의 하위 데이터(방/가구/보관장소/재고)에 접근 불가 상태로 만든다", async ({ page }) => {
+  test("12-3. 시스템은 삭제된 거점의 하위 데이터(방/가구/보관장소/재고)에 접근 불가 상태로 만든다", async ({ page }) => {
     await signupAndWait(page);
     const ctx = await setupFullHousehold(page, "우리 집");
 

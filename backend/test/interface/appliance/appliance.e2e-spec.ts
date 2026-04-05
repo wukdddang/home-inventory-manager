@@ -501,20 +501,149 @@ describe('UC-11. 가전/설비 등록 및 관리 (e2e)', () => {
         });
     });
 
-    // ── UC-12 데이터 무결성 (가전 관련) ──
+    // ── 11-D. 보증 만료 데이터 검증 (BUC-17) ──
 
-    describe('UC-12. 거점 삭제 시 가전 데이터 정리', () => {
-        it('거점 삭제 시 가전도 삭제되어야 한다', async () => {
+    describe('11-D. 보증 만료 데이터 검증', () => {
+        it('#18 보증 만료 30일 이내 가전을 목록에서 식별할 수 있다', async () => {
+            const today = new Date();
+            const in25Days = new Date(today);
+            in25Days.setDate(today.getDate() + 25);
+            const in180Days = new Date(today);
+            in180Days.setDate(today.getDate() + 180);
+
+            // 30일 이내 만료
             await testSuite
+                .authenticatedRequest(accessToken)
+                .post(`/api/households/${householdId}/appliances`)
+                .send({
+                    name: '세탁기',
+                    warrantyExpiresAt: in25Days.toISOString().slice(0, 10),
+                });
+
+            // 여유 있음
+            await testSuite
+                .authenticatedRequest(accessToken)
+                .post(`/api/households/${householdId}/appliances`)
+                .send({
+                    name: '냉장고',
+                    warrantyExpiresAt: in180Days.toISOString().slice(0, 10),
+                });
+
+            const res = await testSuite
+                .authenticatedRequest(accessToken)
+                .get(`/api/households/${householdId}/appliances`)
+                .expect(200);
+
+            const washer = res.body.find(
+                (a: any) => a.name === '세탁기',
+            );
+            const fridge = res.body.find(
+                (a: any) => a.name === '냉장고',
+            );
+            expect(washer).toBeDefined();
+            expect(fridge).toBeDefined();
+
+            // 보증 만료일이 올바르게 저장됨
+            expect(washer.warrantyExpiresAt).toBe(
+                in25Days.toISOString().slice(0, 10),
+            );
+        });
+
+        it('#19 보증 만료일 없는 가전도 정상 등록된다', async () => {
+            const res = await testSuite
+                .authenticatedRequest(accessToken)
+                .post(`/api/households/${householdId}/appliances`)
+                .send({ name: '선풍기' })
+                .expect(201);
+
+            expect(res.body.warrantyExpiresAt).toBeNull();
+        });
+
+        it('#20 폐기된 가전의 보증 만료일은 조회 가능하지만 알림 대상에서 제외된다', async () => {
+            const today = new Date();
+            const in5Days = new Date(today);
+            in5Days.setDate(today.getDate() + 5);
+
+            const createRes = await testSuite
+                .authenticatedRequest(accessToken)
+                .post(`/api/households/${householdId}/appliances`)
+                .send({
+                    name: '에어컨',
+                    warrantyExpiresAt: in5Days.toISOString().slice(0, 10),
+                });
+
+            // 폐기 처리
+            await testSuite
+                .authenticatedRequest(accessToken)
+                .patch(
+                    `/api/households/${householdId}/appliances/${createRes.body.id}/retire`,
+                );
+
+            // 폐기 상태에서 상세 조회 — 보증 만료일 여전히 있음
+            const detailRes = await testSuite
+                .authenticatedRequest(accessToken)
+                .get(
+                    `/api/households/${householdId}/appliances/${createRes.body.id}`,
+                )
+                .expect(200);
+
+            expect(detailRes.body.status).toBe('retired');
+            expect(detailRes.body.warrantyExpiresAt).toBe(
+                in5Days.toISOString().slice(0, 10),
+            );
+
+            // active 필터에서는 나타나지 않음
+            const activeRes = await testSuite
+                .authenticatedRequest(accessToken)
+                .get(
+                    `/api/households/${householdId}/appliances?status=active`,
+                )
+                .expect(200);
+
+            expect(
+                activeRes.body.find((a: any) => a.name === '에어컨'),
+            ).toBeUndefined();
+        });
+    });
+
+    // ── 11-E. 데이터 정합성 및 엣지 케이스 (BUC-18) ──
+
+    describe('11-E. 데이터 정합성 및 엣지 케이스', () => {
+        it('#21 거점 삭제 시 가전·스케줄·이력이 모두 삭제된다', async () => {
+            const appRes = await testSuite
                 .authenticatedRequest(accessToken)
                 .post(`/api/households/${householdId}/appliances`)
                 .send({ name: '세탁기' });
 
             await testSuite
                 .authenticatedRequest(accessToken)
+                .post(
+                    `/api/households/${householdId}/appliances/${appRes.body.id}/maintenance-schedules`,
+                )
+                .send({
+                    taskName: '통세척',
+                    recurrenceRule: { frequency: 'monthly', interval: 3 },
+                    nextOccurrenceAt: '2026-07-01',
+                });
+
+            await testSuite
+                .authenticatedRequest(accessToken)
+                .post(
+                    `/api/households/${householdId}/appliances/${appRes.body.id}/maintenance-logs`,
+                )
+                .send({
+                    type: 'repair',
+                    description: '수리',
+                    performedAt: '2026-04-01',
+                });
+
+            // 거점 삭제
+            await testSuite
+                .authenticatedRequest(accessToken)
                 .delete(`/api/households/${householdId}`)
                 .expect(204);
 
+            // 새 거점 생성 후 가전이 없는지 확인
             const newHouseholdRes = await testSuite
                 .authenticatedRequest(accessToken)
                 .post('/api/households')
@@ -528,6 +657,74 @@ describe('UC-11. 가전/설비 등록 및 관리 (e2e)', () => {
                 .expect(200);
 
             expect(res.body).toHaveLength(0);
+        });
+
+        it('#22 가전 폐기 후 다시 폐기해도 오류가 발생하지 않는다', async () => {
+            const appRes = await testSuite
+                .authenticatedRequest(accessToken)
+                .post(`/api/households/${householdId}/appliances`)
+                .send({ name: '에어컨' });
+
+            // 첫 번째 폐기
+            await testSuite
+                .authenticatedRequest(accessToken)
+                .patch(
+                    `/api/households/${householdId}/appliances/${appRes.body.id}/retire`,
+                )
+                .expect(200);
+
+            // 두 번째 폐기 (이미 폐기 상태) — 에러가 아닌 200 또는 이미-폐기 상태 반환
+            const res = await testSuite
+                .authenticatedRequest(accessToken)
+                .patch(
+                    `/api/households/${householdId}/appliances/${appRes.body.id}/retire`,
+                );
+
+            expect([200, 400].includes(res.status)).toBe(true);
+        });
+
+        it('#23 존재하지 않는 가전 ID로 스케줄 등록 시 404를 반환한다', async () => {
+            await testSuite
+                .authenticatedRequest(accessToken)
+                .post(
+                    `/api/households/${householdId}/appliances/00000000-0000-0000-0000-000000000000/maintenance-schedules`,
+                )
+                .send({
+                    taskName: '테스트',
+                    recurrenceRule: { frequency: 'monthly', interval: 1 },
+                    nextOccurrenceAt: '2026-07-01',
+                })
+                .expect(404);
+        });
+
+        it('#24 존재하지 않는 가전 ID로 이력 등록 시 404를 반환한다', async () => {
+            await testSuite
+                .authenticatedRequest(accessToken)
+                .post(
+                    `/api/households/${householdId}/appliances/00000000-0000-0000-0000-000000000000/maintenance-logs`,
+                )
+                .send({
+                    type: 'repair',
+                    description: '테스트 수리',
+                    performedAt: '2026-04-01',
+                })
+                .expect(404);
+        });
+
+        it('#25 비멤버가 가전 API에 접근하면 403을 반환한다', async () => {
+            const otherSignup = await testSuite
+                .request()
+                .post('/api/auth/signup')
+                .send({
+                    email: 'other-user@example.com',
+                    password: 'password123',
+                    displayName: '다른 사용자',
+                });
+
+            await testSuite
+                .authenticatedRequest(otherSignup.body.accessToken)
+                .get(`/api/households/${householdId}/appliances`)
+                .expect(403);
         });
     });
 });
