@@ -24,7 +24,6 @@ import { getHouseholds } from "@/lib/local-store";
 import { APP_PAGE_MIN_LOADING_MS } from "@/app/_ui/app-loading-state";
 import type {
   Appliance,
-  ApplianceStatus,
   Household,
   MaintenanceLog,
   MaintenanceLogType,

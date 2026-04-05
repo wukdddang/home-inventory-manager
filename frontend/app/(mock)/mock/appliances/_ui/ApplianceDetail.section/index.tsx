@@ -8,13 +8,10 @@ import {
   Pencil,
   Calendar,
   Wrench,
-  Search,
-  X,
 } from "lucide-react";
 import { useAppliances } from "../../_hooks/useAppliances";
 import type {
   Appliance,
-  MaintenanceLog,
   MaintenanceLogType,
   MaintenanceRepeatRule,
   MaintenanceSchedule,

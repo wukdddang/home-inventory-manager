@@ -1,4 +1,3 @@
-/* eslint-disable no-undef */
 /**
  * Firebase Cloud Messaging 서비스 워커.
  * 백그라운드 푸시 알림을 수신하여 표시한다.

@@ -1,13 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, Pencil, ChevronRight } from "lucide-react";
+import { Plus, Trash2, ChevronRight } from "lucide-react";
 import { useAppliances } from "../../_hooks/useAppliances";
-import type {
-  Appliance,
-  ApplianceStatus,
-  MaintenanceRepeatRule,
-} from "@/types/domain";
 import type { ApplianceStatusFilter } from "@/app/(current)/appliances/_context/AppliancesContext";
 
 const STATUS_FILTER_OPTIONS: { value: ApplianceStatusFilter; label: string }[] = [
@@ -15,13 +10,6 @@ const STATUS_FILTER_OPTIONS: { value: ApplianceStatusFilter; label: string }[] =
   { value: "disposed", label: "폐기" },
   { value: "all", label: "전체" },
 ];
-
-const REPEAT_RULE_LABELS: Record<MaintenanceRepeatRule, string> = {
-  monthly: "매월",
-  quarterly: "분기",
-  semiannual: "반기",
-  annual: "매년",
-};
 
 function 보증_상태_뱃지(warrantyExpiresOn?: string) {
   if (!warrantyExpiresOn) return null;

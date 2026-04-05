@@ -1,7 +1,43 @@
-import type { Appliance, MaintenanceSchedule, MaintenanceLog } from "@/types/domain";
+import type { Appliance, MaintenanceSchedule, MaintenanceLog, MaintenanceLogType } from "@/types/domain";
+
+interface RawAppliance {
+  id: string;
+  householdId: string;
+  name: string;
+  brand?: string | null;
+  modelName?: string | null;
+  purchasedAt?: string | null;
+  warrantyExpiresAt?: string | null;
+  roomId?: string | null;
+  status: string;
+  updatedAt?: string | null;
+  createdAt: string;
+}
+
+interface RawSchedule {
+  id: string;
+  applianceId: string;
+  taskName: string;
+  recurrenceRule?: { frequency: string; interval?: number } | null;
+  createdAt?: string | null;
+  nextOccurrenceAt: string;
+  isActive: boolean;
+}
+
+interface RawLog {
+  id: string;
+  applianceId: string;
+  maintenanceScheduleId?: string | null;
+  type: string;
+  description: string;
+  servicedBy?: string | null;
+  cost?: number | string | null;
+  performedAt: string;
+  createdAt: string;
+}
 
 // Backend → Frontend mappings
-export function toAppliance(raw: any): Appliance {
+export function toAppliance(raw: RawAppliance): Appliance {
   return {
     id: raw.id,
     householdId: raw.householdId,
@@ -17,7 +53,7 @@ export function toAppliance(raw: any): Appliance {
   };
 }
 
-export function toSchedule(raw: any): MaintenanceSchedule {
+export function toSchedule(raw: RawSchedule): MaintenanceSchedule {
   const rule = raw.recurrenceRule;
   let repeatRule: MaintenanceSchedule["repeatRule"] = "monthly";
   if (rule) {
@@ -39,12 +75,12 @@ export function toSchedule(raw: any): MaintenanceSchedule {
   };
 }
 
-export function toLog(raw: any): MaintenanceLog {
+export function toLog(raw: RawLog): MaintenanceLog {
   return {
     id: raw.id,
     applianceId: raw.applianceId,
     scheduleId: raw.maintenanceScheduleId ?? undefined,
-    type: raw.type === "other" ? "inspection" : raw.type,
+    type: raw.type === "other" ? "inspection" : raw.type as MaintenanceLogType,
     description: raw.description,
     providerName: raw.servicedBy ?? undefined,
     cost: raw.cost != null ? Number(raw.cost) : undefined,
